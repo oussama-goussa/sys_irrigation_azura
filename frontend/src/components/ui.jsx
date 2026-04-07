@@ -51,7 +51,7 @@ export function Btn({ children, onClick, variant = 'primary', disabled, full, sm
     <button onClick={onClick} disabled={disabled} style={{
       ...s,
       borderRadius: 8,
-      padding: '5px 12px',
+      padding: '8px 16px',
       fontWeight: 700,
       fontSize: 12,
       fontFamily: 'inherit',
