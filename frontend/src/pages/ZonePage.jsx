@@ -640,24 +640,24 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
     }
   }, [token, deviceId, chartDateFrom, chartDateTo])
 
-  const loadTours = useCallback(async (d = tourDate) => {
-    setLoadingTours(true)
-    try {
-      const data = await getDeviceTours(token, deviceId, d)
-      setTours(data)
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setLoadingTours(false)
-    }
-  }, [token, deviceId, tourDate])
+  const loadTours = useCallback(async (d = tourDate, showLoading = false) => {
+      if (showLoading) setLoadingTours(true)   // ← seulement si explicitement demandé
+      try {
+        const data = await getDeviceTours(token, deviceId, d)
+        setTours(data)
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setLoadingTours(false)
+      }
+    }, [token, deviceId, tourDate])
 
   useEffect(() => {
-    loadTours()
-    if (tourDate !== today()) return
-    const iv = setInterval(() => loadTours(), 30_000)
-    return () => clearInterval(iv)
-  }, [tourDate, deviceId])	
+      loadTours(tourDate, true)   // ← premier chargement = affiche le spinner
+      if (tourDate !== today()) return
+      const iv = setInterval(() => loadTours(tourDate, false), 30_000)  // ← refresh silencieux
+      return () => clearInterval(iv)
+    }, [tourDate, deviceId])
 
   useEffect(() => {
     loadLive()
