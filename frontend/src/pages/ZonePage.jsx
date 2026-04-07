@@ -660,10 +660,6 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
     }, [tourDate, deviceId])
 
   useEffect(() => {
-    console.log('🔥 TOKEN ZonePage:', token)
-  }, [token])
-
-  useEffect(() => {
     loadLive()
     loadChartData()
     const iv = setInterval(() => {
