@@ -793,19 +793,12 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
         <button onClick={loadLive} style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          padding: '8px 14px', background: C.textMuted,
+          padding: '8px 14px', background: C.toggleBg,
           border: `1.5px solid ${C.border}`, borderRadius: 8,
-          color: C.toggleBg, fontSize: 12, fontWeight: 700,
+          color: C.textMuted, fontSize: 12, fontWeight: 700,
           cursor: 'pointer', fontFamily: 'inherit',
         }}>
-          <RefreshCw 
-            size={13} strokeWidth={3} 
-            style={{
-              transition: 'transform 0.5s',
-              transform: refreshing ? 'rotate(360deg)' : 'rotate(0deg)',
-            }}
-          />
-          Actualiser
+          <RefreshCw size={13} strokeWidth={2} /> Actualiser
         </button>
       </div>
 
