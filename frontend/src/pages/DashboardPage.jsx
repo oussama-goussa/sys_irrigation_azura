@@ -404,7 +404,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
             }}
           >
             <RefreshCw
-              size={13} strokeWidth={4}
+              size={13} strokeWidth={2}
               style={{
                 transition: 'transform 0.5s',
                 transform: refreshing ? 'rotate(360deg)' : 'rotate(0deg)',
