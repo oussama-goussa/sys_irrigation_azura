@@ -386,7 +386,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
           <Search size={SZ.md} strokeWidth={1.8} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: C.textDim, pointerEvents: 'none' }} />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Rechercher par nom ou identifiant…"
-            style={{ width: '100%', padding: '9px 14px 9px 36px', borderRadius: 8, border: `1.5px solid ${C.border}`, background: C.inputBg, color: C.text, fontSize: 12, outline: 'none' }} />
+            style={{ width: '100%', padding: '9px 14px 9px 36px', borderRadius: 8, border: `1.5px solid ${C.border}`, background: C.card, color: C.text, fontSize: 12, outline: 'none' }} />
           {search && (
             <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: C.textDim }}>
               <X size={SZ.sm} strokeWidth={2} />
