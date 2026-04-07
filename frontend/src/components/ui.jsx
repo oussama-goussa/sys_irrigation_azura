@@ -73,7 +73,7 @@ export function Btn({ children, onClick, variant = 'primary', disabled, full, sm
 }
 
 // ── Input ─────────────────────────────────────────────────────
-export function Input({ label, value, onChange, type = 'text', options, C, placeholder, icon: Icon }) {
+export function Input({ label, value, onChange, type = 'text', options, C, placeholder, icon: Icon, dark }) {
   const [showPwd, setShowPwd] = React.useState(false)
   const isPassword = type === 'password'
   const actualType = isPassword && showPwd ? 'text' : type

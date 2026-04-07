@@ -368,7 +368,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
             <Input label="Mot de passe"  value={newUser.password} onChange={setNu('password')} type="password" C={C} placeholder="Min. 8 caractères" />
             <Input label="Nom complet"   value={newUser.nom}      onChange={setNu('nom')}      C={C} placeholder="ex: Jean Dupont" />
             <Input label="Email"         value={newUser.email}    onChange={setNu('email')}    C={C} placeholder="ex: j.dupont@azura.ma" icon={Mail} />
-            <Input label="Rôle"          value={newUser.role}     onChange={setNu('role')}     options={ROLE_OPTIONS} C={C} />
+            <Input label="Rôle"          value={newUser.role}     onChange={setNu('role')}     options={ROLE_OPTIONS} C={C} dark={dark} />
           </div>
           {createError && <Alert message={createError} C={C} dark={dark} />}
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
