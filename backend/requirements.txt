@@ -1,0 +1,60 @@
+# ============================================================
+# requirements.txt — Production
+# ============================================================
+
+# Backend
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+
+# Base de données
+sqlalchemy==2.0.36
+alembic==1.14.0
+psycopg2-binary==2.9.10
+
+# Validation
+pydantic==2.10.3
+pydantic-settings==2.7.0
+
+# Celery + Redis
+celery==5.5.3
+redis==5.2.1
+
+# Machine Learning
+scikit-learn==1.6.1
+lightgbm==4.6.0
+numpy==1.26.4
+pandas==2.2.3
+scipy==1.14.1
+joblib==1.4.2
+
+# Sécurité JWT
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+
+# MODIFICATION 3 : Rate limiting ← NOUVEAU
+slowapi==0.1.9
+
+# HTTP Client
+httpx==0.28.1
+requests==2.32.3
+
+# MQTT Capteurs
+paho-mqtt==2.1.0
+
+# WebSocket
+websockets==14.1
+
+# Configuration
+python-dotenv==1.0.1
+
+# Tests
+pytest==8.3.4
+pytest-asyncio==0.24.0
+
+# Utilitaires
+python-dateutil==2.9.0
+python-multipart==0.0.20
+pytz==2024.2
+loguru==0.7.3
+tenacity==9.0.0

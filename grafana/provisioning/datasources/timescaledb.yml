@@ -1,0 +1,25 @@
+# ============================================================
+# grafana/provisioning/datasources/timescaledb.yml
+# Connexion automatique Grafana → TimescaleDB au démarrage
+# ============================================================
+
+apiVersion: 1
+
+datasources:
+  - name: TimescaleDB
+    type: postgres
+    uid: azura_timescaledb
+    url: db:5432
+    database: azura_irrigation
+    user: azura_user
+    secureJsonData:
+      password: azura_test_2026
+    jsonData:
+      sslmode: disable
+      maxOpenConns: 10
+      maxIdleConns: 10
+      connMaxLifetime: 14400
+      postgresVersion: 1500
+      timescaledb: true
+    isDefault: true
+    editable: true

@@ -1,0 +1,98 @@
+# ============================================================
+# backend/main.py — FastAPI Application complète
+# MODIFIÉ : ajout router devices
+# ============================================================
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from loguru import logger
+
+from core.database import Base, engine, SessionLocal
+from models.user_model import User
+from services.user_service import init_default_users
+from routers.auth import router as auth_router
+from routers.recommendations import router as rec_router
+from routers.sensors import router as sensors_router
+from routers.devices import router as devices_router          # ← NOUVEAU
+
+from models.sensor_model import (
+    Device, SensorReading, IrrigationCycle,
+    FertigationState, Alert, AlertThreshold,
+    IrrigationTour
+)
+
+# ── Créer les tables PostgreSQL ───────────────────────────────
+Base.metadata.create_all(bind=engine)
+
+# ── Application ───────────────────────────────────────────────
+app = FastAPI(
+    title       = "Azura Irrigation IA",
+    description = """
+## Système intelligent d'aide à la décision — Azura Group
+
+### Authentification
+Utilisez `/api/auth/login` pour obtenir un token JWT.
+Cliquez sur **Authorize** 🔒 et entrez : `Bearer <votre_token>`
+
+### Comptes de test
+| Username | Password | Role |
+|---|---|---|
+| admin | Admin@2026 | Admin |
+| operateur | Operateur@2026 | Opérateur |
+    """,
+    version = "1.0.0",
+)
+
+# ── CORS ──────────────────────────────────────────────────────
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins     = ["http://localhost:5173", "http://localhost:3000", "*"],
+    allow_credentials = True,
+    allow_methods     = ["*"],
+    allow_headers     = ["*"],
+)
+
+# ── Startup ───────────────────────────────────────────────────
+# APRÈS
+@app.on_event("startup")
+def startup():
+    db = SessionLocal()
+    try:
+        init_default_users(db)
+        # Lancer le calcul historique en arrière-plan
+        try:
+            from core.celery_app import task_historique_tours, task_tours_jour_en_cours
+            task_historique_tours.delay()
+            task_tours_jour_en_cours.delay()
+        except Exception as e:
+            logger.warning(f"Celery non disponible au démarrage : {e}")
+        logger.success("Application Azura demarree ✅")
+    finally:
+        db.close()
+
+# ── Routers ───────────────────────────────────────────────────
+app.include_router(auth_router)
+app.include_router(rec_router)
+app.include_router(sensors_router)
+app.include_router(devices_router)                            # ← NOUVEAU
+
+# ── Endpoints publics ─────────────────────────────────────────
+@app.get("/", tags=["General"])
+def root():
+    return {
+        "message": "Azura Irrigation IA ✅",
+        "version": "1.0.0",
+        "docs"   : "/docs",
+        "endpoints": {
+            "auth"            : "/api/auth/login",
+            "recommandation"  : "/api/recommendations/journee",
+            "meteo"           : "/api/recommendations/meteo",
+            "dashboard"       : "/api/devices/dashboard",
+            "device_latest"   : "/api/devices/{id}/latest",
+            "device_history"  : "/api/devices/{id}/history",
+        }
+    }
+
+@app.get("/health", tags=["General"])
+def health():
+    return {"statut": "ok", "service": "azura-backend"}
