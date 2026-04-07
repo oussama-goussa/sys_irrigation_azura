@@ -25,7 +25,6 @@ export function Card({ children, accent, C, style = {} }) {
       padding: '22px 26px',
       position: 'relative',
       overflow: 'hidden',
-      boxShadow: `0 2px 20px ${C.shadow}`,
       ...style,
     }}>
       {accent && (
@@ -115,8 +114,8 @@ export function Input({ label, value, onChange, type = 'text', options, C, place
           </div>
         )}
         {options ? (
-          <select value={value} onChange={e => onChange(e.target.value)} style={{ ...base, cursor: 'pointer', appearance: 'none' }}>
-            {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          <select value={value} onChange={e => onChange(e.target.value)} style={{ ...base, cursor: 'pointer', appearance: 'none', colorScheme: dark ? 'dark' : 'light' }}>
+            {options.map(o => <option key={o.value} style={{ background: C.inputBg, color: C.text }} value={o.value}>{o.label}</option>)}
           </select>
         ) : (
           <input
@@ -195,7 +194,6 @@ export function StatCard({ label, value, icon: Icon, color, C }) {
       border: `1.5px solid ${C.border}`,
       borderRadius: 12,
       padding: '16px 20px',
-      boxShadow: `0 2px 10px ${C.shadow}`,
       display: 'flex',
       flexDirection: 'column',
       gap: 10,

@@ -35,6 +35,7 @@ function ConfirmModal({ user, onConfirm, onCancel, C, dark }) {
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
         borderRadius: 16, padding: '28px 32px', width: 400,
+        boxShadow: `0 8px 40px rgba(0,0,0,0.5)`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <div style={{ width: 42, height: 42, borderRadius: 10, background: `${C.amber}18`, border: `1.5px solid ${C.amber}40`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -98,6 +99,7 @@ function EditModal({ user, onSave, onClose, C, dark }) {
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
         borderRadius: 16, padding: '28px 32px', width: 460,
+        boxShadow: `0 8px 40px rgba(0,0,0,0.5)`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -150,6 +152,7 @@ function AuditPanel({ token, filterUser, C, dark, onClose }) {
         background: C.card, border: `1.5px solid ${C.border}`,
         borderRadius: 16, padding: '28px 32px', width: 680,
         maxHeight: '80vh', display: 'flex', flexDirection: 'column',
+        boxShadow: `0 8px 40px rgba(0,0,0,0.5)`,
       }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -460,7 +463,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                             onChange={e => handleRoleChange(u.username, e.target.value)}
                             onBlur={() => setEditingRole(null)} autoFocus
                             style={{ background: C.inputBg, color: C.text, border: `1.5px solid ${C.green}`, borderRadius: 6, padding: '4px 8px', fontSize: 12, fontFamily: 'inherit', cursor: 'pointer' }}>
-                            {ROLES.map(r => <option key={r} value={r}>{ROLE_CONFIG[r].label}</option>)}
+                            {ROLES.map(r => <option key={r} value={r} style={{ background: C.inputBg, color: C.text }}>{ROLE_CONFIG[r].label}</option>)}
                           </select>
                         ) : (
                           <button onClick={() => setEditingRole(u.username)} title="Modifier le rôle"
