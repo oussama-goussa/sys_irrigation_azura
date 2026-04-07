@@ -46,7 +46,7 @@ function ConfirmModal({ user, onConfirm, onCancel, C, dark }) {
             <div style={{ color: C.textMuted, fontSize: 12, marginTop: 2 }}>Cette action est réversible</div>
           </div>
         </div>
-        <p style={{ color: C.textMuted, fontSize: 13, marginBottom: 24, lineHeight: 1.6 }}>
+        <p style={{ color: C.textMuted, fontSize: 12, marginBottom: 24, lineHeight: 1.6 }}>
           Voulez-vous vraiment <strong style={{ color: user.actif ? C.red : C.green }}>
             {user.actif ? 'désactiver' : 'activer'}
           </strong> le compte de <strong style={{ color: C.text }}>{user.username}</strong> ?
@@ -160,7 +160,7 @@ function AuditPanel({ token, filterUser, C, dark, onClose }) {
             <History size={18} color={C.green} strokeWidth={2} />
             <div style={{ color: C.text, fontWeight: 800, fontSize: 15 }}>
               Historique des actions
-              {filterUser && <span style={{ color: C.textMuted, fontWeight: 400, fontSize: 13 }}> — {filterUser}</span>}
+              {filterUser && <span style={{ color: C.textMuted, fontWeight: 400, fontSize: 12 }}> — {filterUser}</span>}
             </div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textDim }}>
@@ -171,7 +171,7 @@ function AuditPanel({ token, filterUser, C, dark, onClose }) {
         {/* Logs */}
         <div style={{ overflowY: 'auto', flex: 1 }}>
           {loading ? <Spinner C={C} /> : logs.length === 0 ? (
-            <div style={{ textAlign: 'center', color: C.textDim, padding: 40, fontSize: 13 }}>
+            <div style={{ textAlign: 'center', color: C.textDim, padding: 40, fontSize: 12 }}>
               Aucune action enregistrée
             </div>
           ) : (
@@ -249,7 +249,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
         <CircleSlash size={28} color={C.red} strokeWidth={1.8} />
       </div>
       <div style={{ color: C.red, fontSize: 18, fontWeight: 800 }}>Accès refusé</div>
-      <div style={{ color: C.textDim, fontSize: 14 }}>Rôle Administrateur requis</div>
+      <div style={{ color: C.textDim, fontSize: 12 }}>Rôle Administrateur requis</div>
     </div>
   )
 
@@ -330,7 +330,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
             <Users size={22} color={C.green} strokeWidth={2} />
             Gestion des utilisateurs
           </h1>
-          <p style={{ color: C.textMuted, fontSize: 13 }}>Contrôle d'accès basé sur les rôles</p>
+          <p style={{ color: C.textMuted, fontSize: 12 }}>Contrôle d'accès basé sur les rôles</p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Btn onClick={() => load(true)} variant="ghost" C={C} icon={RefreshCw} style={{ opacity: refreshing ? 0.5 : 1 }}>
@@ -386,7 +386,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
           <Search size={SZ.md} strokeWidth={1.8} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: C.textDim, pointerEvents: 'none' }} />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Rechercher par nom ou identifiant…"
-            style={{ width: '100%', padding: '9px 14px 9px 36px', borderRadius: 8, border: `1.5px solid ${C.border}`, background: C.inputBg, color: C.text, fontSize: 13, outline: 'none' }} />
+            style={{ width: '100%', padding: '9px 14px 9px 36px', borderRadius: 8, border: `1.5px solid ${C.border}`, background: C.inputBg, color: C.text, fontSize: 12, outline: 'none' }} />
           {search && (
             <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: C.textDim }}>
               <X size={SZ.sm} strokeWidth={2} />
@@ -415,7 +415,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
           {filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 56 }}>
               <Search size={32} color={C.textDim} strokeWidth={1.2} style={{ margin: '0 auto 12px', display: 'block' }} />
-              <div style={{ color: C.textDim, fontSize: 14 }}>Aucun utilisateur trouvé</div>
+              <div style={{ color: C.textDim, fontSize: 12 }}>Aucun utilisateur trouvé</div>
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
@@ -441,13 +441,13 @@ export default function UsersPage({ token, userRole, C, dark }) {
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
                       {/* Username */}
-                      <td style={{ padding: '13px 14px', fontWeight: 800, color: C.text, fontSize: 13, fontFamily: 'inherit' }}>
+                      <td style={{ padding: '13px 14px', fontWeight: 800, color: C.text, fontSize: 12, fontFamily: 'inherit' }}>
                         {u.username}
                       </td>
 
                       {/* Nom + email */}
                       <td style={{ padding: '13px 14px', fontFamily: 'inherit' }}>
-                        <div style={{ color: C.textMuted, fontSize: 13 }}>{u.nom}</div>
+                        <div style={{ color: C.textMuted, fontSize: 12 }}>{u.nom}</div>
                         {u.email && (
                           <div style={{ color: C.textDim, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
                             <Mail size={10} strokeWidth={2} />
