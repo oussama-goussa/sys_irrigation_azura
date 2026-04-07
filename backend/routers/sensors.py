@@ -340,6 +340,10 @@ async def ingest_sensor_data(
             return {"status": "skipped", "reason": "empty_record"}
 
         # ── 5. Insérer sensor_readings ────────────────────────
+        # Vérification flow : si flow = 0 ou None → EC/pH invalides
+        flow_value = safe_float(sensor_data.get("Flow"))
+        no_flow    = flow_value is None or flow_value == 0.0
+
         sensor_reading = SensorReading(
             device_id        = device.id,
             timestamp        = timestamp,
@@ -357,8 +361,8 @@ async def ingest_sensor_data(
             outside_humidity = safe_float(weather_data.get("Outside_Humidity")),
 
             # Solution nutritive
-            ec_actual        = safe_float(sensor_data.get("EcAct")),
-            ph_actual        = safe_float(sensor_data.get("PhAct")),
+            ec_actual        = 0.0 if no_flow else safe_float(sensor_data.get("EcAct")),
+            ph_actual        = 0.0 if no_flow else safe_float(sensor_data.get("PhAct")),
             ec_prog          = safe_float(sensor_data.get("EcProg")),
             ph_prog          = safe_float(sensor_data.get("PhProg")),
             ec_pre_process   = safe_float(sensor_data.get("ECPreProcess")),
@@ -367,7 +371,7 @@ async def ingest_sensor_data(
             ec_ph_status     = sensor_data.get("ECPHSTATUS"),
 
             # Débit
-            flow             = safe_float(sensor_data.get("Flow")),
+            flow             = flow_value,
             flow_nominal     = safe_float(sensor_data.get("Flownom")),
 
             # Météo
