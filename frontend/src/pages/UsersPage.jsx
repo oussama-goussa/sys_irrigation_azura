@@ -359,7 +359,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
       {/* Create form */}
       {showCreate && (
         <Card C={C} style={{ marginBottom: 22 }}>
-          <h3 style={{ color: C.text, fontSize: 15, fontWeight: 800, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h3 style={{ color: C.text, fontSize: 12, fontWeight: 800, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
             <UserPlus size={SZ.md} color={C.blue} strokeWidth={2} />
             Créer un utilisateur
           </h3>
