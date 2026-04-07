@@ -793,12 +793,12 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
         <button onClick={loadLive} style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          padding: '8px 14px', background: C.toggleBg,
+          padding: '8px 14px', background: C.green,
           border: `1.5px solid ${C.border}`, borderRadius: 8,
           color: C.textMuted, fontSize: 12, fontWeight: 700,
           cursor: 'pointer', fontFamily: 'inherit',
         }}>
-          <RefreshCw size={13} strokeWidth={2} /> Actualiser
+          <RefreshCw size={13} strokeWidth={4} /> Actualiser
         </button>
       </div>
 

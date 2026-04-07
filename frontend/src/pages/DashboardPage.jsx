@@ -396,7 +396,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '8px 16px',
-              background: 'transparent',
+              background: C.green,
               border: `1px solid ${dark ? '#1c2e22' : '#c0d8c8'}`,
               borderRadius: 8,
               color: C.textMuted, fontSize: 12, fontWeight: 600,
@@ -404,7 +404,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
             }}
           >
             <RefreshCw
-              size={12} strokeWidth={2}
+              size={13} strokeWidth={4}
               style={{
                 transition: 'transform 0.5s',
                 transform: refreshing ? 'rotate(360deg)' : 'rotate(0deg)',
