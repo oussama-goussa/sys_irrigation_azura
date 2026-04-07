@@ -396,10 +396,10 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '8px 16px',
-              background: C.toggleBg,
+              background: C.textMuted,
               border: `1px solid ${dark ? '#1c2e22' : '#c0d8c8'}`,
               borderRadius: 8,
-              color: C.textMuted, fontSize: 12, fontWeight: 600,
+              color: C.toggleBg, fontSize: 12, fontWeight: 700,
               cursor: 'pointer', fontFamily: 'inherit',
             }}
           >

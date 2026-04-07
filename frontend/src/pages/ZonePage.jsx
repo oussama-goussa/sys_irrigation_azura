@@ -798,7 +798,14 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
           color: C.toggleBg, fontSize: 12, fontWeight: 700,
           cursor: 'pointer', fontFamily: 'inherit',
         }}>
-          <RefreshCw size={13} strokeWidth={4} /> Actualiser
+          <RefreshCw 
+            size={13} strokeWidth={3} 
+            style={{
+              transition: 'transform 0.5s',
+              transform: refreshing ? 'rotate(360deg)' : 'rotate(0deg)',
+            }}
+          />
+          Actualiser
         </button>
       </div>
 
