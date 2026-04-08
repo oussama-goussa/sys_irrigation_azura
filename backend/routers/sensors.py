@@ -567,8 +567,10 @@ async def ingest_sensor_data(
         db.rollback()
         logger.info("Doublon détecté via IntegrityError")
         return {
-            "status" : "duplicate",
-            "message": "Données déjà présentes en base",
+            "status"    : "duplicate",
+            "message"   : "Données déjà présentes en base",
+            "device"    : device.to_dict(),   # device est déjà résolu avant le try
+            "timestamp" : str(timestamp),
         }
 
     except ValueError as e:
