@@ -51,6 +51,7 @@ services:
       - ./backend:/app
     ports:
       - "8000:8000"
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload --timeout-keep-alive 120
     depends_on:
       db:
         condition: service_healthy
