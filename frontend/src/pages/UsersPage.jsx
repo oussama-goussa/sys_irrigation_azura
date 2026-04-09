@@ -365,7 +365,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
   useEffect(() => {
     if (!canAccess) { setLoading(false); return }
     load()
-    getFarms(token).then(setFarms).catch(() => setFarms([]))   // ← ajouter
+    getFarms(token).then(data => setFarms(data.map(f => f.farm_name))).catch(() => setFarms([]))   // ← ajouter
   }, [])
 
   useEffect(() => {
