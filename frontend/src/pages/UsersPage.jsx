@@ -368,7 +368,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
             <UserPlus size={SZ.md} color={C.blue} strokeWidth={2} />
             Créer un utilisateur
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 20px', overflow: 'visible' }}>
             <Input label="Identifiant"   value={newUser.username} onChange={setNu('username')} C={C} placeholder="ex: jdupont" />
             <Input label="Mot de passe"  value={newUser.password} onChange={setNu('password')} type="password" C={C} placeholder="Min. 8 caractères" />
             <Input label="Nom complet"   value={newUser.nom}      onChange={setNu('nom')}      C={C} placeholder="ex: Jean Dupont" />
@@ -400,7 +400,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                   <div style={{
                     position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
                     background: C.card, border: `1.5px solid ${C.border}`,
-                    borderRadius: 8, zIndex: 50, boxShadow: `0 4px 20px ${C.shadow}`,
+                    borderRadius: 8, zIndex: 100, boxShadow: `0 4px 20px ${C.shadow}`,
                     overflow: 'hidden',
                   }}>
                     {ROLE_OPTIONS.map(r => (
