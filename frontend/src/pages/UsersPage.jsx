@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import { ROLES, ROLE_OPTIONS, ROLE_CONFIG } from '../theme.js'
 import { Card, Btn, Input, Badge, Spinner, StatCard, Alert, SZ } from '../components/ui.jsx'
-import { getUsers, createUser, editUser, changeRole, toggleUser, getAuditLogs, exportCSV } from '../api/client.js'
+import { getUsers, createUser, editUser, changeRole, toggleUser, getAuditLogs, exportCSV, getFarms } from '../api/client.js'
 
 // ── Action label map ──────────────────────────────────────────
 const ACTION_LABELS = {
@@ -228,6 +228,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
   const [filterRole, setFilterRole] = useState('tous')
   const [newUser, setNewUser]       = useState({ username: '', password: '', role: 'operateur', nom: '', email: '', farm_names: [] })
   const [exporting, setExporting]   = useState(false)
+  const [farms, setFarms] = useState([])
 
   const canAccess = userRole === 'admin'
 
@@ -241,6 +242,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
   useEffect(() => {
     if (!canAccess) { setLoading(false); return }
     load()
+    getFarms(token).then(setFarms).catch(() => setFarms([]))   // ← ajouter
   }, [])
 
   if (!canAccess) return (
