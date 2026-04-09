@@ -707,7 +707,10 @@ export default function UsersPage({ token, userRole, C, dark }) {
                           <div style={{ position: 'relative', minWidth: 130 }}>
                             {/* Trigger */}
                             <div
-                              onClick={e => { e.stopPropagation(); setRoleDropUser(v => v === u.username ? null : u.username) }}
+                              onClick={e => { 
+                                e.stopPropagation() 
+                                setRoleDropUser(v => v === u.username ? null : u.username) 
+                              }}
                               style={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                                 padding: '0 8px', height: 32,
@@ -727,16 +730,20 @@ export default function UsersPage({ token, userRole, C, dark }) {
 
                             {/* Dropdown */}
                             {roleDropUser === u.username && (
-                              <div style={{
-                                position: 'absolute', top: 'calc(100% + 4px)', left: 0,
-                                background: C.card, border: `1.5px solid ${C.border}`,
-                                borderRadius: 8, zIndex: 200, boxShadow: `0 4px 20px ${C.shadow}`,
-                                minWidth: 140, overflow: 'hidden',
-                              }}>
+                              <div
+                                onClick={e => e.stopPropagation()}  // ← ajouter ici
+                                style={{
+                                  position: 'absolute', top: 'calc(100% + 4px)', left: 0,
+                                  background: C.card, border: `1.5px solid ${C.border}`,
+                                  borderRadius: 8, zIndex: 200, boxShadow: `0 4px 20px ${C.shadow}`,
+                                  minWidth: 140, overflow: 'hidden',
+                                }}
+                              >
                                 {ROLES.map(r => (
                                   <div
                                     key={r}
-                                    onClick={() => {
+                                    onClick={e => {
+                                      e.stopPropagation()           // ← ajouter ici aussi
                                       handleRoleChange(u.username, r)
                                       setRoleDropUser(null)
                                       setEditingRole(null)
