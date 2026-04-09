@@ -363,7 +363,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
 
       {/* Create form */}
       {showCreate && (
-        <Card C={C} style={{ marginBottom: 22 }}>
+        <Card C={C} style={{ marginBottom: 22, overflow: 'visible' }}>
           <h3 style={{ color: C.text, fontSize: 12, fontWeight: 800, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
             <UserPlus size={SZ.md} color={C.blue} strokeWidth={2} />
             Créer un utilisateur
@@ -389,7 +389,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                     transition: 'border-color 0.15s',
                   }}
                 >
-                  <span style={{ color: C.text, fontSize: 13 }}>
+                  <span style={{ color: C.text, fontSize: 12 }}>
                     {ROLE_CONFIG[newUser.role]?.label || 'Sélectionner…'}
                   </span>
                   <span style={{ color: C.textDim, display: 'flex', alignItems: 'center' }}>
@@ -401,7 +401,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                     position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
                     background: C.card, border: `1.5px solid ${C.border}`,
                     borderRadius: 8, zIndex: 100, boxShadow: `0 4px 20px ${C.shadow}`,
-                    overflow: 'hidden',
+                    overflow: 'visible',
                   }}>
                     {ROLE_OPTIONS.map(r => (
                       <div
@@ -412,7 +412,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                           setRoleDropOpen(false)
                         }}
                         style={{
-                          padding: '9px 14px', fontSize: 13, cursor: 'pointer',
+                          padding: '9px 14px', fontSize: 12, cursor: 'pointer',
                           color: newUser.role === r.value ? C.green : C.textMuted,
                           background: newUser.role === r.value ? `${C.green}12` : 'transparent',
                           transition: 'background 0.1s',
@@ -551,7 +551,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                         transition: 'border-color 0.15s',
                       }}
                     >
-                      <span style={{ color: newUser.farm_names[0] ? C.text : C.textDim, fontSize: 13 }}>
+                      <span style={{ color: newUser.farm_names[0] ? C.text : C.textDim, fontSize: 12 }}>
                         {newUser.farm_names[0] || 'Sélectionner une ferme…'}
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -563,7 +563,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                             }}
                             style={{ cursor: 'pointer', color: C.textDim, display: 'flex', alignItems: 'center' }}
                           >
-                            <X size={13} strokeWidth={2}/>
+                            <X size={12} strokeWidth={2}/>
                           </span>
                         )}
                         <span style={{ color: C.textDim, display: 'flex', alignItems: 'center' }}>
@@ -579,7 +579,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                         maxHeight: 180, overflowY: 'auto',
                       }}>
                         {farms.length === 0 ? (
-                          <div style={{ padding: '10px 14px', color: C.textDim, fontSize: 13 }}>
+                          <div style={{ padding: '10px 14px', color: C.textDim, fontSize: 12 }}>
                             Aucune ferme disponible
                           </div>
                         ) : farms.map(f => (
@@ -590,7 +590,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                               setDropOpen(false)
                             }}
                             style={{
-                              padding: '9px 14px', fontSize: 13, cursor: 'pointer',
+                              padding: '9px 14px', fontSize: 12, cursor: 'pointer',
                               color: newUser.farm_names[0] === f ? C.green : C.textMuted,
                               background: newUser.farm_names[0] === f ? `${C.green}12` : 'transparent',
                               transition: 'background 0.1s',
