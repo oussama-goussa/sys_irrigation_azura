@@ -695,17 +695,66 @@ export default function UsersPage({ token, userRole, C, dark }) {
                       </td>
 
                       {/* Role */}
-                      <td style={{ padding: '13px 14px', fontFamily: 'inherit' }}>
+                      <td style={{ padding: '13px 14px', fontFamily: 'inherit', position: 'relative' }}>
                         {editingRole === u.username ? (
-                          <select defaultValue={u.role}
-                            onChange={e => handleRoleChange(u.username, e.target.value)}
-                            onBlur={() => setEditingRole(null)} autoFocus
-                            style={{ background: C.inputBg, color: C.text, border: `1.5px solid ${C.green}`, borderRadius: 6, padding: '4px 8px', fontSize: 12, fontFamily: 'inherit', cursor: 'pointer' }}>
-                            {ROLES.map(r => <option key={r} value={r} style={{ background: C.inputBg, color: C.text }}>{ROLE_CONFIG[r].label}</option>)}
-                          </select>
+                          <div style={{ position: 'relative', minWidth: 130 }}>
+                            {/* Trigger */}
+                            <div
+                              onClick={e => { e.stopPropagation(); setRoleDropUser(v => v === u.username ? null : u.username) }}
+                              style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                padding: '0 8px', height: 32,
+                                border: `1.5px solid ${C.green}`,
+                                borderRadius: 7, background: C.inputBg, cursor: 'pointer',
+                                transition: 'border-color 0.15s', gap: 6,
+                              }}
+                            >
+                              <Badge role={u.role} dark={dark} />
+                              <span style={{ color: C.textDim, display: 'flex', alignItems: 'center' }}>
+                                {roleDropUser === u.username
+                                  ? <ChevronUp size={13} strokeWidth={2}/>
+                                  : <ChevronDown size={13} strokeWidth={2}/>
+                                }
+                              </span>
+                            </div>
+
+                            {/* Dropdown */}
+                            {roleDropUser === u.username && (
+                              <div style={{
+                                position: 'absolute', top: 'calc(100% + 4px)', left: 0,
+                                background: C.card, border: `1.5px solid ${C.border}`,
+                                borderRadius: 8, zIndex: 200, boxShadow: `0 4px 20px ${C.shadow}`,
+                                minWidth: 140, overflow: 'hidden',
+                              }}>
+                                {ROLES.map(r => (
+                                  <div
+                                    key={r}
+                                    onClick={() => {
+                                      handleRoleChange(u.username, r)
+                                      setRoleDropUser(null)
+                                      setEditingRole(null)
+                                    }}
+                                    style={{
+                                      padding: '8px 12px', fontSize: 12, cursor: 'pointer',
+                                      background: u.role === r ? `${C.green}12` : 'transparent',
+                                      transition: 'background 0.1s',
+                                      display: 'flex', alignItems: 'center',
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
+                                    onMouseLeave={e => e.currentTarget.style.background = u.role === r ? `${C.green}12` : 'transparent'}
+                                  >
+                                    <Badge role={r} dark={dark} />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         ) : (
-                          <button onClick={() => setEditingRole(u.username)} title="Modifier le rôle"
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}>
+                          <button
+                            onClick={() => { setEditingRole(u.username); setRoleDropUser(null) }}
+                            title="Modifier le rôle"
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}
+                          >
                             <Badge role={u.role} dark={dark} />
                             <Pencil size={11} color={C.textDim} strokeWidth={2} />
                           </button>
