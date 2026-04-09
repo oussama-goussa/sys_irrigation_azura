@@ -51,9 +51,10 @@ class CreateUserRequest(BaseModel):
     farm_names : Optional[List[str]] = []
 
 class UpdateUserRequest(BaseModel):
-    nom      : Optional[str] = None
-    email    : Optional[str] = None
-    password : Optional[str] = None
+    nom        : Optional[str] = None
+    email      : Optional[str] = None
+    password   : Optional[str] = None
+    farm_names : Optional[List[str]] = None
 
 class UpdateRoleRequest(BaseModel):
     new_role: str
@@ -154,7 +155,7 @@ def edit_user(
     if request.password:
         valider_mot_de_passe(request.password)
 
-    user = update_user(db, username, nom=request.nom, email=request.email, password=request.password)
+    user = update_user(db, username, nom=request.nom, email=request.email, password=request.password, farm_names=request.farm_names)
     if not user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
 

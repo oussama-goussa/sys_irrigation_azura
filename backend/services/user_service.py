@@ -58,7 +58,8 @@ def create_user(
 
 def update_user(
     db: Session, username: str,
-    nom: str = None, email: str = None, password: str = None
+    nom: str = None, email: str = None, password: str = None,
+    farm_names=None
 ) -> User | None:
     user = get_user(db, username)
     if not user:
@@ -69,6 +70,8 @@ def update_user(
         user.email = email
     if password is not None:
         user.password = hash_password(password)
+    if farm_names is not None:
+        user.farm_names = farm_names
     db.commit()
     db.refresh(user)
     logger.info(f"User mis à jour : {username}")

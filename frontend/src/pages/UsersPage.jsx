@@ -67,12 +67,29 @@ function ConfirmModal({ user, onConfirm, onCancel, C, dark }) {
 }
 
 // ── Edit modal ────────────────────────────────────────────────
-function EditModal({ user, onSave, onClose, C, dark }) {
-  const [nom, setNom]       = useState(user.nom)
-  const [email, setEmail]   = useState(user.email || '')
-  const [pwd, setPwd]       = useState('')
-  const [saving, setSaving] = useState(false)
-  const [error, setError]   = useState('')
+function EditModal({ user, farms, onSave, onClose, C, dark }) {
+  const [nom, setNom]             = useState(user.nom)
+  const [email, setEmail]         = useState(user.email || '')
+  const [pwd, setPwd]             = useState('')
+  const [farmNames, setFarmNames] = useState(user.farm_names || [])
+  const [dropOpen, setDropOpen]   = useState(false)
+  const [saving, setSaving]       = useState(false)
+  const [error, setError]         = useState('')
+
+  const isAdmin = user.role === 'admin'
+  const farmList = farms.map(f => f.farm_name)
+
+  const toggleFarm = (f) => {
+    if (user.role === 'operateur' || user.role === 'auditeur') {
+      // une seule ferme autorisée
+      setFarmNames([f])
+      setDropOpen(false)
+    } else {
+      setFarmNames(prev =>
+        prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f]
+      )
+    }
+  }
 
   const handleSave = async () => {
     setSaving(true)
@@ -82,6 +99,7 @@ function EditModal({ user, onSave, onClose, C, dark }) {
       if (nom !== user.nom) payload.nom = nom
       if (email !== (user.email || '')) payload.email = email
       if (pwd) payload.password = pwd
+      payload.farm_names = isAdmin ? [] : farmNames
       await onSave(user.username, payload)
       onClose()
     } catch (e) {
@@ -99,7 +117,7 @@ function EditModal({ user, onSave, onClose, C, dark }) {
     }}>
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: 16, padding: '28px 32px', width: 460,
+        borderRadius: 16, padding: '28px 32px', width: 480,
         boxShadow: `0 8px 40px rgba(0,0,0,0.5)`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
@@ -114,9 +132,109 @@ function EditModal({ user, onSave, onClose, C, dark }) {
           </button>
         </div>
 
-        <Input label="Nom complet"   value={nom}   onChange={setNom}   C={C} />
-        <Input label="Email"         value={email} onChange={setEmail} C={C} placeholder="ex: user@azura.ma" icon={Mail} />
+        <Input label="Nom complet" value={nom} onChange={setNom} C={C} />
+        <Input label="Email" value={email} onChange={setEmail} C={C} placeholder="ex: user@azura.ma" icon={Mail} />
         <Input label="Nouveau mot de passe (laisser vide pour ne pas changer)" value={pwd} onChange={setPwd} type="password" C={C} placeholder="Laisser vide = inchangé" />
+
+        {/* Fermes affectées — masqué pour admin */}
+        {!isAdmin && (
+          <div style={{ marginBottom: 14 }}>
+            <label style={{
+              display: 'block', color: C.textMuted,
+              fontSize: 11, fontWeight: 700,
+              textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6,
+            }}>
+              Fermes affectées
+              {(user.role === 'agronome') && (
+                <span style={{ color: C.textDim, fontWeight: 400, marginLeft: 6 }}>(plusieurs possibles)</span>
+              )}
+            </label>
+
+            <div style={{ position: 'relative' }}>
+              {/* Trigger */}
+              <div
+                onClick={() => setDropOpen(v => !v)}
+                style={{
+                  display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6,
+                  minHeight: 38, padding: '4px 36px 4px 8px',
+                  border: `1.5px solid ${dropOpen ? C.green : C.border}`,
+                  borderRadius: 8, background: C.inputBg, cursor: 'pointer',
+                  transition: 'border-color 0.15s',
+                }}
+              >
+                {farmNames.length === 0 && (
+                  <span style={{ color: C.textDim, fontSize: 12 }}>Sélectionner une ferme…</span>
+                )}
+                {farmNames.map(f => (
+                  <span key={f} style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    background: `${C.green}20`, color: C.green,
+                    border: `1px solid ${C.green}40`,
+                    borderRadius: 5, padding: '2px 6px', fontSize: 12, fontWeight: 600,
+                  }}>
+                    {f}
+                    <span
+                      onClick={e => { e.stopPropagation(); setFarmNames(prev => prev.filter(x => x !== f)) }}
+                      style={{ cursor: 'pointer', opacity: 0.7, fontSize: 13, lineHeight: 1 }}
+                    >×</span>
+                  </span>
+                ))}
+                <ChevronDown size={13} strokeWidth={2} style={{
+                  position: 'absolute', right: 10, top: '50%',
+                  transform: `translateY(-50%) rotate(${dropOpen ? 180 : 0}deg)`,
+                  color: C.textDim, transition: 'transform 0.2s', pointerEvents: 'none',
+                }} />
+              </div>
+
+              {/* Dropdown */}
+              {dropOpen && (
+                <div style={{
+                  position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+                  background: C.card, border: `1.5px solid ${C.border}`,
+                  borderRadius: 8, zIndex: 200, boxShadow: `0 4px 20px ${C.shadow}`,
+                  overflow: 'hidden',
+                }}>
+                  {farmList.length === 0 ? (
+                    <div style={{ padding: '10px 14px', color: C.textDim, fontSize: 12 }}>
+                      Aucune ferme disponible
+                    </div>
+                  ) : farmList.map(f => {
+                    const selected = farmNames.includes(f)
+                    return (
+                      <div
+                        key={f}
+                        onClick={() => toggleFarm(f)}
+                        style={{
+                          padding: '9px 14px', fontSize: 12, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          background: selected ? `${C.green}12` : 'transparent',
+                          color: selected ? C.green : C.textMuted,
+                          transition: 'background 0.1s',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = selected ? `${C.green}18` : C.tableHover}
+                        onMouseLeave={e => e.currentTarget.style.background = selected ? `${C.green}12` : 'transparent'}
+                      >
+                        <span>{f}</span>
+                        {selected && <Check size={13} strokeWidth={2.5} />}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {isAdmin && (
+          <div style={{
+            marginBottom: 14, padding: '10px 14px',
+            background: dark ? 'rgba(177,151,252,0.08)' : 'rgba(103,65,217,0.06)',
+            border: `1px solid ${C.purple}30`,
+            borderRadius: 8, fontSize: 12, color: C.purple,
+          }}>
+            Admin — accès à toutes les fermes
+          </div>
+        )}
 
         {error && <Alert message={error} C={C} dark={dark} />}
 
@@ -333,7 +451,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
     <div>
       {/* Modals */}
       {confirmUser && <ConfirmModal user={confirmUser} onConfirm={handleToggleConfirm} onCancel={() => setConfirmUser(null)} C={C} dark={dark} />}
-      {editingUser && <EditModal user={editingUser} onSave={handleEdit} onClose={() => setEditingUser(null)} C={C} dark={dark} />}
+      {editingUser && <EditModal user={editingUser} farms={farms} onSave={handleEdit} onClose={() => setEditingUser(null)} C={C} dark={dark} />}
       {showLogs && <AuditPanel token={token} filterUser={logsUser} C={C} dark={dark} onClose={() => { setShowLogs(false); setLogsUser(null) }} />}
 
       {/* Header */}
@@ -777,7 +895,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                         ) : (
 
                           <button
-                            onClick={(e) => { e.stopPropagation(); setEditingRole(u.username); setRoleDropUser(null) }}
+                            onClick={() => { setEditingRole(u.username); setRoleDropUser(null) }}
                             title="Modifier le rôle"
                             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}
                           >
