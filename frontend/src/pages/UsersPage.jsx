@@ -745,19 +745,22 @@ export default function UsersPage({ token, userRole, C, dark }) {
                                     onClick={e => {
                                       e.stopPropagation()           // ← ajouter ici aussi
                                       handleRoleChange(u.username, r)
-                                      setRoleDropUser(null)
-                                      setEditingRole(null)
+                                      setRoleDropUser(u.username)
+                                      setEditingRole(u.username)
                                     }}
+                                    title="Modifier le rôle"
                                     style={{
                                       padding: '8px 12px', fontSize: 12, cursor: 'pointer',
                                       background: u.role === r ? `${C.green}12` : 'transparent',
                                       transition: 'background 0.1s',
                                       display: 'flex', alignItems: 'center',
                                     }}
+                                    
                                     onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
                                     onMouseLeave={e => e.currentTarget.style.background = u.role === r ? `${C.green}12` : 'transparent'}
                                   >
                                     <Badge role={r} dark={dark} />
+                                    <Pencil size={11} color={C.textDim} strokeWidth={2} />
                                   </div>
                                 ))}
                               </div>
