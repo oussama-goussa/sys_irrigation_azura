@@ -7,8 +7,9 @@ import {
   Users, UserPlus, Search, X, Check, ShieldCheck,
   UserCheck, UserX, Pencil, CircleSlash, CircleCheck,
   RefreshCw, Download, History, Mail, Phone,
-  AlertTriangle, Clock, Save,
+  AlertTriangle, Clock, Save, ChevronDown, ChevronUp,  // ← ajouter
 } from 'lucide-react'
+
 import { ROLES, ROLE_OPTIONS, ROLE_CONFIG } from '../theme.js'
 import { Card, Btn, Input, Badge, Spinner, StatCard, Alert, SZ } from '../components/ui.jsx'
 import { getUsers, createUser, editUser, changeRole, toggleUser, getAuditLogs, exportCSV, getFarms } from '../api/client.js'
@@ -393,10 +394,11 @@ export default function UsersPage({ token, userRole, C, dark }) {
                       onClick={() => setDropOpen(v => !v)}
                       style={{
                         display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6,
-                        padding: '6px 36px 6px 8px', minHeight: 40,
+                        padding: '0 36px 0 8px', height: 38,          // ← height fixe
                         border: `1.5px solid ${dropOpen ? C.green : C.border}`,
                         borderRadius: 8, background: C.inputBg, cursor: 'pointer',
                         position: 'relative', transition: 'border-color 0.15s',
+                        overflowX: 'auto', overflowY: 'hidden',        // ← scroll horizontal si trop de tags
                       }}
                     >
                       {newUser.farm_names.map(f => (
@@ -425,7 +427,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                           Sélectionner des fermes…
                         </span>
                       )}
-
+                      
                       <div style={{
                         position: 'absolute', right: 6, top: '50%',
                         transform: 'translateY(-50%)',
@@ -437,11 +439,16 @@ export default function UsersPage({ token, userRole, C, dark }) {
                               e.stopPropagation()
                               setNewUser(prev => ({ ...prev, farm_names: [] }))
                             }}
-                            style={{ cursor: 'pointer', color: C.textDim, fontSize: 16, lineHeight: 1 }}
-                          >×</span>
+                            style={{ cursor: 'pointer', color: C.textDim, display: 'flex', alignItems: 'center' }}
+                          >
+                            <X size={13} strokeWidth={2} />
+                          </span>
                         )}
-                        <span style={{ color: C.textDim, fontSize: 11 }}>
-                          {dropOpen ? '▲' : '▼'}
+                        <span style={{ color: C.textDim, display: 'flex', alignItems: 'center' }}>
+                          {dropOpen
+                            ? <ChevronUp size={14} strokeWidth={2} />
+                            : <ChevronDown size={14} strokeWidth={2} />
+                          }
                         </span>
                       </div>
                     </div>
