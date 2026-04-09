@@ -663,7 +663,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
               <div style={{ color: C.textDim, fontSize: 12 }}>Aucun utilisateur trouvé</div>
             </div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
+            <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit' }}>
                 <thead>
                   <tr>
@@ -731,36 +731,47 @@ export default function UsersPage({ token, userRole, C, dark }) {
                             {/* Dropdown */}
                             {roleDropUser === u.username && (
                               <div
-                                onClick={e => e.stopPropagation()}  // ← ajouter ici
+                                onClick={e => e.stopPropagation()}
                                 style={{
-                                  position: 'absolute', top: 'calc(100% + 4px)', left: 0,
-                                  background: C.card, border: `1.5px solid ${C.border}`,
-                                  borderRadius: 8, zIndex: 200, boxShadow: `0 4px 20px ${C.shadow}`,
-                                  minWidth: 140, overflow: 'hidden',
+                                  position: 'fixed',                    // ← fixed au lieu de absolute
+                                  background: C.card,
+                                  border: `1.5px solid ${C.border}`,
+                                  borderRadius: 8,
+                                  zIndex: 9999,                         // ← très haut
+                                  boxShadow: `0 4px 20px ${C.shadow}`,
+                                  minWidth: 140,
+                                  overflow: 'hidden',
+                                }}
+                                ref={el => {
+                                  if (el) {
+                                    const trigger = el.previousSibling
+                                    if (trigger) {
+                                      const rect = trigger.getBoundingClientRect()
+                                      el.style.top = `${rect.bottom + 4}px`
+                                      el.style.left = `${rect.left}px`
+                                    }
+                                  }
                                 }}
                               >
                                 {ROLES.map(r => (
                                   <div
                                     key={r}
                                     onClick={e => {
-                                      e.stopPropagation()           // ← ajouter ici aussi
+                                      e.stopPropagation()
                                       handleRoleChange(u.username, r)
-                                      setRoleDropUser(u.username)
-                                      setEditingRole(u.username)
+                                      setRoleDropUser(null)
+                                      setEditingRole(null)
                                     }}
-                                    title="Modifier le rôle"
                                     style={{
                                       padding: '8px 12px', fontSize: 12, cursor: 'pointer',
                                       background: u.role === r ? `${C.green}12` : 'transparent',
                                       transition: 'background 0.1s',
                                       display: 'flex', alignItems: 'center',
                                     }}
-                                    
                                     onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
                                     onMouseLeave={e => e.currentTarget.style.background = u.role === r ? `${C.green}12` : 'transparent'}
                                   >
                                     <Badge role={r} dark={dark} />
-                                    <Pencil size={11} color={C.textDim} strokeWidth={2} />
                                   </div>
                                 ))}
                               </div>
