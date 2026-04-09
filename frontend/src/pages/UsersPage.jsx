@@ -231,6 +231,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
   const [exporting, setExporting]   = useState(false)
   const [farms, setFarms] = useState([])
   const [dropOpen, setDropOpen] = useState(false)
+  const [roleDropOpen, setRoleDropOpen] = useState(false)
 
   const canAccess = userRole === 'admin'
 
@@ -372,7 +373,60 @@ export default function UsersPage({ token, userRole, C, dark }) {
             <Input label="Mot de passe"  value={newUser.password} onChange={setNu('password')} type="password" C={C} placeholder="Min. 8 caractères" />
             <Input label="Nom complet"   value={newUser.nom}      onChange={setNu('nom')}      C={C} placeholder="ex: Jean Dupont" />
             <Input label="Email"         value={newUser.email}    onChange={setNu('email')}    C={C} placeholder="ex: j.dupont@azura.ma" icon={Mail} />
-            <Input label="Rôle"          value={newUser.role}     onChange={setNu('role')}     options={ROLE_OPTIONS} C={C} dark={dark} />
+            <div style={{ marginBottom: 14 }}>
+              <label style={{
+                display: 'block', color: C.textMuted, fontSize: 11, fontWeight: 700,
+                textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6,
+              }}>Rôle</label>
+              <div style={{ position: 'relative' }}>
+                <div
+                  onClick={() => setRoleDropOpen(v => !v)}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '0 10px', height: 38,
+                    border: `1.5px solid ${roleDropOpen ? C.green : C.border}`,
+                    borderRadius: 8, background: C.inputBg, cursor: 'pointer',
+                    transition: 'border-color 0.15s',
+                  }}
+                >
+                  <span style={{ color: C.text, fontSize: 13 }}>
+                    {ROLE_CONFIG[newUser.role]?.label || 'Sélectionner…'}
+                  </span>
+                  <span style={{ color: C.textDim, display: 'flex', alignItems: 'center' }}>
+                    {roleDropOpen ? <ChevronUp size={14} strokeWidth={2}/> : <ChevronDown size={14} strokeWidth={2}/>}
+                  </span>
+                </div>
+                {roleDropOpen && (
+                  <div style={{
+                    position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+                    background: C.card, border: `1.5px solid ${C.border}`,
+                    borderRadius: 8, zIndex: 50, boxShadow: `0 4px 20px ${C.shadow}`,
+                    overflow: 'hidden',
+                  }}>
+                    {ROLE_OPTIONS.map(r => (
+                      <div
+                        key={r.value}
+                        onClick={() => {
+                          setNu('role')(r.value)
+                          setNewUser(prev => ({ ...prev, role: r.value, farm_names: [] }))
+                          setRoleDropOpen(false)
+                        }}
+                        style={{
+                          padding: '9px 14px', fontSize: 13, cursor: 'pointer',
+                          color: newUser.role === r.value ? C.green : C.textMuted,
+                          background: newUser.role === r.value ? `${C.green}12` : 'transparent',
+                          transition: 'background 0.1s',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
+                        onMouseLeave={e => e.currentTarget.style.background = newUser.role === r.value ? `${C.green}12` : 'transparent'}
+                      >
+                        {r.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>            
             {newUser.role !== 'admin' && (
               <div style={{ marginBottom: 14 }}>
                 <label style={{
@@ -486,26 +540,70 @@ export default function UsersPage({ token, userRole, C, dark }) {
                     )}
                   </div>
                 ) : (
-                  <select
-                    value={newUser.farm_names[0] || ''}
-                    onChange={e => setNewUser(prev => ({
-                      ...prev,
-                      farm_names: e.target.value ? [e.target.value] : []
-                    }))}
-                    style={{
-                      width: '100%', padding: '9px 13px',
-                      borderRadius: 8, fontSize: 12,
-                      background: C.inputBg, color: C.text,
-                      border: `1.5px solid ${C.border}`,
-                      outline: 'none', fontFamily: 'inherit',
-                      cursor: 'pointer', appearance: 'none',
-                    }}
-                  >
-                    <option value="">— Sélectionner une ferme —</option>
-                    {farms.map(f => (
-                      <option key={f} value={f}>{f}</option>
-                    ))}
-                  </select>
+                  <div style={{ position: 'relative' }}>
+                    <div
+                      onClick={() => setDropOpen(v => !v)}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '0 10px', height: 38,
+                        border: `1.5px solid ${dropOpen ? C.green : C.border}`,
+                        borderRadius: 8, background: C.inputBg, cursor: 'pointer',
+                        transition: 'border-color 0.15s',
+                      }}
+                    >
+                      <span style={{ color: newUser.farm_names[0] ? C.text : C.textDim, fontSize: 13 }}>
+                        {newUser.farm_names[0] || 'Sélectionner une ferme…'}
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        {newUser.farm_names[0] && (
+                          <span
+                            onClick={e => {
+                              e.stopPropagation()
+                              setNewUser(prev => ({ ...prev, farm_names: [] }))
+                            }}
+                            style={{ cursor: 'pointer', color: C.textDim, display: 'flex', alignItems: 'center' }}
+                          >
+                            <X size={13} strokeWidth={2}/>
+                          </span>
+                        )}
+                        <span style={{ color: C.textDim, display: 'flex', alignItems: 'center' }}>
+                          {dropOpen ? <ChevronUp size={14} strokeWidth={2}/> : <ChevronDown size={14} strokeWidth={2}/>}
+                        </span>
+                      </div>
+                    </div>
+                    {dropOpen && (
+                      <div style={{
+                        position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+                        background: C.card, border: `1.5px solid ${C.border}`,
+                        borderRadius: 8, zIndex: 50, boxShadow: `0 4px 20px ${C.shadow}`,
+                        maxHeight: 180, overflowY: 'auto',
+                      }}>
+                        {farms.length === 0 ? (
+                          <div style={{ padding: '10px 14px', color: C.textDim, fontSize: 13 }}>
+                            Aucune ferme disponible
+                          </div>
+                        ) : farms.map(f => (
+                          <div
+                            key={f}
+                            onClick={() => {
+                              setNewUser(prev => ({ ...prev, farm_names: [f] }))
+                              setDropOpen(false)
+                            }}
+                            style={{
+                              padding: '9px 14px', fontSize: 13, cursor: 'pointer',
+                              color: newUser.farm_names[0] === f ? C.green : C.textMuted,
+                              background: newUser.farm_names[0] === f ? `${C.green}12` : 'transparent',
+                              transition: 'background 0.1s',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
+                            onMouseLeave={e => e.currentTarget.style.background = newUser.farm_names[0] === f ? `${C.green}12` : 'transparent'}
+                          >
+                            {f}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             )}
