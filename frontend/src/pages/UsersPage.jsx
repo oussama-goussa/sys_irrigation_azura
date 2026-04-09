@@ -417,17 +417,17 @@ export default function UsersPage({ token, userRole, C, dark }) {
                                 farm_names: prev.farm_names.filter(x => x !== f)
                               }))
                             }}
-                            style={{ cursor: 'pointer', opacity: 0.7, fontSize: 13, lineHeight: 1 }}
+                            style={{ cursor: 'pointer', opacity: 0.7, fontSize: 12, lineHeight: 1 }}
                           >×</span>
                         </span>
                       ))}
 
                       {newUser.farm_names.length === 0 && (
-                        <span style={{ color: C.textDim, fontSize: 13 }}>
+                        <span style={{ color: C.textDim, fontSize: 12 }}>
                           Sélectionner des fermes…
                         </span>
                       )}
-                      
+
                       <div style={{
                         position: 'absolute', right: 6, top: '50%',
                         transform: 'translateY(-50%)',
@@ -441,13 +441,13 @@ export default function UsersPage({ token, userRole, C, dark }) {
                             }}
                             style={{ cursor: 'pointer', color: C.textDim, display: 'flex', alignItems: 'center' }}
                           >
-                            <X size={13} strokeWidth={2} />
+                            <X size={12} strokeWidth={2} />
                           </span>
                         )}
                         <span style={{ color: C.textDim, display: 'flex', alignItems: 'center' }}>
                           {dropOpen
-                            ? <ChevronUp size={14} strokeWidth={2} />
-                            : <ChevronDown size={14} strokeWidth={2} />
+                            ? <ChevronUp size={12} strokeWidth={2} />
+                            : <ChevronDown size={12} strokeWidth={2} />
                           }
                         </span>
                       </div>
@@ -461,7 +461,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                         maxHeight: 180, overflowY: 'auto',
                       }}>
                         {farms.filter(f => !newUser.farm_names.includes(f)).length === 0 ? (
-                          <div style={{ padding: '10px 14px', color: C.textDim, fontSize: 13 }}>
+                          <div style={{ padding: '10px 14px', color: C.textDim, fontSize: 12 }}>
                             Toutes les fermes sélectionnées
                           </div>
                         ) : farms.filter(f => !newUser.farm_names.includes(f)).map(f => (
@@ -472,7 +472,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                               setDropOpen(false)
                             }}
                             style={{
-                              padding: '9px 14px', fontSize: 13,
+                              padding: '9px 14px', fontSize: 12,
                               color: C.textMuted, cursor: 'pointer',
                               transition: 'background 0.1s',
                             }}
@@ -494,7 +494,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                     }))}
                     style={{
                       width: '100%', padding: '9px 13px',
-                      borderRadius: 8, fontSize: 13,
+                      borderRadius: 8, fontSize: 12,
                       background: C.inputBg, color: C.text,
                       border: `1.5px solid ${C.border}`,
                       outline: 'none', fontFamily: 'inherit',
