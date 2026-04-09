@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from loguru import logger
 from typing import Optional
+from core.utils import filter_by_farm
 
 from core.database import get_db
 from models.sensor_model import (

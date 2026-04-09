@@ -210,3 +210,11 @@ export async function getDeviceTours(token, deviceId, date = null) {
   if (!res.ok) throw new Error('Erreur chargement tours')
   return res.json()
 }
+
+export async function getFarms(token) {
+  const res = await fetch(`${BASE}/api/devices/farms`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error('Erreur chargement fermes')
+  return res.json()
+}

@@ -37,7 +37,8 @@ def get_all_users(db: Session) -> list:
 
 def create_user(
     db: Session, username: str, password: str,
-    role: str, nom: str, email: str = None
+    role: str, nom: str, email: str = None,
+    farm_names=None
 ) -> User:
     user = User(
         username = username,
@@ -45,6 +46,7 @@ def create_user(
         role     = role,
         nom      = nom,
         email    = email,
+        farm_names = farm_names or [],
         actif    = True,
     )
     db.add(user)

@@ -6,7 +6,7 @@ import uuid
 from sqlalchemy import Column, String, Boolean, DateTime, Text
 from sqlalchemy.sql import func
 from core.database import Base
-
+from sqlalchemy.dialects.postgresql import JSONB
 
 class User(Base):
     __tablename__ = "users"
@@ -16,6 +16,7 @@ class User(Base):
     role       = Column(String, nullable=False, default="operateur")
     nom        = Column(String, nullable=False)
     email      = Column(String, nullable=True, default=None)       # ← NOUVEAU
+    farm_names = Column(JSONB, nullable=True, default=None)  # ← AJOUTER (après email)
     actif      = Column(Boolean, default=True)
     last_login = Column(DateTime(timezone=True), nullable=True)    # ← NOUVEAU
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -27,6 +28,7 @@ class User(Base):
             "role"      : self.role,
             "nom"       : self.nom,
             "email"     : self.email,
+            "farm_names" : self.farm_names or [],   # ← AJOUTER
             "actif"     : self.actif,
             "last_login": str(self.last_login) if self.last_login else None,
             "created_at": str(self.created_at),

@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from typing import Optional
 from loguru import logger
+from core.utils import filter_by_farm
 
 from core.security import require_operateur, require_any
 from services.recommendation_engine import generer_recommandation_complete

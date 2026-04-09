@@ -226,7 +226,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
   const [logsUser, setLogsUser]     = useState(null)
   const [search, setSearch]         = useState('')
   const [filterRole, setFilterRole] = useState('tous')
-  const [newUser, setNewUser]       = useState({ username: '', password: '', role: 'operateur', nom: '', email: '' })
+  const [newUser, setNewUser]       = useState({ username: '', password: '', role: 'operateur', nom: '', email: '', farm_names: [] })
   const [exporting, setExporting]   = useState(false)
 
   const canAccess = userRole === 'admin'
@@ -369,6 +369,52 @@ export default function UsersPage({ token, userRole, C, dark }) {
             <Input label="Nom complet"   value={newUser.nom}      onChange={setNu('nom')}      C={C} placeholder="ex: Jean Dupont" />
             <Input label="Email"         value={newUser.email}    onChange={setNu('email')}    C={C} placeholder="ex: j.dupont@azura.ma" icon={Mail} />
             <Input label="Rôle"          value={newUser.role}     onChange={setNu('role')}     options={ROLE_OPTIONS} C={C} dark={dark} />
+            {newUser.role !== 'admin' && (
+              <div style={{ marginBottom: 14 }}>
+                <label style={{
+                  display: 'block', color: C.textMuted,
+                  fontSize: 11, fontWeight: 700,
+                  textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6,
+                }}>
+                  Fermes assignées
+                  {newUser.role === 'agronome' && (
+                    <span style={{ color: C.textDim, fontWeight: 400, marginLeft: 6 }}>
+                      (plusieurs possible)
+                    </span>
+                  )}
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {farms.map(f => (
+                    <label key={f} style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      cursor: 'pointer', color: C.textMuted, fontSize: 13,
+                    }}>
+                      <input
+                        type={newUser.role === 'agronome' ? 'checkbox' : 'radio'}
+                        name="farm_names"
+                        value={f}
+                        checked={newUser.farm_names.includes(f)}
+                        onChange={e => {
+                          if (newUser.role === 'agronome') {
+                            // Multi-select pour agronome
+                            setNewUser(prev => ({
+                              ...prev,
+                              farm_names: e.target.checked
+                                ? [...prev.farm_names, f]
+                                : prev.farm_names.filter(x => x !== f)
+                            }))
+                          } else {
+                            // Une seule ferme pour opérateur et auditeur
+                            setNewUser(prev => ({ ...prev, farm_names: [f] }))
+                          }
+                        }}
+                      />
+                      {f}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           {createError && <Alert message={createError} C={C} dark={dark} />}
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>

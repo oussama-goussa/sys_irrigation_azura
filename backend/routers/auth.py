@@ -10,6 +10,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from loguru import logger
 import io
+from typing import List
 
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -47,6 +48,7 @@ class CreateUserRequest(BaseModel):
     role     : str
     nom      : str
     email    : Optional[str] = None
+    farm_names : Optional[List[str]] = []
 
 class UpdateUserRequest(BaseModel):
     nom      : Optional[str] = None
@@ -80,7 +82,7 @@ def login(
     update_last_login(db, user.username)
     log_action(db, user.username, "LOGIN", ip=request.client.host)
 
-    token_data    = {"sub": user.username, "role": user.role}
+    token_data    = {"sub": user.username, "role": user.role, "farm_names": user.farm_names or []}
     access_token  = create_access_token(token_data)
     refresh_token = create_refresh_token(token_data)
 
@@ -98,7 +100,7 @@ def refresh(request: Request, body: RefreshRequest):
     payload = decode_token(body.refresh_token)
     if payload.get("type") != "refresh":
         raise HTTPException(status_code=401, detail="Token invalide")
-    new_access = create_access_token({"sub": payload["sub"], "role": payload["role"]})
+    new_access = create_access_token({"sub": payload["sub"], "role": payload["role"], "farm_names": payload.get("farm_names", [])})
     return {"access_token": new_access, "token_type": "bearer"}
 
 
@@ -133,7 +135,7 @@ def create_new_user(
 
     valider_mot_de_passe(request.password)
 
-    user = create_user(db, request.username, request.password, request.role, request.nom, request.email)
+    user = create_user(db, request.username, request.password, request.role, request.nom, request.email, request.farm_names)
     log_action(db, current_user["username"], "CREATE_USER",
                detail=f"Créé : {request.username} ({request.role})", ip=req.client.host)
 

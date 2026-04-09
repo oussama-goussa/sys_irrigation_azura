@@ -116,9 +116,10 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
     payload = decode_token(token)
     username = payload.get("sub")
     role     = payload.get("role")
+    farm_names = payload.get("farm_names", [])   # ← liste
     if not username:
         raise HTTPException(status_code=401, detail="Token invalide")
-    return {"username": username, "role": role}
+    return {"username": username, "role": role, "farm_names": farm_names}
 
 # ── Role checker ──────────────────────────────────────────────
 def require_role(*allowed_roles):

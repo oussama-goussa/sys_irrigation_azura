@@ -11,6 +11,7 @@ from sqlalchemy import desc, func
 from datetime import datetime, date, timedelta
 from typing import Optional
 import csv, io
+from core.utils import filter_by_farm
 from loguru import logger
 
 from core.database import get_db
@@ -135,6 +136,16 @@ def _build_device_summary(device: Device, db: Session) -> dict:
         "readings_24h"      : readings_24h,
     }
 
+
+# Ajouter après les imports existants, dans le router
+@router.get("/farms")
+def list_farms(
+    db: Session = Depends(get_db),
+    user = Depends(require_any)
+):
+    """Retourne la liste des fermes distinctes (pour le select lors de création user)."""
+    farms = db.query(Device.farm_name).filter(Device.is_active == True).distinct().order_by(Device.farm_name).all()
+    return [f[0] for f in farms]
 
 # ── GET /api/devices — Liste toutes les fermes groupées ──────
 @router.get("")
@@ -627,3 +638,4 @@ def get_tours(
         "tours"      : slots,
         "total_tours": len(tours),
     }
+
