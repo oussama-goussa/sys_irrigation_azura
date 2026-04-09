@@ -388,112 +388,97 @@ export default function UsersPage({ token, userRole, C, dark }) {
                 </label>
 
                 {newUser.role === 'agronome' ? (
-                  // ── Multi-select tags style ────────────────────────────
-                  (() => {
-                    const [dropOpen, setDropOpen] = React.useState(false)
-                    const remaining = farms.filter(f => !newUser.farm_names.includes(f))
-                    return (
-                      <div style={{ position: 'relative' }}>
-                        {/* Input box avec tags */}
-                        <div
-                          onClick={() => setDropOpen(v => !v)}
-                          style={{
-                            display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6,
-                            padding: '6px 36px 6px 8px', minHeight: 40,
-                            border: `1.5px solid ${dropOpen ? C.green : C.border}`,
-                            borderRadius: 8, background: C.inputBg, cursor: 'text',
-                            position: 'relative', transition: 'border-color 0.15s',
-                          }}
-                        >
-                          {/* Tags sélectionnés */}
-                          {newUser.farm_names.map(f => (
-                            <span key={f} style={{
-                              display: 'inline-flex', alignItems: 'center', gap: 4,
-                              background: `${C.green}20`, color: C.green,
-                              border: `1px solid ${C.green}40`,
-                              borderRadius: 5, padding: '2px 6px', fontSize: 12, fontWeight: 600,
-                            }}>
-                              {f}
-                              <span
-                                onClick={e => {
-                                  e.stopPropagation()
-                                  setNewUser(prev => ({
-                                    ...prev,
-                                    farm_names: prev.farm_names.filter(x => x !== f)
-                                  }))
-                                }}
-                                style={{ cursor: 'pointer', opacity: 0.7, fontSize: 13, lineHeight: 1 }}
-                              >×</span>
-                            </span>
-                          ))}
+                  <div style={{ position: 'relative' }}>
+                    <div
+                      onClick={() => setDropOpen(v => !v)}
+                      style={{
+                        display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6,
+                        padding: '6px 36px 6px 8px', minHeight: 40,
+                        border: `1.5px solid ${dropOpen ? C.green : C.border}`,
+                        borderRadius: 8, background: C.inputBg, cursor: 'pointer',
+                        position: 'relative', transition: 'border-color 0.15s',
+                      }}
+                    >
+                      {newUser.farm_names.map(f => (
+                        <span key={f} style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                          background: `${C.green}20`, color: C.green,
+                          border: `1px solid ${C.green}40`,
+                          borderRadius: 5, padding: '2px 6px', fontSize: 12, fontWeight: 600,
+                        }}>
+                          {f}
+                          <span
+                            onClick={e => {
+                              e.stopPropagation()
+                              setNewUser(prev => ({
+                                ...prev,
+                                farm_names: prev.farm_names.filter(x => x !== f)
+                              }))
+                            }}
+                            style={{ cursor: 'pointer', opacity: 0.7, fontSize: 13, lineHeight: 1 }}
+                          >×</span>
+                        </span>
+                      ))}
 
-                          {/* Placeholder si vide */}
-                          {newUser.farm_names.length === 0 && (
-                            <span style={{ color: C.textDim, fontSize: 13 }}>
-                              Sélectionner des fermes…
-                            </span>
-                          )}
+                      {newUser.farm_names.length === 0 && (
+                        <span style={{ color: C.textDim, fontSize: 13 }}>
+                          Sélectionner des fermes…
+                        </span>
+                      )}
 
-                          {/* Boutons droite */}
-                          <div style={{
-                            position: 'absolute', right: 6, top: '50%',
-                            transform: 'translateY(-50%)',
-                            display: 'flex', alignItems: 'center', gap: 4,
-                          }}>
-                            {newUser.farm_names.length > 0 && (
-                              <span
-                                onClick={e => {
-                                  e.stopPropagation()
-                                  setNewUser(prev => ({ ...prev, farm_names: [] }))
-                                }}
-                                style={{ cursor: 'pointer', color: C.textDim, fontSize: 16, lineHeight: 1 }}
-                              >×</span>
-                            )}
-                            <span style={{ color: C.textDim, fontSize: 11 }}>
-                              {dropOpen ? '▲' : '▼'}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Dropdown options */}
-                        {dropOpen && (
-                          <div style={{
-                            position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
-                            background: C.card, border: `1.5px solid ${C.border}`,
-                            borderRadius: 8, zIndex: 50, boxShadow: `0 4px 20px ${C.shadow}`,
-                            maxHeight: 180, overflowY: 'auto',
-                          }}>
-                            {remaining.length === 0 ? (
-                              <div style={{ padding: '10px 14px', color: C.textDim, fontSize: 13 }}>
-                                Toutes les fermes sélectionnées
-                              </div>
-                            ) : remaining.map(f => (
-                              <div
-                                key={f}
-                                onClick={() => {
-                                  setNewUser(prev => ({
-                                    ...prev,
-                                    farm_names: [...prev.farm_names, f]
-                                  }))
-                                }}
-                                style={{
-                                  padding: '9px 14px', fontSize: 13,
-                                  color: C.textMuted, cursor: 'pointer',
-                                  transition: 'background 0.1s',
-                                }}
-                                onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
-                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                              >
-                                {f}
-                              </div>
-                            ))}
-                          </div>
+                      <div style={{
+                        position: 'absolute', right: 6, top: '50%',
+                        transform: 'translateY(-50%)',
+                        display: 'flex', alignItems: 'center', gap: 4,
+                      }}>
+                        {newUser.farm_names.length > 0 && (
+                          <span
+                            onClick={e => {
+                              e.stopPropagation()
+                              setNewUser(prev => ({ ...prev, farm_names: [] }))
+                            }}
+                            style={{ cursor: 'pointer', color: C.textDim, fontSize: 16, lineHeight: 1 }}
+                          >×</span>
                         )}
+                        <span style={{ color: C.textDim, fontSize: 11 }}>
+                          {dropOpen ? '▲' : '▼'}
+                        </span>
                       </div>
-                    )
-                  })()
+                    </div>
+
+                    {dropOpen && (
+                      <div style={{
+                        position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+                        background: C.card, border: `1.5px solid ${C.border}`,
+                        borderRadius: 8, zIndex: 50, boxShadow: `0 4px 20px ${C.shadow}`,
+                        maxHeight: 180, overflowY: 'auto',
+                      }}>
+                        {farms.filter(f => !newUser.farm_names.includes(f)).length === 0 ? (
+                          <div style={{ padding: '10px 14px', color: C.textDim, fontSize: 13 }}>
+                            Toutes les fermes sélectionnées
+                          </div>
+                        ) : farms.filter(f => !newUser.farm_names.includes(f)).map(f => (
+                          <div
+                            key={f}
+                            onClick={() => {
+                              setNewUser(prev => ({ ...prev, farm_names: [...prev.farm_names, f] }))
+                              setDropOpen(false)
+                            }}
+                            style={{
+                              padding: '9px 14px', fontSize: 13,
+                              color: C.textMuted, cursor: 'pointer',
+                              transition: 'background 0.1s',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
+                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                          >
+                            {f}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ) : (
-                  // ── Single-select opérateur / auditeur ────────────
                   <select
                     value={newUser.farm_names[0] || ''}
                     onChange={e => setNewUser(prev => ({
