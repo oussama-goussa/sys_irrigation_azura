@@ -385,36 +385,88 @@ export default function UsersPage({ token, userRole, C, dark }) {
                     </span>
                   )}
                 </label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {farms.map(f => (
-                    <label key={f} style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      cursor: 'pointer', color: C.textMuted, fontSize: 13,
-                    }}>
-                      <input
-                        type={newUser.role === 'agronome' ? 'checkbox' : 'radio'}
-                        name="farm_names"
-                        value={f}
-                        checked={newUser.farm_names.includes(f)}
-                        onChange={e => {
-                          if (newUser.role === 'agronome') {
-                            // Multi-select pour agronome
-                            setNewUser(prev => ({
-                              ...prev,
-                              farm_names: e.target.checked
-                                ? [...prev.farm_names, f]
-                                : prev.farm_names.filter(x => x !== f)
-                            }))
-                          } else {
-                            // Une seule ferme pour opérateur et auditeur
-                            setNewUser(prev => ({ ...prev, farm_names: [f] }))
-                          }
-                        }}
-                      />
-                      {f}
-                    </label>
-                  ))}
-                </div>
+
+                {newUser.role === 'agronome' ? (
+                  // ── Multi-select agronome ──────────────────────────
+                  <div style={{
+                    border: `1.5px solid ${C.border}`,
+                    borderRadius: 8,
+                    background: C.inputBg,
+                    maxHeight: 140,
+                    overflowY: 'auto',
+                    padding: '4px 0',
+                  }}>
+                    {farms.length === 0 ? (
+                      <div style={{ color: C.textDim, fontSize: 12, padding: '8px 12px' }}>
+                        Aucune ferme disponible
+                      </div>
+                    ) : farms.map(f => {
+                      const selected = newUser.farm_names.includes(f)
+                      return (
+                        <div
+                          key={f}
+                          onClick={() => setNewUser(prev => ({
+                            ...prev,
+                            farm_names: selected
+                              ? prev.farm_names.filter(x => x !== f)
+                              : [...prev.farm_names, f]
+                          }))}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '7px 12px', cursor: 'pointer', fontSize: 13,
+                            background: selected ? `${C.green}18` : 'transparent',
+                            color: selected ? C.green : C.textMuted,
+                            transition: 'background 0.12s',
+                          }}
+                        >
+                          <div style={{
+                            width: 14, height: 14, borderRadius: 3, flexShrink: 0,
+                            border: `1.5px solid ${selected ? C.green : C.border}`,
+                            background: selected ? C.green : 'transparent',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            {selected && (
+                              <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+                                <path d="M1 3.5L3.5 6L8 1" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            )}
+                          </div>
+                          {f}
+                        </div>
+                      )
+                    })}
+                    {newUser.farm_names.length > 0 && (
+                      <div style={{
+                        padding: '5px 12px', borderTop: `1px solid ${C.border}`,
+                        color: C.textDim, fontSize: 11,
+                      }}>
+                        {newUser.farm_names.length} ferme{newUser.farm_names.length > 1 ? 's' : ''} sélectionnée{newUser.farm_names.length > 1 ? 's' : ''}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  // ── Single-select opérateur / auditeur ────────────
+                  <select
+                    value={newUser.farm_names[0] || ''}
+                    onChange={e => setNewUser(prev => ({
+                      ...prev,
+                      farm_names: e.target.value ? [e.target.value] : []
+                    }))}
+                    style={{
+                      width: '100%', padding: '9px 13px',
+                      borderRadius: 8, fontSize: 13,
+                      background: C.inputBg, color: C.text,
+                      border: `1.5px solid ${C.border}`,
+                      outline: 'none', fontFamily: 'inherit',
+                      cursor: 'pointer', appearance: 'none',
+                    }}
+                  >
+                    <option value="">— Sélectionner une ferme —</option>
+                    {farms.map(f => (
+                      <option key={f} value={f}>{f}</option>
+                    ))}
+                  </select>
+                )}
               </div>
             )}
           </div>
