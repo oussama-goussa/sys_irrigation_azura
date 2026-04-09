@@ -777,7 +777,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                         ) : (
 
                           <button
-                            onClick={() => { setEditingRole(u.username); setRoleDropUser(null) }}
+                            onClick={(e) => { e.stopPropagation(); setEditingRole(u.username); setRoleDropUser(null) }}
                             title="Modifier le rôle"
                             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}
                           >
