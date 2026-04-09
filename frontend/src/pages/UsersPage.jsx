@@ -77,7 +77,7 @@ function EditModal({ user, farms, onSave, onClose, C, dark }) {
   const [error, setError]         = useState('')
 
   const isAdmin = user.role === 'admin'
-  const farmList = farms.map(f => f.farm_name)
+  const farmList = farms  // farms est déjà une liste de strings
 
   const toggleFarm = (f) => {
     if (user.role === 'operateur' || user.role === 'auditeur') {
@@ -895,7 +895,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                         ) : (
 
                           <button
-                            onClick={() => { setEditingRole(u.username); setRoleDropUser(null) }}
+                            onClick={(e) => { e.stopPropagation(); setEditingRole(u.username); setRoleDropUser(null) }}
                             title="Modifier le rôle"
                             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}
                           >
@@ -929,7 +929,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                       {/* Actions */}
                       <td style={{ padding: '13px 14px', fontFamily: 'inherit' }}>
                         <div style={{ display: 'flex', gap: 6 }}>
-                          <Btn onClick={() => setEditingUser(u)} variant="ghost" small C={C} icon={Pencil}>
+                          <Btn onClick={(e) => { e.stopPropagation(); setEditingUser(u) }} variant="ghost" small C={C} icon={Pencil}>
                             Modifier
                           </Btn>
                           <Btn onClick={() => { setLogsUser(u.username); setShowLogs(true) }} variant="ghost" small C={C} icon={History} />
