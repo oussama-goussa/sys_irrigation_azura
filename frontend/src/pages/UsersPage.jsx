@@ -387,63 +387,110 @@ export default function UsersPage({ token, userRole, C, dark }) {
                 </label>
 
                 {newUser.role === 'agronome' ? (
-                  // ── Multi-select agronome ──────────────────────────
-                  <div style={{
-                    border: `1.5px solid ${C.border}`,
-                    borderRadius: 8,
-                    background: C.inputBg,
-                    maxHeight: 140,
-                    overflowY: 'auto',
-                    padding: '4px 0',
-                  }}>
-                    {farms.length === 0 ? (
-                      <div style={{ color: C.textDim, fontSize: 12, padding: '8px 12px' }}>
-                        Aucune ferme disponible
-                      </div>
-                    ) : farms.map(f => {
-                      const selected = newUser.farm_names.includes(f)
-                      return (
+                  // ── Multi-select tags style ────────────────────────────
+                  (() => {
+                    const [dropOpen, setDropOpen] = React.useState(false)
+                    const remaining = farms.filter(f => !newUser.farm_names.includes(f))
+                    return (
+                      <div style={{ position: 'relative' }}>
+                        {/* Input box avec tags */}
                         <div
-                          key={f}
-                          onClick={() => setNewUser(prev => ({
-                            ...prev,
-                            farm_names: selected
-                              ? prev.farm_names.filter(x => x !== f)
-                              : [...prev.farm_names, f]
-                          }))}
+                          onClick={() => setDropOpen(v => !v)}
                           style={{
-                            display: 'flex', alignItems: 'center', gap: 10,
-                            padding: '7px 12px', cursor: 'pointer', fontSize: 13,
-                            background: selected ? `${C.green}18` : 'transparent',
-                            color: selected ? C.green : C.textMuted,
-                            transition: 'background 0.12s',
+                            display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6,
+                            padding: '6px 36px 6px 8px', minHeight: 40,
+                            border: `1.5px solid ${dropOpen ? C.green : C.border}`,
+                            borderRadius: 8, background: C.inputBg, cursor: 'text',
+                            position: 'relative', transition: 'border-color 0.15s',
                           }}
                         >
+                          {/* Tags sélectionnés */}
+                          {newUser.farm_names.map(f => (
+                            <span key={f} style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 4,
+                              background: `${C.green}20`, color: C.green,
+                              border: `1px solid ${C.green}40`,
+                              borderRadius: 5, padding: '2px 6px', fontSize: 12, fontWeight: 600,
+                            }}>
+                              {f}
+                              <span
+                                onClick={e => {
+                                  e.stopPropagation()
+                                  setNewUser(prev => ({
+                                    ...prev,
+                                    farm_names: prev.farm_names.filter(x => x !== f)
+                                  }))
+                                }}
+                                style={{ cursor: 'pointer', opacity: 0.7, fontSize: 13, lineHeight: 1 }}
+                              >×</span>
+                            </span>
+                          ))}
+
+                          {/* Placeholder si vide */}
+                          {newUser.farm_names.length === 0 && (
+                            <span style={{ color: C.textDim, fontSize: 13 }}>
+                              Sélectionner des fermes…
+                            </span>
+                          )}
+
+                          {/* Boutons droite */}
                           <div style={{
-                            width: 14, height: 14, borderRadius: 3, flexShrink: 0,
-                            border: `1.5px solid ${selected ? C.green : C.border}`,
-                            background: selected ? C.green : 'transparent',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            position: 'absolute', right: 6, top: '50%',
+                            transform: 'translateY(-50%)',
+                            display: 'flex', alignItems: 'center', gap: 4,
                           }}>
-                            {selected && (
-                              <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-                                <path d="M1 3.5L3.5 6L8 1" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
+                            {newUser.farm_names.length > 0 && (
+                              <span
+                                onClick={e => {
+                                  e.stopPropagation()
+                                  setNewUser(prev => ({ ...prev, farm_names: [] }))
+                                }}
+                                style={{ cursor: 'pointer', color: C.textDim, fontSize: 16, lineHeight: 1 }}
+                              >×</span>
                             )}
+                            <span style={{ color: C.textDim, fontSize: 11 }}>
+                              {dropOpen ? '▲' : '▼'}
+                            </span>
                           </div>
-                          {f}
                         </div>
-                      )
-                    })}
-                    {newUser.farm_names.length > 0 && (
-                      <div style={{
-                        padding: '5px 12px', borderTop: `1px solid ${C.border}`,
-                        color: C.textDim, fontSize: 11,
-                      }}>
-                        {newUser.farm_names.length} ferme{newUser.farm_names.length > 1 ? 's' : ''} sélectionnée{newUser.farm_names.length > 1 ? 's' : ''}
+
+                        {/* Dropdown options */}
+                        {dropOpen && (
+                          <div style={{
+                            position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+                            background: C.card, border: `1.5px solid ${C.border}`,
+                            borderRadius: 8, zIndex: 50, boxShadow: `0 4px 20px ${C.shadow}`,
+                            maxHeight: 180, overflowY: 'auto',
+                          }}>
+                            {remaining.length === 0 ? (
+                              <div style={{ padding: '10px 14px', color: C.textDim, fontSize: 13 }}>
+                                Toutes les fermes sélectionnées
+                              </div>
+                            ) : remaining.map(f => (
+                              <div
+                                key={f}
+                                onClick={() => {
+                                  setNewUser(prev => ({
+                                    ...prev,
+                                    farm_names: [...prev.farm_names, f]
+                                  }))
+                                }}
+                                style={{
+                                  padding: '9px 14px', fontSize: 13,
+                                  color: C.textMuted, cursor: 'pointer',
+                                  transition: 'background 0.1s',
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
+                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                              >
+                                {f}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    )
+                  })()
                 ) : (
                   // ── Single-select opérateur / auditeur ────────────
                   <select
