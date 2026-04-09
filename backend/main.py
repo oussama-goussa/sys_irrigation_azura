@@ -1,25 +1,52 @@
 # ============================================================
 # backend/main.py — FastAPI Application complète
-# MODIFIÉ : ajout router devices
 # ============================================================
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from loguru import logger
 
 from core.database import Base, engine, SessionLocal
-from models.user_model import User
+from models.user_model import User, AuditLog
 from services.user_service import init_default_users
 from routers.auth import router as auth_router
 from routers.recommendations import router as rec_router
 from routers.sensors import router as sensors_router
-from routers.devices import router as devices_router          # ← NOUVEAU
+from routers.devices import router as devices_router
 
 from models.sensor_model import (
     Device, SensorReading, IrrigationCycle,
     FertigationState, Alert, AlertThreshold,
     IrrigationTour
 )
+
+# ── Migrations automatiques AVANT create_all ─────────────────
+def run_migrations():
+    """
+    Ajoute les colonnes manquantes avant que SQLAlchemy
+    lise le schéma. ADD COLUMN IF NOT EXISTS = safe.
+    """
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("""
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS farm_names JSONB DEFAULT '[]'::jsonb
+            """))
+            conn.execute(text("""
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ
+            """))
+            conn.execute(text("""
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS email VARCHAR
+            """))
+            conn.commit()
+        logger.success("Migrations appliquées ✅")
+    except Exception as e:
+        logger.warning(f"Migrations ignorées (table absente au premier boot) : {e}")
+
+run_migrations()
 
 # ── Créer les tables PostgreSQL ───────────────────────────────
 Base.metadata.create_all(bind=engine)
@@ -53,20 +80,18 @@ app.add_middleware(
 )
 
 # ── Startup ───────────────────────────────────────────────────
-# APRÈS
 @app.on_event("startup")
 def startup():
     db = SessionLocal()
     try:
         init_default_users(db)
-        # Lancer le calcul historique en arrière-plan
         try:
             from core.celery_app import task_historique_tours, task_tours_jour_en_cours
             task_historique_tours.delay()
             task_tours_jour_en_cours.delay()
         except Exception as e:
             logger.warning(f"Celery non disponible au démarrage : {e}")
-        logger.success("Application Azura demarree ✅")
+        logger.success("Application Azura démarrée ✅")
     finally:
         db.close()
 
@@ -74,7 +99,7 @@ def startup():
 app.include_router(auth_router)
 app.include_router(rec_router)
 app.include_router(sensors_router)
-app.include_router(devices_router)                            # ← NOUVEAU
+app.include_router(devices_router)
 
 # ── Endpoints publics ─────────────────────────────────────────
 @app.get("/", tags=["General"])
@@ -84,12 +109,12 @@ def root():
         "version": "1.0.0",
         "docs"   : "/docs",
         "endpoints": {
-            "auth"            : "/api/auth/login",
-            "recommandation"  : "/api/recommendations/journee",
-            "meteo"           : "/api/recommendations/meteo",
-            "dashboard"       : "/api/devices/dashboard",
-            "device_latest"   : "/api/devices/{id}/latest",
-            "device_history"  : "/api/devices/{id}/history",
+            "auth"           : "/api/auth/login",
+            "recommandation" : "/api/recommendations/journee",
+            "meteo"          : "/api/recommendations/meteo",
+            "dashboard"      : "/api/devices/dashboard",
+            "device_latest"  : "/api/devices/{id}/latest",
+            "device_history" : "/api/devices/{id}/history",
         }
     }
 
