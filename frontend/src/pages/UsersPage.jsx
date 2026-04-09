@@ -233,6 +233,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
   const [dropOpen, setDropOpen] = useState(false)
   const [roleDropOpen, setRoleDropOpen] = useState(false)
   const [roleDropUser, setRoleDropUser] = useState(null)
+  const [roleDropPos, setRoleDropPos] = useState(null)
 
   const canAccess = userRole === 'admin'
 
@@ -705,11 +706,16 @@ export default function UsersPage({ token, userRole, C, dark }) {
                       <td style={{ padding: '13px 14px', fontFamily: 'inherit', position: 'relative' }}>
                         {editingRole === u.username ? (
                           <div style={{ position: 'relative', minWidth: 130 }}>
-                            {/* Trigger */}
                             <div
-                              onClick={e => { 
-                                e.stopPropagation() 
-                                setRoleDropUser(v => v === u.username ? null : u.username) 
+                              onClick={e => {
+                                e.stopPropagation()
+                                if (roleDropUser === u.username) {
+                                  setRoleDropUser(null)
+                                } else {
+                                  const rect = e.currentTarget.getBoundingClientRect()
+                                  setRoleDropPos({ top: rect.bottom + 4, left: rect.left })
+                                  setRoleDropUser(u.username)
+                                }
                               }}
                               style={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -728,29 +734,20 @@ export default function UsersPage({ token, userRole, C, dark }) {
                               </span>
                             </div>
 
-                            {/* Dropdown */}
                             {roleDropUser === u.username && (
                               <div
                                 onClick={e => e.stopPropagation()}
                                 style={{
-                                  position: 'fixed',                    // ← fixed au lieu de absolute
+                                  position: 'fixed',
+                                  top: roleDropPos?.top ?? 0,
+                                  left: roleDropPos?.left ?? 0,
                                   background: C.card,
                                   border: `1.5px solid ${C.border}`,
                                   borderRadius: 8,
-                                  zIndex: 9999,                         // ← très haut
+                                  zIndex: 9999,
                                   boxShadow: `0 4px 20px ${C.shadow}`,
                                   minWidth: 140,
                                   overflow: 'hidden',
-                                }}
-                                ref={el => {
-                                  if (el) {
-                                    const trigger = el.previousSibling
-                                    if (trigger) {
-                                      const rect = trigger.getBoundingClientRect()
-                                      el.style.top = `${rect.bottom + 4}px`
-                                      el.style.left = `${rect.left}px`
-                                    }
-                                  }
                                 }}
                               >
                                 {ROLES.map(r => (
@@ -778,6 +775,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                             )}
                           </div>
                         ) : (
+
                           <button
                             onClick={() => { setEditingRole(u.username); setRoleDropUser(null) }}
                             title="Modifier le rôle"
