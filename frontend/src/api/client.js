@@ -212,7 +212,7 @@ export async function getDeviceTours(token, deviceId, date = null) {
 }
 
 export async function getFarms(token) {
-  const res = await fetch(`${BASE}/api/devices/farms`, {
+  const res = await fetchWithRefresh(`${BASE}/api/devices`, {  // ← /api/devices/farms → /api/devices
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!res.ok) throw new Error('Erreur chargement fermes')
