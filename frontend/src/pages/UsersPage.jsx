@@ -229,6 +229,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
   const [newUser, setNewUser]       = useState({ username: '', password: '', role: 'operateur', nom: '', email: '', farm_names: [] })
   const [exporting, setExporting]   = useState(false)
   const [farms, setFarms] = useState([])
+  const [dropOpen, setDropOpen] = useState(false)
 
   const canAccess = userRole === 'admin'
 
