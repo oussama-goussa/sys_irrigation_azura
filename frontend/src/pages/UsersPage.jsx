@@ -232,6 +232,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
   const [farms, setFarms] = useState([])
   const [dropOpen, setDropOpen] = useState(false)
   const [roleDropOpen, setRoleDropOpen] = useState(false)
+  const [roleDropUser, setRoleDropUser] = useState(null)
 
   const canAccess = userRole === 'admin'
 
@@ -246,6 +247,12 @@ export default function UsersPage({ token, userRole, C, dark }) {
     if (!canAccess) { setLoading(false); return }
     load()
     getFarms(token).then(setFarms).catch(() => setFarms([]))   // ← ajouter
+  }, [])
+
+  useEffect(() => {
+    const close = () => { setRoleDropUser(null); setEditingRole(null) }
+    document.addEventListener('click', close)
+    return () => document.removeEventListener('click', close)
   }, [])
 
   if (!canAccess) return (
