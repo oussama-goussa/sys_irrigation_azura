@@ -469,7 +469,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
       </div>
 
       {/* ── Bilan ligne ─────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28, marginTop: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: 16, marginBottom: 28, marginTop: 20 }}>
         {[
           {
             label: 'Irrigation',
@@ -529,7 +529,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
             </div>
 
             {/* Values — collés en bas */}
-            <div style={{ display: 'flex', gap: card.items.length > 2 ? 14 : 20, alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: 20, alignItems: 'flex-end' }}>
               {card.items.map(it => (
                 <div key={it.sub}>
                   <div style={{ fontSize: 11, color: dark ? C.textDim : '#5a7a66', marginBottom: 4, whiteSpace: 'nowrap' }}>
@@ -547,7 +547,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
       
       {/* ── Ferme / Station / Serre / Vanne / Date ─────────── */}
       <div style={{ ...cardStyle }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.2fr 1fr 0.8fr 180px', gap: 14 }}>
           <div>
             <label style={labelStyle}>Ferme</label>
             <CustomSelect
