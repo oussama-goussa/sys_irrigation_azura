@@ -469,48 +469,76 @@ export default function SaisiePage({ token, auth, C, dark }) {
       </div>
 
       {/* ── Bilan ligne ─────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16, marginTop: 20 }}>
-        {/* Irrigation */}
-        <div style={{
-          background: dark ? `${C.green}10` : `${C.green}08`,
-          border: `1.5px solid ${C.green}30`,
-          borderRadius: 12, padding: '14px 18px', flex: 1,
-        }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: C.green, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
-            Irrigation
-          </div>
-          <div style={{ display: 'flex', gap: 24 }}>
-            {[
-              { label: 'Total tours', value: tours.length || '—' },
-              { label: 'Durée totale', value: fmtDuree(dureeTotal) },
-              { label: 'CC/bras (cc)', value: ccBras ?? '—' },
-            ].map(item => (
-              <div key={item.label}>
-                <div style={{ fontSize: 12, color: `${C.green}90`, marginBottom: 2, whiteSpace: 'nowrap' }}>{item.label}</div>
-                <div style={{ fontSize: 20, fontWeight: 900, color: C.green }}>{item.value}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28, marginTop: 20 }}>
+        {[
+          {
+            label: 'Irrigation',
+            color: C.green,
+            Icon: ClipboardList,
+            items: [
+              { sub: 'Total tours', value: tours.length > 0 ? tours.length : '—' },
+              { sub: 'Durée totale', value: fmtDuree(dureeTotal) },
+              { sub: 'CC/bras (cc)', value: ccBras ?? '—' },
+            ],
+          },
+          {
+            label: 'Bilan Eau',
+            color: C.blue,
+            Icon: Droplets,
+            items: [
+              { sub: 'Apport', value: totalVApport > 0 ? fmtNum(totalVApport, 1) : '—' },
+              { sub: 'Drainage', value: totalVDrain > 0 ? fmtNum(totalVDrain, 1) : '—' },
+            ],
+          },
+          {
+            label: 'Bilan EC',
+            color: C.green,
+            Icon: BarChart2,
+            items: [
+              { sub: 'Apport', value: ecMoyApport ? fmtNum(ecMoyApport, 2) : '—' },
+              { sub: 'Drainage', value: ecMoyDrain ? fmtNum(ecMoyDrain, 2) : '—' },
+            ],
+          },
+          {
+            label: 'Bilan pH',
+            color: C.amber,
+            Icon: FlaskConical,
+            items: [
+              { sub: 'Apport', value: phMoyApport ? fmtNum(phMoyApport, 2) : '—' },
+              { sub: 'Drainage', value: phMoyDrain ? fmtNum(phMoyDrain, 2) : '—' },
+            ],
+          },
+        ].map(card => (
+          <div key={card.label} style={{
+            background: dark ? '#111a14' : '#ffffff',
+            border: `1px solid ${dark ? '#1c2e22' : '#d0e8d8'}`,
+            borderRadius: 16, padding: '20px 24px',
+            position: 'relative', overflow: 'hidden',
+          }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{
+                fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
+                letterSpacing: '0.12em', color: dark ? C.textDim : '#5a7a66',
+              }}>
+                {card.label}
               </div>
-            ))}
-          </div>
-        </div>
+              <card.Icon size={16} strokeWidth={1.6} color={card.color} style={{ opacity: 0.65 }} />
+            </div>
 
-        <BilanCard title="Bilan Eau"
-          items={[
-            { label: 'Apport', value: totalVApport > 0 ? fmtNum(totalVApport, 1) : null },
-            { label: 'Drainage', value: totalVDrain > 0 ? fmtNum(totalVDrain, 1) : null },
-          ]}
-          color={C.blue} icon={Droplets} C={C} dark={dark} />
-        <BilanCard title="Bilan EC"
-          items={[
-            { label: 'Apport', value: ecMoyApport ? fmtNum(ecMoyApport, 2) : null },
-            { label: 'Drainage', value: ecMoyDrain ? fmtNum(ecMoyDrain, 2) : null },
-          ]}
-          color={C.green} icon={BarChart2} C={C} dark={dark} />
-        <BilanCard title="Bilan pH"
-          items={[
-            { label: 'Apport', value: phMoyApport ? fmtNum(phMoyApport, 2) : null },
-            { label: 'Drainage', value: phMoyDrain ? fmtNum(phMoyDrain, 2) : null },
-          ]}
-          color={C.amber} icon={FlaskConical} C={C} dark={dark} />
+            {/* Values */}
+            <div style={{ display: 'flex', gap: 20 }}>
+              {card.items.map(it => (
+                <div key={it.sub}>
+                  <div style={{ fontSize: 11, color: dark ? C.textDim : '#5a7a66', marginBottom: 4 }}>{it.sub}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: card.color }}>
+                    {it.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
       
       {/* ── Ferme / Station / Serre / Vanne / Date ─────────── */}
