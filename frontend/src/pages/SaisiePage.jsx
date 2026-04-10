@@ -53,6 +53,8 @@ function TInput({ value, onChange, placeholder = '', disabled = false, width = 7
 function TimeInput({ value, onChange, C }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const triggerRef = useRef(null)
+  const [pos, setPos] = useState({ top: 0, left: 0 })
   const [h, m] = value ? value.split(':') : ['00', '00']
 
   useEffect(() => {
@@ -60,6 +62,14 @@ function TimeInput({ value, onChange, C }) {
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
   }, [])
+
+  const handleOpen = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect()
+      setPos({ top: rect.bottom + 6, left: rect.left + rect.width / 2 })
+    }
+    setOpen(v => !v)
+  }
 
   const inc = (type) => {
     const hv = parseInt(h || '0')
@@ -91,7 +101,8 @@ function TimeInput({ value, onChange, C }) {
     <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
       {/* Trigger */}
       <div
-        onClick={() => setOpen(v => !v)}
+        ref={triggerRef}
+        onClick={handleOpen}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           height: 34, padding: '0 10px', minWidth: 80,
@@ -110,64 +121,40 @@ function TimeInput({ value, onChange, C }) {
       {/* Dropdown picker */}
       {open && (
         <div style={{
-          position: 'absolute', top: 'calc(100% + 6px)', left: '50%',
+          position: 'fixed',           // ← clé du fix
+          top: pos.top,
+          left: pos.left,
           transform: 'translateX(-50%)',
           background: C.card, border: `1.5px solid ${C.border}`,
-          borderRadius: 10, zIndex: 500,
+          borderRadius: 10, zIndex: 9999,   // ← au-dessus de tout
           boxShadow: `0 4px 24px ${C.shadow}`,
           padding: '10px 16px',
           display: 'flex', alignItems: 'center', gap: 4,
         }}>
           {/* HH */}
-          <div style={colStyle}>
-            <button style={arrowStyle}
-              onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
-              onMouseLeave={e => e.currentTarget.style.background = 'none'}
-              onClick={() => inc('h')}>
-              <ChevronUp size={16} strokeWidth={2.5}/>
-            </button>
-            <input
-              type="text" inputMode="numeric" maxLength={2}
-              value={h || '00'}
-              onChange={e => {
-                const v = parseInt(e.target.value) || 0
-                onChange(`${String(Math.min(23, Math.max(0, v))).padStart(2, '0')}:${m || '00'}`)
-              }}
-              style={numStyle}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}
+              onClick={() => inc('h')}><ChevronUp size={16} strokeWidth={2.5}/></button>
+            <input type="text" inputMode="numeric" maxLength={2} value={h || '00'}
+              onChange={e => { const v = parseInt(e.target.value)||0; onChange(`${String(Math.min(23,Math.max(0,v))).padStart(2,'0')}:${m||'00'}`) }}
+              style={{ fontSize: 22, fontWeight: 700, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
             />
-            <button style={arrowStyle}
-              onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
-              onMouseLeave={e => e.currentTarget.style.background = 'none'}
-              onClick={() => dec('h')}>
-              <ChevronDown size={16} strokeWidth={2.5}/>
-            </button>
+            <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}
+              onClick={() => dec('h')}><ChevronDown size={16} strokeWidth={2.5}/></button>
           </div>
 
-          <span style={{ fontSize: 22, fontWeight: 900, color: C.textMuted, marginBottom: 2 }}>:</span>
+          <span style={{ fontSize: 22, fontWeight: 900, color: C.textMuted }}>:</span>
 
           {/* MM */}
-          <div style={colStyle}>
-            <button style={arrowStyle}
-              onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
-              onMouseLeave={e => e.currentTarget.style.background = 'none'}
-              onClick={() => inc('m')}>
-              <ChevronUp size={16} strokeWidth={2.5}/>
-            </button>
-            <input
-              type="text" inputMode="numeric" maxLength={2}
-              value={m || '00'}
-              onChange={e => {
-                const v = parseInt(e.target.value) || 0
-                onChange(`${h || '00'}:${String(Math.min(59, Math.max(0, v))).padStart(2, '0')}`)
-              }}
-              style={numStyle}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}
+              onClick={() => inc('m')}><ChevronUp size={16} strokeWidth={2.5}/></button>
+            <input type="text" inputMode="numeric" maxLength={2} value={m || '00'}
+              onChange={e => { const v = parseInt(e.target.value)||0; onChange(`${h||'00'}:${String(Math.min(59,Math.max(0,v))).padStart(2,'0')}`) }}
+              style={{ fontSize: 22, fontWeight: 700, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
             />
-            <button style={arrowStyle}
-              onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
-              onMouseLeave={e => e.currentTarget.style.background = 'none'}
-              onClick={() => dec('m')}>
-              <ChevronDown size={16} strokeWidth={2.5}/>
-            </button>
+            <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}
+              onClick={() => dec('m')}><ChevronDown size={16} strokeWidth={2.5}/></button>
           </div>
         </div>
       )}
