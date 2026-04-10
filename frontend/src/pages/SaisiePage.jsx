@@ -514,9 +514,11 @@ export default function SaisiePage({ token, auth, C, dark }) {
             border: `1px solid ${dark ? '#1c2e22' : '#d0e8d8'}`,
             borderRadius: 16, padding: '20px 24px',
             position: 'relative', overflow: 'hidden',
+            display: 'flex', flexDirection: 'column', justifyContent: 'space-between', // ← ajout
+            minHeight: 130, // ← hauteur augmentée
           }}>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 0 }}>
               <div style={{
                 fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
                 letterSpacing: '0.12em', color: dark ? C.textDim : '#5a7a66',
@@ -526,11 +528,13 @@ export default function SaisiePage({ token, auth, C, dark }) {
               <card.Icon size={16} strokeWidth={1.6} color={card.color} style={{ opacity: 0.65 }} />
             </div>
 
-            {/* Values */}
+            {/* Values — collés en bas */}
             <div style={{ display: 'flex', gap: 20, alignItems: 'flex-end' }}>
               {card.items.map(it => (
                 <div key={it.sub}>
-                  <div style={{ fontSize: 11, color: dark ? C.textDim : '#5a7a66', marginBottom: 4, whiteSpace: 'nowrap' }}>{it.sub}</div>
+                  <div style={{ fontSize: 11, color: dark ? C.textDim : '#5a7a66', marginBottom: 4, whiteSpace: 'nowrap' }}>
+                    {it.sub}
+                  </div>
                   <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: card.color }}>
                     {it.value}
                   </div>
