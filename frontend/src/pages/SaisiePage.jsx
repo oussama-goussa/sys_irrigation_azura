@@ -527,10 +527,10 @@ export default function SaisiePage({ token, auth, C, dark }) {
             </div>
 
             {/* Values */}
-            <div style={{ display: 'flex', gap: 20 }}>
+            <div style={{ display: 'flex', gap: 20, alignItems: 'flex-end' }}>
               {card.items.map(it => (
                 <div key={it.sub}>
-                  <div style={{ fontSize: 11, color: dark ? C.textDim : '#5a7a66', marginBottom: 4 }}>{it.sub}</div>
+                  <div style={{ fontSize: 11, color: dark ? C.textDim : '#5a7a66', marginBottom: 4, whiteSpace: 'nowrap' }}>{it.sub}</div>
                   <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: card.color }}>
                     {it.value}
                   </div>
