@@ -175,11 +175,11 @@ function EditModal({ user, farms, onSave, onClose, C, dark }) {
                     {f}
                     <span
                       onClick={e => { e.stopPropagation(); setFarmNames(prev => prev.filter(x => x !== f)) }}
-                      style={{ cursor: 'pointer', opacity: 0.7, fontSize: 13, lineHeight: 1 }}
+                      style={{ cursor: 'pointer', opacity: 0.7, fontSize: 12, lineHeight: 1 }}
                     >×</span>
                   </span>
                 ))}
-                <ChevronDown size={13} strokeWidth={2} style={{
+                <ChevronDown size={12} strokeWidth={2} style={{
                   position: 'absolute', right: 10, top: '50%',
                   transform: `translateY(-50%) rotate(${dropOpen ? 180 : 0}deg)`,
                   color: C.textDim, transition: 'transform 0.2s', pointerEvents: 'none',
@@ -215,7 +215,7 @@ function EditModal({ user, farms, onSave, onClose, C, dark }) {
                         onMouseLeave={e => e.currentTarget.style.background = selected ? `${C.green}12` : 'transparent'}
                       >
                         <span>{f}</span>
-                        {selected && <Check size={13} strokeWidth={2.5} />}
+                        {selected && <Check size={12} strokeWidth={2.5} />}
                       </div>
                     )
                   })}
@@ -846,8 +846,8 @@ export default function UsersPage({ token, userRole, C, dark }) {
                               <Badge role={u.role} dark={dark} />
                               <span style={{ color: C.textDim, display: 'flex', alignItems: 'center' }}>
                                 {roleDropUser === u.username
-                                  ? <ChevronUp size={13} strokeWidth={2}/>
-                                  : <ChevronDown size={13} strokeWidth={2}/>
+                                  ? <ChevronUp size={12} strokeWidth={2}/>
+                                  : <ChevronDown size={12} strokeWidth={2}/>
                                 }
                               </span>
                             </div>
