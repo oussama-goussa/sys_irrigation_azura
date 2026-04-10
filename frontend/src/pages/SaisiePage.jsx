@@ -109,7 +109,7 @@ function TimeInput({ value, onChange, C }) {
           border: `1.5px solid ${open ? C.green : C.border}`,
           borderRadius: 7, background: C.inputBg,
           cursor: 'pointer', transition: 'border-color 0.15s',
-          fontSize: 13, fontWeight: 700, color: value ? C.text : C.textDim,
+          fontSize: 12, color: value ? C.text : C.textDim,
           gap: 4,
         }}
       >
