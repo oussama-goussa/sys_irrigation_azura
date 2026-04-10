@@ -451,15 +451,13 @@ export default function SaisiePage({ token, auth, C, dark }) {
     <div style={{ maxWidth: 1500 }}>
 
       {/* ── Header ──────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>            
-          <div>
-            <div style={{ fontSize: 22, fontWeight: 900, color: C.text }}>
-              <ClipboardList size={22} color={C.green} strokeWidth={2} />
-              Saisie journalière
-            </div>
-            <div style={{ fontSize: 11, color: C.textDim }}>{date}</div>
-          </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>          
+        <div>
+          <h1 style={{ color: C.text, fontSize: 22, fontWeight: 900, marginBottom: 4, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <ClipboardList size={22} color={C.green} strokeWidth={2} />
+            Saisie journalière
+          </h1>
+          <p style={{ fontSize: 11, color: C.textDim }}>{date}</p>
         </div>
       </div>
 

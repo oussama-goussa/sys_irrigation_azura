@@ -195,7 +195,7 @@ function GaugeCard({ label, value, unit, min, max, color, C }) {
           textAnchor="middle"
           fill={isValid ? color : C.textDim}
           fontSize="11" fontWeight="900"
-          fontFamily="JetBrains Mono, monospace"
+          fontFamily="inherit"
         >
           {isValid ? `${value}${unit}` : `—`}
         </text>
@@ -204,14 +204,14 @@ function GaugeCard({ label, value, unit, min, max, color, C }) {
         <text x={cx + (r + 12) * Math.cos(toRad(135))} 
               y={cy + (r + 12) * Math.sin(toRad(135)) + 4} 
               textAnchor="middle" fill={C.textDim}
-              fontSize="7" fontFamily="JetBrains Mono, monospace">{min}
+              fontSize="7" fontFamily="inherit">{min}
         </text>
 
         {/* Max — endpoint bas-droite (45°) */}
         <text x={cx + (r + 12) * Math.cos(toRad(45))} 
               y={cy + (r + 12) * Math.sin(toRad(45)) + 4} 
               textAnchor="middle" fill={C.textDim}
-              fontSize="7" fontFamily="JetBrains Mono, monospace">{max}
+              fontSize="7" fontFamily="inherit">{max}
         </text>
       </svg>
     </div>
@@ -759,7 +759,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
           <div style={{ color: C.textDim, fontSize: 12, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <span>Netafim · {deviceInfo.controller_type || '—'} · v{deviceInfo.controller_version || '—'}</span>
             <span style={{ color: C.border }}>·</span>
-            <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{deviceInfo.device_id || '—'}</span>
+            <span style={{ fontFamily: 'inherit', fontSize: 11 }}>{deviceInfo.device_id || '—'}</span>
             <span style={{ color: C.border }}>·</span>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: online === null ? C.textDim : online ? C.green : C.red, fontWeight: 700 }}>

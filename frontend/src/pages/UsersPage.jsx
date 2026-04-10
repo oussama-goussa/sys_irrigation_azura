@@ -461,7 +461,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
             <Users size={22} color={C.green} strokeWidth={2} />
             Gestion des utilisateurs
           </h1>
-          <p style={{ color: C.textMuted, fontSize: 12 }}>Contrôle d'accès basé sur les rôles</p>
+          <p style={{ color: C.textDim, fontSize: 11 }}>Contrôle d'accès basé sur les rôles</p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Btn onClick={() => load(true)} variant="ghost" C={C} icon={RefreshCw} style={{ opacity: refreshing ? 0.5 : 1 }}>

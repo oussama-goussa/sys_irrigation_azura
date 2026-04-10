@@ -154,7 +154,7 @@ function HouseCard({ house, onSelectDevice, C, dark, accentColor }) {
         <div>
           <div style={{
             fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 3,
-            fontFamily: 'Space Grotesk, sans-serif',
+            fontFamily: 'inherit',
           }}>
             House {house.house_number}
           </div>
@@ -475,7 +475,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
                   <div style={{
                     fontSize: 42, fontWeight: 700, letterSpacing: '-0.03em',
                     lineHeight: 1, marginBottom: 8, color: s.color,
-                    fontFamily: 'Space Grotesk, sans-serif',
+                    fontFamily: 'inherit',
                   }}>
                     {s.value}
                     {s.suffix && (
