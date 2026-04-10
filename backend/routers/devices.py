@@ -159,6 +159,11 @@ def list_devices(
     """
     devices = db.query(Device).filter(Device.is_active == True).all()
 
+    # Après la query devices, ajouter :
+    if user["role"] != "admin":
+        allowed = user.get("farm_names", [])
+        devices = [d for d in devices if d.farm_name in allowed]
+
     # Grouper par ferme
     farms = {}
     for d in devices:
@@ -197,6 +202,11 @@ def dashboard_summary(
     Retourne les métriques temps réel, statut online/offline, alertes.
     """
     devices = db.query(Device).filter(Device.is_active == True).all()
+
+    # Après la query devices, ajouter :
+    if user["role"] != "admin":
+        allowed = user.get("farm_names", [])
+        devices = [d for d in devices if d.farm_name in allowed]
 
     farms = {}
     total_online  = 0
