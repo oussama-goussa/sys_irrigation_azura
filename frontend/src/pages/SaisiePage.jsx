@@ -482,7 +482,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
           <div style={{ display: 'flex', gap: 24 }}>
             {[
               { label: 'Total tours', value: tours.length || '—' },
-              { label: 'Durée totale (min)', value: dureeTotal > 0 ? dureeTotal : '—' },
+              { label: 'Durée totale', value: dureeTotal > 0 ? fmtDuree(dureeTotal) : '—' },
               { label: 'CC/bras (cc)', value: ccBras ?? '—' },
             ].map(item => (
               <div key={item.label}>
