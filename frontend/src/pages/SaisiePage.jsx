@@ -17,6 +17,13 @@ const fmtNum = (v, dec = 2) => {
   return Number(v).toFixed(dec)
 }
 
+const fmtDuree = (totalMin) => {
+  if (!totalMin || totalMin <= 0) return '—'
+  const h = Math.floor(totalMin / 60)
+  const m = Math.floor(totalMin % 60)
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`
+}
+
 function newTour(num) {
   return {
     id: Date.now() + num, num,
@@ -43,7 +50,7 @@ function TInput({ value, onChange, placeholder = '', disabled = false, width = 7
         background: disabled ? 'transparent' : (C?.inputBg || '#f9fbfa'),
         color: disabled ? (C?.green || '#18783f') : (C?.text || '#0d1f14'),
         fontSize: 12, fontFamily: 'inherit', outline: 'none',
-        fontWeight: disabled ? 700 : 400,
+        fontWeight: disabled ? 700 : 400, 
       }}
     />
   )
@@ -110,7 +117,7 @@ function TimeInput({ value, onChange, C }) {
           borderRadius: 7, background: C.inputBg,
           cursor: 'pointer', transition: 'border-color 0.15s',
           fontSize: 12, color: value ? C.text : C.textDim,
-          gap: 4,
+          gap: 4, fontWeight: 700,
         }}
       >
         <span>{h || '00'}</span>
@@ -467,7 +474,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
         <div style={{
           background: dark ? `${C.green}10` : `${C.green}08`,
           border: `1.5px solid ${C.green}30`,
-          borderRadius: 12, padding: '14px 18px', flex: 1,
+          borderRadius: 12, padding: '14px 18px', flex: 1, marginTop: '20px',
         }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: C.green, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
             Irrigation
@@ -683,25 +690,25 @@ export default function SaisiePage({ token, auth, C, dark }) {
                       {t.tempsRepos !== null ? `${t.tempsRepos} min` : i === 0 ? '—' : '?'}
                     </div>
                   </td>
-                  <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                  <td style={{ padding: '6px 4px', fontWeight: 700, textAlign: 'center' }}>
                     <TInput value={t.duree} onChange={v => updateTour(t.id, 'duree', v)} width={68} C={C} />
                   </td>
-                  <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                  <td style={{ padding: '6px 4px', fontWeight: 700, textAlign: 'center' }}>
                     <TInput value={t.vApport} onChange={v => updateTour(t.id, 'vApport', v)} width={72} C={C} />
                   </td>
-                  <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                  <td style={{ padding: '6px 4px', fontWeight: 700, textAlign: 'center' }}>
                     <TInput value={t.ecApport} onChange={v => updateTour(t.id, 'ecApport', v)} width={68} C={C} />
                   </td>
-                  <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                  <td style={{ padding: '6px 4px', fontWeight: 700, textAlign: 'center' }}>
                     <TInput value={t.phApport} onChange={v => updateTour(t.id, 'phApport', v)} width={68} C={C} />
                   </td>
-                  <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                  <td style={{ padding: '6px 4px', fontWeight: 700, textAlign: 'center' }}>
                     <TInput value={t.vDrain} onChange={v => updateTour(t.id, 'vDrain', v)} width={68} C={C} />
                   </td>
-                  <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                  <td style={{ padding: '6px 4px', fontWeight: 700, textAlign: 'center' }}>
                     <TInput value={t.ecDrain} onChange={v => updateTour(t.id, 'ecDrain', v)} width={68} C={C} />
                   </td>
-                  <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                  <td style={{ padding: '6px 4px', fontWeight: 700, textAlign: 'center' }}>
                     <TInput value={t.phDrain} onChange={v => updateTour(t.id, 'phDrain', v)} width={68} C={C} />
                   </td>
                   <td style={{ padding: '6px 4px', textAlign: 'center' }}>
@@ -778,7 +785,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
             borderRadius: 10, display: 'flex', gap: 32, flexWrap: 'wrap',
           }}>
             {[
-              { label: 'Durée totale', value: dureeTotal > 0 ? `${dureeTotal} min` : '—' },
+              { label: 'Durée totale', value: fmtDuree(dureeTotal) },
               { label: 'Total V.Apport', value: fmtNum(totalVApport, 1) },
               { label: 'Total V.Drain', value: fmtNum(totalVDrain, 1) },
               { label: 'Moy % Drainage finale', value: moyDrainFinale !== null ? `${fmtNum(moyDrainFinale, 1)}%` : '—' },
