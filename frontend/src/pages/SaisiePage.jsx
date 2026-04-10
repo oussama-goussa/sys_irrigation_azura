@@ -643,7 +643,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
           Tours d'irrigation
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit' }}>
             <thead>
               <tr>
@@ -664,7 +664,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
                 <TH w={36} C={C}></TH>
               </tr>
             </thead>
-            <tbody>
+            <tbody style={{ overflow: 'visible' }}>
               {tours.length === 0 ? (
                 <tr>
                   <td colSpan={15} style={{ padding: '40px 0', textAlign: 'center', color: C.textDim, fontSize: 12 }}>
