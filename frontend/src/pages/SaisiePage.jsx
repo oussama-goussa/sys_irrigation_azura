@@ -469,12 +469,12 @@ export default function SaisiePage({ token, auth, C, dark }) {
       </div>
 
       {/* ── Bilan ligne ─────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16, marginTop: 20 }}>
         {/* Irrigation */}
         <div style={{
           background: dark ? `${C.green}10` : `${C.green}08`,
           border: `1.5px solid ${C.green}30`,
-          borderRadius: 12, padding: '14px 18px', flex: 1, marginTop: '20px',
+          borderRadius: 12, padding: '14px 18px', flex: 1,
         }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: C.green, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
             Irrigation
@@ -482,11 +482,11 @@ export default function SaisiePage({ token, auth, C, dark }) {
           <div style={{ display: 'flex', gap: 24 }}>
             {[
               { label: 'Total tours', value: tours.length || '—' },
-              { label: 'Durée totale', value: dureeTotal > 0 ? fmtDuree(dureeTotal) : '—' },
+              { label: 'Durée totale', value: fmtDuree(dureeTotal) },
               { label: 'CC/bras (cc)', value: ccBras ?? '—' },
             ].map(item => (
               <div key={item.label}>
-                <div style={{ fontSize: 12, color: `${C.green}90`, marginBottom: 2 }}>{item.label}</div>
+                <div style={{ fontSize: 12, color: `${C.green}90`, marginBottom: 2, whiteSpace: 'nowrap' }}>{item.label}</div>
                 <div style={{ fontSize: 20, fontWeight: 900, color: C.green }}>{item.value}</div>
               </div>
             ))}
@@ -499,14 +499,12 @@ export default function SaisiePage({ token, auth, C, dark }) {
             { label: 'Drainage', value: totalVDrain > 0 ? fmtNum(totalVDrain, 1) : null },
           ]}
           color={C.blue} icon={Droplets} C={C} dark={dark} />
-
         <BilanCard title="Bilan EC"
           items={[
             { label: 'Apport', value: ecMoyApport ? fmtNum(ecMoyApport, 2) : null },
             { label: 'Drainage', value: ecMoyDrain ? fmtNum(ecMoyDrain, 2) : null },
           ]}
           color={C.green} icon={BarChart2} C={C} dark={dark} />
-
         <BilanCard title="Bilan pH"
           items={[
             { label: 'Apport', value: phMoyApport ? fmtNum(phMoyApport, 2) : null },
@@ -514,7 +512,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
           ]}
           color={C.amber} icon={FlaskConical} C={C} dark={dark} />
       </div>
-
+      
       {/* ── Ferme / Station / Serre / Vanne / Date ─────────── */}
       <div style={{ ...cardStyle }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.2fr 1fr 0.8fr 180px', gap: 14 }}>
