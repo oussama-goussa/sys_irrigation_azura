@@ -244,7 +244,7 @@ function BilanCard({ title, items, color, icon: Icon, C, dark }) {
       borderRadius: 12, padding: '14px 18px', flex: 1,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <div style={{ fontSize: 11, fontWeight: 800, color, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
           {title}
         </div>
         <div style={{
@@ -258,7 +258,7 @@ function BilanCard({ title, items, color, icon: Icon, C, dark }) {
       <div style={{ display: 'flex', gap: 16 }}>
         {items.map(item => (
           <div key={item.label}>
-            <div style={{ fontSize: 10, color: `${color}90`, marginBottom: 2 }}>{item.label}</div>
+            <div style={{ fontSize: 12, color: `${color}90`, marginBottom: 2 }}>{item.label}</div>
             <div style={{ fontSize: 20, fontWeight: 900, color }}>{item.value ?? '—'}</div>
           </div>
         ))}
@@ -272,7 +272,7 @@ function TH({ children, w, color, C }) {
   return (
     <th style={{
       padding: '8px 6px', textAlign: 'center',
-      fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+      fontSize: 12, fontWeight: 700, textTransform: 'uppercase',
       letterSpacing: '0.07em', color: color || C.textDim,
       whiteSpace: 'nowrap', width: w,
       borderBottom: `1.5px solid ${C.border}`,
@@ -286,7 +286,7 @@ function TH({ children, w, color, C }) {
 function SLabel({ children, C }) {
   return (
     <div style={{
-      fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+      fontSize: 12, fontWeight: 700, textTransform: 'uppercase',
       letterSpacing: '0.08em', color: C.textDim, marginBottom: 5,
     }}>{children}</div>
   )
@@ -438,7 +438,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
     borderRadius: 14, padding: '18px 22px', marginBottom: 16,
   }
   const labelStyle = {
-    display: 'block', color: C.textMuted, fontSize: 10, fontWeight: 700,
+    display: 'block', color: C.textMuted, fontSize: 12, fontWeight: 700,
     textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5,
   }
   const inputStyle = {
@@ -479,7 +479,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
               { label: 'CC/bras (cc)', value: ccBras ?? '—' },
             ].map(item => (
               <div key={item.label}>
-                <div style={{ fontSize: 10, color: `${C.green}90`, marginBottom: 2 }}>{item.label}</div>
+                <div style={{ fontSize: 12, color: `${C.green}90`, marginBottom: 2 }}>{item.label}</div>
                 <div style={{ fontSize: 20, fontWeight: 900, color: C.green }}>{item.value}</div>
               </div>
             ))}
@@ -560,7 +560,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
           marginTop: 16, paddingTop: 16,
           borderTop: `1px solid ${C.border}`,
         }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>
             Constantes &amp; Substrat
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 14, alignItems: 'end' }}>
@@ -615,7 +615,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
               border: `1.5px solid ${C.green}40`,
               borderRadius: 8, padding: '6px 14px',
             }}>
-              <span style={{ fontSize: 10, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.08em' }}>% Ressuyage</span>
+              <span style={{ fontSize: 12, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.08em' }}>% Ressuyage</span>
               <span style={{ fontSize: 16, fontWeight: 900, color: C.green }}>{pctRessuyage}%</span>
             </div>
           )}
@@ -788,7 +788,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
               { label: 'CC/bras consommé (cc)', value: ccBras ?? '—', highlight: true },
             ].map(item => (
               <div key={item.label}>
-                <div style={{ fontSize: 10, color: C.textDim, marginBottom: 3 }}>{item.label}</div>
+                <div style={{ fontSize: 12, color: C.textDim, marginBottom: 3 }}>{item.label}</div>
                 <div style={{ fontSize: item.highlight ? 22 : 16, fontWeight: 900, color: item.highlight ? C.green : C.text }}>
                   {item.value}
                 </div>
