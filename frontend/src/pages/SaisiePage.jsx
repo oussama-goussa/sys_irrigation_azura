@@ -67,7 +67,7 @@ function TimeInput({ value, onChange, C }) {
   }
 
   const numStyle = {
-    fontSize: 18, fontWeight: 900,
+    fontSize: 12, fontWeight: 700,
     color: C.text, width: 32, textAlign: 'center',
     background: 'none', border: 'none', outline: 'none',
     fontFamily: 'inherit', cursor: 'default',
@@ -83,30 +83,30 @@ function TimeInput({ value, onChange, C }) {
     <div style={{
       display: 'inline-flex', alignItems: 'center', gap: 2,
       border: `1.5px solid ${C.border}`, borderRadius: 8,
-      background: C.inputBg, padding: '2px 6px',
+      background: C.inputBg, padding: '2px 6px', height: 34,
     }}>
       {/* Heures */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <button style={arrowStyle} onClick={() => inc('h')}><ChevronUp size={11} strokeWidth={2.5}/></button>
+        <button style={arrowStyle} onClick={() => inc('h')}><ChevronUp size={12} strokeWidth={2.5}/></button>
         <input
           type="number" min={0} max={23}
           value={h || '00'}
           onChange={e => onChange(`${String(Math.min(23, Math.max(0, parseInt(e.target.value) || 0))).padStart(2,'0')}:${m || '00'}`)}
           style={numStyle}
         />
-        <button style={arrowStyle} onClick={() => dec('h')}><ChevronDown size={11} strokeWidth={2.5}/></button>
+        <button style={arrowStyle} onClick={() => dec('h')}><ChevronDown size={12} strokeWidth={2.5}/></button>
       </div>
-      <span style={{ fontSize: 18, fontWeight: 900, color: C.textMuted, userSelect: 'none' }}>:</span>
+      <span style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, userSelect: 'none' }}>:</span>
       {/* Minutes */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <button style={arrowStyle} onClick={() => inc('m')}><ChevronUp size={11} strokeWidth={2.5}/></button>
+        <button style={arrowStyle} onClick={() => inc('m')}><ChevronUp size={12} strokeWidth={2.5}/></button>
         <input
           type="number" min={0} max={59}
           value={m || '00'}
           onChange={e => onChange(`${h || '00'}:${String(Math.min(59, Math.max(0, parseInt(e.target.value) || 0))).padStart(2,'0')}`)}
           style={numStyle}
         />
-        <button style={arrowStyle} onClick={() => dec('m')}><ChevronDown size={11} strokeWidth={2.5}/></button>
+        <button style={arrowStyle} onClick={() => dec('m')}><ChevronDown size={12} strokeWidth={2.5}/></button>
       </div>
     </div>
   )
@@ -140,11 +140,11 @@ function CustomSelect({ value, onChange, options, placeholder, C, disabled = fal
           opacity: disabled ? 0.5 : 1,
         }}
       >
-        <span style={{ fontSize: 13, color: label ? C.text : C.textDim }}>
+        <span style={{ fontSize: 12, color: label ? C.text : C.textDim }}>
           {label || placeholder}
         </span>
         <span style={{ color: C.textDim, display: 'flex', alignItems: 'center' }}>
-          {open ? <ChevronUp size={13} strokeWidth={2}/> : <ChevronDown size={13} strokeWidth={2}/>}
+          {open ? <ChevronUp size={12} strokeWidth={2}/> : <ChevronDown size={12} strokeWidth={2}/>}
         </span>
       </div>
       {open && (
@@ -155,7 +155,7 @@ function CustomSelect({ value, onChange, options, placeholder, C, disabled = fal
           maxHeight: 200, overflowY: 'auto',
         }}>
           {options.length === 0 ? (
-            <div style={{ padding: '10px 14px', color: C.textDim, fontSize: 13 }}>Aucune option</div>
+            <div style={{ padding: '10px 14px', color: C.textDim, fontSize: 12 }}>Aucune option</div>
           ) : options.map(o => {
             const val = o.value ?? o
             const lbl = o.label ?? o
@@ -165,7 +165,7 @@ function CustomSelect({ value, onChange, options, placeholder, C, disabled = fal
                 key={val}
                 onClick={() => { onChange(val); setOpen(false) }}
                 style={{
-                  padding: '9px 14px', fontSize: 13, cursor: 'pointer',
+                  padding: '9px 14px', fontSize: 12, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   color: sel ? C.green : C.textMuted,
                   background: sel ? `${C.green}12` : 'transparent',
@@ -175,7 +175,7 @@ function CustomSelect({ value, onChange, options, placeholder, C, disabled = fal
                 onMouseLeave={e => e.currentTarget.style.background = sel ? `${C.green}12` : 'transparent'}
               >
                 <span>{lbl}</span>
-                {sel && <Check size={13} strokeWidth={2.5}/>}
+                {sel && <Check size={12} strokeWidth={2.5}/>}
               </div>
             )
           })}
@@ -202,7 +202,7 @@ function BilanCard({ title, items, color, icon: Icon, C, dark }) {
           background: `${color}18`, border: `1px solid ${color}30`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <Icon size={13} color={color} strokeWidth={2} />
+          <Icon size={12} color={color} strokeWidth={2} />
         </div>
       </div>
       <div style={{ display: 'flex', gap: 16 }}>
@@ -394,7 +394,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
   const inputStyle = {
     width: '100%', padding: '8px 12px', borderRadius: 8,
     border: `1.5px solid ${C.border}`, background: C.inputBg,
-    color: C.text, fontSize: 13, fontFamily: 'inherit', outline: 'none',
+    color: C.text, fontSize: 12, fontFamily: 'inherit', outline: 'none',
   }
 
   return (
@@ -404,9 +404,6 @@ export default function SaisiePage({ token, auth, C, dark }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
-            width: 40, height: 40, borderRadius: 11,
-            background: dark ? 'rgba(52,217,111,0.12)' : 'rgba(24,120,63,0.10)',
-            border: `1.5px solid ${C.green}30`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <ClipboardList size={20} color={C.green} strokeWidth={2} />
@@ -425,7 +422,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
               border: `1px solid ${C.red}30`,
               borderRadius: 8, padding: '8px 14px', color: C.red, fontSize: 12,
             }}>
-              <AlertCircle size={14} strokeWidth={2} />{error}
+              <AlertCircle size={12} strokeWidth={2} />{error}
             </div>
           )}
           {saved && (
@@ -446,7 +443,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
           border: `1.5px solid ${C.green}30`,
           borderRadius: 12, padding: '14px 18px', flex: 1,
         }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: C.green, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: C.green, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
             Irrigation
           </div>
           <div style={{ display: 'flex', gap: 24 }}>
@@ -601,7 +598,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
 
       {/* ── Table Tours ──────────────────────────────────────── */}
       <div style={{ ...cardStyle, marginBottom: 0 }}>
-        <div style={{ fontSize: 11, fontWeight: 800, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>
           Tours d'irrigation
         </div>
 
@@ -651,7 +648,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
                     <TInput value={t.rad} onChange={v => updateTour(t.id, 'rad', v)} width={68} C={C} />
                   </td>
                   <td style={{ padding: '6px 4px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: C.blue }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: C.blue }}>
                       {t.cumulRad > 0 ? fmtNum(t.cumulRad, 1) : '—'}
                     </div>
                   </td>
@@ -703,7 +700,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
                       onMouseEnter={e => e.currentTarget.style.color = C.red}
                       onMouseLeave={e => e.currentTarget.style.color = C.textDim}
                     >
-                      <Trash2 size={13} strokeWidth={2} />
+                      <Trash2 size={12} strokeWidth={2} />
                     </button>
                   </td>
                 </tr>
@@ -713,7 +710,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
             {tours.length > 0 && (
               <tfoot>
                 <tr style={{ borderTop: `2px solid ${C.border}` }}>
-                  <td colSpan={6} style={{ padding: '8px 6px', fontSize: 11, fontWeight: 700, color: C.textMuted }}>TOTAUX</td>
+                  <td colSpan={6} style={{ padding: '8px 6px', fontSize: 12, fontWeight: 700, color: C.textMuted }}>TOTAUX</td>
                   <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 900, color: C.green }}>{fmtNum(totalVApport, 1)}</td>
                   <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 700, color: C.textMuted }}>{ecMoyApport ? fmtNum(ecMoyApport, 2) : '—'}</td>
                   <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 700, color: C.textMuted }}>{phMoyApport ? fmtNum(phMoyApport, 2) : '—'}</td>
@@ -729,7 +726,10 @@ export default function SaisiePage({ token, auth, C, dark }) {
         </div>
 
         {/* ── + Nouveau tour en bas de table ── */}
-        <div ref={tableBottomRef} style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div ref={tableBottomRef} style={{
+          marginTop: 12, display: 'flex',
+          alignItems: 'center', justifyContent: 'flex-end',  // ← droite
+        }}>
           <button
             onClick={addTour}
             style={{
@@ -741,27 +741,8 @@ export default function SaisiePage({ token, auth, C, dark }) {
               fontSize: 12, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer',
             }}
           >
-            <Plus size={14} strokeWidth={2.5} />
+            <Plus size={12} strokeWidth={2.5} />
             Nouveau tour
-          </button>
-
-          {/* Enregistrer en bas à droite */}
-          <button
-            onClick={handleSave}
-            disabled={saving || tours.length === 0}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 7,
-              padding: '10px 24px',
-              background: saving || tours.length === 0 ? C.toggleBg : C.green,
-              color: saving || tours.length === 0 ? C.textDim : '#fff',
-              border: 'none', borderRadius: 9,
-              fontSize: 13, fontWeight: 700, fontFamily: 'inherit',
-              cursor: saving || tours.length === 0 ? 'not-allowed' : 'pointer',
-              transition: 'all 0.15s',
-            }}
-          >
-            <Save size={14} strokeWidth={2.5} />
-            {saving ? 'Enregistrement…' : 'Enregistrer'}
           </button>
         </div>
 
@@ -789,6 +770,45 @@ export default function SaisiePage({ token, auth, C, dark }) {
             ))}
           </div>
         )}
+      </div>
+
+      {/* ── Enregistrer — bas de page droite ── */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+        {error && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 6, marginRight: 10,
+            background: dark ? '#2a0a0a' : '#fef2f2',
+            border: `1px solid ${C.red}30`,
+            borderRadius: 8, padding: '8px 14px', color: C.red, fontSize: 12,
+          }}>
+            <AlertCircle size={12} strokeWidth={2} />{error}
+          </div>
+        )}
+        {saved && (
+          <div style={{
+            marginRight: 10,
+            background: dark ? 'rgba(52,217,111,0.12)' : 'rgba(24,120,63,0.08)',
+            border: `1px solid ${C.green}30`,
+            borderRadius: 8, padding: '8px 14px', color: C.green, fontSize: 12, fontWeight: 700,
+          }}>✓ Enregistré</div>
+        )}
+        <button
+          onClick={handleSave}
+          disabled={saving || tours.length === 0}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 7,
+            padding: '11px 28px',
+            background: saving || tours.length === 0 ? C.toggleBg : C.green,
+            color: saving || tours.length === 0 ? C.textDim : '#fff',
+            border: 'none', borderRadius: 9,
+            fontSize: 12, fontWeight: 700, fontFamily: 'inherit',
+            cursor: saving || tours.length === 0 ? 'not-allowed' : 'pointer',
+            transition: 'all 0.15s',
+          }}
+        >
+          <Save size={12} strokeWidth={2.5} />
+          {saving ? 'Enregistrement…' : 'Enregistrer'}
+        </button>
       </div>
     </div>
   )
