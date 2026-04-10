@@ -613,7 +613,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
               marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 8,
             }}>
               <span style={{ fontSize: 12, color: C.textDim }}>% Ressuyage</span>
-              <span style={{ fontSize: 16, fontWeight: 900, color: C.green }}>{pctRessuyage}%</span>
+              <span style={{ fontSize: 12, fontWeight: 500, color: C.green }}>{pctRessuyage}%</span>
             </div>
           )}
         </div>
