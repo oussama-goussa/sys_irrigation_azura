@@ -438,7 +438,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
     borderRadius: 14, padding: '18px 22px', marginBottom: 16,
   }
   const labelStyle = {
-    display: 'block', color: C.textMuted, fontSize: 12, fontWeight: 700,
+    display: 'block', color: C.textMuted, fontSize: 12, fontWeight: 800,
     textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5,
   }
   const inputStyle = {
@@ -538,7 +538,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
               value={serre}
               onChange={setSerre}
               options={serreOptions}
-              placeholder="S01 → S20"
+              placeholder="S01"
               C={C}
               disabled={!station}
             />
@@ -560,7 +560,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
           marginTop: 16, paddingTop: 16,
           borderTop: `1px solid ${C.border}`,
         }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>
             Constantes &amp; Substrat
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 14, alignItems: 'end' }}>
