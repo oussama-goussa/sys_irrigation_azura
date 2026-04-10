@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react'
 import {
-  Users, Sun, Moon, LogOut, Leaf,
+  Users, Sun, Moon, LogOut, Leaf, ClipboardList,
   LayoutDashboard, Home, ChevronDown, ChevronRight,
   Wifi, WifiOff, Settings, RefreshCw,
 } from 'lucide-react'
@@ -15,6 +15,7 @@ import { Badge, Spinner, SZ } from './ui.jsx'
 import { getDevices } from '../api/client.js'
 
 import UsersPage     from '../pages/UsersPage.jsx'
+import SaisiePage    from '../pages/SaisiePage.jsx'
 import DashboardPage from '../pages/DashboardPage.jsx'
 import ZonePage      from '../pages/ZonePage.jsx'
 
@@ -219,6 +220,34 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
             </div>
           )}
 
+          {/* Saisie journalière */}
+          <button
+            onClick={() => setPage('saisie')}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center',
+              gap: 9, padding: '9px 10px', borderRadius: 8,
+              border: 'none', cursor: 'pointer', fontSize: 13,
+              fontWeight: page === 'saisie' ? 700 : 500,
+              fontFamily: 'inherit',
+              background: page === 'saisie'
+                ? (dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.08)')
+                : 'transparent',
+              color: page === 'saisie' ? C.green : C.textMuted,
+              position: 'relative',
+              transition: 'all 0.13s',
+              marginBottom: 4,
+            }}
+          >
+            {page === 'saisie' && (
+              <span style={{
+                position: 'absolute', left: 0, top: '18%', bottom: '18%',
+                width: 3, borderRadius: '0 3px 3px 0', background: C.green,
+              }} />
+            )}
+            <ClipboardList size={15} strokeWidth={page === 'saisie' ? 2.5 : 1.8} />
+            Saisie journalière
+          </button>
+
           {/* Users — admin only */}
           {auth.role === 'admin' && (
             <button
@@ -336,6 +365,15 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
           />
         )}
 
+        {page === 'saisie' && (
+          <SaisiePage
+            token={auth.access_token}
+            auth={auth}
+            C={C}
+            dark={dark}
+          />
+        )}
+
         {page === 'users' && auth.role === 'admin' && (
           <UsersPage
             token={auth.access_token}
@@ -346,7 +384,7 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
         )}
 
         {/* Fallback pour rôles sans accès */}
-        {page === 'dashboard' || page === 'zone' || page === 'users' ? null : (
+        {page === 'dashboard' || page === 'zone' || page === 'users' || page === 'saisie' ? null : (
           <div style={{
             display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
