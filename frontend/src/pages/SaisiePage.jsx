@@ -51,7 +51,15 @@ function TInput({ value, onChange, placeholder = '', disabled = false, width = 7
 
 // ── TimeInput — style scroll hh:mm ───────────────────────────
 function TimeInput({ value, onChange, C }) {
-  const [h, m] = value ? value.split(':') : ['', '']
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  const [h, m] = value ? value.split(':') : ['00', '00']
+
+  useEffect(() => {
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [])
 
   const inc = (type) => {
     const hv = parseInt(h || '0')
@@ -66,48 +74,103 @@ function TimeInput({ value, onChange, C }) {
     else onChange(`${h || '00'}:${String((mv - 1 + 60) % 60).padStart(2, '0')}`)
   }
 
-  const numStyle = {
-    fontSize: 12, fontWeight: 700,
-    color: C.text, width: 32, textAlign: 'center',
-    background: 'none', border: 'none', outline: 'none',
-    fontFamily: 'inherit', cursor: 'default',
-    padding: 0,
-  }
+  const colStyle = { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }
   const arrowStyle = {
     background: 'none', border: 'none', cursor: 'pointer',
-    color: C.textDim, display: 'flex', alignItems: 'center',
-    padding: '1px 4px', borderRadius: 4,
+    color: C.textMuted, display: 'flex', alignItems: 'center',
+    padding: '4px 8px', borderRadius: 5, transition: 'background 0.1s',
+  }
+  const numStyle = {
+    fontSize: 22, fontWeight: 700, color: C.text,
+    width: 48, textAlign: 'center',
+    background: 'none', border: 'none', outline: 'none',
+    fontFamily: 'inherit', padding: 0,
   }
 
   return (
-    <div style={{
-      display: 'inline-flex', alignItems: 'center', gap: 2,
-      border: `1.5px solid ${C.border}`, borderRadius: 8,
-      background: C.inputBg, padding: '2px 6px', height: 34,
-    }}>
-      {/* Heures */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <button style={arrowStyle} onClick={() => inc('h')}><ChevronUp size={12} strokeWidth={2.5}/></button>
-        <input
-          type="number" min={0} max={23}
-          value={h || '00'}
-          onChange={e => onChange(`${String(Math.min(23, Math.max(0, parseInt(e.target.value) || 0))).padStart(2,'0')}:${m || '00'}`)}
-          style={numStyle}
-        />
-        <button style={arrowStyle} onClick={() => dec('h')}><ChevronDown size={12} strokeWidth={2.5}/></button>
+    <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
+      {/* Trigger */}
+      <div
+        onClick={() => setOpen(v => !v)}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          height: 34, padding: '0 10px', minWidth: 80,
+          border: `1.5px solid ${open ? C.green : C.border}`,
+          borderRadius: 7, background: C.inputBg,
+          cursor: 'pointer', transition: 'border-color 0.15s',
+          fontSize: 13, fontWeight: 700, color: value ? C.text : C.textDim,
+          gap: 4,
+        }}
+      >
+        <span>{h || '00'}</span>
+        <span style={{ color: C.textDim }}>:</span>
+        <span>{m || '00'}</span>
       </div>
-      <span style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, userSelect: 'none' }}>:</span>
-      {/* Minutes */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <button style={arrowStyle} onClick={() => inc('m')}><ChevronUp size={12} strokeWidth={2.5}/></button>
-        <input
-          type="number" min={0} max={59}
-          value={m || '00'}
-          onChange={e => onChange(`${h || '00'}:${String(Math.min(59, Math.max(0, parseInt(e.target.value) || 0))).padStart(2,'0')}`)}
-          style={numStyle}
-        />
-        <button style={arrowStyle} onClick={() => dec('m')}><ChevronDown size={12} strokeWidth={2.5}/></button>
-      </div>
+
+      {/* Dropdown picker */}
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 6px)', left: '50%',
+          transform: 'translateX(-50%)',
+          background: C.card, border: `1.5px solid ${C.border}`,
+          borderRadius: 10, zIndex: 500,
+          boxShadow: `0 4px 24px ${C.shadow}`,
+          padding: '10px 16px',
+          display: 'flex', alignItems: 'center', gap: 4,
+        }}>
+          {/* HH */}
+          <div style={colStyle}>
+            <button style={arrowStyle}
+              onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+              onClick={() => inc('h')}>
+              <ChevronUp size={16} strokeWidth={2.5}/>
+            </button>
+            <input
+              type="text" inputMode="numeric" maxLength={2}
+              value={h || '00'}
+              onChange={e => {
+                const v = parseInt(e.target.value) || 0
+                onChange(`${String(Math.min(23, Math.max(0, v))).padStart(2, '0')}:${m || '00'}`)
+              }}
+              style={numStyle}
+            />
+            <button style={arrowStyle}
+              onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+              onClick={() => dec('h')}>
+              <ChevronDown size={16} strokeWidth={2.5}/>
+            </button>
+          </div>
+
+          <span style={{ fontSize: 22, fontWeight: 900, color: C.textMuted, marginBottom: 2 }}>:</span>
+
+          {/* MM */}
+          <div style={colStyle}>
+            <button style={arrowStyle}
+              onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+              onClick={() => inc('m')}>
+              <ChevronUp size={16} strokeWidth={2.5}/>
+            </button>
+            <input
+              type="text" inputMode="numeric" maxLength={2}
+              value={m || '00'}
+              onChange={e => {
+                const v = parseInt(e.target.value) || 0
+                onChange(`${h || '00'}:${String(Math.min(59, Math.max(0, v))).padStart(2, '0')}`)
+              }}
+              style={numStyle}
+            />
+            <button style={arrowStyle}
+              onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+              onClick={() => dec('m')}>
+              <ChevronDown size={16} strokeWidth={2.5}/>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -402,36 +465,14 @@ export default function SaisiePage({ token, auth, C, dark }) {
 
       {/* ── Header ──────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <ClipboardList size={20} color={C.green} strokeWidth={2} />
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>            
           <div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: C.text }}>Saisie journalière</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: C.text }}>
+              <ClipboardList size={22} color={C.green} strokeWidth={2} />
+              Saisie journalière
+            </div>
             <div style={{ fontSize: 11, color: C.textDim }}>{date}</div>
           </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          {error && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: dark ? '#2a0a0a' : '#fef2f2',
-              border: `1px solid ${C.red}30`,
-              borderRadius: 8, padding: '8px 14px', color: C.red, fontSize: 12,
-            }}>
-              <AlertCircle size={12} strokeWidth={2} />{error}
-            </div>
-          )}
-          {saved && (
-            <div style={{
-              background: dark ? 'rgba(52,217,111,0.12)' : 'rgba(24,120,63,0.08)',
-              border: `1px solid ${C.green}30`,
-              borderRadius: 8, padding: '8px 14px', color: C.green, fontSize: 12, fontWeight: 700,
-            }}>✓ Enregistré</div>
-          )}
         </div>
       </div>
 
@@ -810,6 +851,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
           {saving ? 'Enregistrement…' : 'Enregistrer'}
         </button>
       </div>
+    
     </div>
   )
 }
