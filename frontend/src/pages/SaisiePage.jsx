@@ -611,11 +611,8 @@ export default function SaisiePage({ token, auth, C, dark }) {
           {pctRessuyage !== null && (
             <div style={{
               marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 8,
-              background: dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.06)',
-              border: `1.5px solid ${C.green}40`,
-              borderRadius: 8, padding: '6px 14px',
             }}>
-              <span style={{ fontSize: 12, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.08em' }}>% Ressuyage</span>
+              <span style={{ fontSize: 12, color: C.textDim }}>% Ressuyage</span>
               <span style={{ fontSize: 16, fontWeight: 900, color: C.green }}>{pctRessuyage}%</span>
             </div>
           )}
@@ -789,7 +786,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
             ].map(item => (
               <div key={item.label}>
                 <div style={{ fontSize: 12, color: C.textDim, marginBottom: 3 }}>{item.label}</div>
-                <div style={{ fontSize: item.highlight ? 22 : 16, fontWeight: 900, color: item.highlight ? C.green : C.text }}>
+                <div style={{ fontSize: item.highlight ? 12 : 12, fontWeight: 700, color: item.highlight ? C.green : C.text }}>
                   {item.value}
                 </div>
               </div>
