@@ -1178,9 +1178,9 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                 {/* Headers */}
                 <tr>
                   <TH w={40} />
-                  <TH w={110}>Date</TH>
-                  <TH w={90}>Ferme</TH>
-                  <TH w={60} center>Bloc</TH>
+                  <TH w={110} center>Date</TH>
+                  <TH w={90} center>Ferme</TH>
+                  <TH w={60} center>Station</TH>
                   <TH w={65} center>Serre</TH>
                   <TH w={58} center>Vanne</TH>
                   <TH w={72} center>Bras</TH>
@@ -1191,7 +1191,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                   <TH w={82} center>H. Soir</TH>
                   <TH w={82} center>Bassin EC</TH>
                   <TH w={95} center color={C.green}>Séchage %</TH>
-                  <TH w={120}>Actions</TH>
+                  <TH w={120} center>Actions</TH>
                 </tr>
                 {/* Filtres */}
                 <tr style={{ background: dark ? 'rgba(255,255,255,0.025)' : 'rgba(24,120,63,0.025)', borderBottom: `1.5px solid ${C.border}` }}>
@@ -1238,7 +1238,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                   <th colSpan={2} />
                 </tr>
               </thead>
-              <tbody>
+              <tbody style={{ overflow: 'visible' }}>
                 {loading ? (
                   <tr><td colSpan={15} style={{ padding: '48px 0', textAlign: 'center', color: C.textDim, fontSize: 12 }}>
                     Chargement…
