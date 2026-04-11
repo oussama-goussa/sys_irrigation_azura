@@ -243,7 +243,7 @@ function FilterSelect({ value, onChange, options, C }) {
       </div>
       {open && (
         <div style={{
-          position: 'fixed', top: pos.top, left: pos.left, width: pos.width, minWidth: 140,
+          position: 'fixed', top: pos.top, left: pos.left, width: pos.width, 
           background: C.card, border: `1.5px solid ${C.border}`,
           borderRadius: 8, zIndex: 9999, boxShadow: `0 6px 24px rgba(0,0,0,0.15)`,
           maxHeight: 200, overflowY: 'auto',
