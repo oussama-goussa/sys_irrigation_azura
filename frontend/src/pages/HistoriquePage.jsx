@@ -1,13 +1,11 @@
 // ============================================================
 // frontend/src/pages/HistoriquePage.jsx
-// Historique des saisies journalières
-// Projet Azura Irrigation IA — GOUSSA Oussama
 // ============================================================
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   History, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
-  Pencil, Trash2, Download, Search, X, AlertTriangle,
+  Pencil, Trash2, X, AlertTriangle,
   Plus, Save, AlertCircle, Check, Droplets, FlaskConical,
   BarChart2, ClipboardList,
 } from 'lucide-react'
@@ -52,35 +50,91 @@ function TInput({ value, onChange, disabled = false, width = 72, C }) {
   )
 }
 
-// ── TimeInput ─────────────────────────────────────────────────
+// ── TimeInput — scroll hh:mm comme SaisiePage ────────────────
 function TimeInput({ value, onChange, C }) {
-  const [h, m] = value ? value.split(':') : ['', '']
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  const triggerRef = useRef(null)
+  const [pos, setPos] = useState({ top: 0, left: 0 })
+  const [h, m] = value ? value.split(':') : ['00', '00']
+
+  useEffect(() => {
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [])
+
+  const handleOpen = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect()
+      setPos({ top: rect.bottom + 6, left: rect.left + rect.width / 2 })
+    }
+    setOpen(v => !v)
+  }
+
+  const inc = (type) => {
+    const hv = parseInt(h || '0'); const mv = parseInt(m || '0')
+    if (type === 'h') onChange(`${String((hv + 1) % 24).padStart(2, '0')}:${m || '00'}`)
+    else onChange(`${h || '00'}:${String((mv + 1) % 60).padStart(2, '0')}`)
+  }
+  const dec = (type) => {
+    const hv = parseInt(h || '0'); const mv = parseInt(m || '0')
+    if (type === 'h') onChange(`${String((hv - 1 + 24) % 24).padStart(2, '0')}:${m || '00'}`)
+    else onChange(`${h || '00'}:${String((mv - 1 + 60) % 60).padStart(2, '0')}`)
+  }
+
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-      <select value={h || ''} onChange={e => onChange(`${e.target.value}:${m || '00'}`)}
-        style={{ width: 44, padding: '5px 2px', borderRadius: 6, textAlign: 'center',
-          border: `1.5px solid ${C.border}`, background: C.inputBg, color: C.text,
-          fontSize: 12, fontFamily: 'inherit', outline: 'none' }}>
-        <option value="">HH</option>
-        {Array.from({ length: 24 }, (_, i) => (
-          <option key={i} value={String(i).padStart(2,'0')}>{String(i).padStart(2,'0')}</option>
-        ))}
-      </select>
-      <span style={{ color: C.textDim, fontWeight: 700, fontSize: 12 }}>:</span>
-      <select value={m || ''} onChange={e => onChange(`${h || '00'}:${e.target.value}`)}
-        style={{ width: 44, padding: '5px 2px', borderRadius: 6, textAlign: 'center',
-          border: `1.5px solid ${C.border}`, background: C.inputBg, color: C.text,
-          fontSize: 12, fontFamily: 'inherit', outline: 'none' }}>
-        <option value="">MM</option>
-        {Array.from({ length: 60 }, (_, i) => (
-          <option key={i} value={String(i).padStart(2,'0')}>{String(i).padStart(2,'0')}</option>
-        ))}
-      </select>
+    <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
+      <div ref={triggerRef} onClick={handleOpen} style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        height: 32, padding: '0 10px', minWidth: 76,
+        border: `1.5px solid ${open ? C.green : C.border}`,
+        borderRadius: 7, background: C.inputBg, cursor: 'pointer',
+        fontSize: 12, color: value ? C.text : C.textDim, gap: 4, fontWeight: 700,
+      }}>
+        <span>{h || '00'}</span>
+        <span style={{ color: C.textDim }}>:</span>
+        <span>{m || '00'}</span>
+      </div>
+      {open && (
+        <div style={{
+          position: 'fixed', top: pos.top, left: pos.left,
+          transform: 'translateX(-50%)',
+          background: C.card, border: `1.5px solid ${C.border}`,
+          borderRadius: 10, zIndex: 9999,
+          boxShadow: `0 4px 24px rgba(0,0,0,0.2)`,
+          padding: '10px 16px',
+          display: 'flex', alignItems: 'center', gap: 4,
+        }}>
+          {['h', 'm'].map((type, ti) => (
+            <React.Fragment key={type}>
+              {ti === 1 && <span style={{ fontSize: 22, fontWeight: 900, color: C.textMuted }}>:</span>}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                <button onClick={() => inc(type)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px' }}>
+                  <ChevronUp size={16} strokeWidth={2.5} />
+                </button>
+                <input type="text" inputMode="numeric" maxLength={2}
+                  value={type === 'h' ? (h || '00') : (m || '00')}
+                  onChange={e => {
+                    const v = parseInt(e.target.value) || 0
+                    if (type === 'h') onChange(`${String(Math.min(23, Math.max(0, v))).padStart(2, '0')}:${m || '00'}`)
+                    else onChange(`${h || '00'}:${String(Math.min(59, Math.max(0, v))).padStart(2, '00')}`)
+                  }}
+                  style={{ fontSize: 22, fontWeight: 700, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
+                />
+                <button onClick={() => dec(type)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px' }}>
+                  <ChevronDown size={16} strokeWidth={2.5} />
+                </button>
+              </div>
+            </React.Fragment>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
 
-// ── StyledSelect ──────────────────────────────────────────────
+// ── SSelect ───────────────────────────────────────────────────
 function SSelect({ value, onChange, options, placeholder, C, width = '100%' }) {
   return (
     <div style={{ position: 'relative', width }}>
@@ -100,10 +154,62 @@ function SSelect({ value, onChange, options, placeholder, C, width = '100%' }) {
   )
 }
 
+// ── FilterSelect ─────────────────────────────────────────────
+function FilterSelect({ value, onChange, options, C }) {
+  return (
+    <div style={{ position: 'relative' }}>
+      <select value={value} onChange={e => onChange(e.target.value)}
+        style={{ width: '100%', padding: '5px 22px 5px 7px', borderRadius: 6,
+          border: `1.5px solid ${C.border}`, background: C.inputBg,
+          color: value ? C.text : C.textDim, fontSize: 11,
+          fontFamily: 'inherit', outline: 'none', appearance: 'none', cursor: 'pointer' }}>
+        <option value="">Tous</option>
+        {options.map(o => <option key={o.value ?? o} value={o.value ?? o}>{o.label ?? o}</option>)}
+      </select>
+      <ChevronDown size={10} strokeWidth={2} style={{
+        position: 'absolute', right: 5, top: '50%',
+        transform: 'translateY(-50%)', color: C.textDim, pointerEvents: 'none',
+      }} />
+    </div>
+  )
+}
+
+// ── FilterInput ──────────────────────────────────────────────
+function FilterInput({ value, onChange, placeholder, C, type = 'text' }) {
+  return (
+    <div style={{ position: 'relative' }}>
+      <input type={type} value={value} onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        style={{ width: '100%', padding: '5px 22px 5px 7px', borderRadius: 6,
+          border: `1.5px solid ${C.border}`, background: C.inputBg,
+          color: C.text, fontSize: 11, fontFamily: 'inherit', outline: 'none',
+          boxSizing: 'border-box' }} />
+      {value && (
+        <button onClick={() => onChange('')}
+          style={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)',
+            background: 'none', border: 'none', cursor: 'pointer', color: C.textDim, padding: 2 }}>
+          <X size={10} strokeWidth={2} />
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ── TH helper for EditModal ───────────────────────────────────
+function THm({ children, w, color, C }) {
+  return (
+    <th style={{ padding: '7px 5px', textAlign: 'center', fontSize: 10, fontWeight: 700,
+      textTransform: 'uppercase', letterSpacing: '0.07em', color: color || C.textDim,
+      whiteSpace: 'nowrap', width: w, borderBottom: `1.5px solid ${C.border}` }}>
+      {children}
+    </th>
+  )
+}
+
 // ── Confirm Delete Modal ──────────────────────────────────────
 function ConfirmModal({ saisie, onConfirm, onCancel, C }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.65)',
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.65)',
       display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ background: C.card, border: `1.5px solid ${C.border}`,
         borderRadius: 16, padding: '28px 32px', width: 400,
@@ -144,9 +250,8 @@ function ConfirmModal({ saisie, onConfirm, onCancel, C }) {
   )
 }
 
-// ── Edit Modal (comme SaisiePage) ─────────────────────────────
+// ── Edit Modal ────────────────────────────────────────────────
 function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
-  // Initialiser depuis la saisie existante
   const [ferme, setFerme]         = useState(saisie.farm_name || '')
   const [station, setStation]     = useState(saisie.station || '')
   const [serre, setSerre]         = useState(saisie.serre || '')
@@ -164,7 +269,6 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
   const [error, setError]         = useState('')
   const tableBottomRef = useRef(null)
 
-  // Charger les tours existants
   useEffect(() => {
     getSaisie(token, saisie.id).then(data => {
       const t = (data.tours || []).map((t, i) => ({
@@ -193,53 +297,78 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
     ? (((Number(poidsSoir) - Number(poidsMatin)) / Number(poidsMatin)) * 100).toFixed(1)
     : null
 
-  // Options fermes
+  // Options
   const fermeOptions = farms.map(f => ({ value: f.farm_name, label: f.farm_name }))
   const selectedFarm = farms.find(f => f.farm_name === ferme)
   const houses = selectedFarm?.houses || []
   const stationOptions = [...new Set(houses.map(h => h.house_number))].map(v => ({ value: v, label: `Station ${v}` }))
+  const serreOptions = Array.from({ length: 20 }, (_, i) => ({
+    value: `S${String(i + 1).padStart(2, '0')}`,
+    label: `S${String(i + 1).padStart(2, '0')}`,
+  }))
 
-  // Recalcul tours
-  const recalculTours = useCallback((list) => {
+  // Recalcul tours — recalcule pctDrain à chaque changement
+  const recalculTours = useCallback((list, goutteurs) => {
+    const ng = Number(goutteurs) || 0
     let cumulPrev = 0
     return list.map((t, i) => {
       const prev = i > 0 ? list[i - 1] : null
       const radActuelle = Number(t.rad) || 0
       const cumulRad = radActuelle - cumulPrev
       cumulPrev += cumulRad
+
       let tempsRepos = null
       if (i > 0 && prev?.heure && prev?.duree && t.heure) {
-        const toMin = h => { const [hh, mm] = h.split(':').map(Number); return hh * 60 + mm }
+        const toMin = hh => { const [h2, m2] = hh.split(':').map(Number); return h2 * 60 + m2 }
         tempsRepos = toMin(t.heure) - (toMin(prev.heure) + (Number(prev.duree) || 0))
         if (tempsRepos < 0) tempsRepos = 0
       }
+
+      // % Drain — recalcul forcé à chaque appel
       let pctDrain = null
-      if (t.vDrain && t.vApport && nbrGoutteurs && Number(t.vApport) > 0 && Number(nbrGoutteurs) > 0)
-        pctDrain = (Number(t.vDrain) / Number(nbrGoutteurs) / Number(t.vApport)) * 100
+      const vd = Number(t.vDrain)
+      const va = Number(t.vApport)
+      if (vd > 0 && va > 0 && ng > 0) {
+        pctDrain = (vd / ng / va) * 100
+      }
+
       let moyPctDrain = null
       if (pctDrain !== null) {
         const prevMoy = prev?.moyPctDrain ?? null
         moyPctDrain = i === 0 ? pctDrain : prevMoy !== null ? (prevMoy * i + pctDrain) / (i + 1) : null
       }
+
       return { ...t, cumulRad: Math.max(0, cumulRad), tempsRepos, pctDrain, moyPctDrain }
     })
-  }, [nbrGoutteurs])
+  }, [])
 
-  const updateTour = (id, field, val) =>
-    setTours(prev => recalculTours(prev.map(t => t.id === id ? { ...t, [field]: val } : t)))
+  const updateTour = (id, field, val) => {
+    setTours(prev => recalculTours(
+      prev.map(t => t.id === id ? { ...t, [field]: val } : t),
+      nbrGoutteurs
+    ))
+  }
+
+  // Recalcul quand nbrGoutteurs change
+  useEffect(() => {
+    setTours(prev => recalculTours(prev, nbrGoutteurs))
+  }, [nbrGoutteurs, recalculTours])
 
   const addTour = () => {
     setTours(prev => {
       const next = [...prev, newTour(prev.length + 1)]
       setTimeout(() => tableBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
-      return recalculTours(next)
+      return recalculTours(next, nbrGoutteurs)
     })
   }
 
   const deleteTourRow = (id) =>
-    setTours(prev => recalculTours(prev.filter(t => t.id !== id).map((t, i) => ({ ...t, num: i + 1 }))))
+    setTours(prev => recalculTours(
+      prev.filter(t => t.id !== id).map((t, i) => ({ ...t, num: i + 1 })),
+      nbrGoutteurs
+    ))
 
-  // Bilan
+  // Bilan calculé en temps réel
   const lastTour       = tours[tours.length - 1]
   const totalVApport   = tours.reduce((s, t) => s + (Number(t.vApport) || 0), 0)
   const totalVDrain    = tours.reduce((s, t) => s + (Number(t.vDrain)  || 0), 0)
@@ -307,7 +436,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
       try {
         const parsed = JSON.parse(e.message)
         setError(Array.isArray(parsed?.detail)
-          ? parsed.detail.map(d => `${(d.loc||[]).slice(1).join('.')} : ${d.msg}`).join(' | ')
+          ? parsed.detail.map(d => `${(d.loc || []).slice(1).join('.')} : ${d.msg}`).join(' | ')
           : String(parsed?.detail || e.message))
       } catch { setError(String(e.message)) }
     } finally { setSaving(false) }
@@ -317,36 +446,30 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
     width: '100%', padding: '7px 10px', borderRadius: 8,
     border: `1.5px solid ${C.border}`, background: C.inputBg,
     color: C.text, fontSize: 12, fontFamily: 'inherit', outline: 'none',
+    boxSizing: 'border-box',
   }
   const labelStyle = {
     display: 'block', color: C.textMuted, fontSize: 10, fontWeight: 700,
     textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4,
   }
-  const TH = ({ children, w, color }) => (
-    <th style={{ padding: '7px 5px', textAlign: 'center', fontSize: 10, fontWeight: 700,
-      textTransform: 'uppercase', letterSpacing: '0.07em', color: color || C.textDim,
-      whiteSpace: 'nowrap', width: w, borderBottom: `1.5px solid ${C.border}` }}>
-      {children}
-    </th>
-  )
 
   return (
     <div style={{
-        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-        zIndex: 9999, background: 'rgba(0,0,0,0.65)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '24px',
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: 'rgba(0,0,0,0.65)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '24px',
     }}>
-        <div style={{
+      <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
         borderRadius: 16, width: '100%', maxWidth: 1100,
         maxHeight: '90vh', overflowY: 'auto',
         boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
-        }}>
-
-        {/* Header modal */}
+      }}>
+        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '20px 28px', borderBottom: `1px solid ${C.border}` }}>
+          padding: '20px 28px', borderBottom: `1px solid ${C.border}`,
+          position: 'sticky', top: 0, background: C.card, zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Pencil size={18} color={C.green} strokeWidth={2} />
             <div style={{ color: C.text, fontWeight: 800, fontSize: 15 }}>
@@ -375,7 +498,8 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
             </div>
             <div>
               <label style={labelStyle}>Serre</label>
-              <input value={serre} onChange={e => setSerre(e.target.value)} style={inputStyle} placeholder="ex: S06" />
+              <SSelect value={serre} onChange={setSerre}
+                options={serreOptions} placeholder="S01" C={C} />
             </div>
             <div>
               <label style={labelStyle}>Vanne</label>
@@ -394,15 +518,15 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
               letterSpacing: '0.1em', marginBottom: 14 }}>Constantes &amp; Substrat</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
               {[
-                { label: 'Nbr Bras', val: nbrBras, set: setNbrBras, type: 'number' },
-                { label: 'Nbr Goutteurs', val: nbrGoutteurs, set: setNbrGoutteurs, type: 'number' },
-                { label: 'Poids matin (Kg)', val: poidsMatin, set: setPoidsMatin, type: 'number' },
-                { label: 'Poids soir (Kg)', val: poidsSoir, set: setPoidsSoir, type: 'number' },
-                { label: 'Bassin (EC)', val: bassinEC, set: setBassinEC, type: 'number' },
+                { label: 'Nbr Bras', val: nbrBras, set: setNbrBras },
+                { label: 'Nbr Goutteurs', val: nbrGoutteurs, set: setNbrGoutteurs },
+                { label: 'Poids matin (Kg)', val: poidsMatin, set: setPoidsMatin },
+                { label: 'Poids soir (Kg)', val: poidsSoir, set: setPoidsSoir },
+                { label: 'Bassin (EC)', val: bassinEC, set: setBassinEC },
               ].map(f => (
                 <div key={f.label}>
                   <label style={labelStyle}>{f.label}</label>
-                  <input type={f.type} value={f.val} onChange={e => f.set(e.target.value)}
+                  <input type="number" value={f.val} onChange={e => f.set(e.target.value)}
                     step="any" style={inputStyle} />
                 </div>
               ))}
@@ -434,7 +558,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '12px 16px', borderBottom: `1px solid ${C.border}` }}>
               <div style={{ fontSize: 11, fontWeight: 800, color: C.textMuted, textTransform: 'uppercase',
-                letterSpacing: '0.1em' }}>Tours</div>
+                letterSpacing: '0.1em' }}>Tours d'irrigation</div>
               <button onClick={addTour} style={{ display: 'flex', alignItems: 'center', gap: 6,
                 padding: '6px 14px', background: `${C.green}10`, border: `1.5px solid ${C.green}40`,
                 borderRadius: 7, color: C.green, fontSize: 12, fontWeight: 700,
@@ -446,21 +570,21 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit' }}>
                 <thead>
                   <tr>
-                    <TH w={36}>N°</TH>
-                    <TH w={68}>Rad.</TH>
-                    <TH w={76} color={C.blue}>Cumul Rad</TH>
-                    <TH w={108}>Heure</TH>
-                    <TH w={76} color={C.textMuted}>T.Repos</TH>
-                    <TH w={70}>Durée(min)</TH>
-                    <TH w={76}>V.Apport</TH>
-                    <TH w={70}>EC Apport</TH>
-                    <TH w={70}>pH Apport</TH>
-                    <TH w={70}>V.Drain</TH>
-                    <TH w={70}>EC Drain</TH>
-                    <TH w={70}>pH Drain</TH>
-                    <TH w={70} color={C.amber}>% Drain</TH>
-                    <TH w={78} color={C.amber}>Moy % Drain</TH>
-                    <TH w={32}></TH>
+                    <THm w={36} C={C}>N°</THm>
+                    <THm w={68} C={C}>Rad.</THm>
+                    <THm w={76} color={C.blue} C={C}>Cumul Rad</THm>
+                    <THm w={108} C={C}>Heure</THm>
+                    <THm w={76} color={C.textMuted} C={C}>T.Repos</THm>
+                    <THm w={70} C={C}>Durée(min)</THm>
+                    <THm w={76} C={C}>V.Apport</THm>
+                    <THm w={70} C={C}>EC Apport</THm>
+                    <THm w={70} C={C}>pH Apport</THm>
+                    <THm w={70} C={C}>V.Drain</THm>
+                    <THm w={70} C={C}>EC Drain</THm>
+                    <THm w={70} C={C}>pH Drain</THm>
+                    <THm w={70} color={C.amber} C={C}>% Drain</THm>
+                    <THm w={78} color={C.amber} C={C}>Moy % Drain</THm>
+                    <THm w={32} C={C}></THm>
                   </tr>
                 </thead>
                 <tbody>
@@ -539,6 +663,64 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
             </div>
           </div>
 
+          {/* Bilan calculé en temps réel */}
+          {tours.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: 12, marginBottom: 18 }}>
+              {[
+                {
+                  label: 'Irrigation', color: C.green, Icon: ClipboardList,
+                  items: [
+                    { sub: 'Tours', value: tours.length },
+                    { sub: 'Durée', value: fmtDuree(dureeTotal) },
+                    { sub: 'CC/bras', value: ccBras ?? '—' },
+                  ],
+                },
+                {
+                  label: 'Bilan Eau', color: C.blue, Icon: Droplets,
+                  items: [
+                    { sub: 'Apport', value: totalVApport > 0 ? fmtNum(totalVApport, 1) : '—' },
+                    { sub: 'Drainage', value: totalVDrain > 0 ? fmtNum(totalVDrain, 1) : '—' },
+                  ],
+                },
+                {
+                  label: 'Bilan EC', color: C.green, Icon: BarChart2,
+                  items: [
+                    { sub: 'Apport', value: ecMoyApport ? fmtNum(ecMoyApport, 2) : '—' },
+                    { sub: 'Drainage', value: ecMoyDrain ? fmtNum(ecMoyDrain, 2) : '—' },
+                  ],
+                },
+                {
+                  label: 'Bilan pH', color: C.amber, Icon: FlaskConical,
+                  items: [
+                    { sub: 'Apport', value: phMoyApport ? fmtNum(phMoyApport, 2) : '—' },
+                    { sub: 'Drainage', value: phMoyDrain ? fmtNum(phMoyDrain, 2) : '—' },
+                  ],
+                },
+              ].map(card => (
+                <div key={card.label} style={{
+                  background: dark ? '#111a14' : '#ffffff',
+                  border: `1px solid ${dark ? '#1c2e22' : '#d0e8d8'}`,
+                  borderRadius: 12, padding: '14px 18px',
+                  display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 90,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+                      letterSpacing: '0.1em', color: dark ? C.textDim : '#5a7a66' }}>{card.label}</div>
+                    <card.Icon size={14} strokeWidth={1.6} color={card.color} style={{ opacity: 0.65 }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: card.items.length > 2 ? 12 : 18, alignItems: 'flex-end' }}>
+                    {card.items.map(it => (
+                      <div key={it.sub}>
+                        <div style={{ fontSize: 10, color: dark ? C.textDim : '#5a7a66', marginBottom: 2, whiteSpace: 'nowrap' }}>{it.sub}</div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: card.color }}>{it.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {error && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px',
               background: dark ? '#2a0a0a' : '#fef2f2', border: `1px solid ${C.red}30`,
@@ -562,6 +744,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
               {saving ? 'Enregistrement…' : 'Enregistrer'}
             </button>
           </div>
+
         </div>
       </div>
     </div>
@@ -599,7 +782,7 @@ function ToursTable({ saisieId, token, C, dark }) {
                 <tr>
                   <TH2>N° tour</TH2>
                   <TH2>Rad.</TH2>
-                  <TH2 color={C.blue}>Cumul.Drain</TH2>
+                  <TH2 color={C.blue}>Cumul Rad</TH2>
                   <TH2>Heure</TH2>
                   <TH2>T.Repos</TH2>
                   <TH2>Durée(min)</TH2>
@@ -619,10 +802,9 @@ function ToursTable({ saisieId, token, C, dark }) {
                     color: C.textDim, fontSize: 12 }}>Aucun tour enregistré</td></tr>
                 ) : tours.map((t, i) => (
                   <tr key={t.id}
-                    style={{ borderBottom: i < tours.length - 1 ? `1px solid ${C.border}` : 'none',
-                      background: i % 2 === 0 ? 'transparent' : (dark ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)') }}
+                    style={{ borderBottom: i < tours.length - 1 ? `1px solid ${C.border}` : 'none' }}
                     onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
-                    onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : (dark ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)')}>
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                     <td style={{ padding: '8px 8px', textAlign: 'center' }}>
                       <div style={{ width: 26, height: 26, borderRadius: 6, margin: '0 auto',
                         background: `${C.green}12`, border: `1px solid ${C.green}30`,
@@ -658,26 +840,6 @@ function ToursTable({ saisieId, token, C, dark }) {
         </td>
       </tr>
     </>
-  )
-}
-
-// ── Filter input ──────────────────────────────────────────────
-function FilterInput({ value, onChange, placeholder, C, type = 'text' }) {
-  return (
-    <div style={{ position: 'relative' }}>
-      <input type={type} value={value} onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        style={{ width: '100%', padding: '6px 28px 6px 8px', borderRadius: 6,
-          border: `1.5px solid ${C.border}`, background: C.inputBg,
-          color: C.text, fontSize: 11, fontFamily: 'inherit', outline: 'none' }} />
-      {value && (
-        <button onClick={() => onChange('')}
-          style={{ position: 'absolute', right: 5, top: '50%', transform: 'translateY(-50%)',
-            background: 'none', border: 'none', cursor: 'pointer', color: C.textDim, padding: 2 }}>
-          <X size={11} strokeWidth={2} />
-        </button>
-      )}
-    </div>
   )
 }
 
@@ -729,7 +891,6 @@ export default function HistoriquePage({ token, C, dark }) {
 
   useEffect(() => { load(1) }, [fFerme, fDate, perPage])
 
-  // Filtre côté client pour les champs non filtrés côté API
   const filtered = saisies.filter(s =>
     (!fStation   || String(s.station   || '').toLowerCase().includes(fStation.toLowerCase())) &&
     (!fSerre     || String(s.serre     || '').toLowerCase().includes(fSerre.toLowerCase())) &&
@@ -760,6 +921,17 @@ export default function HistoriquePage({ token, C, dark }) {
     } catch (e) { alert(e.message) }
   }
 
+  // Dériver options pour filtres
+  const fermeOptions = [...new Set(farms.map(f => f.farm_name))].map(v => ({ value: v, label: v }))
+  const selectedFilterFarm = farms.find(f => f.farm_name === fFerme)
+  const stationFilterOptions = fFerme && selectedFilterFarm
+    ? [...new Set((selectedFilterFarm.houses || []).map(h => h.house_number))].map(v => ({ value: v, label: `Station ${v}` }))
+    : [...new Set(farms.flatMap(f => (f.houses || []).map(h => h.house_number)))].map(v => ({ value: v, label: `Station ${v}` }))
+  const serreFilterOptions = Array.from({ length: 20 }, (_, i) => ({
+    value: `S${String(i + 1).padStart(2, '0')}`,
+    label: `S${String(i + 1).padStart(2, '0')}`,
+  }))
+
   const cardStyle = {
     background: C.card, border: `1.5px solid ${C.border}`,
     borderRadius: 14, overflow: 'hidden',
@@ -773,8 +945,7 @@ export default function HistoriquePage({ token, C, dark }) {
 
   return (
     <>
-
-      {/* Modals */}
+      {/* Modals en dehors du div animé */}
       {confirmDelete && (
         <ConfirmModal saisie={confirmDelete} onConfirm={handleDelete}
           onCancel={() => setConfirmDelete(null)} C={C} />
@@ -783,132 +954,126 @@ export default function HistoriquePage({ token, C, dark }) {
         <EditModal saisie={editingSaisie} token={token} farms={farms}
           onSaved={() => load(page)} onClose={() => setEditingSaisie(null)} C={C} dark={dark} />
       )}
+
       <div style={{ animation: 'az-fade-in 0.3s ease both' }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 36, height: 36, borderRadius: 10,
-                background: dark ? 'rgba(52,217,111,0.12)' : 'rgba(24,120,63,0.10)',
-                border: `1.5px solid ${C.green}30`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <History size={18} color={C.green} strokeWidth={2} />
+              background: dark ? 'rgba(52,217,111,0.12)' : 'rgba(24,120,63,0.10)',
+              border: `1.5px solid ${C.green}30`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <History size={18} color={C.green} strokeWidth={2} />
             </div>
             <div>
-                <div style={{ fontSize: 20, fontWeight: 900, color: C.text }}>Historique</div>
-                <div style={{ fontSize: 11, color: C.textDim }}>{total} saisie{total > 1 ? 's' : ''} enregistrée{total > 1 ? 's' : ''}</div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: C.text }}>Historique</div>
+              <div style={{ fontSize: 11, color: C.textDim }}>{total} saisie{total > 1 ? 's' : ''} enregistrée{total > 1 ? 's' : ''}</div>
             </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <select value={perPage} onChange={e => setPerPage(Number(e.target.value))}
-                style={{ padding: '7px 10px', borderRadius: 7, border: `1.5px solid ${C.border}`,
-                background: C.inputBg, color: C.text, fontSize: 12, fontFamily: 'inherit',
-                outline: 'none', cursor: 'pointer' }}>
-                {[10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
-            </div>
+          </div>
+          <select value={perPage} onChange={e => setPerPage(Number(e.target.value))}
+            style={{ padding: '7px 10px', borderRadius: 7, border: `1.5px solid ${C.border}`,
+              background: C.inputBg, color: C.text, fontSize: 12, fontFamily: 'inherit',
+              outline: 'none', cursor: 'pointer' }}>
+            {[10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
         </div>
 
         {/* Table */}
         <div style={cardStyle}>
-            <div style={{ overflowX: 'auto' }}>
+          <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit' }}>
-                <thead>
-                {/* Headers EN PREMIER */}
+              <thead>
+                {/* Headers */}
                 <tr>
-                    <TH />
-                    <TH>Date</TH>
-                    <TH>Ferme</TH>
-                    <TH>Bloc</TH>
-                    <TH>Serre</TH>
-                    <TH>Vanne</TH>
-                    <TH>Nbr Bras</TH>
-                    <TH>Nbr Goutteurs</TH>
-                    <TH>Pds matin(Kg)</TH>
-                    <TH>H. matin</TH>
-                    <TH>Pds Soir(Kg)</TH>
-                    <TH>H. soir</TH>
-                    <TH>Bassin (EC)</TH>
-                    <TH color={C.green}>Séchage(%)</TH>
-                    <TH>Actions</TH>
+                  <TH />
+                  <TH>Date</TH>
+                  <TH>Ferme</TH>
+                  <TH>Bloc</TH>
+                  <TH>Serre</TH>
+                  <TH>Vanne</TH>
+                  <TH>Nbr Bras</TH>
+                  <TH>Nbr Goutteurs</TH>
+                  <TH>Pds matin(Kg)</TH>
+                  <TH>H. matin</TH>
+                  <TH>Pds Soir(Kg)</TH>
+                  <TH>H. soir</TH>
+                  <TH>Bassin (EC)</TH>
+                  <TH color={C.green}>Séchage(%)</TH>
+                  <TH>Actions</TH>
                 </tr>
-                {/* Filtres EN DESSOUS */}
+                {/* Filtres */}
                 <tr style={{ background: dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
-                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }} />
-                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                  <th style={{ padding: '5px 8px', borderBottom: `1px solid ${C.border}` }} />
+                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
                     <FilterInput value={fDate} onChange={setFDate} placeholder="" C={C} type="date" />
-                    </th>
-                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                    <FilterInput value={fFerme} onChange={setFFerme} placeholder="" C={C} />
-                    </th>
-                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                    <FilterInput value={fStation} onChange={setFStation} placeholder="" C={C} />
-                    </th>
-                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                    <FilterInput value={fSerre} onChange={setFSerre} placeholder="" C={C} />
-                    </th>
-                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                  </th>
+                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
+                    <FilterSelect value={fFerme} onChange={v => { setFFerme(v); setFStation('') }}
+                      options={fermeOptions} C={C} />
+                  </th>
+                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
+                    <FilterSelect value={fStation} onChange={setFStation}
+                      options={stationFilterOptions} C={C} />
+                  </th>
+                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
+                    <FilterSelect value={fSerre} onChange={setFSerre}
+                      options={serreFilterOptions} C={C} />
+                  </th>
+                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
                     <FilterInput value={fVanne} onChange={setFVanne} placeholder="" C={C} />
-                    </th>
-                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                  </th>
+                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
                     <FilterInput value={fNbrBras} onChange={setFNbrBras} placeholder="" C={C} />
-                    </th>
-                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                  </th>
+                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
                     <FilterInput value={fNbrGoutt} onChange={setFNbrGoutt} placeholder="" C={C} />
-                    </th>
-                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                  </th>
+                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
                     <FilterInput value={fPoidsMat} onChange={setFPoidsMat} placeholder="" C={C} />
-                    </th>
-                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                  </th>
+                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
                     <FilterInput value={fHeureMat} onChange={setFHeureMat} placeholder="" C={C} />
-                    </th>
-                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                  </th>
+                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
                     <FilterInput value={fPoidsSoir} onChange={setFPoidsSoir} placeholder="" C={C} />
-                    </th>
-                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                  </th>
+                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
                     <FilterInput value={fHeureSoir} onChange={setFHeureSoir} placeholder="" C={C} />
-                    </th>
-                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                  </th>
+                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
                     <FilterInput value={fBassin} onChange={setFBassin} placeholder="" C={C} />
-                    </th>
-                    <th colSpan={2} style={{ borderBottom: `1px solid ${C.border}` }} />
+                  </th>
+                  <th colSpan={2} style={{ borderBottom: `1px solid ${C.border}` }} />
                 </tr>
-                </thead>
-                <tbody>
+              </thead>
+              <tbody>
                 {loading ? (
-                    <tr><td colSpan={15} style={{ padding: '48px 0', textAlign: 'center', color: C.textDim, fontSize: 13 }}>
+                  <tr><td colSpan={15} style={{ padding: '48px 0', textAlign: 'center', color: C.textDim, fontSize: 13 }}>
                     Chargement…
-                    </td></tr>
+                  </td></tr>
                 ) : filtered.length === 0 ? (
-                    <tr><td colSpan={15} style={{ padding: '48px 0', textAlign: 'center', color: C.textDim, fontSize: 13 }}>
+                  <tr><td colSpan={15} style={{ padding: '48px 0', textAlign: 'center', color: C.textDim, fontSize: 13 }}>
                     Aucune saisie trouvée
-                    </td></tr>
-                ) : filtered.map((s, i) => {
-                    const expanded = expandedIds.has(s.id)
-                    return (
-                    <>
-                        <tr key={s.id}
-                        style={{ borderBottom: !expanded ? `1px solid ${C.border}` : 'none',
-                            transition: 'background 0.12s' }}
+                  </td></tr>
+                ) : filtered.map((s) => {
+                  const expanded = expandedIds.has(s.id)
+                  return (
+                    <React.Fragment key={s.id}>
+                      <tr style={{ borderBottom: !expanded ? `1px solid ${C.border}` : 'none', transition: 'background 0.12s' }}
                         onMouseEnter={e => { if (!expanded) e.currentTarget.style.background = C.tableHover }}
                         onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
 
-                        {/* Expand button */}
                         <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                            <button onClick={() => toggleExpand(s.id)}
+                          <button onClick={() => toggleExpand(s.id)}
                             style={{ background: expanded ? `${C.green}12` : C.toggleBg,
-                                border: `1px solid ${expanded ? C.green + '40' : C.border}`,
-                                borderRadius: 5, padding: '3px 6px', cursor: 'pointer',
-                                color: expanded ? C.green : C.textMuted,
-                                display: 'flex', alignItems: 'center' }}>
-                            {expanded
-                                ? <ChevronUp size={13} strokeWidth={2.5} />
-                                : <ChevronDown size={13} strokeWidth={2.5} />}
-                            </button>
+                              border: `1px solid ${expanded ? C.green + '40' : C.border}`,
+                              borderRadius: 5, padding: '3px 6px', cursor: 'pointer',
+                              color: expanded ? C.green : C.textMuted,
+                              display: 'flex', alignItems: 'center' }}>
+                            {expanded ? <ChevronUp size={13} strokeWidth={2.5} /> : <ChevronDown size={13} strokeWidth={2.5} />}
+                          </button>
                         </td>
-
-                        <td style={{ padding: '10px 10px', fontWeight: 700, color: C.text, fontSize: 12, whiteSpace: 'nowrap' }}>
-                            {s.date}
-                        </td>
+                        <td style={{ padding: '10px 10px', fontWeight: 700, color: C.text, fontSize: 12, whiteSpace: 'nowrap' }}>{s.date}</td>
                         <td style={{ padding: '10px 10px', fontSize: 12, color: C.text, fontWeight: 600 }}>{s.farm_name}</td>
                         <td style={{ padding: '10px 10px', fontSize: 12, color: C.textMuted }}>{s.station || '—'}</td>
                         <td style={{ padding: '10px 10px', fontSize: 12, color: C.textMuted }}>{s.serre || '—'}</td>
@@ -920,94 +1085,88 @@ export default function HistoriquePage({ token, C, dark }) {
                         <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.poids_soir ?? '—'}</td>
                         <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'center', color: C.textMuted }}>{s.heure_soir || '—'}</td>
                         <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.bassin_ec ?? '—'}</td>
-
-                        {/* % Ressuyage badge */}
                         <td style={{ padding: '10px 10px', textAlign: 'center' }}>
-                            {s.pct_ressuyage !== null && s.pct_ressuyage !== undefined ? (
+                          {s.pct_ressuyage !== null && s.pct_ressuyage !== undefined ? (
                             <span style={{ background: `${C.green}15`, color: C.green,
-                                border: `1px solid ${C.green}30`, borderRadius: 6,
-                                padding: '3px 8px', fontSize: 12, fontWeight: 700 }}>
-                                {fmtNum(s.pct_ressuyage, 1)}%
+                              border: `1px solid ${C.green}30`, borderRadius: 6,
+                              padding: '3px 8px', fontSize: 12, fontWeight: 700 }}>
+                              {fmtNum(s.pct_ressuyage, 1)}%
                             </span>
-                            ) : <span style={{ color: C.textDim }}>—</span>}
+                          ) : <span style={{ color: C.textDim }}>—</span>}
                         </td>
-
-                        {/* Actions */}
                         <td style={{ padding: '10px 10px' }}>
-                            <div style={{ display: 'flex', gap: 6 }}>
+                          <div style={{ display: 'flex', gap: 6 }}>
                             <button onClick={(e) => { e.stopPropagation(); setEditingSaisie(s) }}
-                                style={{ display: 'flex', alignItems: 'center', gap: 5,
+                              style={{ display: 'flex', alignItems: 'center', gap: 5,
                                 padding: '5px 10px', borderRadius: 6,
                                 border: `1.5px solid ${C.border}`, background: 'transparent',
                                 color: C.textMuted, fontSize: 11, fontWeight: 700,
                                 fontFamily: 'inherit', cursor: 'pointer' }}
-                                onMouseEnter={e => { e.currentTarget.style.borderColor = C.green; e.currentTarget.style.color = C.green }}
-                                onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted }}>
-                                <Pencil size={11} strokeWidth={2} /> Modifier
+                              onMouseEnter={e => { e.currentTarget.style.borderColor = C.green; e.currentTarget.style.color = C.green }}
+                              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted }}>
+                              <Pencil size={11} strokeWidth={2} /> Modifier
                             </button>
                             <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(s) }}
-                                style={{ display: 'flex', alignItems: 'center', gap: 5,
+                              style={{ display: 'flex', alignItems: 'center', gap: 5,
                                 padding: '5px 10px', borderRadius: 6,
                                 border: `1.5px solid ${C.border}`, background: 'transparent',
                                 color: C.textMuted, fontSize: 11, fontWeight: 700,
                                 fontFamily: 'inherit', cursor: 'pointer' }}
-                                onMouseEnter={e => { e.currentTarget.style.borderColor = C.red; e.currentTarget.style.color = C.red }}
-                                onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted }}>
-                                <Trash2 size={11} strokeWidth={2} />
+                              onMouseEnter={e => { e.currentTarget.style.borderColor = C.red; e.currentTarget.style.color = C.red }}
+                              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted }}>
+                              <Trash2 size={11} strokeWidth={2} />
                             </button>
-                            </div>
+                          </div>
                         </td>
-                        </tr>
-
-                        {/* Tours expand */}
-                        {expanded && (
-                        <ToursTable key={`tours-${s.id}`} saisieId={s.id} token={token} C={C} dark={dark} />
-                        )}
-                    </>
-                    )
+                      </tr>
+                      {expanded && (
+                        <ToursTable saisieId={s.id} token={token} C={C} dark={dark} />
+                      )}
+                    </React.Fragment>
+                  )
                 })}
-                </tbody>
+              </tbody>
             </table>
-            </div>
+          </div>
 
-            {/* Pagination */}
-            <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.border}`,
+          {/* Pagination */}
+          <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.border}`,
             display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ color: C.textDim, fontSize: 12 }}>
-                {total} saisie{total > 1 ? 's' : ''} · page {page}/{pages}
+              {total} saisie{total > 1 ? 's' : ''} · page {page}/{pages}
             </div>
             <div style={{ display: 'flex', gap: 6 }}>
-                <button onClick={() => load(page - 1)} disabled={page <= 1}
+              <button onClick={() => load(page - 1)} disabled={page <= 1}
                 style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px',
-                    borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent',
-                    color: C.textMuted, fontSize: 12, fontWeight: 700,
-                    cursor: page <= 1 ? 'not-allowed' : 'pointer',
-                    opacity: page <= 1 ? 0.4 : 1, fontFamily: 'inherit' }}>
+                  borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent',
+                  color: C.textMuted, fontSize: 12, fontWeight: 700,
+                  cursor: page <= 1 ? 'not-allowed' : 'pointer',
+                  opacity: page <= 1 ? 0.4 : 1, fontFamily: 'inherit' }}>
                 <ChevronLeft size={13} strokeWidth={2} /> Préc
-                </button>
-                {Array.from({ length: Math.min(pages, 5) }, (_, i) => {
+              </button>
+              {Array.from({ length: Math.min(pages, 5) }, (_, i) => {
                 const p = i + 1
                 return (
-                    <button key={p} onClick={() => load(p)}
+                  <button key={p} onClick={() => load(p)}
                     style={{ width: 32, height: 32, borderRadius: 6,
-                        border: `1.5px solid ${page === p ? C.green : C.border}`,
-                        background: page === p ? C.green : 'transparent',
-                        color: page === p ? '#fff' : C.textMuted,
-                        fontSize: 12, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' }}>
+                      border: `1.5px solid ${page === p ? C.green : C.border}`,
+                      background: page === p ? C.green : 'transparent',
+                      color: page === p ? '#fff' : C.textMuted,
+                      fontSize: 12, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' }}>
                     {p}
-                    </button>
+                  </button>
                 )
-                })}
-                <button onClick={() => load(page + 1)} disabled={page >= pages}
+              })}
+              <button onClick={() => load(page + 1)} disabled={page >= pages}
                 style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px',
-                    borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent',
-                    color: C.textMuted, fontSize: 12, fontWeight: 700,
-                    cursor: page >= pages ? 'not-allowed' : 'pointer',
-                    opacity: page >= pages ? 0.4 : 1, fontFamily: 'inherit' }}>
+                  borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent',
+                  color: C.textMuted, fontSize: 12, fontWeight: 700,
+                  cursor: page >= pages ? 'not-allowed' : 'pointer',
+                  opacity: page >= pages ? 0.4 : 1, fontFamily: 'inherit' }}>
                 Suiv <ChevronRight size={13} strokeWidth={2} />
-                </button>
+              </button>
             </div>
-            </div>
+          </div>
         </div>
       </div>
     </>
