@@ -290,11 +290,11 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
         if (tempsRepos < 0) tempsRepos = 0
       }
 
-      // % Drain
+      // % Drain — 0 si vDrain=0 (avec vApport et ng valides), null si données manquantes
       let pctDrain = null
       const vd = Number(t.vDrain)
       const va = Number(t.vApport)
-      if (vd > 0 && va > 0 && ng > 0) {
+      if (va > 0 && ng > 0 && t.vDrain !== '' && t.vDrain !== null && t.vDrain !== undefined) {
         pctDrain = (vd / ng / va) * 100
       }
 
@@ -303,8 +303,8 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
       let moyPctDrain = null
       const pctPourMoy = pctDrain !== null ? pctDrain : 0
       if (i === 0) {
-        // Tour 1 : moy = pctDrain si dispo, sinon null
-        moyPctDrain = pctDrain !== null ? pctDrain : null
+        // Tour 1 : moy = pctDrain (0 si vDrain=0), null si données manquantes
+        moyPctDrain = pctDrain != null ? pctDrain : null
       } else if (prevMoyCalculee !== null) {
         // Tours suivants : on intègre même si pctDrain=0
         moyPctDrain = (prevMoyCalculee * i + pctPourMoy) / (i + 1)
@@ -411,42 +411,42 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
       const payload = {
         ferme, station, serre, vanne, date,
         constantes: {
-          nbrBras: nbrBras ? Number(nbrBras) : null,
-          nbrGoutteurs: nbrGoutteurs ? Number(nbrGoutteurs) : null,
-          poidsMatin: poidsMatin ? Number(poidsMatin) : null,
+          nbrBras      : nbrBras      !== '' ? Number(nbrBras)      : null,
+          nbrGoutteurs : nbrGoutteurs !== '' ? Number(nbrGoutteurs) : null,
+          poidsMatin   : poidsMatin   !== '' ? Number(poidsMatin)   : null,
           heureMatin,
-          poidsSoir: poidsSoir ? Number(poidsSoir) : null,
+          poidsSoir    : poidsSoir    !== '' ? Number(poidsSoir)    : null,
           heureSoir,
-          bassinEC: bassinEC ? Number(bassinEC) : null,
-          pctRessuyage: pctRessuyage ? Number(pctRessuyage) : null,
+          bassinEC     : bassinEC     !== '' ? Number(bassinEC)     : null,
+          pctRessuyage : pctRessuyage != null ? Number(pctRessuyage) : null,
         },
         tours: tours.map(t => ({
-          num_tour: t.num,
-          rad: t.rad ? Number(t.rad) : null,
-          cumul_rad: t.cumulRad ? Number(t.cumulRad) : null,
-          heure: t.heure || null,
-          duree_min: t.duree ? Number(t.duree) : null,
-          temps_repos: t.tempsRepos,
-          v_apport: t.vApport ? Number(t.vApport) : null,
-          ec_apport: t.ecApport ? Number(t.ecApport) : null,
-          ph_apport: t.phApport ? Number(t.phApport) : null,
-          v_drain: t.vDrain ? Number(t.vDrain) : null,
-          ec_drain: t.ecDrain ? Number(t.ecDrain) : null,
-          ph_drain: t.phDrain ? Number(t.phDrain) : null,
-          pct_drain: t.pctDrain,
-          moy_pct_drain: t.moyPctDrain,
+          num_tour     : t.num,
+          rad          : t.rad      !== '' ? Number(t.rad)      : null,
+          cumul_rad    : t.cumulRad != null ? Number(t.cumulRad) : null,
+          heure        : t.heure    || null,
+          duree_min    : t.duree    !== '' ? Number(t.duree)    : null,
+          temps_repos  : t.tempsRepos,
+          v_apport     : t.vApport  !== '' ? Number(t.vApport)  : null,
+          ec_apport    : t.ecApport !== '' ? Number(t.ecApport) : null,
+          ph_apport    : t.phApport !== '' ? Number(t.phApport) : null,
+          v_drain      : t.vDrain   !== '' ? Number(t.vDrain)   : null,
+          ec_drain     : t.ecDrain  !== '' ? Number(t.ecDrain)  : null,
+          ph_drain     : t.phDrain  !== '' ? Number(t.phDrain)  : null,
+          pct_drain    : t.pctDrain    != null ? Number(t.pctDrain)    : null,
+          moy_pct_drain: t.moyPctDrain != null ? Number(t.moyPctDrain) : null,
         })),
         bilan: {
-          nbrTours: tours.length,
-          dureeTotal: dureeTotal > 0 ? fmtDuree(dureeTotal) : null,
-          totalVApport: totalVApport || null,
-          totalVDrain: totalVDrain || null,
-          ecMoyApport: ecMoyApport ? Number(ecMoyApport) : null,
-          phMoyApport: phMoyApport ? Number(phMoyApport) : null,
-          ecMoyDrain: ecMoyDrain ? Number(ecMoyDrain) : null,
-          phMoyDrain: phMoyDrain ? Number(phMoyDrain) : null,
-          moyDrainFinale,
-          ccBras: ccBras ? Number(ccBras) : null,
+          nbrTours     : tours.length,
+          dureeTotal   : dureeTotal > 0 ? fmtDuree(dureeTotal) : null,
+          totalVApport : totalVApport  != null ? totalVApport  : null,
+          totalVDrain  : totalVDrain   != null ? totalVDrain   : null,
+          ecMoyApport  : ecMoyApport   != null ? Number(ecMoyApport)  : null,
+          phMoyApport  : phMoyApport   != null ? Number(phMoyApport)  : null,
+          ecMoyDrain   : ecMoyDrain    != null ? Number(ecMoyDrain)   : null,
+          phMoyDrain   : phMoyDrain    != null ? Number(phMoyDrain)   : null,
+          moyDrainFinale: moyDrainFinale != null ? Number(moyDrainFinale) : null,
+          ccBras       : ccBras        != null ? Number(ccBras)       : null,
         },
       }
       await updateSaisie(token, saisie.id, payload)
@@ -657,13 +657,13 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                         <TInput value={t.phDrain} onChange={v => updateTour(t.id, 'phDrain', v)} C={C} />
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: t.pctDrain !== null ? C.amber : C.textDim }}>
-                          {t.pctDrain !== null ? `${fmtNum(t.pctDrain, 1)}%` : '—'}
+                        <div style={{ fontSize: 12, fontWeight: 700, color: t.pctDrain != null ? C.amber : C.textDim }}>
+                          {t.pctDrain != null ? `${fmtNum(t.pctDrain, 1)}%` : '—'}
                         </div>
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: t.moyPctDrain !== null ? C.amber : C.textDim }}>
-                          {t.moyPctDrain !== null ? `${fmtNum(t.moyPctDrain, 1)}%` : '—'}
+                        <div style={{ fontSize: 12, fontWeight: 700, color: t.moyPctDrain != null ? C.amber : C.textDim }}>
+                          {t.moyPctDrain != null ? `${fmtNum(t.moyPctDrain, 1)}%` : '—'}
                         </div>
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
@@ -843,8 +843,8 @@ function ToursTable({ saisieId, token, C, dark }) {
                       { v: t.v_drain,      dec: 1 },
                       { v: t.ec_drain,     dec: 2 },
                       { v: t.ph_drain,     dec: 2 },
-                      { v: t.pct_drain !== null ? `${fmtNum(t.pct_drain, 1)}%` : '—', raw: true, color: C.amber },
-                      { v: t.moy_pct_drain !== null ? `${fmtNum(t.moy_pct_drain, 1)}%` : '—', raw: true, color: C.amber },
+                      { v: t.pct_drain != null ? `${fmtNum(t.pct_drain, 1)}%` : '—', raw: true, color: C.amber },
+                      { v: t.moy_pct_drain != null ? `${fmtNum(t.moy_pct_drain, 1)}%` : '—', raw: true, color: C.amber },
                     ].map((cell, ci) => (
                       <td key={ci} style={{ padding: '8px 8px', textAlign: 'center',
                         fontSize: 12, fontWeight: cell.color ? 700 : 400,
