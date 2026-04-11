@@ -332,11 +332,11 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.7)',
-      display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-      overflowY: 'auto', padding: '24px 16px' }}>
-      <div style={{ background: C.card, border: `1.5px solid ${C.border}`, borderRadius: 16,
-        width: '100%', maxWidth: 1400, boxShadow: '0 16px 60px rgba(0,0,0,0.5)',
-        marginTop: 'auto', marginBottom: 'auto' }}>
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '24px 16px' }}>
+    <div style={{ background: C.card, border: `1.5px solid ${C.border}`, borderRadius: 16,
+        width: '100%', maxWidth: 1100, maxHeight: '90vh', overflowY: 'auto',
+        boxShadow: '0 16px 60px rgba(0,0,0,0.5)' }}>
 
         {/* Header modal */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
