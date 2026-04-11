@@ -871,7 +871,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
   const [pages, setPages]         = useState(1)
   const [page, setPage]           = useState(1)
   const [perPage, setPerPage]     = useState(10)
-  const [loading, setLoading]     = useState(true)
+  const [loading, setLoading]     = useState(false)
   const [farms, setFarms]         = useState([])
   const [expandedIds, setExpandedIds] = useState(new Set())
   const [editingSaisie, setEditingSaisie] = useState(null)
@@ -903,19 +903,15 @@ export default function HistoriquePage({ token, auth, C, dark }) {
 
   useEffect(() => {
     if (!auth) return
-    // Pour tous les rôles y compris admin : fetch /me pour avoir les farm_names réels en BDD
     getMe(token)
       .then(me => {
-        const role = me.role || auth.role
-        if (role === 'admin') {
-          setAllowedFarms(null) // admin voit tout
+        if ((me.role || auth.role) === 'admin') {
+          setAllowedFarms(null)
         } else {
-          const list = Array.isArray(me.farm_names) ? me.farm_names : []
-          setAllowedFarms(list)
+          setAllowedFarms(Array.isArray(me.farm_names) ? me.farm_names : [])
         }
       })
       .catch(() => {
-        // Fallback sur les infos du token si /me échoue
         if (auth.role === 'admin') setAllowedFarms(null)
         else setAllowedFarms(Array.isArray(auth.farm_names) ? auth.farm_names : [])
       })
@@ -924,13 +920,13 @@ export default function HistoriquePage({ token, auth, C, dark }) {
   // load est une fonction normale (pas useCallback) pour éviter les stale closures
   // Elle reçoit allowedFarms en paramètre direct
   const load = async (p = 1, currentAllowedFarms = allowedFarms) => {
-    if (currentAllowedFarms === undefined) return
+    if (currentAllowedFarms === undefined) { setLoading(false); return }
 
     setLoading(true)
     try {
       // Aucune ferme assignée → rien afficher
       if (currentAllowedFarms !== null && currentAllowedFarms.length === 0) {
-        setSaisies([]); setTotal(0); setPages(1); setPage(1)
+        setSaisies([]); setTotal(0); setPages(1); setPage(1); setLoading(false)
         return
       }
 
