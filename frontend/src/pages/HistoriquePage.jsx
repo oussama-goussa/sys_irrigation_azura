@@ -54,8 +54,6 @@ function TInput({ value, onChange, disabled = false, width = 72, C }) {
 function TimeInput({ value, onChange, C, small = false }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
-  const triggerRef = useRef(null)   // ← ajout
-  const [pos, setPos] = useState({ top: 0, left: 0 })  // ← ajout
   const [h, m] = value ? value.split(':') : ['00', '00']
 
   useEffect(() => {
@@ -92,13 +90,13 @@ function TimeInput({ value, onChange, C, small = false }) {
       </div>
       {open && (
         <div style={{
-            position: 'fixed', top: pos.top, left: pos.left,
-            transform: 'translateX(-50%)',
-            background: C.card, border: `1.5px solid ${C.border}`,
-            borderRadius: 10, zIndex: 9999,
-            boxShadow: `0 4px 24px rgba(0,0,0,0.2)`,
-            padding: '10px 16px',
-            display: 'flex', alignItems: 'center', gap: 4,
+          position: 'absolute', top: 'calc(100% + 4px)', left: '50%',
+          transform: 'translateX(-50%)',
+          background: C.card, border: `1.5px solid ${C.border}`,
+          borderRadius: 10, zIndex: 9999,
+          boxShadow: `0 4px 24px rgba(0,0,0,0.2)`,
+          padding: '10px 16px',
+          display: 'flex', alignItems: 'center', gap: 4,
         }}>
           {['h', 'm'].map((type, ti) => (
             <React.Fragment key={type}>
@@ -216,7 +214,7 @@ function FilterSelect({ value, onChange, options, C }) {
   const handleOpen = () => {
     if (triggerRef.current) {
       const r = triggerRef.current.getBoundingClientRect()
-      setPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 140) })
+      setPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 120) })
     }
     setOpen(v => !v)
   }
@@ -243,7 +241,7 @@ function FilterSelect({ value, onChange, options, C }) {
       </div>
       {open && (
         <div style={{
-          position: 'fixed', top: pos.top, left: pos.left, width: pos.width, 
+          position: 'fixed', top: pos.top, left: pos.left, width: pos.width,
           background: C.card, border: `1.5px solid ${C.border}`,
           borderRadius: 8, zIndex: 9999, boxShadow: `0 6px 24px rgba(0,0,0,0.15)`,
           maxHeight: 200, overflowY: 'auto',
