@@ -299,19 +299,25 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
       }
 
       // Moy % Drain — utilise prevMoyCalculee (valeur calculée du tour précédent)
+      // Si pctDrain null (vDrain=0), on traite comme 0 pour la moyenne cumulative
       let moyPctDrain = null
-      if (pctDrain !== null) {
-        if (i === 0) {
-          moyPctDrain = pctDrain
-        } else if (prevMoyCalculee !== null) {
-          moyPctDrain = (prevMoyCalculee * i + pctDrain) / (i + 1)
-        }
+      const pctPourMoy = pctDrain !== null ? pctDrain : 0
+      if (i === 0) {
+        // Tour 1 : moy = pctDrain si dispo, sinon null
+        moyPctDrain = pctDrain !== null ? pctDrain : null
+      } else if (prevMoyCalculee !== null) {
+        // Tours suivants : on intègre même si pctDrain=0
+        moyPctDrain = (prevMoyCalculee * i + pctPourMoy) / (i + 1)
+      } else if (pctDrain !== null) {
+        // prevMoy était null (tour 1 sans drain) mais maintenant on a un drain
+        moyPctDrain = pctDrain
       }
 
       // Mettre à jour les variables pour le prochain tour
       prevHeure = t.heure
       prevDuree = t.duree
-      prevMoyCalculee = moyPctDrain
+      // On propage la moyenne même si ce tour n'a pas de drain
+      prevMoyCalculee = moyPctDrain !== null ? moyPctDrain : prevMoyCalculee
 
       return { ...t, cumulRad: Math.max(0, cumulRad), tempsRepos, pctDrain, moyPctDrain }
     })
