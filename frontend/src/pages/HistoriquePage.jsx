@@ -340,7 +340,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
 
       return { ...t, cumulRad: Math.max(0, cumulRad), tempsRepos, pctDrain, moyPctDrain }
     })
-  }, [])
+  }
 
   const updateTour = (id, field, val) => {
     setTours(prev => recalculTours(
