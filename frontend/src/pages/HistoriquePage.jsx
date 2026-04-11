@@ -772,7 +772,7 @@ export default function HistoriquePage({ token, C, dark }) {
   )
 
   return (
-    <div style={{ animation: 'az-fade-in 0.3s ease both' }}>
+    <>
 
       {/* Modals */}
       {confirmDelete && (
@@ -783,232 +783,233 @@ export default function HistoriquePage({ token, C, dark }) {
         <EditModal saisie={editingSaisie} token={token} farms={farms}
           onSaved={() => load(page)} onClose={() => setEditingSaisie(null)} C={C} dark={dark} />
       )}
-
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10,
-            background: dark ? 'rgba(52,217,111,0.12)' : 'rgba(24,120,63,0.10)',
-            border: `1.5px solid ${C.green}30`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <History size={18} color={C.green} strokeWidth={2} />
-          </div>
-          <div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: C.text }}>Historique</div>
-            <div style={{ fontSize: 11, color: C.textDim }}>{total} saisie{total > 1 ? 's' : ''} enregistrée{total > 1 ? 's' : ''}</div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <select value={perPage} onChange={e => setPerPage(Number(e.target.value))}
-            style={{ padding: '7px 10px', borderRadius: 7, border: `1.5px solid ${C.border}`,
-              background: C.inputBg, color: C.text, fontSize: 12, fontFamily: 'inherit',
-              outline: 'none', cursor: 'pointer' }}>
-            {[10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}
-          </select>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div style={cardStyle}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit' }}>
-            <thead>
-            {/* Headers EN PREMIER */}
-            <tr>
-                <TH />
-                <TH>Date</TH>
-                <TH>Ferme</TH>
-                <TH>Bloc</TH>
-                <TH>Serre</TH>
-                <TH>Vanne</TH>
-                <TH>Nbr Bras</TH>
-                <TH>Nbr Goutteurs</TH>
-                <TH>Pds matin(Kg)</TH>
-                <TH>H. matin</TH>
-                <TH>Pds Soir(Kg)</TH>
-                <TH>H. soir</TH>
-                <TH>Bassin (EC)</TH>
-                <TH color={C.green}>Séchage(%)</TH>
-                <TH>Actions</TH>
-            </tr>
-            {/* Filtres EN DESSOUS */}
-            <tr style={{ background: dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }} />
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                <FilterInput value={fDate} onChange={setFDate} placeholder="" C={C} type="date" />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                <FilterInput value={fFerme} onChange={setFFerme} placeholder="" C={C} />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                <FilterInput value={fStation} onChange={setFStation} placeholder="" C={C} />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                <FilterInput value={fSerre} onChange={setFSerre} placeholder="" C={C} />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                <FilterInput value={fVanne} onChange={setFVanne} placeholder="" C={C} />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                <FilterInput value={fNbrBras} onChange={setFNbrBras} placeholder="" C={C} />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                <FilterInput value={fNbrGoutt} onChange={setFNbrGoutt} placeholder="" C={C} />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                <FilterInput value={fPoidsMat} onChange={setFPoidsMat} placeholder="" C={C} />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                <FilterInput value={fHeureMat} onChange={setFHeureMat} placeholder="" C={C} />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                <FilterInput value={fPoidsSoir} onChange={setFPoidsSoir} placeholder="" C={C} />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                <FilterInput value={fHeureSoir} onChange={setFHeureSoir} placeholder="" C={C} />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                <FilterInput value={fBassin} onChange={setFBassin} placeholder="" C={C} />
-                </th>
-                <th colSpan={2} style={{ borderBottom: `1px solid ${C.border}` }} />
-            </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={15} style={{ padding: '48px 0', textAlign: 'center', color: C.textDim, fontSize: 13 }}>
-                  Chargement…
-                </td></tr>
-              ) : filtered.length === 0 ? (
-                <tr><td colSpan={15} style={{ padding: '48px 0', textAlign: 'center', color: C.textDim, fontSize: 13 }}>
-                  Aucune saisie trouvée
-                </td></tr>
-              ) : filtered.map((s, i) => {
-                const expanded = expandedIds.has(s.id)
-                return (
-                  <>
-                    <tr key={s.id}
-                      style={{ borderBottom: !expanded ? `1px solid ${C.border}` : 'none',
-                        transition: 'background 0.12s' }}
-                      onMouseEnter={e => { if (!expanded) e.currentTarget.style.background = C.tableHover }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
-
-                      {/* Expand button */}
-                      <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                        <button onClick={() => toggleExpand(s.id)}
-                          style={{ background: expanded ? `${C.green}12` : C.toggleBg,
-                            border: `1px solid ${expanded ? C.green + '40' : C.border}`,
-                            borderRadius: 5, padding: '3px 6px', cursor: 'pointer',
-                            color: expanded ? C.green : C.textMuted,
-                            display: 'flex', alignItems: 'center' }}>
-                          {expanded
-                            ? <ChevronUp size={13} strokeWidth={2.5} />
-                            : <ChevronDown size={13} strokeWidth={2.5} />}
-                        </button>
-                      </td>
-
-                      <td style={{ padding: '10px 10px', fontWeight: 700, color: C.text, fontSize: 12, whiteSpace: 'nowrap' }}>
-                        {s.date}
-                      </td>
-                      <td style={{ padding: '10px 10px', fontSize: 12, color: C.text, fontWeight: 600 }}>{s.farm_name}</td>
-                      <td style={{ padding: '10px 10px', fontSize: 12, color: C.textMuted }}>{s.station || '—'}</td>
-                      <td style={{ padding: '10px 10px', fontSize: 12, color: C.textMuted }}>{s.serre || '—'}</td>
-                      <td style={{ padding: '10px 10px', fontSize: 12, color: C.textMuted }}>{s.vanne || '—'}</td>
-                      <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.nbr_bras ?? '—'}</td>
-                      <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.nbr_goutteurs ?? '—'}</td>
-                      <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.poids_matin ?? '—'}</td>
-                      <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'center', color: C.textMuted }}>{s.heure_matin || '—'}</td>
-                      <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.poids_soir ?? '—'}</td>
-                      <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'center', color: C.textMuted }}>{s.heure_soir || '—'}</td>
-                      <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.bassin_ec ?? '—'}</td>
-
-                      {/* % Ressuyage badge */}
-                      <td style={{ padding: '10px 10px', textAlign: 'center' }}>
-                        {s.pct_ressuyage !== null && s.pct_ressuyage !== undefined ? (
-                          <span style={{ background: `${C.green}15`, color: C.green,
-                            border: `1px solid ${C.green}30`, borderRadius: 6,
-                            padding: '3px 8px', fontSize: 12, fontWeight: 700 }}>
-                            {fmtNum(s.pct_ressuyage, 1)}%
-                          </span>
-                        ) : <span style={{ color: C.textDim }}>—</span>}
-                      </td>
-
-                      {/* Actions */}
-                      <td style={{ padding: '10px 10px' }}>
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <button onClick={(e) => { e.stopPropagation(); setEditingSaisie(s) }}
-                            style={{ display: 'flex', alignItems: 'center', gap: 5,
-                              padding: '5px 10px', borderRadius: 6,
-                              border: `1.5px solid ${C.border}`, background: 'transparent',
-                              color: C.textMuted, fontSize: 11, fontWeight: 700,
-                              fontFamily: 'inherit', cursor: 'pointer' }}
-                            onMouseEnter={e => { e.currentTarget.style.borderColor = C.green; e.currentTarget.style.color = C.green }}
-                            onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted }}>
-                            <Pencil size={11} strokeWidth={2} /> Modifier
-                          </button>
-                          <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(s) }}
-                            style={{ display: 'flex', alignItems: 'center', gap: 5,
-                              padding: '5px 10px', borderRadius: 6,
-                              border: `1.5px solid ${C.border}`, background: 'transparent',
-                              color: C.textMuted, fontSize: 11, fontWeight: 700,
-                              fontFamily: 'inherit', cursor: 'pointer' }}
-                            onMouseEnter={e => { e.currentTarget.style.borderColor = C.red; e.currentTarget.style.color = C.red }}
-                            onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted }}>
-                            <Trash2 size={11} strokeWidth={2} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-
-                    {/* Tours expand */}
-                    {expanded && (
-                      <ToursTable key={`tours-${s.id}`} saisieId={s.id} token={token} C={C} dark={dark} />
-                    )}
-                  </>
-                )
-              })}
-            </tbody>
-          </table>
+      <div style={{ animation: 'az-fade-in 0.3s ease both' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10,
+                background: dark ? 'rgba(52,217,111,0.12)' : 'rgba(24,120,63,0.10)',
+                border: `1.5px solid ${C.green}30`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <History size={18} color={C.green} strokeWidth={2} />
+            </div>
+            <div>
+                <div style={{ fontSize: 20, fontWeight: 900, color: C.text }}>Historique</div>
+                <div style={{ fontSize: 11, color: C.textDim }}>{total} saisie{total > 1 ? 's' : ''} enregistrée{total > 1 ? 's' : ''}</div>
+            </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <select value={perPage} onChange={e => setPerPage(Number(e.target.value))}
+                style={{ padding: '7px 10px', borderRadius: 7, border: `1.5px solid ${C.border}`,
+                background: C.inputBg, color: C.text, fontSize: 12, fontFamily: 'inherit',
+                outline: 'none', cursor: 'pointer' }}>
+                {[10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
+            </div>
         </div>
 
-        {/* Pagination */}
-        <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.border}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ color: C.textDim, fontSize: 12 }}>
-            {total} saisie{total > 1 ? 's' : ''} · page {page}/{pages}
-          </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={() => load(page - 1)} disabled={page <= 1}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px',
-                borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent',
-                color: C.textMuted, fontSize: 12, fontWeight: 700,
-                cursor: page <= 1 ? 'not-allowed' : 'pointer',
-                opacity: page <= 1 ? 0.4 : 1, fontFamily: 'inherit' }}>
-              <ChevronLeft size={13} strokeWidth={2} /> Préc
-            </button>
-            {Array.from({ length: Math.min(pages, 5) }, (_, i) => {
-              const p = i + 1
-              return (
-                <button key={p} onClick={() => load(p)}
-                  style={{ width: 32, height: 32, borderRadius: 6,
-                    border: `1.5px solid ${page === p ? C.green : C.border}`,
-                    background: page === p ? C.green : 'transparent',
-                    color: page === p ? '#fff' : C.textMuted,
-                    fontSize: 12, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' }}>
-                  {p}
+        {/* Table */}
+        <div style={cardStyle}>
+            <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit' }}>
+                <thead>
+                {/* Headers EN PREMIER */}
+                <tr>
+                    <TH />
+                    <TH>Date</TH>
+                    <TH>Ferme</TH>
+                    <TH>Bloc</TH>
+                    <TH>Serre</TH>
+                    <TH>Vanne</TH>
+                    <TH>Nbr Bras</TH>
+                    <TH>Nbr Goutteurs</TH>
+                    <TH>Pds matin(Kg)</TH>
+                    <TH>H. matin</TH>
+                    <TH>Pds Soir(Kg)</TH>
+                    <TH>H. soir</TH>
+                    <TH>Bassin (EC)</TH>
+                    <TH color={C.green}>Séchage(%)</TH>
+                    <TH>Actions</TH>
+                </tr>
+                {/* Filtres EN DESSOUS */}
+                <tr style={{ background: dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
+                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }} />
+                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                    <FilterInput value={fDate} onChange={setFDate} placeholder="" C={C} type="date" />
+                    </th>
+                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                    <FilterInput value={fFerme} onChange={setFFerme} placeholder="" C={C} />
+                    </th>
+                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                    <FilterInput value={fStation} onChange={setFStation} placeholder="" C={C} />
+                    </th>
+                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                    <FilterInput value={fSerre} onChange={setFSerre} placeholder="" C={C} />
+                    </th>
+                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                    <FilterInput value={fVanne} onChange={setFVanne} placeholder="" C={C} />
+                    </th>
+                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                    <FilterInput value={fNbrBras} onChange={setFNbrBras} placeholder="" C={C} />
+                    </th>
+                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                    <FilterInput value={fNbrGoutt} onChange={setFNbrGoutt} placeholder="" C={C} />
+                    </th>
+                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                    <FilterInput value={fPoidsMat} onChange={setFPoidsMat} placeholder="" C={C} />
+                    </th>
+                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                    <FilterInput value={fHeureMat} onChange={setFHeureMat} placeholder="" C={C} />
+                    </th>
+                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                    <FilterInput value={fPoidsSoir} onChange={setFPoidsSoir} placeholder="" C={C} />
+                    </th>
+                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                    <FilterInput value={fHeureSoir} onChange={setFHeureSoir} placeholder="" C={C} />
+                    </th>
+                    <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                    <FilterInput value={fBassin} onChange={setFBassin} placeholder="" C={C} />
+                    </th>
+                    <th colSpan={2} style={{ borderBottom: `1px solid ${C.border}` }} />
+                </tr>
+                </thead>
+                <tbody>
+                {loading ? (
+                    <tr><td colSpan={15} style={{ padding: '48px 0', textAlign: 'center', color: C.textDim, fontSize: 13 }}>
+                    Chargement…
+                    </td></tr>
+                ) : filtered.length === 0 ? (
+                    <tr><td colSpan={15} style={{ padding: '48px 0', textAlign: 'center', color: C.textDim, fontSize: 13 }}>
+                    Aucune saisie trouvée
+                    </td></tr>
+                ) : filtered.map((s, i) => {
+                    const expanded = expandedIds.has(s.id)
+                    return (
+                    <>
+                        <tr key={s.id}
+                        style={{ borderBottom: !expanded ? `1px solid ${C.border}` : 'none',
+                            transition: 'background 0.12s' }}
+                        onMouseEnter={e => { if (!expanded) e.currentTarget.style.background = C.tableHover }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
+
+                        {/* Expand button */}
+                        <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                            <button onClick={() => toggleExpand(s.id)}
+                            style={{ background: expanded ? `${C.green}12` : C.toggleBg,
+                                border: `1px solid ${expanded ? C.green + '40' : C.border}`,
+                                borderRadius: 5, padding: '3px 6px', cursor: 'pointer',
+                                color: expanded ? C.green : C.textMuted,
+                                display: 'flex', alignItems: 'center' }}>
+                            {expanded
+                                ? <ChevronUp size={13} strokeWidth={2.5} />
+                                : <ChevronDown size={13} strokeWidth={2.5} />}
+                            </button>
+                        </td>
+
+                        <td style={{ padding: '10px 10px', fontWeight: 700, color: C.text, fontSize: 12, whiteSpace: 'nowrap' }}>
+                            {s.date}
+                        </td>
+                        <td style={{ padding: '10px 10px', fontSize: 12, color: C.text, fontWeight: 600 }}>{s.farm_name}</td>
+                        <td style={{ padding: '10px 10px', fontSize: 12, color: C.textMuted }}>{s.station || '—'}</td>
+                        <td style={{ padding: '10px 10px', fontSize: 12, color: C.textMuted }}>{s.serre || '—'}</td>
+                        <td style={{ padding: '10px 10px', fontSize: 12, color: C.textMuted }}>{s.vanne || '—'}</td>
+                        <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.nbr_bras ?? '—'}</td>
+                        <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.nbr_goutteurs ?? '—'}</td>
+                        <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.poids_matin ?? '—'}</td>
+                        <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'center', color: C.textMuted }}>{s.heure_matin || '—'}</td>
+                        <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.poids_soir ?? '—'}</td>
+                        <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'center', color: C.textMuted }}>{s.heure_soir || '—'}</td>
+                        <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.bassin_ec ?? '—'}</td>
+
+                        {/* % Ressuyage badge */}
+                        <td style={{ padding: '10px 10px', textAlign: 'center' }}>
+                            {s.pct_ressuyage !== null && s.pct_ressuyage !== undefined ? (
+                            <span style={{ background: `${C.green}15`, color: C.green,
+                                border: `1px solid ${C.green}30`, borderRadius: 6,
+                                padding: '3px 8px', fontSize: 12, fontWeight: 700 }}>
+                                {fmtNum(s.pct_ressuyage, 1)}%
+                            </span>
+                            ) : <span style={{ color: C.textDim }}>—</span>}
+                        </td>
+
+                        {/* Actions */}
+                        <td style={{ padding: '10px 10px' }}>
+                            <div style={{ display: 'flex', gap: 6 }}>
+                            <button onClick={(e) => { e.stopPropagation(); setEditingSaisie(s) }}
+                                style={{ display: 'flex', alignItems: 'center', gap: 5,
+                                padding: '5px 10px', borderRadius: 6,
+                                border: `1.5px solid ${C.border}`, background: 'transparent',
+                                color: C.textMuted, fontSize: 11, fontWeight: 700,
+                                fontFamily: 'inherit', cursor: 'pointer' }}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = C.green; e.currentTarget.style.color = C.green }}
+                                onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted }}>
+                                <Pencil size={11} strokeWidth={2} /> Modifier
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(s) }}
+                                style={{ display: 'flex', alignItems: 'center', gap: 5,
+                                padding: '5px 10px', borderRadius: 6,
+                                border: `1.5px solid ${C.border}`, background: 'transparent',
+                                color: C.textMuted, fontSize: 11, fontWeight: 700,
+                                fontFamily: 'inherit', cursor: 'pointer' }}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = C.red; e.currentTarget.style.color = C.red }}
+                                onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted }}>
+                                <Trash2 size={11} strokeWidth={2} />
+                            </button>
+                            </div>
+                        </td>
+                        </tr>
+
+                        {/* Tours expand */}
+                        {expanded && (
+                        <ToursTable key={`tours-${s.id}`} saisieId={s.id} token={token} C={C} dark={dark} />
+                        )}
+                    </>
+                    )
+                })}
+                </tbody>
+            </table>
+            </div>
+
+            {/* Pagination */}
+            <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.border}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ color: C.textDim, fontSize: 12 }}>
+                {total} saisie{total > 1 ? 's' : ''} · page {page}/{pages}
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+                <button onClick={() => load(page - 1)} disabled={page <= 1}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px',
+                    borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent',
+                    color: C.textMuted, fontSize: 12, fontWeight: 700,
+                    cursor: page <= 1 ? 'not-allowed' : 'pointer',
+                    opacity: page <= 1 ? 0.4 : 1, fontFamily: 'inherit' }}>
+                <ChevronLeft size={13} strokeWidth={2} /> Préc
                 </button>
-              )
-            })}
-            <button onClick={() => load(page + 1)} disabled={page >= pages}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px',
-                borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent',
-                color: C.textMuted, fontSize: 12, fontWeight: 700,
-                cursor: page >= pages ? 'not-allowed' : 'pointer',
-                opacity: page >= pages ? 0.4 : 1, fontFamily: 'inherit' }}>
-              Suiv <ChevronRight size={13} strokeWidth={2} />
-            </button>
-          </div>
+                {Array.from({ length: Math.min(pages, 5) }, (_, i) => {
+                const p = i + 1
+                return (
+                    <button key={p} onClick={() => load(p)}
+                    style={{ width: 32, height: 32, borderRadius: 6,
+                        border: `1.5px solid ${page === p ? C.green : C.border}`,
+                        background: page === p ? C.green : 'transparent',
+                        color: page === p ? '#fff' : C.textMuted,
+                        fontSize: 12, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' }}>
+                    {p}
+                    </button>
+                )
+                })}
+                <button onClick={() => load(page + 1)} disabled={page >= pages}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px',
+                    borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent',
+                    color: C.textMuted, fontSize: 12, fontWeight: 700,
+                    cursor: page >= pages ? 'not-allowed' : 'pointer',
+                    opacity: page >= pages ? 0.4 : 1, fontFamily: 'inherit' }}>
+                Suiv <ChevronRight size={13} strokeWidth={2} />
+                </button>
+            </div>
+            </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
