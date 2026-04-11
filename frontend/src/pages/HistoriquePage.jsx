@@ -895,34 +895,31 @@ export default function HistoriquePage({ token, auth, C, dark }) {
     getDevices(token).then(setFarms).catch(() => {})
   }, [token])
 
-  // farm_names résolu — si manquant dans auth (vieux token), on fetch /me
-  const [resolvedFarmNames, setResolvedFarmNames] = useState(undefined)
+  // Fermes autorisées — fetch /me pour avoir les farm_names à jour
+  const [allowedFarms, setAllowedFarms] = useState(undefined) // undefined = pas encore chargé
 
   useEffect(() => {
     if (!auth) return
-    if (Array.isArray(auth.farm_names)) {
-      // farm_names présent dans auth (nouveau token)
-      setResolvedFarmNames(auth.farm_names)
-    } else {
-      // Vieux token sans farm_names → fetch /me pour récupérer les vraies infos
-      getMe(token)
-        .then(me => setResolvedFarmNames(me.farm_names || []))
-        .catch(() => setResolvedFarmNames([]))
+    if (auth.role === 'admin') {
+      setAllowedFarms(null) // admin voit tout
+      return
     }
-  }, [token, auth])
-
-  // Fermes autorisées selon le rôle
-  // admin → null (tout voir) | autres → liste de fermes
-  const allowedFarms = !auth || auth.role === 'admin'
-    ? null
-    : resolvedFarmNames !== undefined
-      ? resolvedFarmNames
-      : null  // pas encore chargé → null = pas de filtre temporaire
+    // Toujours fetch /me pour avoir les farm_names frais (même si dans auth)
+    getMe(token)
+      .then(me => {
+        const farms = Array.isArray(me.farm_names) ? me.farm_names : []
+        setAllowedFarms(farms)
+      })
+      .catch(() => setAllowedFarms([]))
+  }, [token])
 
   const load = useCallback(async (p = 1) => {
+    // Attendre que allowedFarms soit chargé
+    if (allowedFarms === undefined) return
+
     setLoading(true)
     try {
-      // Si farm_names défini et vide → aucune saisie à afficher
+      // Aucune ferme assignée → rien afficher
       if (allowedFarms !== null && allowedFarms.length === 0) {
         setSaisies([]); setTotal(0); setPages(1); setPage(1)
         return
@@ -931,13 +928,9 @@ export default function HistoriquePage({ token, auth, C, dark }) {
       const params = { page: p, perPage }
       if (fDate) { params.dateFrom = fDate; params.dateTo = fDate }
 
-      // Hint API : si filtre manuel actif ET autorisé → utiliser
-      // Sinon si 1 seule ferme autorisée → hint API pour perf
+      // Optimisation API : passer 1 ferme si possible
       if (fFerme) {
-        // Vérifier que la ferme demandée est autorisée
-        const ok = allowedFarms === null || allowedFarms.includes(fFerme)
-        if (ok) params.farmName = fFerme
-        else { setSaisies([]); setTotal(0); setPages(1); setPage(1); return }
+        params.farmName = fFerme
       } else if (allowedFarms !== null && allowedFarms.length === 1) {
         params.farmName = allowedFarms[0]
       }
@@ -945,8 +938,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
       const data = await getSaisies(token, params)
       let rows = data.data || []
 
-      // Filtre client TOUJOURS appliqué si restriction de fermes
-      // C'est le seul filtre fiable — indépendant du backend
+      // Filtre client — toujours appliqué pour garantir la sécurité
       if (allowedFarms !== null && allowedFarms.length > 0) {
         rows = rows.filter(s => allowedFarms.includes(s.farm_name))
       }
@@ -959,7 +951,10 @@ export default function HistoriquePage({ token, auth, C, dark }) {
     finally { setLoading(false) }
   }, [token, fFerme, fDate, perPage, allowedFarms])
 
-  useEffect(() => { if (resolvedFarmNames !== undefined) load(1) }, [fFerme, fDate, perPage, allowedFarms, resolvedFarmNames])
+  // Charger quand allowedFarms est prêt ou filtres changent
+  useEffect(() => {
+    if (allowedFarms !== undefined) load(1)
+  }, [allowedFarms, fFerme, fDate, perPage])
 
   const filtered = saisies.filter(s =>
     (!fStation   || String(s.station   || '').toLowerCase().includes(fStation.toLowerCase())) &&
