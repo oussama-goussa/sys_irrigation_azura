@@ -4,6 +4,7 @@
 // Projet Azura Irrigation IA — GOUSSA Oussama
 // ============================================================
 
+import { createPortal } from 'react-dom'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   History, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
@@ -330,10 +331,10 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
     </th>
   )
 
-  return (
+  return createPortal(
     <div style={{
         position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-        zIndex: 1000, background: 'rgba(0,0,0,0.65)',
+        zIndex: 9999, background: 'rgba(0,0,0,0.65)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '24px',
     }}>
@@ -342,7 +343,6 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
         borderRadius: 16, width: '100%', maxWidth: 1100,
         maxHeight: '90vh', overflowY: 'auto',
         boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
-        position: 'relative',
         }}>
 
         {/* Header modal */}
