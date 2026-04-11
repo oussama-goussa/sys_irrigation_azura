@@ -865,7 +865,7 @@ function ToursTable({ saisieId, token, C, dark }) {
 }
 
 // ── Main HistoriquePage ───────────────────────────────────────
-export default function HistoriquePage({ token, C, dark }) {
+export default function HistoriquePage({ token, auth, C, dark }) {
   const [saisies, setSaisies]     = useState([])
   const [total, setTotal]         = useState(0)
   const [pages, setPages]         = useState(1)
@@ -895,22 +895,52 @@ export default function HistoriquePage({ token, C, dark }) {
     getDevices(token).then(setFarms).catch(() => {})
   }, [token])
 
+  // Fermes autorisées selon le rôle
+  const allowedFarms = auth?.role === 'admin'
+    ? null                          // admin → tout voir
+    : (auth?.farm_names || [])      // autres → seulement ses fermes
+
   const load = useCallback(async (p = 1) => {
     setLoading(true)
     try {
       const params = { page: p, perPage }
-      if (fFerme) params.farmName = fFerme
-      if (fDate)  { params.dateFrom = fDate; params.dateTo = fDate }
+
+      // Filtre ferme : priorité au filtre manuel, sinon restriction par farm_names
+      if (fFerme) {
+        params.farmName = fFerme
+      } else if (allowedFarms !== null && allowedFarms.length > 0) {
+        // Charger chaque ferme autorisée séparément et merger
+        // (l'API ne supporte qu'une ferme à la fois — on fait N appels si besoin)
+        if (allowedFarms.length === 1) {
+          params.farmName = allowedFarms[0]
+        }
+        // Si plusieurs fermes → on laisse sans filtre et on filtre côté client
+      } else if (allowedFarms !== null && allowedFarms.length === 0) {
+        // Aucune ferme assignée → rien afficher
+        setSaisies([]); setTotal(0); setPages(1); setPage(1)
+        setLoading(false)
+        return
+      }
+
+      if (fDate) { params.dateFrom = fDate; params.dateTo = fDate }
+
       const data = await getSaisies(token, params)
-      setSaisies(data.data || [])
+
+      // Filtre client supplémentaire si plusieurs fermes autorisées
+      let rows = data.data || []
+      if (allowedFarms !== null && allowedFarms.length > 1) {
+        rows = rows.filter(s => allowedFarms.includes(s.farm_name))
+      }
+
+      setSaisies(rows)
       setTotal(data.total || 0)
       setPages(data.pages || 1)
       setPage(p)
     } catch { setSaisies([]) }
     finally { setLoading(false) }
-  }, [token, fFerme, fDate, perPage])
+  }, [token, fFerme, fDate, perPage, allowedFarms])
 
-  useEffect(() => { load(1) }, [fFerme, fDate, perPage])
+  useEffect(() => { load(1) }, [fFerme, fDate, perPage, allowedFarms])
 
   const filtered = saisies.filter(s =>
     (!fStation   || String(s.station   || '').toLowerCase().includes(fStation.toLowerCase())) &&
