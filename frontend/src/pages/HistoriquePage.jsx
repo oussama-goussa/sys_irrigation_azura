@@ -294,7 +294,7 @@ function FilterInput({ value, onChange, placeholder, C, type = 'text' }) {
         placeholder={placeholder}
         style={{ width: '100%', height: 28, padding: '0 22px 0 7px', borderRadius: 5,
           border: `1.5px solid ${value ? C.green + '60' : C.border}`,
-          background: C.inputBg, color: C.text, fontSize: 11,
+          background: C.inputBg, color: C.text, fontSize: 12,
           fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
           transition: 'border-color 0.15s' }} />
       {value && (
@@ -899,7 +899,7 @@ function ToursTable({ saisieId, token, C, dark }) {
   )
 
   const TH2 = ({ children, color }) => (
-    <th style={{ padding: '7px 8px', fontSize: 12, fontWeight: 700, textTransform: 'uppercase',
+    <th style={{ padding: '7px 8px', fontSize: 12, fontWeight: 900, textTransform: 'uppercase',
       letterSpacing: '0.07em', color: color || C.textDim, textAlign: 'center',
       whiteSpace: 'nowrap', background: dark ? 'rgba(52,217,111,0.05)' : 'rgba(24,120,63,0.04)',
       borderBottom: `1px solid ${C.border}` }}>{children}</th>
@@ -1268,7 +1268,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                           <button onClick={() => toggleExpand(s.id)} style={{
                             background: expanded ? `${C.green}15` : 'transparent',
                             border: `1.5px solid ${expanded ? C.green + '50' : C.border}`,
-                            borderRadius: 6, padding: '3px 6px', cursor: 'pointer',
+                            borderRadius: 6, padding: '6px 6px', cursor: 'pointer',
                             color: expanded ? C.green : C.textMuted,
                             display: 'flex', alignItems: 'center',
                             transition: 'all 0.15s',
