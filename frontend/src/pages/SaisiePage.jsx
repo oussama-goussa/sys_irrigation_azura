@@ -8,7 +8,7 @@ import {
   FlaskConical, BarChart2, Trash2, AlertCircle, Check,
   ClipboardList,
 } from 'lucide-react'
-import { getDevices } from '../api/client.js'
+import { getDevices, saveSaisie } from '../api/client.js'
 
 // ── helpers ───────────────────────────────────────────────────
 const today = () => new Date().toISOString().split('T')[0]
@@ -320,6 +320,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
   const [tours, setTours]     = useState([])
   const [saving, setSaving]   = useState(false)
   const [saved, setSaved]     = useState(false)
+  const [savedId, setSavedId] = useState(null)
   const [error, setError]     = useState('')
 
   const tableBottomRef = useRef(null)
@@ -428,16 +429,59 @@ export default function SaisiePage({ token, auth, C, dark }) {
     setSaving(true); setError('')
     try {
       const payload = {
-        ferme, station, serre, vanne, date,
-        constantes: { nbrBras, nbrGoutteurs, poidsMatin, heureMatin, poidsSoir, heureSoir, bassinEC, pctRessuyage },
-        tours,
-        bilan: { nbrTours: tours.length, dureeTotal, totalVApport, totalVDrain, ecMoyApport, phMoyApport, ecMoyDrain, phMoyDrain, moyDrainFinale, ccBras }
+        ferme,
+        station,
+        serre,
+        vanne,
+        date,
+        constantes: {
+          nbrBras       : nbrBras      ? Number(nbrBras)      : null,
+          nbrGoutteurs  : nbrGoutteurs ? Number(nbrGoutteurs) : null,
+          poidsMatin    : poidsMatin   ? Number(poidsMatin)   : null,
+          heureMatin,
+          poidsSoir     : poidsSoir    ? Number(poidsSoir)    : null,
+          heureSoir,
+          bassinEC      : bassinEC     ? Number(bassinEC)     : null,
+          pctRessuyage  : pctRessuyage ? Number(pctRessuyage) : null,
+        },
+        tours: tours.map(t => ({
+          num_tour     : t.num,
+          rad          : t.rad      ? Number(t.rad)      : null,
+          cumul_rad    : t.cumulRad ? Number(t.cumulRad) : null,
+          heure        : t.heure    || null,
+          duree_min    : t.duree    ? Number(t.duree)    : null,
+          temps_repos  : t.tempsRepos,
+          v_apport     : t.vApport  ? Number(t.vApport)  : null,
+          ec_apport    : t.ecApport ? Number(t.ecApport) : null,
+          ph_apport    : t.phApport ? Number(t.phApport) : null,
+          v_drain      : t.vDrain   ? Number(t.vDrain)   : null,
+          ec_drain     : t.ecDrain  ? Number(t.ecDrain)  : null,
+          ph_drain     : t.phDrain  ? Number(t.phDrain)  : null,
+          pct_drain    : t.pctDrain,
+          moy_pct_drain: t.moyPctDrain,
+        })),
+        bilan: {
+          nbrTours      : tours.length,
+          dureeTotal    : dureeTotal > 0 ? fmtDuree(dureeTotal) : null,  // HH:MM:SS
+          totalVApport  : totalVApport  || null,
+          totalVDrain   : totalVDrain   || null,
+          ecMoyApport   : ecMoyApport   ? Number(ecMoyApport)   : null,
+          phMoyApport   : phMoyApport   ? Number(phMoyApport)   : null,
+          ecMoyDrain    : ecMoyDrain    ? Number(ecMoyDrain)    : null,
+          phMoyDrain    : phMoyDrain    ? Number(phMoyDrain)    : null,
+          moyDrainFinale: moyDrainFinale,
+          ccBras        : ccBras        ? Number(ccBras)        : null,
+        },
       }
-      console.log('Saisie:', payload)
-      await new Promise(r => setTimeout(r, 600))
-      setSaved(true); setTimeout(() => setSaved(false), 3000)
-    } catch (e) { setError(e.message) }
-    finally { setSaving(false) }
+      const result = await saveSaisie(token, payload)
+      setSaved(true)
+      setSavedId(result.saisie_id)
+      setTimeout(() => setSaved(false), 5000)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const cardStyle = {

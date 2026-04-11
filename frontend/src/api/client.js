@@ -211,6 +211,54 @@ export async function getDeviceTours(token, deviceId, date = null) {
   return res.json()
 }
 
+// ── Saisie journalière ────────────────────────────────────────
+
+/** Enregistrer une saisie journalière complète */
+export async function saveSaisie(token, payload) {
+  const res = await fetchWithRefresh(`${BASE}/api/saisie`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Erreur lors de l\'enregistrement')
+  }
+  return res.json()
+}
+
+/** Liste des saisies avec filtres optionnels */
+export async function getSaisies(token, { farmName, dateFrom, dateTo, page = 1, perPage = 20 } = {}) {
+  const params = new URLSearchParams({ page, per_page: perPage })
+  if (farmName) params.append('farm_name', farmName)
+  if (dateFrom) params.append('date_from', dateFrom)
+  if (dateTo)   params.append('date_to', dateTo)
+  const res = await fetchWithRefresh(`${BASE}/api/saisie?${params}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error('Erreur chargement saisies')
+  return res.json()
+}
+
+/** Détail d'une saisie avec ses tours */
+export async function getSaisie(token, saisieId) {
+  const res = await fetchWithRefresh(`${BASE}/api/saisie/${saisieId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error('Erreur chargement saisie')
+  return res.json()
+}
+
+/** Supprimer une saisie */
+export async function deleteSaisie(token, saisieId) {
+  const res = await fetchWithRefresh(`${BASE}/api/saisie/${saisieId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error('Erreur suppression saisie')
+  return res.json()
+}
+
 export async function getFarms(token) {
   const res = await fetchWithRefresh(`${BASE}/api/devices`, {  // ← /api/devices/farms → /api/devices
     headers: { Authorization: `Bearer ${token}` },
