@@ -1172,7 +1172,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
 
         {/* Table */}
         <div style={{ ...cardStyle, overflow: 'visible' }}>
-          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', borderRadius: 14 }}>
+          <div style={{ overflowX: 'auto', overflowY: 'visible', WebkitOverflowScrolling: 'touch', borderRadius: 14 }}>
             <table style={{ width: '100%', minWidth: 1100, borderCollapse: 'collapse', fontFamily: 'inherit' }}>
               <thead>
                 {/* Headers */}
