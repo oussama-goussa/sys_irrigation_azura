@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from datetime import date as date_type
 from loguru import logger
+from services.user_service import get_user
 
 from core.database import get_db
 from core.security import get_current_user, require_operateur, require_any
@@ -158,7 +159,6 @@ def create_saisie(
         "saisie"   : saisie.to_dict(),
     }
 
-
 # ── GET /api/saisie — Liste des saisies ──────────────────────
 @router.get("")
 def list_saisies(
@@ -170,13 +170,28 @@ def list_saisies(
     db          : Session       = Depends(get_db),
     user        : dict          = Depends(require_any),
 ):
-    """
-    Liste les saisies journalières avec filtres optionnels.
-    """
     q = db.query(SaisieJournaliere).order_by(desc(SaisieJournaliere.date), desc(SaisieJournaliere.created_at))
 
-    if farm_name:
-        q = q.filter(SaisieJournaliere.farm_name == farm_name)
+    # ── Filtrage par farm_names de l'utilisateur connecté ─────
+    if user["role"] != "admin":
+        user_db = get_user(db, user["username"])
+        allowed = user_db.farm_names if user_db and user_db.farm_names else []
+
+        if len(allowed) == 0:
+            return {"total": 0, "page": page, "per_page": per_page, "pages": 1, "data": []}
+
+        q = q.filter(SaisieJournaliere.farm_name.in_(allowed))
+
+        # Si un filtre ferme explicite est demandé, vérifier qu'il est autorisé
+        if farm_name:
+            if farm_name not in allowed:
+                return {"total": 0, "page": page, "per_page": per_page, "pages": 1, "data": []}
+            q = q.filter(SaisieJournaliere.farm_name == farm_name)
+    else:
+        # Admin : filtre ferme sans restriction
+        if farm_name:
+            q = q.filter(SaisieJournaliere.farm_name == farm_name)
+
     if date_from:
         q = q.filter(SaisieJournaliere.date >= date_type.fromisoformat(date_from))
     if date_to:
@@ -192,7 +207,6 @@ def list_saisies(
         "pages"   : max(1, (total + per_page - 1) // per_page),
         "data"    : [s.to_dict() for s in items],
     }
-
 
 # ── GET /api/saisie/{id} — Détail d'une saisie ───────────────
 @router.get("/{saisie_id}")

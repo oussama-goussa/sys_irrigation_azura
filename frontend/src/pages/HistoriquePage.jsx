@@ -987,7 +987,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
   }
 
   // Dériver options pour filtres
-  const fermeOptions = [...new Set(farms.map(f => f.farm_name))].map(v => ({ value: v, label: v }))
+  const fermeOptions = [...new Set(farms.map(f => f.farm_name))].filter(name => allowedFarms === null || (allowedFarms && allowedFarms.includes(name))).map(v => ({ value: v, label: v }))
   const selectedFilterFarm = farms.find(f => f.farm_name === fFerme)
   const stationFilterOptions = fFerme && selectedFilterFarm
     ? [...new Set((selectedFilterFarm.houses || []).map(h => h.house_number))].map(v => ({ value: v, label: `Station ${v}` }))
