@@ -960,7 +960,7 @@ function ToursTable({ saisieId, token, C, dark }) {
                       { v: t.moy_pct_drain != null ? `${fmtNum(t.moy_pct_drain, 1)}%` : '—', raw: true, color: C.amber },
                     ].map((cell, ci) => (
                       <td key={ci} style={{ padding: '8px 8px', textAlign: 'center',
-                        fontSize: 12, fontWeight: cell.color ? 700 : 400,
+                        fontSize: 12, fontWeight: 700,
                         color: cell.color || C.text }}>
                         {cell.raw ? (cell.v ?? '—') : fmtNum(cell.v, cell.dec ?? 2)}
                       </td>
