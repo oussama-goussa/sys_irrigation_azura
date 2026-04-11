@@ -900,6 +900,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
   // []    = aucune ferme assignée
   // [...] = liste des fermes autorisées
   const [allowedFarms, setAllowedFarms] = useState(undefined)
+  const allowedFarmsRef = useRef(undefined) // ref pour éviter stale closure
 
   useEffect(() => {
     if (!auth) return
@@ -907,13 +908,15 @@ export default function HistoriquePage({ token, auth, C, dark }) {
       .then(me => {
         if ((me.role || auth.role) === 'admin') {
           setAllowedFarms(null)
+          allowedFarmsRef.current = null
         } else {
           setAllowedFarms(Array.isArray(me.farm_names) ? me.farm_names : [])
+          allowedFarmsRef.current = Array.isArray(me.farm_names) ? me.farm_names : []
         }
       })
       .catch(() => {
-        if (auth.role === 'admin') setAllowedFarms(null)
-        else setAllowedFarms(Array.isArray(auth.farm_names) ? auth.farm_names : [])
+        if (auth.role === 'admin') { setAllowedFarms(null); allowedFarmsRef.current = null }
+        else { const fb = Array.isArray(auth.farm_names) ? auth.farm_names : []; setAllowedFarms(fb); allowedFarmsRef.current = fb }
       })
   }, [token])
 
@@ -956,15 +959,11 @@ export default function HistoriquePage({ token, auth, C, dark }) {
     finally { setLoading(false) }
   }
 
-  // Déclencher load quand allowedFarms est prêt (passe la valeur fraîche directement)
+  // Déclencher load quand allowedFarms OU filtres changent
   useEffect(() => {
-    if (allowedFarms !== undefined) load(1, allowedFarms)
-  }, [allowedFarms])
-
-  // Recharger quand les filtres API changent
-  useEffect(() => {
-    if (allowedFarms !== undefined) load(1, allowedFarms)
-  }, [fFerme, fDate, perPage])
+    const af = allowedFarmsRef.current
+    if (af !== undefined) load(1, af)
+  }, [allowedFarms, fFerme, fDate, perPage])
 
   const filtered = saisies.filter(s =>
     (!fStation   || String(s.station   || '').toLowerCase().includes(fStation.toLowerCase())) &&
