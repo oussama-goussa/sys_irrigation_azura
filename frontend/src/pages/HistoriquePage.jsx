@@ -75,9 +75,17 @@ function TimeInput({ value, onChange, C, small = false }) {
     else onChange(`${h || '00'}:${String((mv - 1 + 60) % 60).padStart(2, '0')}`)
   }
 
+  const handleOpen = () => {
+    if (triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect()
+      setPos({ top: r.bottom + 6, left: r.left + r.width / 2 })
+    }
+    setOpen(v => !v)
+  }
+
   return (
     <div ref={ref} style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
-      <div onClick={() => setOpen(v => !v)} style={{
+      <div ref={triggerRef} onClick={handleOpen} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         height: small ? 28 : 34, padding: '0 8px', width: '100%',
         border: `1.5px solid ${open ? C.green : value && value !== '00:00' ? C.green + '55' : C.border}`,
@@ -216,10 +224,23 @@ function FilterSelect({ value, onChange, options, C }) {
   const handleOpen = () => {
     if (triggerRef.current) {
       const r = triggerRef.current.getBoundingClientRect()
-      setPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 140) })
+      setPos({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 140) })
     }
     setOpen(v => !v)
   }
+
+  // Recalculate on scroll to keep dropdown aligned
+  useEffect(() => {
+    if (!open) return
+    const update = () => {
+      if (triggerRef.current) {
+        const r = triggerRef.current.getBoundingClientRect()
+        setPos({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 140) })
+      }
+    }
+    window.addEventListener('scroll', update, true)
+    return () => window.removeEventListener('scroll', update, true)
+  }, [open])
 
   const selected = options.find(o => (o.value ?? o) === value)
   const label = selected ? (selected.label ?? selected) : null
