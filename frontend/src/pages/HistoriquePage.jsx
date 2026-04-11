@@ -9,7 +9,7 @@ import {
   Plus, Save, AlertCircle, Check, Droplets, FlaskConical,
   BarChart2, ClipboardList,
 } from 'lucide-react'
-import { getSaisies, getSaisie, updateSaisie, deleteSaisie, getDevices } from '../api/client.js'
+import { getSaisies, getSaisie, updateSaisie, deleteSaisie, getDevices, getMe } from '../api/client.js'
 
 // ── helpers ───────────────────────────────────────────────────
 const fmtNum = (v, dec = 2) => {
@@ -895,11 +895,29 @@ export default function HistoriquePage({ token, auth, C, dark }) {
     getDevices(token).then(setFarms).catch(() => {})
   }, [token])
 
+  // farm_names résolu — si manquant dans auth (vieux token), on fetch /me
+  const [resolvedFarmNames, setResolvedFarmNames] = useState(undefined)
+
+  useEffect(() => {
+    if (!auth) return
+    if (Array.isArray(auth.farm_names)) {
+      // farm_names présent dans auth (nouveau token)
+      setResolvedFarmNames(auth.farm_names)
+    } else {
+      // Vieux token sans farm_names → fetch /me pour récupérer les vraies infos
+      getMe(token)
+        .then(me => setResolvedFarmNames(me.farm_names || []))
+        .catch(() => setResolvedFarmNames([]))
+    }
+  }, [token, auth])
+
   // Fermes autorisées selon le rôle
-  // admin → null (tout voir) | autres → liste (peut être vide)
+  // admin → null (tout voir) | autres → liste de fermes
   const allowedFarms = !auth || auth.role === 'admin'
     ? null
-    : Array.isArray(auth.farm_names) ? auth.farm_names : []
+    : resolvedFarmNames !== undefined
+      ? resolvedFarmNames
+      : null  // pas encore chargé → null = pas de filtre temporaire
 
   const load = useCallback(async (p = 1) => {
     setLoading(true)
@@ -941,7 +959,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
     finally { setLoading(false) }
   }, [token, fFerme, fDate, perPage, allowedFarms])
 
-  useEffect(() => { load(1) }, [fFerme, fDate, perPage, allowedFarms])
+  useEffect(() => { if (resolvedFarmNames !== undefined) load(1) }, [fFerme, fDate, perPage, allowedFarms, resolvedFarmNames])
 
   const filtered = saisies.filter(s =>
     (!fStation   || String(s.station   || '').toLowerCase().includes(fStation.toLowerCase())) &&

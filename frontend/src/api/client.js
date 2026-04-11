@@ -55,6 +55,14 @@ export async function login(username, password) {
   return res.json()
 }
 
+export async function getMe(token) {
+  const res = await fetchWithRefresh(`${BASE}/api/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error('Erreur chargement profil')
+  return res.json()
+}
+
 export async function getUsers(token) {
   const res = await fetchWithRefresh(`${BASE}/api/auth/users`, {
     headers: { Authorization: `Bearer ${token}` },
