@@ -393,7 +393,8 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
         {page === 'historique' && (
           <HistoriquePage
             token={auth.access_token}
-            C={C}
+            auth={auth}
+            C={C}            
             dark={dark}
           />
         )}

@@ -922,7 +922,9 @@ export default function HistoriquePage({ token, auth, C, dark }) {
 
   // load est une fonction normale (pas useCallback) pour éviter les stale closures
   // Elle reçoit allowedFarms en paramètre direct
-  const load = async (p = 1, currentAllowedFarms = allowedFarms) => {
+  
+  const load = async (p = 1) => {
+    const currentAllowedFarms = auth?.role === 'admin' ? null : (auth?.farm_names ?? undefined)
     if (currentAllowedFarms === undefined) { setLoading(false); return }
 
     setLoading(true)
@@ -963,7 +965,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
   useEffect(() => {
     const af = allowedFarmsRef.current
     if (af !== undefined) load(1, af)
-  }, [allowedFarms, fFerme, fDate, perPage])
+  }, [allowedFarms, fFerme, fDate, auth, perPage])
 
   const filtered = saisies.filter(s =>
     (!fStation   || String(s.station   || '').toLowerCase().includes(fStation.toLowerCase())) &&
@@ -996,7 +998,11 @@ export default function HistoriquePage({ token, auth, C, dark }) {
   }
 
   // Dériver options pour filtres
-  const fermeOptions = [...new Set(farms.map(f => f.farm_name))].filter(name => allowedFarms === null || (allowedFarms && allowedFarms.includes(name))).map(v => ({ value: v, label: v }))
+  const isAdmin = auth?.role === 'admin'
+  const userFarms = auth?.farm_names || []
+  const fermeOptions = farms
+    .filter(f => isAdmin || userFarms.includes(f.farm_name))
+    .map(f => ({ value: f.farm_name, label: f.farm_name }))
   const selectedFilterFarm = farms.find(f => f.farm_name === fFerme)
   const stationFilterOptions = fFerme && selectedFilterFarm
     ? [...new Set((selectedFilterFarm.houses || []).map(h => h.house_number))].map(v => ({ value: v, label: `Station ${v}` }))
