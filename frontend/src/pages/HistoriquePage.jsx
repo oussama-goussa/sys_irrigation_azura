@@ -591,7 +591,7 @@ function ToursTable({ saisieId, token, C, dark }) {
   )
 
   return (
-    <div>
+    <>
       <tr>
         <td colSpan={20} style={{ padding: 0 }}>
           <div style={{ margin: '0 0 0 32px', borderLeft: `3px solid ${C.green}30` }}>
@@ -658,7 +658,7 @@ function ToursTable({ saisieId, token, C, dark }) {
           </div>
         </td>
       </tr>
-    </div>
+    </>
   )
 }
 
