@@ -34,7 +34,7 @@ function FarmItem({ farm, selectedDevice, onSelectDevice, C, dark }) {
           padding: '6px 10px', borderRadius: 7,
           background: 'transparent', border: 'none',
           color: C.textDim, cursor: 'pointer',
-          fontSize: 11, fontWeight: 700,
+          fontSize: 11, fontWeight: 680,
           letterSpacing: '0.08em', textTransform: 'uppercase',
           fontFamily: 'inherit',
         }}
@@ -58,7 +58,7 @@ function FarmItem({ farm, selectedDevice, onSelectDevice, C, dark }) {
               gap: 8, padding: '8px 10px 8px 24px',
               borderRadius: 7, border: 'none',
               cursor: 'pointer', fontSize: 13,
-              fontWeight: active ? 700 : 400,
+              fontWeight: active ? 680 : 400,
               fontFamily: 'inherit',
               background: active
                 ? (dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.08)')
@@ -161,7 +161,7 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
               width: '100%', display: 'flex', alignItems: 'center',
               gap: 9, padding: '9px 10px', borderRadius: 8,
               border: 'none', cursor: 'pointer', fontSize: 13,
-              fontWeight: page === 'dashboard' ? 700 : 500,
+              fontWeight: page === 'dashboard' ? 680 : 500,
               fontFamily: 'inherit',
               background: page === 'dashboard'
                 ? (dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.08)')
@@ -228,7 +228,7 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
               width: '100%', display: 'flex', alignItems: 'center',
               gap: 9, padding: '9px 10px', borderRadius: 8,
               border: 'none', cursor: 'pointer', fontSize: 13,
-              fontWeight: page === 'saisie' ? 700 : 500,
+              fontWeight: page === 'saisie' ? 680 : 500,
               fontFamily: 'inherit',
               background: page === 'saisie'
                 ? (dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.08)')
@@ -256,7 +256,7 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
               width: '100%', display: 'flex', alignItems: 'center',
               gap: 9, padding: '9px 10px', borderRadius: 8,
               border: 'none', cursor: 'pointer', fontSize: 13,
-              fontWeight: page === 'historique' ? 700 : 500,
+              fontWeight: page === 'historique' ? 680 : 500,
               fontFamily: 'inherit',
               background: page === 'historique'
                 ? (dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.08)')
@@ -281,7 +281,7 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
                 width: '100%', display: 'flex', alignItems: 'center',
                 gap: 9, padding: '9px 10px', borderRadius: 8,
                 border: 'none', cursor: 'pointer', fontSize: 13,
-                fontWeight: page === 'users' ? 700 : 500,
+                fontWeight: page === 'users' ? 680 : 500,
                 fontFamily: 'inherit',
                 background: page === 'users'
                   ? (dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.08)')
@@ -325,7 +325,7 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
             </div>
             <div style={{ minWidth: 0 }}>
               <div style={{
-                color: C.text, fontWeight: 700, fontSize: 12,
+                color: C.text, fontWeight: 680, fontSize: 12,
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               }}>
                 {auth.username}

@@ -71,7 +71,7 @@ export default function LoginPage({ onLogin, dark, toggleDark }) {
           borderRadius: 8, padding: '7px 14px',
           cursor: 'pointer', color: C.textMuted,
           display: 'flex', alignItems: 'center', gap: 6,
-          fontSize: 12, fontWeight: 700, fontFamily: 'inherit',
+          fontSize: 12, fontWeight: 680, fontFamily: 'inherit',
         }}>
           {dark
             ? <><Sun size={13} strokeWidth={2} /> Clair</>
@@ -126,7 +126,7 @@ export default function LoginPage({ onLogin, dark, toggleDark }) {
               display: 'block',
               color: C.textMuted,
               fontSize: 11,
-              fontWeight: 700,
+              fontWeight: 680,
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
               marginBottom: 7,
@@ -156,7 +156,7 @@ export default function LoginPage({ onLogin, dark, toggleDark }) {
               display: 'block',
               color: C.textMuted,
               fontSize: 11,
-              fontWeight: 700,
+              fontWeight: 680,
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
               marginBottom: 7,
@@ -222,7 +222,7 @@ export default function LoginPage({ onLogin, dark, toggleDark }) {
               border: 'none',
               borderRadius: 10,
               fontSize: 14,
-              fontWeight: 700,
+              fontWeight: 680,
               fontFamily: 'inherit',
               cursor: loading ? 'not-allowed' : 'pointer',
               opacity: loading ? 0.7 : 1,
@@ -258,7 +258,7 @@ export default function LoginPage({ onLogin, dark, toggleDark }) {
             <div style={{
               color: C.textDim,
               fontSize: 10,
-              fontWeight: 700,
+              fontWeight: 680,
               textTransform: 'uppercase',
               letterSpacing: '0.1em',
               marginBottom: 10,
@@ -282,7 +282,7 @@ export default function LoginPage({ onLogin, dark, toggleDark }) {
                     padding: '8px 10px',
                     color: C.textMuted,
                     fontSize: 12,
-                    fontWeight: 700,
+                    fontWeight: 680,
                     fontFamily: 'inherit',
                     cursor: 'pointer',
                     display: 'flex',

@@ -50,7 +50,7 @@ function TInput({ value, onChange, placeholder = '', disabled = false, width = 7
         background: disabled ? 'transparent' : (C?.inputBg || '#f9fbfa'),
         color: disabled ? (C?.green || '#18783f') : (C?.text || '#0d1f14'),
         fontSize: 12, fontFamily: 'inherit', outline: 'none',
-        fontWeight: disabled ? 700 : 400, 
+        fontWeight: disabled ? 680 : 400, 
       }}
     />
   )
@@ -98,7 +98,7 @@ function TimeInput({ value, onChange, C }) {
     padding: '4px 8px', borderRadius: 5, transition: 'background 0.1s',
   }
   const numStyle = {
-    fontSize: 22, fontWeight: 700, color: C.text,
+    fontSize: 22, fontWeight: 680, color: C.text,
     width: 48, textAlign: 'center',
     background: 'none', border: 'none', outline: 'none',
     fontFamily: 'inherit', padding: 0,
@@ -117,7 +117,7 @@ function TimeInput({ value, onChange, C }) {
           borderRadius: 7, background: C.inputBg,
           cursor: 'pointer', transition: 'border-color 0.15s',
           fontSize: 12, color: value ? C.text : C.textDim,
-          gap: 4, fontWeight: 700,
+          gap: 4, fontWeight: 680,
         }}
       >
         <span>{h || '00'}</span>
@@ -144,7 +144,7 @@ function TimeInput({ value, onChange, C }) {
               onClick={() => inc('h')}><ChevronUp size={16} strokeWidth={2.5}/></button>
             <input type="text" inputMode="numeric" maxLength={2} value={h || '00'}
               onChange={e => { const v = parseInt(e.target.value)||0; onChange(`${String(Math.min(23,Math.max(0,v))).padStart(2,'0')}:${m||'00'}`) }}
-              style={{ fontSize: 22, fontWeight: 700, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
+              style={{ fontSize: 22, fontWeight: 680, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
             />
             <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}
               onClick={() => dec('h')}><ChevronDown size={16} strokeWidth={2.5}/></button>
@@ -158,7 +158,7 @@ function TimeInput({ value, onChange, C }) {
               onClick={() => inc('m')}><ChevronUp size={16} strokeWidth={2.5}/></button>
             <input type="text" inputMode="numeric" maxLength={2} value={m || '00'}
               onChange={e => { const v = parseInt(e.target.value)||0; onChange(`${h||'00'}:${String(Math.min(59,Math.max(0,v))).padStart(2,'0')}`) }}
-              style={{ fontSize: 22, fontWeight: 700, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
+              style={{ fontSize: 22, fontWeight: 680, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
             />
             <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}
               onClick={() => dec('m')}><ChevronDown size={16} strokeWidth={2.5}/></button>
@@ -251,7 +251,7 @@ function BilanCard({ title, items, color, icon: Icon, C, dark }) {
       borderRadius: 12, padding: '14px 18px', flex: 1,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        <div style={{ fontSize: 12, fontWeight: 680, color, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
           {title}
         </div>
         <div style={{
@@ -279,7 +279,7 @@ function TH({ children, w, color, C }) {
   return (
     <th style={{
       padding: '8px 6px', textAlign: 'center',
-      fontSize: 12, fontWeight: 700, textTransform: 'uppercase',
+      fontSize: 12, fontWeight: 680, textTransform: 'uppercase',
       letterSpacing: '0.07em', color: color || C.textDim,
       whiteSpace: 'nowrap', width: w,
       borderBottom: `1.5px solid ${C.border}`,
@@ -293,7 +293,7 @@ function TH({ children, w, color, C }) {
 function SLabel({ children, C }) {
   return (
     <div style={{
-      fontSize: 12, fontWeight: 700, textTransform: 'uppercase',
+      fontSize: 12, fontWeight: 680, textTransform: 'uppercase',
       letterSpacing: '0.08em', color: C.textDim, marginBottom: 5,
     }}>{children}</div>
   )
@@ -593,7 +593,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
                   <div style={{ fontSize: 11, color: dark ? C.textDim : '#5a7a66', marginBottom: 4, whiteSpace: 'nowrap' }}>
                     {it.sub}
                   </div>
-                  <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: card.color }}>
+                  <div style={{ fontSize: 22, fontWeight: 680, letterSpacing: '-0.02em', color: card.color }}>
                     {it.value}
                   </div>
                 </div>
@@ -766,7 +766,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
                     <TInput value={t.rad} onChange={v => updateTour(t.id, 'rad', v)} width={68} C={C} />
                   </td>
                   <td style={{ padding: '6px 4px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: C.blue }}>
+                    <div style={{ fontSize: 12, fontWeight: 680, color: C.blue }}>
                       {t.cumulRad > 0 ? fmtNum(t.cumulRad, 1) : '—'}
                     </div>
                   </td>
@@ -774,38 +774,38 @@ export default function SaisiePage({ token, auth, C, dark }) {
                     <TimeInput value={t.heure} onChange={v => updateTour(t.id, 'heure', v)} C={C} />
                   </td>
                   <td style={{ padding: '6px 4px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: t.tempsRepos !== null ? C.textMuted : C.textDim }}>
+                    <div style={{ fontSize: 12, fontWeight: 680, color: t.tempsRepos !== null ? C.textMuted : C.textDim }}>
                       {t.tempsRepos !== null ? `${t.tempsRepos} min` : i === 0 ? '—' : '?'}
                     </div>
                   </td>
-                  <td style={{ padding: '6px 4px', fontWeight: 700, textAlign: 'center' }}>
+                  <td style={{ padding: '6px 4px', fontWeight: 680, textAlign: 'center' }}>
                     <TInput value={t.duree} onChange={v => updateTour(t.id, 'duree', v)} width={68} C={C} />
                   </td>
-                  <td style={{ padding: '6px 4px', fontWeight: 700, textAlign: 'center' }}>
+                  <td style={{ padding: '6px 4px', fontWeight: 680, textAlign: 'center' }}>
                     <TInput value={t.vApport} onChange={v => updateTour(t.id, 'vApport', v)} width={72} C={C} />
                   </td>
-                  <td style={{ padding: '6px 4px', fontWeight: 700, textAlign: 'center' }}>
+                  <td style={{ padding: '6px 4px', fontWeight: 680, textAlign: 'center' }}>
                     <TInput value={t.ecApport} onChange={v => updateTour(t.id, 'ecApport', v)} width={68} C={C} />
                   </td>
-                  <td style={{ padding: '6px 4px', fontWeight: 700, textAlign: 'center' }}>
+                  <td style={{ padding: '6px 4px', fontWeight: 680, textAlign: 'center' }}>
                     <TInput value={t.phApport} onChange={v => updateTour(t.id, 'phApport', v)} width={68} C={C} />
                   </td>
-                  <td style={{ padding: '6px 4px', fontWeight: 700, textAlign: 'center' }}>
+                  <td style={{ padding: '6px 4px', fontWeight: 680, textAlign: 'center' }}>
                     <TInput value={t.vDrain} onChange={v => updateTour(t.id, 'vDrain', v)} width={68} C={C} />
                   </td>
-                  <td style={{ padding: '6px 4px', fontWeight: 700, textAlign: 'center' }}>
+                  <td style={{ padding: '6px 4px', fontWeight: 680, textAlign: 'center' }}>
                     <TInput value={t.ecDrain} onChange={v => updateTour(t.id, 'ecDrain', v)} width={68} C={C} />
                   </td>
-                  <td style={{ padding: '6px 4px', fontWeight: 700, textAlign: 'center' }}>
+                  <td style={{ padding: '6px 4px', fontWeight: 680, textAlign: 'center' }}>
                     <TInput value={t.phDrain} onChange={v => updateTour(t.id, 'phDrain', v)} width={68} C={C} />
                   </td>
                   <td style={{ padding: '6px 4px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: t.pctDrain !== null ? C.amber : C.textDim }}>
+                    <div style={{ fontSize: 12, fontWeight: 680, color: t.pctDrain !== null ? C.amber : C.textDim }}>
                       {t.pctDrain !== null ? `${fmtNum(t.pctDrain, 1)}%` : '—'}
                     </div>
                   </td>
                   <td style={{ padding: '6px 4px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: t.moyPctDrain !== null ? C.amber : C.textDim }}>
+                    <div style={{ fontSize: 12, fontWeight: 680, color: t.moyPctDrain !== null ? C.amber : C.textDim }}>
                       {t.moyPctDrain !== null ? `${fmtNum(t.moyPctDrain, 1)}%` : '—'}
                     </div>
                   </td>
@@ -828,13 +828,13 @@ export default function SaisiePage({ token, auth, C, dark }) {
             {tours.length > 0 && (
               <tfoot>
                 <tr style={{ borderTop: `2px solid ${C.border}` }}>
-                  <td colSpan={6} style={{ padding: '8px 6px', fontSize: 12, fontWeight: 700, color: C.textMuted }}>TOTAUX</td>
+                  <td colSpan={6} style={{ padding: '8px 6px', fontSize: 12, fontWeight: 680, color: C.textMuted }}>TOTAUX</td>
                   <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 900, color: C.green }}>{fmtNum(totalVApport, 1)}</td>
-                  <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 700, color: C.textMuted }}>{ecMoyApport ? fmtNum(ecMoyApport, 2) : '—'}</td>
-                  <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 700, color: C.textMuted }}>{phMoyApport ? fmtNum(phMoyApport, 2) : '—'}</td>
+                  <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 680, color: C.textMuted }}>{ecMoyApport ? fmtNum(ecMoyApport, 2) : '—'}</td>
+                  <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 680, color: C.textMuted }}>{phMoyApport ? fmtNum(phMoyApport, 2) : '—'}</td>
                   <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 900, color: C.blue }}>{fmtNum(totalVDrain, 1)}</td>
-                  <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 700, color: C.textMuted }}>{ecMoyDrain ? fmtNum(ecMoyDrain, 2) : '—'}</td>
-                  <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 700, color: C.textMuted }}>{phMoyDrain ? fmtNum(phMoyDrain, 2) : '—'}</td>
+                  <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 680, color: C.textMuted }}>{ecMoyDrain ? fmtNum(ecMoyDrain, 2) : '—'}</td>
+                  <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 680, color: C.textMuted }}>{phMoyDrain ? fmtNum(phMoyDrain, 2) : '—'}</td>
                   <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 900, color: C.amber }}>{moyDrainFinale !== null ? `${fmtNum(moyDrainFinale, 1)}%` : '—'}</td>
                   <td colSpan={2} />
                 </tr>
@@ -856,7 +856,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
               background: dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.08)',
               border: `1.5px solid ${C.green}40`,
               borderRadius: 8, color: C.green,
-              fontSize: 12, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer',
+              fontSize: 12, fontWeight: 680, fontFamily: 'inherit', cursor: 'pointer',
             }}
           >
             <Plus size={12} strokeWidth={2.5} />
@@ -881,7 +881,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
             ].map(item => (
               <div key={item.label}>
                 <div style={{ fontSize: 12, color: C.textDim, marginBottom: 3 }}>{item.label}</div>
-                <div style={{ fontSize: item.highlight ? 12 : 12, fontWeight: 700, color: item.highlight ? C.green : C.text }}>
+                <div style={{ fontSize: item.highlight ? 12 : 12, fontWeight: 680, color: item.highlight ? C.green : C.text }}>
                   {item.value}
                 </div>
               </div>
@@ -907,7 +907,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
             marginRight: 10,
             background: dark ? 'rgba(52,217,111,0.12)' : 'rgba(24,120,63,0.08)',
             border: `1px solid ${C.green}30`,
-            borderRadius: 8, padding: '8px 14px', color: C.green, fontSize: 12, fontWeight: 700,
+            borderRadius: 8, padding: '8px 14px', color: C.green, fontSize: 12, fontWeight: 680,
           }}>✓ Enregistré</div>
         )}
         <button
@@ -919,7 +919,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
             background: saving || tours.length === 0 ? C.toggleBg : C.green,
             color: saving || tours.length === 0 ? C.textDim : '#fff',
             border: 'none', borderRadius: 9,
-            fontSize: 12, fontWeight: 700, fontFamily: 'inherit',
+            fontSize: 12, fontWeight: 680, fontFamily: 'inherit',
             cursor: saving || tours.length === 0 ? 'not-allowed' : 'pointer',
             transition: 'all 0.15s',
           }}

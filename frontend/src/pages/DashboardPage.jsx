@@ -74,7 +74,7 @@ function OnlineBadge({ online, dark, C }) {
         : (dark ? 'rgba(255,80,80,0.10)' : 'rgba(255,80,80,0.08)'),
       border: `1px solid ${online ? green + '30' : red + '30'}`,
       borderRadius: 6, padding: '4px 10px',
-      color: online ? C.green : C.red, fontWeight: 700, fontSize: 11,
+      color: online ? C.green : C.red, fontWeight: 680, fontSize: 11,
     }}>
       <div style={{ position: 'relative', width: 10, height: 10, flexShrink: 0 }}>
         {online && (
@@ -153,7 +153,7 @@ function HouseCard({ house, onSelectDevice, C, dark, accentColor }) {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <div style={{
-            fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 3,
+            fontSize: 18, fontWeight: 680, color: C.text, marginBottom: 3,
             fontFamily: 'inherit',
           }}>
             House {house.house_number}
@@ -201,7 +201,7 @@ function HouseCard({ house, onSelectDevice, C, dark, accentColor }) {
                 {m.label}
               </div>
               <div style={{
-                fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em',
+                fontSize: 22, fontWeight: 680, letterSpacing: '-0.02em',
                 color: m.color,
               }}>
                 {m.value}
@@ -356,7 +356,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10,
             color: systemOnline ? C.green : C.red,
-            fontWeight: 700, fontSize: 11,
+            fontWeight: 680, fontSize: 11,
           }}>
             <div style={{ position: 'relative', width: 10, height: 10, flexShrink: 0 }}>
               {systemOnline && (
@@ -399,7 +399,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
               background: C.toggleBg,
               border: `1px solid ${dark ? '#1c2e22' : '#c0d8c8'}`,
               borderRadius: 8,
-              color: C.textMuted, fontSize: 12, fontWeight: 700,
+              color: C.textMuted, fontSize: 12, fontWeight: 680,
               cursor: 'pointer', fontFamily: 'inherit',
             }}
           >
@@ -473,7 +473,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
               {false ? null : (
                 <>
                   <div style={{
-                    fontSize: 42, fontWeight: 700, letterSpacing: '-0.03em',
+                    fontSize: 42, fontWeight: 680, letterSpacing: '-0.03em',
                     lineHeight: 1, marginBottom: 8, color: s.color,
                     fontFamily: 'inherit',
                   }}>
@@ -525,7 +525,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
                   {r.label}
                 </div>
                 <div style={{
-                  fontSize: 18, fontWeight: 700,
+                  fontSize: 18, fontWeight: 680,
                   color: r.color,
                 }}>
                   {r.value}
@@ -579,7 +579,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
 
           {/* Label ferme */}
           <div style={{
-            fontSize: 12, fontWeight: 700, textTransform: 'uppercase',
+            fontSize: 12, fontWeight: 680, textTransform: 'uppercase',
             letterSpacing: '0.14em', color: dark ? '#2a5a38' : '#2a7a48',
             marginBottom: 14, marginTop: fi > 0 ? 32 : 0,
             display: 'flex', alignItems: 'center', gap: 12,
