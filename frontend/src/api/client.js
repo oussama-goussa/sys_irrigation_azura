@@ -271,3 +271,21 @@ export async function getFarms(token) {
   if (!res.ok) throw new Error('Erreur chargement fermes')
   return res.json() // retourne [{ farm_name, houses }, ...]
 }
+
+/** Mettre à jour une saisie existante */
+export async function updateSaisie(token, saisieId, payload) {
+  const res = await fetchWithRefresh(`${BASE}/api/saisie/${saisieId}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    if (Array.isArray(err.detail)) {
+      const msgs = err.detail.map(d => `${(d.loc || []).slice(1).join('.')} : ${d.msg}`).join(' | ')
+      throw new Error(msgs)
+    }
+    throw new Error(err.detail || `Erreur ${res.status}`)
+  }
+  return res.json()
+}

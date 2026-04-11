@@ -240,3 +240,85 @@ def delete_saisie(
 
     logger.info(f"Saisie {saisie_id} supprimée par {user['username']}")
     return {"message": f"Saisie {saisie_id} supprimée ✅"}
+
+
+# ── PUT /api/saisie/{id} — Modifier une saisie ───────────────
+@router.put("/{saisie_id}")
+def update_saisie(
+    saisie_id : int,
+    body      : SaisieIn,
+    db        : Session = Depends(get_db),
+    user      : dict    = Depends(require_operateur),
+):
+    """
+    Met à jour une saisie existante et remplace tous ses tours.
+    """
+    saisie = db.query(SaisieJournaliere).filter(SaisieJournaliere.id == saisie_id).first()
+    if not saisie:
+        raise HTTPException(status_code=404, detail="Saisie non trouvée")
+
+    try:
+        date_obj = date_type.fromisoformat(body.date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Format date invalide (YYYY-MM-DD)")
+
+    c = body.constantes or ConstantesIn()
+    b = body.bilan      or BilanIn()
+
+    # Mettre à jour la saisie principale
+    saisie.farm_name       = body.ferme
+    saisie.station         = body.station
+    saisie.serre           = body.serre
+    saisie.vanne           = body.vanne
+    saisie.date            = date_obj
+    saisie.nbr_bras        = int(c.nbrBras)      if c.nbrBras      else None
+    saisie.nbr_goutteurs   = int(c.nbrGoutteurs) if c.nbrGoutteurs else None
+    saisie.poids_matin     = c.poidsMatin
+    saisie.heure_matin     = c.heureMatin
+    saisie.poids_soir      = c.poidsSoir
+    saisie.heure_soir      = c.heureSoir
+    saisie.bassin_ec       = c.bassinEC
+    saisie.pct_ressuyage   = float(c.pctRessuyage) if c.pctRessuyage else None
+    saisie.nbr_tours       = b.nbrTours
+    saisie.duree_totale    = b.dureeTotal
+    saisie.total_v_apport  = b.totalVApport
+    saisie.total_v_drain   = b.totalVDrain
+    saisie.ec_moy_apport   = b.ecMoyApport
+    saisie.ph_moy_apport   = b.phMoyApport
+    saisie.ec_moy_drain    = b.ecMoyDrain
+    saisie.ph_moy_drain    = b.phMoyDrain
+    saisie.moy_drain_finale= b.moyDrainFinale
+    saisie.cc_bras         = b.ccBras
+
+    # Supprimer les anciens tours et recréer
+    db.query(SaisieTour).filter(SaisieTour.saisie_id == saisie_id).delete()
+
+    for t in body.tours:
+        tour = SaisieTour(
+            saisie_id    = saisie_id,
+            num_tour     = t.num_tour,
+            rad          = t.rad,
+            cumul_rad    = t.cumul_rad,
+            heure        = t.heure,
+            duree_min    = t.duree_min,
+            temps_repos  = t.temps_repos,
+            v_apport     = t.v_apport,
+            ec_apport    = t.ec_apport,
+            ph_apport    = t.ph_apport,
+            v_drain      = t.v_drain,
+            ec_drain     = t.ec_drain,
+            ph_drain     = t.ph_drain,
+            pct_drain    = t.pct_drain,
+            moy_pct_drain= t.moy_pct_drain,
+        )
+        db.add(tour)
+
+    db.commit()
+    db.refresh(saisie)
+
+    logger.info(f"Saisie {saisie_id} mise à jour par {user['username']}")
+    return {
+        "message"  : f"Saisie {saisie_id} mise à jour ✅",
+        "saisie_id": saisie.id,
+        "saisie"   : saisie.to_dict(),
+    }

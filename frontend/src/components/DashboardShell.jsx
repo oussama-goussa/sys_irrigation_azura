@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react'
 import {
-  Users, Sun, Moon, LogOut, Leaf, ClipboardList,
+  Users, Sun, Moon, LogOut, Leaf, ClipboardList, History,
   LayoutDashboard, Home, ChevronDown, ChevronRight,
   Wifi, WifiOff, Settings, RefreshCw,
 } from 'lucide-react'
@@ -15,7 +15,8 @@ import { Badge, Spinner, SZ } from './ui.jsx'
 import { getDevices } from '../api/client.js'
 
 import UsersPage     from '../pages/UsersPage.jsx'
-import SaisiePage    from '../pages/SaisiePage.jsx'
+import SaisiePage      from '../pages/SaisiePage.jsx'
+import HistoriquePage  from '../pages/HistoriquePage.jsx'
 import DashboardPage from '../pages/DashboardPage.jsx'
 import ZonePage      from '../pages/ZonePage.jsx'
 
@@ -238,7 +239,15 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
               marginBottom: 4,
             }}
           >
-            {page === 'saisie' && (
+            {page === 'historique' && (
+          <HistoriquePage
+            token={auth.access_token}
+            C={C}
+            dark={dark}
+          />
+        )}
+
+        {page === 'saisie' && (
               <span style={{
                 position: 'absolute', left: 0, top: '18%', bottom: '18%',
                 width: 3, borderRadius: '0 3px 3px 0', background: C.green,
@@ -246,6 +255,30 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
             )}
             <ClipboardList size={15} strokeWidth={page === 'saisie' ? 2.5 : 1.8} />
             Saisie journalière
+          </button>
+
+          {/* Historique */}
+          <button
+            onClick={() => setPage('historique')}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center',
+              gap: 9, padding: '9px 10px', borderRadius: 8,
+              border: 'none', cursor: 'pointer', fontSize: 13,
+              fontWeight: page === 'historique' ? 700 : 500,
+              fontFamily: 'inherit',
+              background: page === 'historique'
+                ? (dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.08)')
+                : 'transparent',
+              color: page === 'historique' ? C.green : C.textMuted,
+              position: 'relative', transition: 'all 0.13s', marginBottom: 4,
+            }}
+          >
+            {page === 'historique' && (
+              <span style={{ position: 'absolute', left: 0, top: '18%', bottom: '18%',
+                width: 3, borderRadius: '0 3px 3px 0', background: C.green }} />
+            )}
+            <History size={15} strokeWidth={page === 'historique' ? 2.5 : 1.8} />
+            Historique
           </button>
 
           {/* Users — admin only */}
@@ -365,6 +398,14 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
           />
         )}
 
+        {page === 'historique' && (
+          <HistoriquePage
+            token={auth.access_token}
+            C={C}
+            dark={dark}
+          />
+        )}
+
         {page === 'saisie' && (
           <SaisiePage
             token={auth.access_token}
@@ -384,7 +425,7 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
         )}
 
         {/* Fallback pour rôles sans accès */}
-        {page === 'dashboard' || page === 'zone' || page === 'users' || page === 'saisie' ? null : (
+        {page === 'dashboard' || page === 'zone' || page === 'users' || page === 'saisie' || page === 'historique' ? null : (
           <div style={{
             display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
