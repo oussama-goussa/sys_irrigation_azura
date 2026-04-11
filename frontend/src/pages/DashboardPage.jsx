@@ -344,11 +344,9 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         marginBottom: 32,
       }}>
-        <div>
-          <h1 style={{ color: C.text, fontSize: 22, fontWeight: 900, marginBottom: 4, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <LayoutDashboard size={22} color={C.green} strokeWidth={2} />
-            Dashboard
-          </h1>
+        <div style={{ color: C.text, fontSize: 22, fontWeight: 900, marginBottom: 4, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <LayoutDashboard size={22} color={C.green} strokeWidth={2} />
+          Dashboard
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
