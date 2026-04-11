@@ -904,44 +904,38 @@ export default function HistoriquePage({ token, auth, C, dark }) {
   const load = useCallback(async (p = 1) => {
     setLoading(true)
     try {
-      const params = { page: p, perPage }
-
-      // Filtre ferme : priorité au filtre manuel, sinon restriction par farm_names
-      if (fFerme) {
-        params.farmName = fFerme
-      } else if (allowedFarms !== null && allowedFarms.length > 0) {
-        // Charger chaque ferme autorisée séparément et merger
-        // (l'API ne supporte qu'une ferme à la fois — on fait N appels si besoin)
-        if (allowedFarms.length === 1) {
-          params.farmName = allowedFarms[0]
-        }
-        // Si plusieurs fermes → on laisse sans filtre et on filtre côté client
-      } else if (allowedFarms !== null && allowedFarms.length === 0) {
-        // farm_names vide : soit pas encore assigné, soit vrai 0 ferme
-        // Si farm_names est undefined dans auth (vieux token) → afficher tout
-        if (auth?.farm_names === undefined) {
-          // vieux token sans farm_names → pas de filtre
-        } else {
-          // Aucune ferme assignée → rien afficher
-          setSaisies([]); setTotal(0); setPages(1); setPage(1)
-          setLoading(false)
-          return
-        }
+      // Si farm_names défini et vide → aucune saisie à afficher
+      if (allowedFarms !== null && allowedFarms.length === 0) {
+        setSaisies([]); setTotal(0); setPages(1); setPage(1)
+        return
       }
 
+      const params = { page: p, perPage }
       if (fDate) { params.dateFrom = fDate; params.dateTo = fDate }
 
-      const data = await getSaisies(token, params)
+      // Hint API : si filtre manuel actif ET autorisé → utiliser
+      // Sinon si 1 seule ferme autorisée → hint API pour perf
+      if (fFerme) {
+        // Vérifier que la ferme demandée est autorisée
+        const ok = allowedFarms === null || allowedFarms.includes(fFerme)
+        if (ok) params.farmName = fFerme
+        else { setSaisies([]); setTotal(0); setPages(1); setPage(1); return }
+      } else if (allowedFarms !== null && allowedFarms.length === 1) {
+        params.farmName = allowedFarms[0]
+      }
 
-      // Filtre client supplémentaire si plusieurs fermes autorisées
+      const data = await getSaisies(token, params)
       let rows = data.data || []
-      if (allowedFarms !== null && allowedFarms.length > 1) {
+
+      // Filtre client TOUJOURS appliqué si restriction de fermes
+      // C'est le seul filtre fiable — indépendant du backend
+      if (allowedFarms !== null && allowedFarms.length > 0) {
         rows = rows.filter(s => allowedFarms.includes(s.farm_name))
       }
 
       setSaisies(rows)
-      setTotal(data.total || 0)
-      setPages(data.pages || 1)
+      setTotal(rows.length)
+      setPages(Math.max(1, Math.ceil(rows.length / perPage)))
       setPage(p)
     } catch { setSaisies([]) }
     finally { setLoading(false) }
