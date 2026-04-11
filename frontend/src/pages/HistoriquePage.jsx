@@ -301,7 +301,7 @@ function FilterInput({ value, onChange, placeholder, C, type = 'text' }) {
         <button onClick={() => onChange('')}
           style={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)',
             background: 'none', border: 'none', cursor: 'pointer', color: C.textDim, padding: 2 }}>
-          <X size={10} strokeWidth={2} />
+          <X size={12} strokeWidth={2} />
         </button>
       )}
     </div>
@@ -311,7 +311,7 @@ function FilterInput({ value, onChange, placeholder, C, type = 'text' }) {
 // ── TH helper for EditModal ───────────────────────────────────
 function THm({ children, w, color, C }) {
   return (
-    <th style={{ padding: '7px 5px', textAlign: 'center', fontSize: 10, fontWeight: 700,
+    <th style={{ padding: '7px 5px', textAlign: 'center', fontSize: 12, fontWeight: 700,
       textTransform: 'uppercase', letterSpacing: '0.07em', color: color || C.textDim,
       whiteSpace: 'nowrap', width: w, borderBottom: `1.5px solid ${C.border}` }}>
       {children}
@@ -582,7 +582,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
     boxSizing: 'border-box',
   }
   const labelStyle = {
-    display: 'block', color: C.textMuted, fontSize: 10, fontWeight: 700,
+    display: 'block', color: C.textMuted, fontSize: 12, fontWeight: 700,
     textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4,
   }
 
@@ -658,7 +658,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                   display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 90,
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+                    <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase',
                       letterSpacing: '0.1em', color: dark ? C.textDim : '#5a7a66' }}>{card.label}</div>
                     <card.Icon size={14} strokeWidth={1.6} color={card.color} style={{ opacity: 0.65 }} />
                   </div>
@@ -899,7 +899,7 @@ function ToursTable({ saisieId, token, C, dark }) {
   )
 
   const TH2 = ({ children, color }) => (
-    <th style={{ padding: '7px 8px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+    <th style={{ padding: '7px 8px', fontSize: 12, fontWeight: 700, textTransform: 'uppercase',
       letterSpacing: '0.07em', color: color || C.textDim, textAlign: 'center',
       whiteSpace: 'nowrap', background: dark ? 'rgba(52,217,111,0.05)' : 'rgba(24,120,63,0.04)',
       borderBottom: `1px solid ${C.border}` }}>{children}</th>
@@ -1132,7 +1132,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
   const TH = ({ children, color, w, center = false }) => (
     <th style={{
       padding: '11px 10px', textAlign: center ? 'center' : 'left',
-      fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+      fontSize: 12, fontWeight: 700, textTransform: 'uppercase',
       letterSpacing: '0.09em', color: color || C.textDim,
       whiteSpace: 'nowrap',
       borderBottom: `1.5px solid ${C.border}`,
@@ -1276,7 +1276,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                             {expanded ? <ChevronUp size={12} strokeWidth={2.5}/> : <ChevronDown size={12} strokeWidth={2.5}/>}
                           </button>
                         </td>
-                        <td style={{ padding: '12px 10px', fontWeight: 800, color: C.text, fontSize: 12, whiteSpace: 'nowrap', letterSpacing: '0.01em' }}>{s.date}</td>
+                        <td style={{ padding: '12px 10px', fontWeight: 700, color: C.text, fontSize: 12, whiteSpace: 'nowrap', letterSpacing: '0.01em' }}>{s.date}</td>
                         <td style={{ padding: '12px 10px', fontSize: 12, color: C.green, fontWeight: 700 }}>{s.farm_name}</td>
                         <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center' }}>
                           <span style={{ background: dark ? 'rgba(77,157,224,0.12)' : 'rgba(77,157,224,0.10)', color: '#4d9de0', border: '1px solid rgba(77,157,224,0.25)', borderRadius: 5, padding: '2px 8px', fontSize: 12, fontWeight: 700 }}>
