@@ -51,7 +51,7 @@ class ConstantesIn(BaseModel):
 
 class BilanIn(BaseModel):
     nbrTours       : Optional[int]   = None
-    dureeTotal     : Optional[float] = None
+    dureeTotal     : Optional[str]   = None  # HH:MM:SS
     totalVApport   : Optional[float] = None
     totalVDrain    : Optional[float] = None
     ecMoyApport    : Optional[float] = None

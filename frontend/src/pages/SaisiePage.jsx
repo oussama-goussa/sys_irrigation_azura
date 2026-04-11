@@ -478,7 +478,21 @@ export default function SaisiePage({ token, auth, C, dark }) {
       setSavedId(result.saisie_id)
       setTimeout(() => setSaved(false), 5000)
     } catch (e) {
-      setError(e.message)
+      // e.message peut être un string JSON — extraire le detail
+      try {
+        const parsed = JSON.parse(e.message)
+        if (parsed?.detail) {
+          const detail = parsed.detail
+          setError(Array.isArray(detail)
+            ? detail.map(d => `${d.loc?.join('.')} : ${d.msg}`).join(' | ')
+            : String(detail)
+          )
+        } else {
+          setError(String(e.message))
+        }
+      } catch {
+        setError(String(e.message))
+      }
     } finally {
       setSaving(false)
     }

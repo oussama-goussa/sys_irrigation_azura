@@ -210,7 +210,6 @@ export async function getDeviceTours(token, deviceId, date = null) {
   if (!res.ok) throw new Error('Erreur chargement tours')
   return res.json()
 }
-
 // ── Saisie journalière ────────────────────────────────────────
 
 /** Enregistrer une saisie journalière complète */
@@ -222,7 +221,12 @@ export async function saveSaisie(token, payload) {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(err.detail || 'Erreur lors de l\'enregistrement')
+    // 422 : extraire les détails de validation Pydantic
+    if (Array.isArray(err.detail)) {
+      const msgs = err.detail.map(d => `${(d.loc || []).slice(1).join('.')} : ${d.msg}`).join(' | ')
+      throw new Error(msgs)
+    }
+    throw new Error(err.detail || `Erreur ${res.status}`)
   }
   return res.json()
 }
@@ -259,10 +263,11 @@ export async function deleteSaisie(token, saisieId) {
   return res.json()
 }
 
+/** Liste des fermes (pour sélecteurs UsersPage et SaisiePage) */
 export async function getFarms(token) {
-  const res = await fetchWithRefresh(`${BASE}/api/devices`, {  // ← /api/devices/farms → /api/devices
+  const res = await fetchWithRefresh(`${BASE}/api/devices`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!res.ok) throw new Error('Erreur chargement fermes')
-  return res.json()
+  return res.json() // retourne [{ farm_name, houses }, ...]
 }
