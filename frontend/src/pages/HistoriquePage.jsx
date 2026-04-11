@@ -896,9 +896,10 @@ export default function HistoriquePage({ token, auth, C, dark }) {
   }, [token])
 
   // Fermes autorisées selon le rôle
-  const allowedFarms = auth?.role === 'admin'
-    ? null                          // admin → tout voir
-    : (auth?.farm_names || [])      // autres → seulement ses fermes
+  // admin → null (tout voir) | autres → liste (peut être vide)
+  const allowedFarms = !auth || auth.role === 'admin'
+    ? null
+    : Array.isArray(auth.farm_names) ? auth.farm_names : []
 
   const load = useCallback(async (p = 1) => {
     setLoading(true)
@@ -916,10 +917,16 @@ export default function HistoriquePage({ token, auth, C, dark }) {
         }
         // Si plusieurs fermes → on laisse sans filtre et on filtre côté client
       } else if (allowedFarms !== null && allowedFarms.length === 0) {
-        // Aucune ferme assignée → rien afficher
-        setSaisies([]); setTotal(0); setPages(1); setPage(1)
-        setLoading(false)
-        return
+        // farm_names vide : soit pas encore assigné, soit vrai 0 ferme
+        // Si farm_names est undefined dans auth (vieux token) → afficher tout
+        if (auth?.farm_names === undefined) {
+          // vieux token sans farm_names → pas de filtre
+        } else {
+          // Aucune ferme assignée → rien afficher
+          setSaisies([]); setTotal(0); setPages(1); setPage(1)
+          setLoading(false)
+          return
+        }
       }
 
       if (fDate) { params.dateFrom = fDate; params.dateTo = fDate }

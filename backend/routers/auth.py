@@ -10,7 +10,6 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from loguru import logger
 import io
-from typing import List
 
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -38,6 +37,7 @@ class TokenResponse(BaseModel):
     token_type   : str = "bearer"
     role         : str
     username     : str
+    farm_names   : list = []
 
 class RefreshRequest(BaseModel):
     refresh_token: str
@@ -48,13 +48,11 @@ class CreateUserRequest(BaseModel):
     role     : str
     nom      : str
     email    : Optional[str] = None
-    farm_names : Optional[List[str]] = []
 
 class UpdateUserRequest(BaseModel):
-    nom        : Optional[str] = None
-    email      : Optional[str] = None
-    password   : Optional[str] = None
-    farm_names : Optional[List[str]] = None
+    nom      : Optional[str] = None
+    email    : Optional[str] = None
+    password : Optional[str] = None
 
 class UpdateRoleRequest(BaseModel):
     new_role: str
@@ -90,7 +88,8 @@ def login(
     logger.success(f"Connexion : {user.username} ({user.role})")
     return TokenResponse(
         access_token=access_token, refresh_token=refresh_token,
-        role=user.role, username=user.username
+        role=user.role, username=user.username,
+        farm_names=user.farm_names or []
     )
 
 
@@ -101,7 +100,7 @@ def refresh(request: Request, body: RefreshRequest):
     payload = decode_token(body.refresh_token)
     if payload.get("type") != "refresh":
         raise HTTPException(status_code=401, detail="Token invalide")
-    new_access = create_access_token({"sub": payload["sub"], "role": payload["role"], "farm_names": payload.get("farm_names", [])})
+    new_access = create_access_token({"sub": payload["sub"], "role": payload["role"]})
     return {"access_token": new_access, "token_type": "bearer"}
 
 
@@ -136,7 +135,7 @@ def create_new_user(
 
     valider_mot_de_passe(request.password)
 
-    user = create_user(db, request.username, request.password, request.role, request.nom, request.email, request.farm_names)
+    user = create_user(db, request.username, request.password, request.role, request.nom, request.email)
     log_action(db, current_user["username"], "CREATE_USER",
                detail=f"Créé : {request.username} ({request.role})", ip=req.client.host)
 
@@ -155,7 +154,7 @@ def edit_user(
     if request.password:
         valider_mot_de_passe(request.password)
 
-    user = update_user(db, username, nom=request.nom, email=request.email, password=request.password, farm_names=request.farm_names)
+    user = update_user(db, username, nom=request.nom, email=request.email, password=request.password)
     if not user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
 
