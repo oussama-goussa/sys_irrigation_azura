@@ -354,7 +354,7 @@ function ConfirmModal({ saisie, onConfirm, onCancel, C }) {
           <button onClick={onConfirm} style={{ padding: '8px 16px', borderRadius: 8,
             border: `1.5px solid ${C.red}`, background: 'transparent',
             color: C.red, fontSize: 12, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' }}>
-            <Trash2 size={13} strokeWidth={2} style={{ marginRight: 5, verticalAlign: 'middle' }} />
+            <Trash2 size={12} strokeWidth={2} style={{ marginRight: 5, verticalAlign: 'middle' }} />
             Supprimer
           </button>
         </div>
@@ -705,7 +705,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
           {/* Constantes */}
           <div style={{ background: dark ? 'rgba(52,217,111,0.04)' : 'rgba(24,120,63,0.03)',
             border: `1px solid ${C.border}`, borderRadius: 12, padding: '16px 20px', marginBottom: 18 }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: C.textMuted, textTransform: 'uppercase',
+            <div style={{ fontSize: 12, fontWeight: 800, color: C.textMuted, textTransform: 'uppercase',
               letterSpacing: '0.1em', marginBottom: 14 }}>Constantes &amp; Substrat</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
               {[
@@ -748,13 +748,13 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
             overflow: 'hidden', marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '12px 16px', borderBottom: `1px solid ${C.border}` }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: C.textMuted, textTransform: 'uppercase',
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase',
                 letterSpacing: '0.1em' }}>Tours d'irrigation</div>
               <button onClick={addTour} style={{ display: 'flex', alignItems: 'center', gap: 6,
                 padding: '6px 14px', background: `${C.green}10`, border: `1.5px solid ${C.green}40`,
                 borderRadius: 7, color: C.green, fontSize: 12, fontWeight: 700,
                 fontFamily: 'inherit', cursor: 'pointer' }}>
-                <Plus size={13} strokeWidth={2.5} /> Nouveau tour
+                <Plus size={12} strokeWidth={2.5} /> Nouveau tour
               </button>
             </div>
             <div style={{ overflowX: 'auto' }}>
@@ -858,22 +858,22 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px',
               background: dark ? '#2a0a0a' : '#fef2f2', border: `1px solid ${C.red}30`,
               borderRadius: 8, color: C.red, fontSize: 12, marginBottom: 14 }}>
-              <AlertCircle size={14} strokeWidth={2} />{error}
+              <AlertCircle size={12} strokeWidth={2} />{error}
             </div>
           )}
 
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
             <button onClick={onClose} style={{ padding: '9px 20px', borderRadius: 8,
               border: `1.5px solid ${C.border}`, background: 'transparent',
-              color: C.textMuted, fontSize: 13, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' }}>
+              color: C.textMuted, fontSize: 12, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' }}>
               Annuler
             </button>
             <button onClick={handleSave} disabled={saving}
               style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 20px',
                 background: saving ? C.toggleBg : C.green, color: saving ? C.textDim : '#fff',
-                border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700,
+                border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700,
                 fontFamily: 'inherit', cursor: saving ? 'not-allowed' : 'pointer' }}>
-              <Save size={14} strokeWidth={2.5} />
+              <Save size={12} strokeWidth={2.5} />
               {saving ? 'Enregistrement…' : 'Enregistrer'}
             </button>
           </div>
@@ -942,7 +942,7 @@ function ToursTable({ saisieId, token, C, dark }) {
                       <div style={{ width: 26, height: 26, borderRadius: 6, margin: '0 auto',
                         background: `${C.green}12`, border: `1px solid ${C.green}30`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 11, fontWeight: 900, color: C.green }}>{t.num_tour}</div>
+                        fontSize: 12, fontWeight: 700, color: C.green }}>{t.num_tour}</div>
                     </td>
                     {[
                       { v: t.rad,          dec: 0 },
@@ -1175,7 +1175,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                 outline: 'none', cursor: 'pointer', fontWeight: 700 }}>
               {[10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}
             </select>
-            <span style={{ fontSize: 11, color: C.textDim, fontWeight: 600 }}>/ page</span>
+            <span style={{ fontSize: 12, color: C.textDim, fontWeight: 600 }}>/ page</span>
           </div>
         </div>
 
@@ -1249,11 +1249,11 @@ export default function HistoriquePage({ token, auth, C, dark }) {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={15} style={{ padding: '48px 0', textAlign: 'center', color: C.textDim, fontSize: 13 }}>
+                  <tr><td colSpan={15} style={{ padding: '48px 0', textAlign: 'center', color: C.textDim, fontSize: 12 }}>
                     Chargement…
                   </td></tr>
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={15} style={{ padding: '48px 0', textAlign: 'center', color: C.textDim, fontSize: 13 }}>
+                  <tr><td colSpan={15} style={{ padding: '48px 0', textAlign: 'center', color: C.textDim, fontSize: 12 }}>
                     Aucune saisie trouvée
                   </td></tr>
                 ) : filtered.map((s) => {
@@ -1279,21 +1279,21 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                         <td style={{ padding: '12px 10px', fontWeight: 800, color: C.text, fontSize: 12, whiteSpace: 'nowrap', letterSpacing: '0.01em' }}>{s.date}</td>
                         <td style={{ padding: '12px 10px', fontSize: 12, color: C.green, fontWeight: 700 }}>{s.farm_name}</td>
                         <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center' }}>
-                          <span style={{ background: dark ? 'rgba(77,157,224,0.12)' : 'rgba(77,157,224,0.10)', color: '#4d9de0', border: '1px solid rgba(77,157,224,0.25)', borderRadius: 5, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>
+                          <span style={{ background: dark ? 'rgba(77,157,224,0.12)' : 'rgba(77,157,224,0.10)', color: '#4d9de0', border: '1px solid rgba(77,157,224,0.25)', borderRadius: 5, padding: '2px 8px', fontSize: 12, fontWeight: 700 }}>
                             {s.station || '—'}
                           </span>
                         </td>
                         <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center' }}>
-                          <span style={{ background: dark ? 'rgba(52,217,111,0.08)' : 'rgba(24,120,63,0.07)', color: C.green, border: `1px solid ${C.green}25`, borderRadius: 5, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>
+                          <span style={{ background: dark ? 'rgba(52,217,111,0.08)' : 'rgba(24,120,63,0.07)', color: C.green, border: `1px solid ${C.green}25`, borderRadius: 5, padding: '2px 8px', fontSize: 12, fontWeight: 700 }}>
                             {s.serre || '—'}
                           </span>
                         </td>
-                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.textMuted, fontWeight: 500 }}>{s.vanne || '—'}</td>
-                        <td style={{ padding: '12px 10px', fontSize: 13, textAlign: 'center', color: C.text, fontWeight: 700 }}>{s.nbr_bras ?? '—'}</td>
-                        <td style={{ padding: '12px 10px', fontSize: 13, textAlign: 'center', color: C.text, fontWeight: 700 }}>{s.nbr_goutteurs ?? '—'}</td>
-                        <td style={{ padding: '12px 10px', fontSize: 13, textAlign: 'center', color: C.text, fontWeight: 700 }}>{s.poids_matin ?? '—'}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.textMuted, fontWeight: 700 }}>{s.vanne || '—'}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 700 }}>{s.nbr_bras ?? '—'}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 700 }}>{s.nbr_goutteurs ?? '—'}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 700 }}>{s.poids_matin ?? '—'}</td>
                         <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.textMuted }}>{s.heure_matin || '—'}</td>
-                        <td style={{ padding: '12px 10px', fontSize: 13, textAlign: 'center', color: C.text, fontWeight: 700 }}>{s.poids_soir ?? '—'}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 700 }}>{s.poids_soir ?? '—'}</td>
                         <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.textMuted }}>{s.heure_soir || '—'}</td>
                         <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.bassin_ec ?? '—'}</td>
                         <td style={{ padding: '10px 8px', textAlign: 'center' }}>
@@ -1302,7 +1302,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                               display: 'inline-block',
                               background: `${C.green}15`, color: C.green,
                               border: `1px solid ${C.green}35`, borderRadius: 20,
-                              padding: '3px 10px', fontSize: 12, fontWeight: 800,
+                              padding: '3px 10px', fontSize: 12, fontWeight: 700,
                               letterSpacing: '0.02em',
                             }}>
                               {fmtNum(s.pct_ressuyage, 1)}%
@@ -1320,7 +1320,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                                 transition: 'all 0.13s', whiteSpace: 'nowrap' }}
                               onMouseEnter={e => { e.currentTarget.style.borderColor = C.green; e.currentTarget.style.color = C.green; e.currentTarget.style.background = `${C.green}08` }}
                               onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted; e.currentTarget.style.background = 'transparent' }}>
-                              <Pencil size={11} strokeWidth={2} /> Modifier
+                              <Pencil size={12} strokeWidth={2} /> Modifier
                             </button>
                             <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(s) }}
                               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1330,7 +1330,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                                 transition: 'all 0.13s' }}
                               onMouseEnter={e => { e.currentTarget.style.borderColor = C.red; e.currentTarget.style.color = C.red; e.currentTarget.style.background = `${C.red}08` }}
                               onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted; e.currentTarget.style.background = 'transparent' }}>
-                              <Trash2 size={11} strokeWidth={2} />
+                              <Trash2 size={12} strokeWidth={2} />
                             </button>
                           </div>
                         </td>
@@ -1358,7 +1358,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                   color: C.textMuted, fontSize: 12, fontWeight: 700,
                   cursor: page <= 1 ? 'not-allowed' : 'pointer',
                   opacity: page <= 1 ? 0.4 : 1, fontFamily: 'inherit' }}>
-                <ChevronLeft size={13} strokeWidth={2} /> Préc
+                <ChevronLeft size={12} strokeWidth={2} /> Préc
               </button>
               {Array.from({ length: Math.min(pages, 5) }, (_, i) => {
                 const p = i + 1
@@ -1379,7 +1379,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                   color: C.textMuted, fontSize: 12, fontWeight: 700,
                   cursor: page >= pages ? 'not-allowed' : 'pointer',
                   opacity: page >= pages ? 0.4 : 1, fontFamily: 'inherit' }}>
-                Suiv <ChevronRight size={13} strokeWidth={2} />
+                Suiv <ChevronRight size={12} strokeWidth={2} />
               </button>
             </div>
           </div>
