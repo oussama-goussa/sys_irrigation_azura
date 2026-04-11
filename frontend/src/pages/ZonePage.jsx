@@ -798,7 +798,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
           color: C.textMuted, fontSize: 12, fontWeight: 680,
           cursor: 'pointer', fontFamily: 'inherit',
         }}>
-          <RefreshCw size={13} strokeWidth={2} /> Actualiser
+          <RefreshCw size={12} strokeWidth={2} /> Actualiser
         </button>
       </div>
 
@@ -810,7 +810,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
       </div>
 
       {errorL ? (
-        <div style={{ color: C.red, fontSize: 13 }}>{errorL}</div>
+        <div style={{ color: C.red, fontSize: 12 }}>{errorL}</div>
       ) : (
         <>
           <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 14 }}>
@@ -1024,7 +1024,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
           </>
         )
       })() : !loadingL ? (
-        <div style={{ color: C.textDim, fontSize: 13, padding: '20px 0' }}>
+        <div style={{ color: C.textDim, fontSize: 12, padding: '20px 0' }}>
           Aucune donnée de cycle disponible
         </div>
       ) : null}
@@ -1092,7 +1092,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                 padding: '40px',
                 textAlign: 'center',
                 color: C.textDim,
-                fontSize: 13,
+                fontSize: 12,
               }}>
                 Aucun tour d'irrigation enregistré pour cette date
               </div>
@@ -1428,7 +1428,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
       </div>
 
       {errorH ? (
-        <div style={{ color: C.red, fontSize: 13 }}>{errorH}</div>
+        <div style={{ color: C.red, fontSize: 12 }}>{errorH}</div>
       ) : (
         <div style={{ background: C.card, border: `1.5px solid ${C.border}`, borderRadius: 14, overflow: 'hidden' }}>
           <div>
@@ -1480,7 +1480,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                   })
                   return !sorted.length ? (
                   <tr>
-                    <td colSpan={8} style={{ padding: 40, textAlign: 'center', color: C.textDim, fontSize: 13 }}>
+                    <td colSpan={8} style={{ padding: 40, textAlign: 'center', color: C.textDim, fontSize: 12 }}>
                       Aucune donnée sur cette période
                     </td>
                   </tr>
@@ -1493,25 +1493,25 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                     <td style={{ padding: '10px 14px', color: C.textDim, fontSize: 12, whiteSpace: 'nowrap' }}>
                       {fmtTs(row.timestamp)}
                     </td>
-                    <td style={{ padding: '10px 14px', fontWeight: 680, fontSize: 13, color: C.text }}>
+                    <td style={{ padding: '10px 14px', fontWeight: 680, fontSize: 12, color: C.text }}>
                       {fmt(row.ec_actual, 2)}
                     </td>
-                    <td style={{ padding: '10px 14px', fontWeight: 680, fontSize: 13, color: C.text }}>
+                    <td style={{ padding: '10px 14px', fontWeight: 680, fontSize: 12, color: C.text }}>
                       {fmt(row.ph_actual, 2)}
                     </td>
-                    <td style={{ padding: '10px 14px', fontWeight: 680, fontSize: 13, color: C.text }}>
+                    <td style={{ padding: '10px 14px', fontWeight: 680, fontSize: 12, color: C.text }}>
                       {fmt(row.avg_temp, 1)}
                     </td>
-                    <td style={{ padding: '10px 14px', fontWeight: 680, fontSize: 13, color: C.text }}>
+                    <td style={{ padding: '10px 14px', fontWeight: 680, fontSize: 12, color: C.text }}>
                       {fmt(row.humidity, 1)}
                     </td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, color: C.textMuted }}>
+                    <td style={{ padding: '10px 14px', fontWeight: 680, fontSize: 12, color: C.text }}>
                       {fmt(row.radiation, 1)}
                     </td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, color: C.textMuted }}>
+                    <td style={{ padding: '10px 14px', fontWeight: 680, fontSize: 12, color: C.text }}>
                       {fmt(row.flow, 0)}
                     </td>
-                    <td style={{ padding: '10px 14px', fontSize: 12 }}>
+                    <td style={{ padding: '10px 14px', fontWeight: 680, fontSize: 12 }}>
                       <span style={{
                         background: row.ec_ph_status === 'Irrigation' ? C.green + '18'
                           : row.ec_ph_status === 'Wait' ? C.amber + '18'
@@ -1521,7 +1521,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                           : C.textDim,
                         border: `1px solid ${row.ec_ph_status === 'Irrigation' ? C.green : C.amber}30`,
                         borderRadius: 5, padding: '2px 7px',
-                        fontWeight: 680, fontSize: 11,
+                        fontWeight: 680, fontSize: 12,
                       }}>
                         {row.ec_ph_status || '—'}
                       </span>
@@ -1550,7 +1550,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                 cursor: page <= 1 ? 'not-allowed' : 'pointer',
                 opacity: page <= 1 ? 0.4 : 1, fontFamily: 'inherit',
               }}>
-                <ChevronLeft size={13} strokeWidth={2} /> Préc
+                <ChevronLeft size={12} strokeWidth={2} /> Préc
               </button>
               <button onClick={() => loadHistory(page + 1)} disabled={page >= (history?.pages ?? 1)} style={{
                 display: 'flex', alignItems: 'center', gap: 4,
@@ -1560,7 +1560,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                 cursor: page >= (history?.pages ?? 1) ? 'not-allowed' : 'pointer',
                 opacity: page >= (history?.pages ?? 1) ? 0.4 : 1, fontFamily: 'inherit',
               }}>
-                Suiv <ChevronRight size={13} strokeWidth={2} />
+                Suiv <ChevronRight size={12} strokeWidth={2} />
               </button>
             </div>
           </div>

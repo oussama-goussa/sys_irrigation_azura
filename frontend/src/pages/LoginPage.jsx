@@ -74,8 +74,8 @@ export default function LoginPage({ onLogin, dark, toggleDark }) {
           fontSize: 12, fontWeight: 680, fontFamily: 'inherit',
         }}>
           {dark
-            ? <><Sun size={13} strokeWidth={2} /> Clair</>
-            : <><Moon size={13} strokeWidth={2} /> Sombre</>
+            ? <><Sun size={12} strokeWidth={2} /> Clair</>
+            : <><Moon size={12} strokeWidth={2} /> Sombre</>
           }
         </button>
         {/* logo */}

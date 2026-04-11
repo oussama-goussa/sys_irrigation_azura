@@ -404,7 +404,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
             }}
           >
             <RefreshCw
-              size={13} strokeWidth={2}
+              size={12} strokeWidth={2}
               style={{
                 transition: 'transform 0.5s',
                 transform: refreshing ? 'rotate(360deg)' : 'rotate(0deg)',
@@ -555,7 +555,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
           gap: 16, padding: '60px 0', color: C.textDim,
         }}>
           <RefreshCw size={22} style={{ animation: 'az-pulse 1.2s ease-in-out infinite' }} />
-          <div style={{ fontSize: 13 }}>
+          <div style={{ fontSize: 12 }}>
             Chargement des fermes…
           </div>
         </div>
@@ -566,7 +566,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
           background: dark ? '#1a0d0d' : '#fde8e8',
           border: '1px solid #5a1a1a',
           borderRadius: 12, padding: '16px 20px',
-          color: '#e05555', fontSize: 13,
+          color: '#e05555', fontSize: 12,
           marginBottom: 24,
         }}>
           ⚠ {error}
@@ -619,7 +619,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
           padding: '80px 0', gap: 14, color: C.textDim,
         }}>
           <WifiOff size={28} strokeWidth={1.4} />
-          <div style={{ fontSize: 13 }}>
+          <div style={{ fontSize: 12 }}>
             Aucune ferme disponible.
           </div>
         </div>
