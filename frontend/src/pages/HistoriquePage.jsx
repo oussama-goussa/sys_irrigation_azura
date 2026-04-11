@@ -269,24 +269,28 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
   const [error, setError]         = useState('')
   const tableBottomRef = useRef(null)
 
-  // Recalcul tours — recalcule pctDrain à chaque changement
+  // Recalcul tours — recalcule pctDrain et moyPctDrain à chaque changement
   const recalculTours = (list, goutteurs) => {
     const ng = Number(goutteurs) || 0
     let cumulPrev = 0
+    let prevHeure = null
+    let prevDuree = null
+    let prevMoyCalculee = null  // moyenne cumulée correcte du tour précédent
+
     return list.map((t, i) => {
-      const prev = i > 0 ? list[i - 1] : null
       const radActuelle = Number(t.rad) || 0
       const cumulRad = radActuelle - cumulPrev
       cumulPrev += cumulRad
 
+      // Temps repos basé sur les valeurs précédentes réelles
       let tempsRepos = null
-      if (i > 0 && prev?.heure && prev?.duree && t.heure) {
+      if (i > 0 && prevHeure && prevDuree && t.heure) {
         const toMin = hh => { const [h2, m2] = hh.split(':').map(Number); return h2 * 60 + m2 }
-        tempsRepos = toMin(t.heure) - (toMin(prev.heure) + (Number(prev.duree) || 0))
+        tempsRepos = toMin(t.heure) - (toMin(prevHeure) + (Number(prevDuree) || 0))
         if (tempsRepos < 0) tempsRepos = 0
       }
 
-      // % Drain — recalcul forcé à chaque appel
+      // % Drain
       let pctDrain = null
       const vd = Number(t.vDrain)
       const va = Number(t.vApport)
@@ -294,11 +298,20 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
         pctDrain = (vd / ng / va) * 100
       }
 
+      // Moy % Drain — utilise prevMoyCalculee (valeur calculée du tour précédent)
       let moyPctDrain = null
       if (pctDrain !== null) {
-        const prevMoy = prev?.moyPctDrain ?? null
-        moyPctDrain = i === 0 ? pctDrain : prevMoy !== null ? (prevMoy * i + pctDrain) / (i + 1) : null
+        if (i === 0) {
+          moyPctDrain = pctDrain
+        } else if (prevMoyCalculee !== null) {
+          moyPctDrain = (prevMoyCalculee * i + pctDrain) / (i + 1)
+        }
       }
+
+      // Mettre à jour les variables pour le prochain tour
+      prevHeure = t.heure
+      prevDuree = t.duree
+      prevMoyCalculee = moyPctDrain
 
       return { ...t, cumulRad: Math.max(0, cumulRad), tempsRepos, pctDrain, moyPctDrain }
     })
