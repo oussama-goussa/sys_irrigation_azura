@@ -347,7 +347,6 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
         <div style={{
           fontSize: 22, fontWeight: 900, color: C.text,
         }}>
-          <LayoutDashboard size={22} color={C.green} strokeWidth={2} />
           Dashboard
         </div>
 
