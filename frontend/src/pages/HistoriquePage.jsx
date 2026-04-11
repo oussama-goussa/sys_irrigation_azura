@@ -54,8 +54,6 @@ function TInput({ value, onChange, disabled = false, width = 72, C }) {
 function TimeInput({ value, onChange, C, small = false }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
-  const triggerRef = useRef(null)
-  const [pos, setPos] = useState({ top: 0, left: 0 })
   const [h, m] = value ? value.split(':') : ['00', '00']
 
   useEffect(() => {
@@ -63,17 +61,6 @@ function TimeInput({ value, onChange, C, small = false }) {
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
   }, [])
-
-  const handleOpen = () => {
-    if (triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect()
-      setPos({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX + rect.width / 2
-      })
-    }
-    setOpen(v => !v)
-  }
 
   const inc = (type) => {
     const hv = parseInt(h || '0'); const mv = parseInt(m || '0')
@@ -87,14 +74,15 @@ function TimeInput({ value, onChange, C, small = false }) {
   }
 
   return (
-    <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
-      <div ref={triggerRef} onClick={handleOpen} style={{
+    <div ref={ref} style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
+      <div onClick={() => setOpen(v => !v)} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        height: small ? 28 : 34, padding: '0 8px', minWidth: small ? 68 : 80,
-        border: `1.5px solid ${open ? C.green : value ? C.green + '55' : C.border}`,
+        height: small ? 28 : 34, padding: '0 8px', width: '100%',
+        border: `1.5px solid ${open ? C.green : value && value !== '00:00' ? C.green + '55' : C.border}`,
         borderRadius: 7, background: C.inputBg,
         cursor: 'pointer', transition: 'border-color 0.15s',
-        fontSize: small ? 12 : 12, color: value ? C.text : C.textDim, gap: 4, fontWeight: 680,
+        fontSize: 12, color: value && value !== '00:00' ? C.text : C.textDim,
+        gap: 4, fontWeight: 680, boxSizing: 'border-box',
       }}>
         <span>{h || '00'}</span>
         <span style={{ color: C.textDim }}>:</span>
@@ -102,7 +90,7 @@ function TimeInput({ value, onChange, C, small = false }) {
       </div>
       {open && (
         <div style={{
-          position: 'fixed', top: pos.top, left: pos.left,
+          position: 'absolute', top: 'calc(100% + 4px)', left: '50%',
           transform: 'translateX(-50%)',
           background: C.card, border: `1.5px solid ${C.border}`,
           borderRadius: 10, zIndex: 9999,
@@ -226,11 +214,7 @@ function FilterSelect({ value, onChange, options, C }) {
   const handleOpen = () => {
     if (triggerRef.current) {
       const r = triggerRef.current.getBoundingClientRect()
-      setPos({
-        top: r.bottom + window.scrollY + 2,
-        left: r.left + window.scrollX,
-        width: Math.max(r.width, 120)
-      })
+      setPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 120) })
     }
     setOpen(v => !v)
   }
@@ -257,11 +241,10 @@ function FilterSelect({ value, onChange, options, C }) {
       </div>
       {open && (
         <div style={{
-          position: 'absolute', top: '100%', left: 0, width: Math.max(120, 'auto'),
-          marginTop: 2,
+          position: 'fixed', top: pos.top, left: pos.left, width: pos.width,
           background: C.card, border: `1.5px solid ${C.border}`,
           borderRadius: 8, zIndex: 9999, boxShadow: `0 6px 24px rgba(0,0,0,0.15)`,
-          maxHeight: 200, overflowY: 'auto', minWidth: '100%',
+          maxHeight: 200, overflowY: 'auto',
         }}>
           <div onClick={() => { onChange(''); setOpen(false) }}
             style={{ padding: '8px 12px', fontSize: 11, cursor: 'pointer',
@@ -288,148 +271,6 @@ function FilterSelect({ value, onChange, options, C }) {
               </div>
             )
           })}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── CustomDateFilter ─────────────────────────────────────────
-function CustomDateFilter({ value, onChange, C }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef(null)
-  const [viewYear, setViewYear] = useState(new Date().getFullYear())
-  const [viewMonth, setViewMonth] = useState(new Date().getMonth())
-
-  useEffect(() => {
-    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
-    document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
-  }, [])
-
-  const months = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc']
-  const days = ['Lu','Ma','Me','Je','Ve','Sa','Di']
-
-  const getDaysInMonth = (y, m) => new Date(y, m + 1, 0).getDate()
-  const getFirstDay = (y, m) => {
-    const d = new Date(y, m, 1).getDay()
-    return d === 0 ? 6 : d - 1 // lundi = 0
-  }
-
-  const handleDay = (day) => {
-    const d = `${viewYear}-${String(viewMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
-    onChange(d)
-    setOpen(false)
-  }
-
-  const clear = (e) => { e.stopPropagation(); onChange('') }
-
-  const parsed = value ? new Date(value + 'T00:00:00') : null
-  const displayLabel = parsed
-    ? `${String(parsed.getDate()).padStart(2,'0')}/${String(parsed.getMonth()+1).padStart(2,'0')}/${parsed.getFullYear()}`
-    : null
-
-  const today = new Date()
-  const todayKey = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`
-
-  const daysCount = getDaysInMonth(viewYear, viewMonth)
-  const firstDay  = getFirstDay(viewYear, viewMonth)
-
-  return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <div onClick={() => setOpen(v => !v)} style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        height: 28, padding: '0 7px',
-        border: `1.5px solid ${open ? C.green : value ? C.green + '55' : C.border}`,
-        borderRadius: 6, background: C.inputBg,
-        cursor: 'pointer', gap: 4, transition: 'border-color 0.15s',
-      }}>
-        <span style={{ fontSize: 11, color: displayLabel ? C.text : C.textDim,
-          flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {displayLabel || 'Date'}
-        </span>
-        {value
-          ? <span onClick={clear} style={{ color: C.textDim, display:'flex', alignItems:'center', cursor:'pointer' }}>
-              <X size={10} strokeWidth={2}/>
-            </span>
-          : <span style={{ color: C.textDim, display:'flex', alignItems:'center' }}>
-              <ChevronDown size={10} strokeWidth={2}/>
-            </span>
-        }
-      </div>
-
-      {open && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 4px)', left: 0,
-          background: C.card, border: `1.5px solid ${C.border}`,
-          borderRadius: 10, zIndex: 9999,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-          padding: '12px', width: 220,
-        }}>
-          {/* Nav mois */}
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: 10 }}>
-            <button onClick={() => { const d = new Date(viewYear, viewMonth - 1); setViewYear(d.getFullYear()); setViewMonth(d.getMonth()) }}
-              style={{ background:'none', border:'none', cursor:'pointer', color: C.textMuted, padding:'2px 6px', borderRadius:5,
-                fontSize:14, fontFamily:'inherit' }}>‹</button>
-            <span style={{ fontSize:12, fontWeight:700, color:C.text }}>
-              {months[viewMonth]} {viewYear}
-            </span>
-            <button onClick={() => { const d = new Date(viewYear, viewMonth + 1); setViewYear(d.getFullYear()); setViewMonth(d.getMonth()) }}
-              style={{ background:'none', border:'none', cursor:'pointer', color: C.textMuted, padding:'2px 6px', borderRadius:5,
-                fontSize:14, fontFamily:'inherit' }}>›</button>
-          </div>
-
-          {/* Jours semaine */}
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:1, marginBottom:4 }}>
-            {days.map(d => (
-              <div key={d} style={{ textAlign:'center', fontSize:9, fontWeight:700,
-                color: C.textDim, padding:'2px 0', textTransform:'uppercase', letterSpacing:'0.05em' }}>{d}</div>
-            ))}
-          </div>
-
-          {/* Jours */}
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2 }}>
-            {Array.from({length: firstDay}).map((_,i) => <div key={'e'+i} />)}
-            {Array.from({length: daysCount}).map((_,i) => {
-              const day = i + 1
-              const key = `${viewYear}-${viewMonth}-${day}`
-              const isToday = key === todayKey
-              const isSelected = value === `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
-              return (
-                <button key={day} onClick={() => handleDay(day)}
-                  style={{
-                    background: isSelected ? C.green : isToday ? `${C.green}20` : 'transparent',
-                    border: isToday && !isSelected ? `1px solid ${C.green}50` : '1px solid transparent',
-                    borderRadius: 5, padding: '4px 0', textAlign: 'center',
-                    fontSize: 11, fontWeight: isSelected ? 700 : 400,
-                    color: isSelected ? '#fff' : isToday ? C.green : C.text,
-                    cursor: 'pointer', fontFamily: 'inherit',
-                  }}>
-                  {day}
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Today + Clear */}
-          <div style={{ display:'flex', justifyContent:'space-between', marginTop:10, paddingTop:8,
-            borderTop:`1px solid ${C.border}` }}>
-            <button onClick={() => onChange('')}
-              style={{ background:'none', border:'none', cursor:'pointer', color: C.textDim,
-                fontSize:11, fontFamily:'inherit', padding:'3px 6px', borderRadius:5 }}>
-              Effacer
-            </button>
-            <button onClick={() => {
-              const t = new Date()
-              onChange(`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`)
-              setOpen(false)
-            }}
-              style={{ background:`${C.green}15`, border:`1px solid ${C.green}40`, cursor:'pointer',
-                color: C.green, fontSize:11, fontFamily:'inherit', padding:'3px 8px',
-                borderRadius:5, fontWeight:700 }}>
-              Aujourd'hui
-            </button>
-          </div>
         </div>
       )}
     </div>
@@ -1317,22 +1158,15 @@ export default function HistoriquePage({ token, auth, C, dark }) {
               <p style={{ fontSize: 11, color: C.textDim }}>{total} saisie{total > 1 ? 's' : ''} enregistrée{total > 1 ? 's' : ''}</p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 11, color: C.textDim, fontWeight: 600, marginRight: 2 }}>Afficher</span>
-            {[10, 20, 50].map(n => (
-              <button key={n} onClick={() => setPerPage(n)}
-                style={{
-                  padding: '5px 12px', borderRadius: 7,
-                  border: `1.5px solid ${perPage === n ? C.green : C.border}`,
-                  background: perPage === n ? C.green : 'transparent',
-                  color: perPage === n ? '#fff' : C.textMuted,
-                  fontSize: 12, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer',
-                  transition: 'all 0.15s',
-                }}>
-                {n}
-              </button>
-            ))}
-            <span style={{ fontSize: 12, color: C.textDim, fontWeight: 600, marginLeft: 2 }}>/ page</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 11, color: C.textDim, fontWeight: 600 }}>Afficher</span>
+            <select value={perPage} onChange={e => setPerPage(Number(e.target.value))}
+              style={{ padding: '6px 10px', borderRadius: 7, border: `1.5px solid ${C.border}`,
+                background: C.inputBg, color: C.text, fontSize: 12, fontFamily: 'inherit',
+                outline: 'none', cursor: 'pointer', fontWeight: 680 }}>
+              {[10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
+            <span style={{ fontSize: 12, color: C.textDim, fontWeight: 600 }}>/ page</span>
           </div>
         </div>
 
@@ -1363,7 +1197,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                 <tr style={{ background: dark ? 'rgba(255,255,255,0.025)' : 'rgba(24,120,63,0.025)', borderBottom: `1.5px solid ${C.border}` }}>
                   <th style={{ padding: '4px 6px', borderBottom: `1px solid ${C.border}` }} />
                   <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
-                    <CustomDateFilter value={fDate} onChange={setFDate} C={C} />
+                    <FilterInput value={fDate} onChange={setFDate} placeholder="" C={C} type="date" />
                   </th>
                   <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
                     <FilterSelect value={fFerme} onChange={v => { setFFerme(v); setFStation('') }}
