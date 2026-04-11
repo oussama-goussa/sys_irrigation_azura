@@ -386,7 +386,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
             border: `1px solid ${C.border}`, borderRadius: 12, padding: '16px 20px', marginBottom: 18 }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: C.textMuted, textTransform: 'uppercase',
               letterSpacing: '0.1em', marginBottom: 14 }}>Constantes &amp; Substrat</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
               {[
                 { label: 'Nbr Bras', val: nbrBras, set: setNbrBras, type: 'number' },
                 { label: 'Nbr Goutteurs', val: nbrGoutteurs, set: setNbrGoutteurs, type: 'number' },
@@ -807,49 +807,8 @@ export default function HistoriquePage({ token, C, dark }) {
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit' }}>
             <thead>
-              {/* Filtres */}
-              <tr style={{ background: dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }} />
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                  <FilterInput value={fDate} onChange={setFDate} placeholder="" C={C} type="date" />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                  <FilterInput value={fFerme} onChange={setFFerme} placeholder="" C={C} />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                  <FilterInput value={fStation} onChange={setFStation} placeholder="" C={C} />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                  <FilterInput value={fSerre} onChange={setFSerre} placeholder="" C={C} />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                  <FilterInput value={fVanne} onChange={setFVanne} placeholder="" C={C} />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                  <FilterInput value={fNbrBras} onChange={setFNbrBras} placeholder="" C={C} />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                  <FilterInput value={fNbrGoutt} onChange={setFNbrGoutt} placeholder="" C={C} />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                  <FilterInput value={fPoidsMat} onChange={setFPoidsMat} placeholder="" C={C} />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                  <FilterInput value={fHeureMat} onChange={setFHeureMat} placeholder="" C={C} />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                  <FilterInput value={fPoidsSoir} onChange={setFPoidsSoir} placeholder="" C={C} />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                  <FilterInput value={fHeureSoir} onChange={setFHeureSoir} placeholder="" C={C} />
-                </th>
-                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-                  <FilterInput value={fBassin} onChange={setFBassin} placeholder="" C={C} />
-                </th>
-                <th colSpan={2} style={{ borderBottom: `1px solid ${C.border}` }} />
-              </tr>
-              {/* Headers */}
-              <tr>
+            {/* Headers EN PREMIER */}
+            <tr>
                 <TH />
                 <TH>Date</TH>
                 <TH>Ferme</TH>
@@ -865,7 +824,48 @@ export default function HistoriquePage({ token, C, dark }) {
                 <TH>Bassin (EC)</TH>
                 <TH color={C.green}>Séchage(%)</TH>
                 <TH>Actions</TH>
-              </tr>
+            </tr>
+            {/* Filtres EN DESSOUS */}
+            <tr style={{ background: dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
+                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }} />
+                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                <FilterInput value={fDate} onChange={setFDate} placeholder="" C={C} type="date" />
+                </th>
+                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                <FilterInput value={fFerme} onChange={setFFerme} placeholder="" C={C} />
+                </th>
+                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                <FilterInput value={fStation} onChange={setFStation} placeholder="" C={C} />
+                </th>
+                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                <FilterInput value={fSerre} onChange={setFSerre} placeholder="" C={C} />
+                </th>
+                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                <FilterInput value={fVanne} onChange={setFVanne} placeholder="" C={C} />
+                </th>
+                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                <FilterInput value={fNbrBras} onChange={setFNbrBras} placeholder="" C={C} />
+                </th>
+                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                <FilterInput value={fNbrGoutt} onChange={setFNbrGoutt} placeholder="" C={C} />
+                </th>
+                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                <FilterInput value={fPoidsMat} onChange={setFPoidsMat} placeholder="" C={C} />
+                </th>
+                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                <FilterInput value={fHeureMat} onChange={setFHeureMat} placeholder="" C={C} />
+                </th>
+                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                <FilterInput value={fPoidsSoir} onChange={setFPoidsSoir} placeholder="" C={C} />
+                </th>
+                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                <FilterInput value={fHeureSoir} onChange={setFHeureSoir} placeholder="" C={C} />
+                </th>
+                <th style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                <FilterInput value={fBassin} onChange={setFBassin} placeholder="" C={C} />
+                </th>
+                <th colSpan={2} style={{ borderBottom: `1px solid ${C.border}` }} />
+            </tr>
             </thead>
             <tbody>
               {loading ? (
