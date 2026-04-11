@@ -798,7 +798,7 @@ function ToursTable({ saisieId, token, C, dark }) {
       <tr>
         <td colSpan={20} style={{ padding: 0 }}>
           <div style={{ margin: '0 0 0 32px', borderLeft: `3px solid ${C.green}30` }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit', tableLayout: 'fixed' }}>
+            <table style={{ width: '100%', minWidth: 1100, borderCollapse: 'collapse', fontFamily: 'inherit' }}>
               <thead>
                 <tr>
                   <TH2>N° tour</TH2>
@@ -960,7 +960,7 @@ export default function HistoriquePage({ token, C, dark }) {
 
   const TH = ({ children, color, w, center = false }) => (
     <th style={{
-      padding: '10px 12px', textAlign: center ? 'center' : 'left',
+      padding: '9px 8px', textAlign: center ? 'center' : 'left',
       fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
       letterSpacing: '0.08em', color: color || C.textDim,
       whiteSpace: 'nowrap', borderBottom: `1.5px solid ${C.border}`,
@@ -1005,26 +1005,26 @@ export default function HistoriquePage({ token, C, dark }) {
 
         {/* Table */}
         <div style={cardStyle}>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit' }}>
+          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ width: '100%', minWidth: 1050, borderCollapse: 'collapse', fontFamily: 'inherit' }}>
               <thead>
                 {/* Headers */}
                 <tr>
-                  <TH w={36} />
-                  <TH w={110}>Date</TH>
-                  <TH w={90}>Ferme</TH>
-                  <TH w={70} center>Bloc</TH>
-                  <TH w={70} center>Serre</TH>
-                  <TH w={60} center>Vanne</TH>
-                  <TH w={80} center>Nbr Bras</TH>
-                  <TH w={110} center>Nbr Goutteurs</TH>
-                  <TH w={110} center>Pds Matin (Kg)</TH>
-                  <TH w={90} center>H. Matin</TH>
-                  <TH w={110} center>Pds Soir (Kg)</TH>
-                  <TH w={90} center>H. Soir</TH>
-                  <TH w={100} center>Bassin (EC)</TH>
-                  <TH w={100} center color={C.green}>Séchage (%)</TH>
-                  <TH w={130}>Actions</TH>
+                  <TH w={32} />
+                  <TH w={100}>Date</TH>
+                  <TH w={80}>Ferme</TH>
+                  <TH w={52} center>Bloc</TH>
+                  <TH w={60} center>Serre</TH>
+                  <TH w={55} center>Vanne</TH>
+                  <TH w={70} center>Nbr Bras</TH>
+                  <TH w={95} center>Nbr Gout.</TH>
+                  <TH w={95} center>Pds Matin</TH>
+                  <TH w={75} center>H. Matin</TH>
+                  <TH w={95} center>Pds Soir</TH>
+                  <TH w={75} center>H. Soir</TH>
+                  <TH w={85} center>Bassin EC</TH>
+                  <TH w={90} center color={C.green}>Séchage %</TH>
+                  <TH w={115}>Actions</TH>
                 </tr>
                 {/* Filtres */}
                 <tr style={{ background: dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
@@ -1088,7 +1088,7 @@ export default function HistoriquePage({ token, C, dark }) {
                         onMouseEnter={e => { if (!expanded) e.currentTarget.style.background = C.tableHover }}
                         onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
 
-                        <td style={{ padding: '11px 8px', textAlign: 'center', width: 36 }}>
+                        <td style={{ padding: '10px 6px', textAlign: 'center', width: 32 }}>
                           <button onClick={() => toggleExpand(s.id)}
                             style={{ background: expanded ? `${C.green}12` : C.toggleBg,
                               border: `1px solid ${expanded ? C.green + '40' : C.border}`,
@@ -1098,19 +1098,19 @@ export default function HistoriquePage({ token, C, dark }) {
                             {expanded ? <ChevronUp size={12} strokeWidth={2.5} /> : <ChevronDown size={12} strokeWidth={2.5} />}
                           </button>
                         </td>
-                        <td style={{ padding: '11px 12px', fontWeight: 700, color: C.text, fontSize: 12, whiteSpace: 'nowrap' }}>{s.date}</td>
-                        <td style={{ padding: '11px 12px', fontSize: 12, color: C.text, fontWeight: 600 }}>{s.farm_name}</td>
-                        <td style={{ padding: '11px 12px', fontSize: 12, color: C.textMuted, textAlign: 'center' }}>{s.station || '—'}</td>
-                        <td style={{ padding: '11px 12px', fontSize: 12, color: C.textMuted, textAlign: 'center' }}>{s.serre || '—'}</td>
-                        <td style={{ padding: '11px 12px', fontSize: 12, color: C.textMuted, textAlign: 'center' }}>{s.vanne || '—'}</td>
-                        <td style={{ padding: '11px 12px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.nbr_bras ?? '—'}</td>
-                        <td style={{ padding: '11px 12px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.nbr_goutteurs ?? '—'}</td>
-                        <td style={{ padding: '11px 12px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 600 }}>{s.poids_matin ?? '—'}</td>
+                        <td style={{ padding: '10px 8px', fontWeight: 700, color: C.text, fontSize: 12, whiteSpace: 'nowrap' }}>{s.date}</td>
+                        <td style={{ padding: '10px 8px', fontSize: 12, color: C.text, fontWeight: 600 }}>{s.farm_name}</td>
+                        <td style={{ padding: '10px 8px', fontSize: 12, color: C.textMuted, textAlign: 'center' }}>{s.station || '—'}</td>
+                        <td style={{ padding: '10px 8px', fontSize: 12, color: C.textMuted, textAlign: 'center' }}>{s.serre || '—'}</td>
+                        <td style={{ padding: '10px 8px', fontSize: 12, color: C.textMuted, textAlign: 'center' }}>{s.vanne || '—'}</td>
+                        <td style={{ padding: '10px 8px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.nbr_bras ?? '—'}</td>
+                        <td style={{ padding: '10px 8px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.nbr_goutteurs ?? '—'}</td>
+                        <td style={{ padding: '10px 8px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 600 }}>{s.poids_matin ?? '—'}</td>
                         <td style={{ padding: '11px 12px', fontSize: 12, textAlign: 'center', color: C.textMuted }}>{s.heure_matin || '—'}</td>
-                        <td style={{ padding: '11px 12px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 600 }}>{s.poids_soir ?? '—'}</td>
+                        <td style={{ padding: '10px 8px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 600 }}>{s.poids_soir ?? '—'}</td>
                         <td style={{ padding: '11px 12px', fontSize: 12, textAlign: 'center', color: C.textMuted }}>{s.heure_soir || '—'}</td>
-                        <td style={{ padding: '11px 12px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.bassin_ec ?? '—'}</td>
-                        <td style={{ padding: '11px 12px', textAlign: 'center' }}>
+                        <td style={{ padding: '10px 8px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.bassin_ec ?? '—'}</td>
+                        <td style={{ padding: '10px 8px', textAlign: 'center' }}>
                           {s.pct_ressuyage != null ? (
                             <span style={{
                               display: 'inline-block',
@@ -1123,7 +1123,7 @@ export default function HistoriquePage({ token, C, dark }) {
                             </span>
                           ) : <span style={{ color: C.textDim, fontSize: 12 }}>—</span>}
                         </td>
-                        <td style={{ padding: '11px 12px' }}>
+                        <td style={{ padding: '10px 8px' }}>
                           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                             <button onClick={(e) => { e.stopPropagation(); setEditingSaisie(s) }}
                               style={{ display: 'flex', alignItems: 'center', gap: 5,
