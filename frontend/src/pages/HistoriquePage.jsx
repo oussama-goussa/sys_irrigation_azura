@@ -50,7 +50,7 @@ function TInput({ value, onChange, disabled = false, width = 72, C }) {
   )
 }
 
-// ── TimeInput — scroll hh:mm comme SaisiePage ────────────────
+// ── TimeInput — identique SaisiePage ─────────────────────────
 function TimeInput({ value, onChange, C }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
@@ -73,12 +73,14 @@ function TimeInput({ value, onChange, C }) {
   }
 
   const inc = (type) => {
-    const hv = parseInt(h || '0'); const mv = parseInt(m || '0')
+    const hv = parseInt(h || '0')
+    const mv = parseInt(m || '0')
     if (type === 'h') onChange(`${String((hv + 1) % 24).padStart(2, '0')}:${m || '00'}`)
     else onChange(`${h || '00'}:${String((mv + 1) % 60).padStart(2, '0')}`)
   }
   const dec = (type) => {
-    const hv = parseInt(h || '0'); const mv = parseInt(m || '0')
+    const hv = parseInt(h || '0')
+    const mv = parseInt(m || '0')
     if (type === 'h') onChange(`${String((hv - 1 + 24) % 24).padStart(2, '0')}:${m || '00'}`)
     else onChange(`${h || '00'}:${String((mv - 1 + 60) % 60).padStart(2, '0')}`)
   }
@@ -87,10 +89,12 @@ function TimeInput({ value, onChange, C }) {
     <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
       <div ref={triggerRef} onClick={handleOpen} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        height: 32, padding: '0 10px', minWidth: 76,
+        height: 34, padding: '0 10px', minWidth: 80,
         border: `1.5px solid ${open ? C.green : C.border}`,
-        borderRadius: 7, background: C.inputBg, cursor: 'pointer',
-        fontSize: 12, color: value ? C.text : C.textDim, gap: 4, fontWeight: 700,
+        borderRadius: 7, background: C.inputBg,
+        cursor: 'pointer', transition: 'border-color 0.15s',
+        fontSize: 12, color: value ? C.text : C.textDim,
+        gap: 4, fontWeight: 700,
       }}>
         <span>{h || '00'}</span>
         <span style={{ color: C.textDim }}>:</span>
@@ -102,74 +106,190 @@ function TimeInput({ value, onChange, C }) {
           transform: 'translateX(-50%)',
           background: C.card, border: `1.5px solid ${C.border}`,
           borderRadius: 10, zIndex: 9999,
-          boxShadow: `0 4px 24px rgba(0,0,0,0.2)`,
+          boxShadow: `0 4px 24px ${C.shadow}`,
           padding: '10px 16px',
           display: 'flex', alignItems: 'center', gap: 4,
         }}>
-          {['h', 'm'].map((type, ti) => (
-            <React.Fragment key={type}>
-              {ti === 1 && <span style={{ fontSize: 22, fontWeight: 900, color: C.textMuted }}>:</span>}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                <button onClick={() => inc(type)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px' }}>
-                  <ChevronUp size={16} strokeWidth={2.5} />
-                </button>
-                <input type="text" inputMode="numeric" maxLength={2}
-                  value={type === 'h' ? (h || '00') : (m || '00')}
-                  onChange={e => {
-                    const v = parseInt(e.target.value) || 0
-                    if (type === 'h') onChange(`${String(Math.min(23, Math.max(0, v))).padStart(2, '0')}:${m || '00'}`)
-                    else onChange(`${h || '00'}:${String(Math.min(59, Math.max(0, v))).padStart(2, '00')}`)
-                  }}
-                  style={{ fontSize: 22, fontWeight: 700, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
-                />
-                <button onClick={() => dec(type)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px' }}>
-                  <ChevronDown size={16} strokeWidth={2.5} />
-                </button>
-              </div>
-            </React.Fragment>
-          ))}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            <button onClick={() => inc('h')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}>
+              <ChevronUp size={16} strokeWidth={2.5}/>
+            </button>
+            <input type="text" inputMode="numeric" maxLength={2} value={h || '00'}
+              onChange={e => { const v = parseInt(e.target.value)||0; onChange(`${String(Math.min(23,Math.max(0,v))).padStart(2,'0')}:${m||'00'}`) }}
+              style={{ fontSize: 22, fontWeight: 700, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
+            />
+            <button onClick={() => dec('h')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}>
+              <ChevronDown size={16} strokeWidth={2.5}/>
+            </button>
+          </div>
+          <span style={{ fontSize: 22, fontWeight: 900, color: C.textMuted }}>:</span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            <button onClick={() => inc('m')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}>
+              <ChevronUp size={16} strokeWidth={2.5}/>
+            </button>
+            <input type="text" inputMode="numeric" maxLength={2} value={m || '00'}
+              onChange={e => { const v = parseInt(e.target.value)||0; onChange(`${h||'00'}:${String(Math.min(59,Math.max(0,v))).padStart(2,'0')}`) }}
+              style={{ fontSize: 22, fontWeight: 700, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
+            />
+            <button onClick={() => dec('m')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}>
+              <ChevronDown size={16} strokeWidth={2.5}/>
+            </button>
+          </div>
         </div>
       )}
     </div>
   )
 }
 
-// ── SSelect ───────────────────────────────────────────────────
-function SSelect({ value, onChange, options, placeholder, C, width = '100%' }) {
+
+// ── SSelect — custom dropdown identique SaisiePage ───────────
+function SSelect({ value, onChange, options, placeholder, C, width = '100%', disabled = false }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [])
+
+  const selected = options.find(o => (o.value ?? o) === value)
+  const label = selected ? (selected.label ?? selected) : null
+
   return (
-    <div style={{ position: 'relative', width }}>
-      <select value={value} onChange={e => onChange(e.target.value)}
-        style={{ width: '100%', padding: '7px 28px 7px 10px', borderRadius: 7,
-          border: `1.5px solid ${C.border}`, background: C.inputBg,
-          color: value ? C.text : C.textDim, fontSize: 12,
-          fontFamily: 'inherit', outline: 'none', appearance: 'none', cursor: 'pointer' }}>
-        <option value="">{placeholder}</option>
-        {options.map(o => <option key={o.value ?? o} value={o.value ?? o}>{o.label ?? o}</option>)}
-      </select>
-      <ChevronDown size={12} strokeWidth={2} style={{
-        position: 'absolute', right: 8, top: '50%',
-        transform: 'translateY(-50%)', color: C.textDim, pointerEvents: 'none',
-      }} />
+    <div ref={ref} style={{ position: 'relative', width }}>
+      <div
+        onClick={() => !disabled && setOpen(v => !v)}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0 10px', height: 38,
+          border: `1.5px solid ${open ? C.green : C.border}`,
+          borderRadius: 8, background: disabled ? C.toggleBg : C.inputBg,
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          transition: 'border-color 0.15s', gap: 6,
+          opacity: disabled ? 0.5 : 1,
+        }}
+      >
+        <span style={{ fontSize: 12, color: label ? C.text : C.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {label || placeholder}
+        </span>
+        <span style={{ color: C.textDim, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+          {open ? <ChevronUp size={12} strokeWidth={2}/> : <ChevronDown size={12} strokeWidth={2}/>}
+        </span>
+      </div>
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+          background: C.card, border: `1.5px solid ${C.border}`,
+          borderRadius: 8, zIndex: 500, boxShadow: `0 4px 20px ${C.shadow}`,
+          maxHeight: 200, overflowY: 'auto',
+        }}>
+          {placeholder && (
+            <div
+              onClick={() => { onChange(''); setOpen(false) }}
+              style={{ padding: '9px 14px', fontSize: 12, cursor: 'pointer',
+                color: !value ? C.green : C.textDim,
+                background: !value ? `${C.green}12` : 'transparent',
+                transition: 'background 0.1s' }}
+              onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
+              onMouseLeave={e => e.currentTarget.style.background = !value ? `${C.green}12` : 'transparent'}
+            >
+              {placeholder}
+            </div>
+          )}
+          {options.map(o => {
+            const val = o.value ?? o
+            const lbl = o.label ?? o
+            const sel = val === value
+            return (
+              <div key={val} onClick={() => { onChange(val); setOpen(false) }}
+                style={{ padding: '9px 14px', fontSize: 12, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  color: sel ? C.green : C.textMuted,
+                  background: sel ? `${C.green}12` : 'transparent',
+                  transition: 'background 0.1s' }}
+                onMouseEnter={e => e.currentTarget.style.background = sel ? `${C.green}18` : C.tableHover}
+                onMouseLeave={e => e.currentTarget.style.background = sel ? `${C.green}12` : 'transparent'}
+              >
+                <span>{lbl}</span>
+                {sel && <Check size={12} strokeWidth={2.5} color={C.green}/>}
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
 
-// ── FilterSelect ─────────────────────────────────────────────
+// ── FilterSelect — custom dropdown style SaisiePage ──────────
 function FilterSelect({ value, onChange, options, C }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [])
+
+  const selected = options.find(o => (o.value ?? o) === value)
+  const label = selected ? (selected.label ?? selected) : null
+
   return (
-    <div style={{ position: 'relative' }}>
-      <select value={value} onChange={e => onChange(e.target.value)}
-        style={{ width: '100%', padding: '5px 22px 5px 7px', borderRadius: 6,
-          border: `1.5px solid ${C.border}`, background: C.inputBg,
-          color: value ? C.text : C.textDim, fontSize: 11,
-          fontFamily: 'inherit', outline: 'none', appearance: 'none', cursor: 'pointer' }}>
-        <option value="">Tous</option>
-        {options.map(o => <option key={o.value ?? o} value={o.value ?? o}>{o.label ?? o}</option>)}
-      </select>
-      <ChevronDown size={10} strokeWidth={2} style={{
-        position: 'absolute', right: 5, top: '50%',
-        transform: 'translateY(-50%)', color: C.textDim, pointerEvents: 'none',
-      }} />
+    <div ref={ref} style={{ position: 'relative' }}>
+      <div onClick={() => setOpen(v => !v)} style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        height: 28, padding: '0 8px',
+        border: `1.5px solid ${open ? C.green : value ? C.green + '60' : C.border}`,
+        borderRadius: 6, background: C.inputBg,
+        cursor: 'pointer', transition: 'border-color 0.15s', gap: 4,
+      }}>
+        <span style={{ fontSize: 11, color: label ? C.text : C.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {label || 'Tous'}
+        </span>
+        <span style={{ color: C.textDim, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+          {open ? <ChevronUp size={10} strokeWidth={2}/> : <ChevronDown size={10} strokeWidth={2}/>}
+        </span>
+      </div>
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 3px)', left: 0, right: 0,
+          background: C.card, border: `1.5px solid ${C.border}`,
+          borderRadius: 7, zIndex: 500, boxShadow: `0 4px 20px ${C.shadow}`,
+          maxHeight: 180, overflowY: 'auto',
+        }}>
+          <div onClick={() => { onChange(''); setOpen(false) }}
+            style={{ padding: '7px 10px', fontSize: 11, cursor: 'pointer',
+              color: !value ? C.green : C.textDim,
+              background: !value ? `${C.green}12` : 'transparent',
+              transition: 'background 0.1s' }}
+            onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
+            onMouseLeave={e => e.currentTarget.style.background = !value ? `${C.green}12` : 'transparent'}
+          >
+            Tous
+          </div>
+          {options.map(o => {
+            const val = o.value ?? o
+            const lbl = o.label ?? o
+            const sel = val === value
+            return (
+              <div key={val} onClick={() => { onChange(val); setOpen(false) }}
+                style={{ padding: '7px 10px', fontSize: 11, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  color: sel ? C.green : C.textMuted,
+                  background: sel ? `${C.green}12` : 'transparent',
+                  transition: 'background 0.1s' }}
+                onMouseEnter={e => e.currentTarget.style.background = sel ? `${C.green}18` : C.tableHover}
+                onMouseLeave={e => e.currentTarget.style.background = sel ? `${C.green}12` : 'transparent'}
+              >
+                <span>{lbl}</span>
+                {sel && <Check size={10} strokeWidth={2.5} color={C.green}/>}
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
