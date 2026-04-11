@@ -483,7 +483,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
     }}>
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: 16, width: '100%', maxWidth: 1100,
+        borderRadius: 16, width: '100%', maxWidth: 1300,
         maxHeight: '90vh', overflowY: 'auto',
         boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
       }}>
@@ -504,6 +504,64 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
         </div>
 
         <div style={{ padding: '24px 28px' }}>
+
+          {/* Bilan calculé en temps réel */}
+          {tours.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: 12, marginBottom: 18 }}>
+              {[
+                {
+                  label: 'Irrigation', color: C.green, Icon: ClipboardList,
+                  items: [
+                    { sub: 'Tours', value: tours.length },
+                    { sub: 'Durée', value: fmtDuree(dureeTotal) },
+                    { sub: 'CC/bras', value: ccBras ?? '—' },
+                  ],
+                },
+                {
+                  label: 'Bilan Eau', color: C.blue, Icon: Droplets,
+                  items: [
+                    { sub: 'Apport', value: totalVApport > 0 ? fmtNum(totalVApport, 1) : '—' },
+                    { sub: 'Drainage', value: totalVDrain > 0 ? fmtNum(totalVDrain, 1) : '—' },
+                  ],
+                },
+                {
+                  label: 'Bilan EC', color: C.green, Icon: BarChart2,
+                  items: [
+                    { sub: 'Apport', value: ecMoyApport ? fmtNum(ecMoyApport, 2) : '—' },
+                    { sub: 'Drainage', value: ecMoyDrain ? fmtNum(ecMoyDrain, 2) : '—' },
+                  ],
+                },
+                {
+                  label: 'Bilan pH', color: C.amber, Icon: FlaskConical,
+                  items: [
+                    { sub: 'Apport', value: phMoyApport ? fmtNum(phMoyApport, 2) : '—' },
+                    { sub: 'Drainage', value: phMoyDrain ? fmtNum(phMoyDrain, 2) : '—' },
+                  ],
+                },
+              ].map(card => (
+                <div key={card.label} style={{
+                  background: dark ? '#111a14' : '#ffffff',
+                  border: `1px solid ${dark ? '#1c2e22' : '#d0e8d8'}`,
+                  borderRadius: 12, padding: '14px 18px',
+                  display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 90,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+                      letterSpacing: '0.1em', color: dark ? C.textDim : '#5a7a66' }}>{card.label}</div>
+                    <card.Icon size={14} strokeWidth={1.6} color={card.color} style={{ opacity: 0.65 }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: card.items.length > 2 ? 12 : 18, alignItems: 'flex-end' }}>
+                    {card.items.map(it => (
+                      <div key={it.sub}>
+                        <div style={{ fontSize: 10, color: dark ? C.textDim : '#5a7a66', marginBottom: 2, whiteSpace: 'nowrap' }}>{it.sub}</div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: card.color }}>{it.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Sélecteurs */}
           <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr 150px', gap: 14, marginBottom: 18 }}>
@@ -564,7 +622,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                 <div style={{ padding: '7px 10px', borderRadius: 8, textAlign: 'center',
                   background: pctRessuyage !== null ? `${C.green}10` : C.toggleBg,
                   border: `1.5px solid ${pctRessuyage !== null ? C.green + '40' : C.border}`,
-                  fontSize: 14, fontWeight: 900,
+                  fontSize: 12, fontWeight: 700,
                   color: pctRessuyage !== null ? C.green : C.textDim,
                   minHeight: 33, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {pctRessuyage !== null ? `${pctRessuyage}%` : '—'}
@@ -683,64 +741,6 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
               <div ref={tableBottomRef} />
             </div>
           </div>
-
-          {/* Bilan calculé en temps réel */}
-          {tours.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: 12, marginBottom: 18 }}>
-              {[
-                {
-                  label: 'Irrigation', color: C.green, Icon: ClipboardList,
-                  items: [
-                    { sub: 'Tours', value: tours.length },
-                    { sub: 'Durée', value: fmtDuree(dureeTotal) },
-                    { sub: 'CC/bras', value: ccBras ?? '—' },
-                  ],
-                },
-                {
-                  label: 'Bilan Eau', color: C.blue, Icon: Droplets,
-                  items: [
-                    { sub: 'Apport', value: totalVApport > 0 ? fmtNum(totalVApport, 1) : '—' },
-                    { sub: 'Drainage', value: totalVDrain > 0 ? fmtNum(totalVDrain, 1) : '—' },
-                  ],
-                },
-                {
-                  label: 'Bilan EC', color: C.green, Icon: BarChart2,
-                  items: [
-                    { sub: 'Apport', value: ecMoyApport ? fmtNum(ecMoyApport, 2) : '—' },
-                    { sub: 'Drainage', value: ecMoyDrain ? fmtNum(ecMoyDrain, 2) : '—' },
-                  ],
-                },
-                {
-                  label: 'Bilan pH', color: C.amber, Icon: FlaskConical,
-                  items: [
-                    { sub: 'Apport', value: phMoyApport ? fmtNum(phMoyApport, 2) : '—' },
-                    { sub: 'Drainage', value: phMoyDrain ? fmtNum(phMoyDrain, 2) : '—' },
-                  ],
-                },
-              ].map(card => (
-                <div key={card.label} style={{
-                  background: dark ? '#111a14' : '#ffffff',
-                  border: `1px solid ${dark ? '#1c2e22' : '#d0e8d8'}`,
-                  borderRadius: 12, padding: '14px 18px',
-                  display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 90,
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-                      letterSpacing: '0.1em', color: dark ? C.textDim : '#5a7a66' }}>{card.label}</div>
-                    <card.Icon size={14} strokeWidth={1.6} color={card.color} style={{ opacity: 0.65 }} />
-                  </div>
-                  <div style={{ display: 'flex', gap: card.items.length > 2 ? 12 : 18, alignItems: 'flex-end' }}>
-                    {card.items.map(it => (
-                      <div key={it.sub}>
-                        <div style={{ fontSize: 10, color: dark ? C.textDim : '#5a7a66', marginBottom: 2, whiteSpace: 'nowrap' }}>{it.sub}</div>
-                        <div style={{ fontSize: 18, fontWeight: 700, color: card.color }}>{it.value}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
 
           {error && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px',
@@ -981,20 +981,17 @@ export default function HistoriquePage({ token, C, dark }) {
       )}
 
       <div style={{ animation: 'az-fade-in 0.3s ease both' }}>
+
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10,
-              background: dark ? 'rgba(52,217,111,0.12)' : 'rgba(24,120,63,0.10)',
-              border: `1.5px solid ${C.green}30`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <History size={18} color={C.green} strokeWidth={2} />
-            </div>
-            <div>
-              <div style={{ fontSize: 20, fontWeight: 900, color: C.text }}>Historique</div>
-              <div style={{ fontSize: 11, color: C.textDim }}>{total} saisie{total > 1 ? 's' : ''} enregistrée{total > 1 ? 's' : ''}</div>
-            </div>
+          <div>
+              <h1 style={{ color: C.text, fontSize: 22, fontWeight: 900, marginBottom: 4, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <History size={22} color={C.green} strokeWidth={2} />
+                Historique
+              </h1>
+              <p style={{ fontSize: 11, color: C.textDim }}>{total} saisie{total > 1 ? 's' : ''} enregistrée{total > 1 ? 's' : ''}</p>
           </div>
+
           <select value={perPage} onChange={e => setPerPage(Number(e.target.value))}
             style={{ padding: '7px 10px', borderRadius: 7, border: `1.5px solid ${C.border}`,
               background: C.inputBg, color: C.text, fontSize: 12, fontFamily: 'inherit',
