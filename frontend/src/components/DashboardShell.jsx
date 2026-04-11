@@ -239,15 +239,7 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
               marginBottom: 4,
             }}
           >
-            {page === 'historique' && (
-          <HistoriquePage
-            token={auth.access_token}
-            C={C}
-            dark={dark}
-          />
-        )}
-
-        {page === 'saisie' && (
+            {page === 'saisie' && (
               <span style={{
                 position: 'absolute', left: 0, top: '18%', bottom: '18%',
                 width: 3, borderRadius: '0 3px 3px 0', background: C.green,
