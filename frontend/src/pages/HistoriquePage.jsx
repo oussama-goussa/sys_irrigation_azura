@@ -50,8 +50,8 @@ function TInput({ value, onChange, disabled = false, width = 72, C }) {
   )
 }
 
-// ── TimeInput — identique SaisiePage ─────────────────────────
-function TimeInput({ value, onChange, C }) {
+// ── TimeInput — scroll hh:mm comme SaisiePage ────────────────
+function TimeInput({ value, onChange, C, small = false }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
   const triggerRef = useRef(null)
@@ -73,14 +73,12 @@ function TimeInput({ value, onChange, C }) {
   }
 
   const inc = (type) => {
-    const hv = parseInt(h || '0')
-    const mv = parseInt(m || '0')
+    const hv = parseInt(h || '0'); const mv = parseInt(m || '0')
     if (type === 'h') onChange(`${String((hv + 1) % 24).padStart(2, '0')}:${m || '00'}`)
     else onChange(`${h || '00'}:${String((mv + 1) % 60).padStart(2, '0')}`)
   }
   const dec = (type) => {
-    const hv = parseInt(h || '0')
-    const mv = parseInt(m || '0')
+    const hv = parseInt(h || '0'); const mv = parseInt(m || '0')
     if (type === 'h') onChange(`${String((hv - 1 + 24) % 24).padStart(2, '0')}:${m || '00'}`)
     else onChange(`${h || '00'}:${String((mv - 1 + 60) % 60).padStart(2, '0')}`)
   }
@@ -89,12 +87,11 @@ function TimeInput({ value, onChange, C }) {
     <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
       <div ref={triggerRef} onClick={handleOpen} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        height: 34, padding: '0 10px', minWidth: 80,
-        border: `1.5px solid ${open ? C.green : C.border}`,
+        height: small ? 28 : 34, padding: '0 8px', minWidth: small ? 68 : 80,
+        border: `1.5px solid ${open ? C.green : value ? C.green + '55' : C.border}`,
         borderRadius: 7, background: C.inputBg,
         cursor: 'pointer', transition: 'border-color 0.15s',
-        fontSize: 12, color: value ? C.text : C.textDim,
-        gap: 4, fontWeight: 700,
+        fontSize: small ? 11 : 12, color: value ? C.text : C.textDim, gap: 4, fontWeight: 700,
       }}>
         <span>{h || '00'}</span>
         <span style={{ color: C.textDim }}>:</span>
@@ -106,43 +103,39 @@ function TimeInput({ value, onChange, C }) {
           transform: 'translateX(-50%)',
           background: C.card, border: `1.5px solid ${C.border}`,
           borderRadius: 10, zIndex: 9999,
-          boxShadow: `0 4px 24px ${C.shadow}`,
+          boxShadow: `0 4px 24px rgba(0,0,0,0.2)`,
           padding: '10px 16px',
           display: 'flex', alignItems: 'center', gap: 4,
         }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-            <button onClick={() => inc('h')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}>
-              <ChevronUp size={16} strokeWidth={2.5}/>
-            </button>
-            <input type="text" inputMode="numeric" maxLength={2} value={h || '00'}
-              onChange={e => { const v = parseInt(e.target.value)||0; onChange(`${String(Math.min(23,Math.max(0,v))).padStart(2,'0')}:${m||'00'}`) }}
-              style={{ fontSize: 22, fontWeight: 700, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
-            />
-            <button onClick={() => dec('h')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}>
-              <ChevronDown size={16} strokeWidth={2.5}/>
-            </button>
-          </div>
-          <span style={{ fontSize: 22, fontWeight: 900, color: C.textMuted }}>:</span>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-            <button onClick={() => inc('m')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}>
-              <ChevronUp size={16} strokeWidth={2.5}/>
-            </button>
-            <input type="text" inputMode="numeric" maxLength={2} value={m || '00'}
-              onChange={e => { const v = parseInt(e.target.value)||0; onChange(`${h||'00'}:${String(Math.min(59,Math.max(0,v))).padStart(2,'0')}`) }}
-              style={{ fontSize: 22, fontWeight: 700, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
-            />
-            <button onClick={() => dec('m')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}>
-              <ChevronDown size={16} strokeWidth={2.5}/>
-            </button>
-          </div>
+          {['h', 'm'].map((type, ti) => (
+            <React.Fragment key={type}>
+              {ti === 1 && <span style={{ fontSize: 22, fontWeight: 900, color: C.textMuted }}>:</span>}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                <button onClick={() => inc(type)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px' }}>
+                  <ChevronUp size={16} strokeWidth={2.5} />
+                </button>
+                <input type="text" inputMode="numeric" maxLength={2}
+                  value={type === 'h' ? (h || '00') : (m || '00')}
+                  onChange={e => {
+                    const v = parseInt(e.target.value) || 0
+                    if (type === 'h') onChange(`${String(Math.min(23, Math.max(0, v))).padStart(2, '0')}:${m || '00'}`)
+                    else onChange(`${h || '00'}:${String(Math.min(59, Math.max(0, v))).padStart(2, '00')}`)
+                  }}
+                  style={{ fontSize: 22, fontWeight: 700, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
+                />
+                <button onClick={() => dec(type)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px' }}>
+                  <ChevronDown size={16} strokeWidth={2.5} />
+                </button>
+              </div>
+            </React.Fragment>
+          ))}
         </div>
       )}
     </div>
   )
 }
 
-
-// ── SSelect — custom dropdown identique SaisiePage ───────────
+// ── SSelect — identique CustomSelect SaisiePage ──────────────
 function SSelect({ value, onChange, options, placeholder, C, width = '100%', disabled = false }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
@@ -158,19 +151,16 @@ function SSelect({ value, onChange, options, placeholder, C, width = '100%', dis
 
   return (
     <div ref={ref} style={{ position: 'relative', width }}>
-      <div
-        onClick={() => !disabled && setOpen(v => !v)}
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 10px', height: 38,
-          border: `1.5px solid ${open ? C.green : C.border}`,
-          borderRadius: 8, background: disabled ? C.toggleBg : C.inputBg,
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          transition: 'border-color 0.15s', gap: 6,
-          opacity: disabled ? 0.5 : 1,
-        }}
-      >
-        <span style={{ fontSize: 12, color: label ? C.text : C.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <div onClick={() => !disabled && setOpen(v => !v)} style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 10px', height: 38,
+        border: `1.5px solid ${open ? C.green : C.border}`,
+        borderRadius: 8, background: disabled ? C.toggleBg : C.inputBg,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        transition: 'border-color 0.15s', gap: 6, opacity: disabled ? 0.5 : 1,
+      }}>
+        <span style={{ fontSize: 12, color: label ? C.text : C.textDim,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {label || placeholder}
         </span>
         <span style={{ color: C.textDim, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
@@ -181,21 +171,17 @@ function SSelect({ value, onChange, options, placeholder, C, width = '100%', dis
         <div style={{
           position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
           background: C.card, border: `1.5px solid ${C.border}`,
-          borderRadius: 8, zIndex: 500, boxShadow: `0 4px 20px ${C.shadow}`,
+          borderRadius: 8, zIndex: 500, boxShadow: `0 4px 20px rgba(0,0,0,0.12)`,
           maxHeight: 200, overflowY: 'auto',
         }}>
           {placeholder && (
-            <div
-              onClick={() => { onChange(''); setOpen(false) }}
+            <div onClick={() => { onChange(''); setOpen(false) }}
               style={{ padding: '9px 14px', fontSize: 12, cursor: 'pointer',
                 color: !value ? C.green : C.textDim,
-                background: !value ? `${C.green}12` : 'transparent',
-                transition: 'background 0.1s' }}
+                background: !value ? `${C.green}12` : 'transparent' }}
               onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
               onMouseLeave={e => e.currentTarget.style.background = !value ? `${C.green}12` : 'transparent'}
-            >
-              {placeholder}
-            </div>
+            >{placeholder}</div>
           )}
           {options.map(o => {
             const val = o.value ?? o
@@ -206,8 +192,7 @@ function SSelect({ value, onChange, options, placeholder, C, width = '100%', dis
                 style={{ padding: '9px 14px', fontSize: 12, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   color: sel ? C.green : C.textMuted,
-                  background: sel ? `${C.green}12` : 'transparent',
-                  transition: 'background 0.1s' }}
+                  background: sel ? `${C.green}12` : 'transparent', transition: 'background 0.1s' }}
                 onMouseEnter={e => e.currentTarget.style.background = sel ? `${C.green}18` : C.tableHover}
                 onMouseLeave={e => e.currentTarget.style.background = sel ? `${C.green}12` : 'transparent'}
               >
@@ -222,10 +207,12 @@ function SSelect({ value, onChange, options, placeholder, C, width = '100%', dis
   )
 }
 
-// ── FilterSelect — custom dropdown style SaisiePage ──────────
+// ── FilterSelect — position:fixed dropdown (évite overflow:hidden) ──
 function FilterSelect({ value, onChange, options, C }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const triggerRef = useRef(null)
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 })
 
   useEffect(() => {
     const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
@@ -233,19 +220,28 @@ function FilterSelect({ value, onChange, options, C }) {
     return () => document.removeEventListener('mousedown', close)
   }, [])
 
+  const handleOpen = () => {
+    if (triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect()
+      setPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 120) })
+    }
+    setOpen(v => !v)
+  }
+
   const selected = options.find(o => (o.value ?? o) === value)
   const label = selected ? (selected.label ?? selected) : null
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <div onClick={() => setOpen(v => !v)} style={{
+      <div ref={triggerRef} onClick={handleOpen} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        height: 28, padding: '0 8px',
-        border: `1.5px solid ${open ? C.green : value ? C.green + '60' : C.border}`,
+        height: 28, padding: '0 7px',
+        border: `1.5px solid ${open ? C.green : value ? C.green + '55' : C.border}`,
         borderRadius: 6, background: C.inputBg,
-        cursor: 'pointer', transition: 'border-color 0.15s', gap: 4,
+        cursor: 'pointer', transition: 'border-color 0.15s', gap: 3,
       }}>
-        <span style={{ fontSize: 11, color: label ? C.text : C.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 11, color: label ? C.text : C.textDim,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
           {label || 'Tous'}
         </span>
         <span style={{ color: C.textDim, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
@@ -254,32 +250,28 @@ function FilterSelect({ value, onChange, options, C }) {
       </div>
       {open && (
         <div style={{
-          position: 'absolute', top: 'calc(100% + 3px)', left: 0, right: 0,
+          position: 'fixed', top: pos.top, left: pos.left, width: pos.width,
           background: C.card, border: `1.5px solid ${C.border}`,
-          borderRadius: 7, zIndex: 500, boxShadow: `0 4px 20px ${C.shadow}`,
-          maxHeight: 180, overflowY: 'auto',
+          borderRadius: 8, zIndex: 9999, boxShadow: `0 6px 24px rgba(0,0,0,0.15)`,
+          maxHeight: 200, overflowY: 'auto',
         }}>
           <div onClick={() => { onChange(''); setOpen(false) }}
-            style={{ padding: '7px 10px', fontSize: 11, cursor: 'pointer',
-              color: !value ? C.green : C.textDim,
-              background: !value ? `${C.green}12` : 'transparent',
-              transition: 'background 0.1s' }}
-            onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
+            style={{ padding: '8px 12px', fontSize: 11, cursor: 'pointer',
+              color: !value ? C.green : C.textMuted,
+              background: !value ? `${C.green}12` : 'transparent' }}
+            onMouseEnter={e => e.currentTarget.style.background = !value ? `${C.green}18` : C.tableHover}
             onMouseLeave={e => e.currentTarget.style.background = !value ? `${C.green}12` : 'transparent'}
-          >
-            Tous
-          </div>
+          >Tous</div>
           {options.map(o => {
             const val = o.value ?? o
             const lbl = o.label ?? o
             const sel = val === value
             return (
               <div key={val} onClick={() => { onChange(val); setOpen(false) }}
-                style={{ padding: '7px 10px', fontSize: 11, cursor: 'pointer',
+                style={{ padding: '8px 12px', fontSize: 11, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   color: sel ? C.green : C.textMuted,
-                  background: sel ? `${C.green}12` : 'transparent',
-                  transition: 'background 0.1s' }}
+                  background: sel ? `${C.green}12` : 'transparent', transition: 'background 0.1s' }}
                 onMouseEnter={e => e.currentTarget.style.background = sel ? `${C.green}18` : C.tableHover}
                 onMouseLeave={e => e.currentTarget.style.background = sel ? `${C.green}12` : 'transparent'}
               >
@@ -1134,16 +1126,20 @@ export default function HistoriquePage({ token, auth, C, dark }) {
 
   const cardStyle = {
     background: C.card, border: `1.5px solid ${C.border}`,
-    borderRadius: 14, overflow: 'hidden',
+    borderRadius: 14,
   }
 
   const TH = ({ children, color, w, center = false }) => (
     <th style={{
-      padding: '9px 8px', textAlign: center ? 'center' : 'left',
+      padding: '11px 10px', textAlign: center ? 'center' : 'left',
       fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-      letterSpacing: '0.08em', color: color || C.textDim,
-      whiteSpace: 'nowrap', borderBottom: `1.5px solid ${C.border}`,
-      width: w, background: dark ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0.018)',
+      letterSpacing: '0.09em', color: color || C.textDim,
+      whiteSpace: 'nowrap',
+      borderBottom: `1.5px solid ${C.border}`,
+      borderTop: 'none',
+      width: w,
+      background: dark ? 'rgba(52,217,111,0.04)' : 'rgba(24,120,63,0.03)',
+      userSelect: 'none',
     }}>{children}</th>
   )
 
@@ -1171,80 +1167,84 @@ export default function HistoriquePage({ token, auth, C, dark }) {
               <p style={{ fontSize: 11, color: C.textDim }}>{total} saisie{total > 1 ? 's' : ''} enregistrée{total > 1 ? 's' : ''}</p>
           </div>
 
-          <select value={perPage} onChange={e => setPerPage(Number(e.target.value))}
-            style={{ padding: '7px 10px', borderRadius: 7, border: `1.5px solid ${C.border}`,
-              background: C.inputBg, color: C.text, fontSize: 12, fontFamily: 'inherit',
-              outline: 'none', cursor: 'pointer' }}>
-            {[10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}
-          </select>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 11, color: C.textDim, fontWeight: 600 }}>Afficher</span>
+            <select value={perPage} onChange={e => setPerPage(Number(e.target.value))}
+              style={{ padding: '6px 10px', borderRadius: 7, border: `1.5px solid ${C.border}`,
+                background: C.inputBg, color: C.text, fontSize: 12, fontFamily: 'inherit',
+                outline: 'none', cursor: 'pointer', fontWeight: 700 }}>
+              {[10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
+            <span style={{ fontSize: 11, color: C.textDim, fontWeight: 600 }}>/ page</span>
+          </div>
         </div>
 
         {/* Table */}
-        <div style={cardStyle}>
-          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-            <table style={{ width: '100%', minWidth: 1050, borderCollapse: 'collapse', fontFamily: 'inherit' }}>
+        <div style={{ ...cardStyle, overflow: 'visible' }}>
+          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', borderRadius: 14 }}>
+            <table style={{ width: '100%', minWidth: 1100, borderCollapse: 'collapse', fontFamily: 'inherit' }}>
               <thead>
                 {/* Headers */}
                 <tr>
-                  <TH w={32} />
-                  <TH w={100}>Date</TH>
-                  <TH w={80}>Ferme</TH>
-                  <TH w={52} center>Bloc</TH>
-                  <TH w={60} center>Serre</TH>
-                  <TH w={55} center>Vanne</TH>
-                  <TH w={70} center>Nbr Bras</TH>
-                  <TH w={95} center>Nbr Gout.</TH>
-                  <TH w={95} center>Pds Matin</TH>
-                  <TH w={75} center>H. Matin</TH>
-                  <TH w={95} center>Pds Soir</TH>
-                  <TH w={75} center>H. Soir</TH>
-                  <TH w={85} center>Bassin EC</TH>
-                  <TH w={90} center color={C.green}>Séchage %</TH>
-                  <TH w={115}>Actions</TH>
+                  <TH w={40} />
+                  <TH w={110}>Date</TH>
+                  <TH w={90}>Ferme</TH>
+                  <TH w={60} center>Bloc</TH>
+                  <TH w={65} center>Serre</TH>
+                  <TH w={58} center>Vanne</TH>
+                  <TH w={72} center>Bras</TH>
+                  <TH w={82} center>Gout.</TH>
+                  <TH w={90} center>Pds Mat.</TH>
+                  <TH w={82} center>H. Mat.</TH>
+                  <TH w={90} center>Pds Soir</TH>
+                  <TH w={82} center>H. Soir</TH>
+                  <TH w={82} center>Bassin EC</TH>
+                  <TH w={95} center color={C.green}>Séchage %</TH>
+                  <TH w={120}>Actions</TH>
                 </tr>
                 {/* Filtres */}
-                <tr style={{ background: dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
-                  <th style={{ padding: '5px 8px', borderBottom: `1px solid ${C.border}` }} />
-                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
+                <tr style={{ background: dark ? 'rgba(255,255,255,0.025)' : 'rgba(24,120,63,0.025)', borderBottom: `1.5px solid ${C.border}` }}>
+                  <th style={{ padding: '4px 6px', borderBottom: `1px solid ${C.border}` }} />
+                  <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
                     <FilterInput value={fDate} onChange={setFDate} placeholder="" C={C} type="date" />
                   </th>
-                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
+                  <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
                     <FilterSelect value={fFerme} onChange={v => { setFFerme(v); setFStation('') }}
                       options={fermeOptions} C={C} />
                   </th>
-                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
+                  <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
                     <FilterSelect value={fStation} onChange={setFStation}
                       options={stationFilterOptions} C={C} />
                   </th>
-                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
+                  <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
                     <FilterSelect value={fSerre} onChange={setFSerre}
                       options={serreFilterOptions} C={C} />
                   </th>
-                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
+                  <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
                     <FilterInput value={fVanne} onChange={setFVanne} placeholder="" C={C} />
                   </th>
-                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
+                  <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
                     <FilterInput value={fNbrBras} onChange={setFNbrBras} placeholder="" C={C} />
                   </th>
-                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
+                  <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
                     <FilterInput value={fNbrGoutt} onChange={setFNbrGoutt} placeholder="" C={C} />
                   </th>
-                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
+                  <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
                     <FilterInput value={fPoidsMat} onChange={setFPoidsMat} placeholder="" C={C} />
                   </th>
-                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
-                    <FilterInput value={fHeureMat} onChange={setFHeureMat} placeholder="" C={C} />
+                  <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
+                    <TimeInput value={fHeureMat} onChange={setFHeureMat} C={C} small />
                   </th>
-                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
+                  <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
                     <FilterInput value={fPoidsSoir} onChange={setFPoidsSoir} placeholder="" C={C} />
                   </th>
-                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
-                    <FilterInput value={fHeureSoir} onChange={setFHeureSoir} placeholder="" C={C} />
+                  <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
+                    <TimeInput value={fHeureSoir} onChange={setFHeureSoir} C={C} small />
                   </th>
-                  <th style={{ padding: '5px 6px', borderBottom: `1px solid ${C.border}` }}>
+                  <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
                     <FilterInput value={fBassin} onChange={setFBassin} placeholder="" C={C} />
                   </th>
-                  <th colSpan={2} style={{ borderBottom: `1px solid ${C.border}` }} />
+                  <th colSpan={2} />
                 </tr>
               </thead>
               <tbody>
@@ -1260,32 +1260,42 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                   const expanded = expandedIds.has(s.id)
                   return (
                     <React.Fragment key={s.id}>
-                      <tr style={{ borderBottom: !expanded ? `1px solid ${C.border}` : 'none', transition: 'background 0.12s' }}
-                        onMouseEnter={e => { if (!expanded) e.currentTarget.style.background = C.tableHover }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
+                      <tr style={{ borderBottom: `1px solid ${C.border}`, transition: 'background 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
 
-                        <td style={{ padding: '10px 6px', textAlign: 'center', width: 32 }}>
-                          <button onClick={() => toggleExpand(s.id)}
-                            style={{ background: expanded ? `${C.green}12` : C.toggleBg,
-                              border: `1px solid ${expanded ? C.green + '40' : C.border}`,
-                              borderRadius: 5, padding: '3px 7px', cursor: 'pointer',
-                              color: expanded ? C.green : C.textMuted,
-                              display: 'flex', alignItems: 'center' }}>
-                            {expanded ? <ChevronUp size={12} strokeWidth={2.5} /> : <ChevronDown size={12} strokeWidth={2.5} />}
+                        <td style={{ padding: '12px 6px', textAlign: 'center' }}>
+                          <button onClick={() => toggleExpand(s.id)} style={{
+                            background: expanded ? `${C.green}15` : 'transparent',
+                            border: `1.5px solid ${expanded ? C.green + '50' : C.border}`,
+                            borderRadius: 6, padding: '3px 6px', cursor: 'pointer',
+                            color: expanded ? C.green : C.textMuted,
+                            display: 'flex', alignItems: 'center',
+                            transition: 'all 0.15s',
+                          }}>
+                            {expanded ? <ChevronUp size={12} strokeWidth={2.5}/> : <ChevronDown size={12} strokeWidth={2.5}/>}
                           </button>
                         </td>
-                        <td style={{ padding: '10px 8px', fontWeight: 700, color: C.text, fontSize: 12, whiteSpace: 'nowrap' }}>{s.date}</td>
-                        <td style={{ padding: '10px 8px', fontSize: 12, color: C.text, fontWeight: 600 }}>{s.farm_name}</td>
-                        <td style={{ padding: '10px 8px', fontSize: 12, color: C.textMuted, textAlign: 'center' }}>{s.station || '—'}</td>
-                        <td style={{ padding: '10px 8px', fontSize: 12, color: C.textMuted, textAlign: 'center' }}>{s.serre || '—'}</td>
-                        <td style={{ padding: '10px 8px', fontSize: 12, color: C.textMuted, textAlign: 'center' }}>{s.vanne || '—'}</td>
-                        <td style={{ padding: '10px 8px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.nbr_bras ?? '—'}</td>
-                        <td style={{ padding: '10px 8px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.nbr_goutteurs ?? '—'}</td>
-                        <td style={{ padding: '10px 8px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 600 }}>{s.poids_matin ?? '—'}</td>
-                        <td style={{ padding: '11px 12px', fontSize: 12, textAlign: 'center', color: C.textMuted }}>{s.heure_matin || '—'}</td>
-                        <td style={{ padding: '10px 8px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 600 }}>{s.poids_soir ?? '—'}</td>
-                        <td style={{ padding: '11px 12px', fontSize: 12, textAlign: 'center', color: C.textMuted }}>{s.heure_soir || '—'}</td>
-                        <td style={{ padding: '10px 8px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.bassin_ec ?? '—'}</td>
+                        <td style={{ padding: '12px 10px', fontWeight: 800, color: C.text, fontSize: 12, whiteSpace: 'nowrap', letterSpacing: '0.01em' }}>{s.date}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, color: C.green, fontWeight: 700 }}>{s.farm_name}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center' }}>
+                          <span style={{ background: dark ? 'rgba(77,157,224,0.12)' : 'rgba(77,157,224,0.10)', color: '#4d9de0', border: '1px solid rgba(77,157,224,0.25)', borderRadius: 5, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>
+                            {s.station || '—'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center' }}>
+                          <span style={{ background: dark ? 'rgba(52,217,111,0.08)' : 'rgba(24,120,63,0.07)', color: C.green, border: `1px solid ${C.green}25`, borderRadius: 5, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>
+                            {s.serre || '—'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.textMuted, fontWeight: 500 }}>{s.vanne || '—'}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 13, textAlign: 'center', color: C.text, fontWeight: 700 }}>{s.nbr_bras ?? '—'}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 13, textAlign: 'center', color: C.text, fontWeight: 700 }}>{s.nbr_goutteurs ?? '—'}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 13, textAlign: 'center', color: C.text, fontWeight: 700 }}>{s.poids_matin ?? '—'}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.textMuted }}>{s.heure_matin || '—'}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 13, textAlign: 'center', color: C.text, fontWeight: 700 }}>{s.poids_soir ?? '—'}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.textMuted }}>{s.heure_soir || '—'}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text }}>{s.bassin_ec ?? '—'}</td>
                         <td style={{ padding: '10px 8px', textAlign: 'center' }}>
                           {s.pct_ressuyage != null ? (
                             <span style={{
