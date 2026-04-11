@@ -788,9 +788,9 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                         <div style={{ width: 26, height: 26, borderRadius: 6, margin: '0 auto',
                           background: `${C.green}12`, border: `1px solid ${C.green}30`,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 11, fontWeight: 900, color: C.green }}>{t.num}</div>
+                          fontSize: 12, fontWeight: 900, color: C.green }}>{t.num}</div>
                       </td>
-                      <td style={{ padding: '5px 4px', textAlign: 'center' }}>
+                      <td style={{ padding: '5px 4px', fontWeight: 700, textAlign: 'center' }}>
                         <TInput value={t.rad} onChange={v => updateTour(t.id, 'rad', v)} C={C} />
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
@@ -798,7 +798,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                           {t.cumulRad > 0 ? fmtNum(t.cumulRad, 0) : '—'}
                         </div>
                       </td>
-                      <td style={{ padding: '5px 4px', textAlign: 'center' }}>
+                      <td style={{ padding: '5px 4px', fontWeight: 700, textAlign: 'center' }}>
                         <TimeInput value={t.heure} onChange={v => updateTour(t.id, 'heure', v)} C={C} />
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
@@ -806,25 +806,25 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                           {t.tempsRepos !== null ? `${t.tempsRepos} min` : i === 0 ? '—' : '?'}
                         </div>
                       </td>
-                      <td style={{ padding: '5px 4px', textAlign: 'center' }}>
+                      <td style={{ padding: '5px 4px', fontWeight: 700, textAlign: 'center' }}>
                         <TInput value={t.duree} onChange={v => updateTour(t.id, 'duree', v)} C={C} />
                       </td>
-                      <td style={{ padding: '5px 4px', textAlign: 'center' }}>
+                      <td style={{ padding: '5px 4px', fontWeight: 700, textAlign: 'center' }}>
                         <TInput value={t.vApport} onChange={v => updateTour(t.id, 'vApport', v)} C={C} />
                       </td>
-                      <td style={{ padding: '5px 4px', textAlign: 'center' }}>
+                      <td style={{ padding: '5px 4px', fontWeight: 700, textAlign: 'center' }}>
                         <TInput value={t.ecApport} onChange={v => updateTour(t.id, 'ecApport', v)} C={C} />
                       </td>
-                      <td style={{ padding: '5px 4px', textAlign: 'center' }}>
+                      <td style={{ padding: '5px 4px', fontWeight: 700, textAlign: 'center' }}>
                         <TInput value={t.phApport} onChange={v => updateTour(t.id, 'phApport', v)} C={C} />
                       </td>
-                      <td style={{ padding: '5px 4px', textAlign: 'center' }}>
+                      <td style={{ padding: '5px 4px', fontWeight: 700, textAlign: 'center' }}>
                         <TInput value={t.vDrain} onChange={v => updateTour(t.id, 'vDrain', v)} C={C} />
                       </td>
-                      <td style={{ padding: '5px 4px', textAlign: 'center' }}>
+                      <td style={{ padding: '5px 4px', fontWeight: 700, textAlign: 'center' }}>
                         <TInput value={t.ecDrain} onChange={v => updateTour(t.id, 'ecDrain', v)} C={C} />
                       </td>
-                      <td style={{ padding: '5px 4px', textAlign: 'center' }}>
+                      <td style={{ padding: '5px 4px', fontWeight: 700, textAlign: 'center' }}>
                         <TInput value={t.phDrain} onChange={v => updateTour(t.id, 'phDrain', v)} C={C} />
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
@@ -837,7 +837,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                           {t.moyPctDrain != null ? `${fmtNum(t.moyPctDrain, 1)}%` : '—'}
                         </div>
                       </td>
-                      <td style={{ padding: '5px 4px', textAlign: 'center' }}>
+                      <td style={{ padding: '5px 4px', fontWeight: 700, textAlign: 'center' }}>
                         <button onClick={() => deleteTourRow(t.id)}
                           style={{ background: 'none', border: 'none', cursor: 'pointer',
                             color: C.textDim, padding: 3, borderRadius: 4 }}
