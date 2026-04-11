@@ -91,7 +91,7 @@ function TimeInput({ value, onChange, C, small = false }) {
         border: `1.5px solid ${open ? C.green : value ? C.green + '55' : C.border}`,
         borderRadius: 7, background: C.inputBg,
         cursor: 'pointer', transition: 'border-color 0.15s',
-        fontSize: small ? 11 : 12, color: value ? C.text : C.textDim, gap: 4, fontWeight: 700,
+        fontSize: small ? 12 : 12, color: value ? C.text : C.textDim, gap: 4, fontWeight: 700,
       }}>
         <span>{h || '00'}</span>
         <span style={{ color: C.textDim }}>:</span>
@@ -153,7 +153,7 @@ function SSelect({ value, onChange, options, placeholder, C, width = '100%', dis
     <div ref={ref} style={{ position: 'relative', width }}>
       <div onClick={() => !disabled && setOpen(v => !v)} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 10px', height: 38,
+        padding: '0 10px', height: 38, fontWeight: 700,
         border: `1.5px solid ${open ? C.green : C.border}`,
         borderRadius: 8, background: disabled ? C.toggleBg : C.inputBg,
         cursor: disabled ? 'not-allowed' : 'pointer',
@@ -579,7 +579,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
     width: '100%', padding: '7px 10px', borderRadius: 8,
     border: `1.5px solid ${C.border}`, background: C.inputBg,
     color: C.text, fontSize: 12, fontFamily: 'inherit', outline: 'none',
-    boxSizing: 'border-box',
+    boxSizing: 'border-box', fontWeight: 700,
   }
   const labelStyle = {
     display: 'block', color: C.textMuted, fontSize: 12, fontWeight: 700,
