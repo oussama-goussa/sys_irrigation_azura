@@ -269,6 +269,41 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
   const [error, setError]         = useState('')
   const tableBottomRef = useRef(null)
 
+  // Recalcul tours — recalcule pctDrain à chaque changement
+  const recalculTours = (list, goutteurs) => {
+    const ng = Number(goutteurs) || 0
+    let cumulPrev = 0
+    return list.map((t, i) => {
+      const prev = i > 0 ? list[i - 1] : null
+      const radActuelle = Number(t.rad) || 0
+      const cumulRad = radActuelle - cumulPrev
+      cumulPrev += cumulRad
+
+      let tempsRepos = null
+      if (i > 0 && prev?.heure && prev?.duree && t.heure) {
+        const toMin = hh => { const [h2, m2] = hh.split(':').map(Number); return h2 * 60 + m2 }
+        tempsRepos = toMin(t.heure) - (toMin(prev.heure) + (Number(prev.duree) || 0))
+        if (tempsRepos < 0) tempsRepos = 0
+      }
+
+      // % Drain — recalcul forcé à chaque appel
+      let pctDrain = null
+      const vd = Number(t.vDrain)
+      const va = Number(t.vApport)
+      if (vd > 0 && va > 0 && ng > 0) {
+        pctDrain = (vd / ng / va) * 100
+      }
+
+      let moyPctDrain = null
+      if (pctDrain !== null) {
+        const prevMoy = prev?.moyPctDrain ?? null
+        moyPctDrain = i === 0 ? pctDrain : prevMoy !== null ? (prevMoy * i + pctDrain) / (i + 1) : null
+      }
+
+      return { ...t, cumulRad: Math.max(0, cumulRad), tempsRepos, pctDrain, moyPctDrain }
+    })
+  }
+
   useEffect(() => {
     getSaisie(token, saisie.id).then(data => {
       const t = (data.tours || []).map((t, i) => ({
@@ -307,40 +342,6 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
     label: `S${String(i + 1).padStart(2, '0')}`,
   }))
 
-  // Recalcul tours — recalcule pctDrain à chaque changement
-  const recalculTours = (list, goutteurs) => {
-    const ng = Number(goutteurs) || 0
-    let cumulPrev = 0
-    return list.map((t, i) => {
-      const prev = i > 0 ? list[i - 1] : null
-      const radActuelle = Number(t.rad) || 0
-      const cumulRad = radActuelle - cumulPrev
-      cumulPrev += cumulRad
-
-      let tempsRepos = null
-      if (i > 0 && prev?.heure && prev?.duree && t.heure) {
-        const toMin = hh => { const [h2, m2] = hh.split(':').map(Number); return h2 * 60 + m2 }
-        tempsRepos = toMin(t.heure) - (toMin(prev.heure) + (Number(prev.duree) || 0))
-        if (tempsRepos < 0) tempsRepos = 0
-      }
-
-      // % Drain — recalcul forcé à chaque appel
-      let pctDrain = null
-      const vd = Number(t.vDrain)
-      const va = Number(t.vApport)
-      if (vd > 0 && va > 0 && ng > 0) {
-        pctDrain = (vd / ng / va) * 100
-      }
-
-      let moyPctDrain = null
-      if (pctDrain !== null) {
-        const prevMoy = prev?.moyPctDrain ?? null
-        moyPctDrain = i === 0 ? pctDrain : prevMoy !== null ? (prevMoy * i + pctDrain) / (i + 1) : null
-      }
-
-      return { ...t, cumulRad: Math.max(0, cumulRad), tempsRepos, pctDrain, moyPctDrain }
-    })
-  }
 
   const updateTour = (id, field, val) => {
     setTours(prev => recalculTours(
