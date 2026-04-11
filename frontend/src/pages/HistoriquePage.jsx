@@ -288,7 +288,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
         pctDrain: t.pct_drain ?? null,
         moyPctDrain: t.moy_pct_drain ?? null,
       }))
-      setTours(t)
+      setTours(recalculTours(t, nbrGoutteurs))
     }).catch(() => {})
   }, [saisie.id])
 
@@ -308,7 +308,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
   }))
 
   // Recalcul tours — recalcule pctDrain à chaque changement
-  const recalculTours = useCallback((list, goutteurs) => {
+  const recalculTours = (list, goutteurs) => {
     const ng = Number(goutteurs) || 0
     let cumulPrev = 0
     return list.map((t, i) => {
@@ -352,7 +352,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
   // Recalcul quand nbrGoutteurs change
   useEffect(() => {
     setTours(prev => recalculTours(prev, nbrGoutteurs))
-  }, [nbrGoutteurs, recalculTours])
+  }, [nbrGoutteurs])
 
   const addTour = () => {
     setTours(prev => {
