@@ -14,7 +14,8 @@ from routers.auth import router as auth_router
 from routers.recommendations import router as rec_router
 from routers.sensors import router as sensors_router
 from routers.devices import router as devices_router
-from routers.saisie  import router as saisie_router
+from routers.saisie       import router as saisie_router
+from routers.export_saisie import router as export_router
 
 from models.sensor_model import (
     Device, SensorReading, IrrigationCycle,
@@ -102,6 +103,7 @@ app.include_router(rec_router)
 app.include_router(sensors_router)
 app.include_router(devices_router)
 app.include_router(saisie_router)
+app.include_router(export_router)
 
 # ── Endpoints publics ─────────────────────────────────────────
 @app.get("/", tags=["General"])

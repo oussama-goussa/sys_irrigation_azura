@@ -1485,7 +1485,28 @@ export default function HistoriquePage({ token, auth, C, dark }) {
               <p style={{ fontSize: 11, color: C.textDim }}>{total} saisie{total > 1 ? 's' : ''} enregistrée{total > 1 ? 's' : ''}</p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* Export Excel button */}
+            <button
+              onClick={() => setShowExport(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 7,
+                padding: '8px 18px', borderRadius: 9,
+                background: `${C.green}12`,
+                border: `1.5px solid ${C.green}40`,
+                color: C.green, fontSize: 13, fontWeight: 700,
+                fontFamily: 'inherit', cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = `${C.green}22`; e.currentTarget.style.borderColor = `${C.green}80` }}
+              onMouseLeave={e => { e.currentTarget.style.background = `${C.green}12`; e.currentTarget.style.borderColor = `${C.green}40` }}
+            >
+              <Download size={14} strokeWidth={2.5} />
+              Export Excel
+            </button>
+
+            <div style={{ width: 1, height: 24, background: C.border }} />
+
             <span style={{ fontSize: 11, color: C.textDim, fontWeight: 600 }}>Afficher</span>
             <select value={perPage} onChange={e => setPerPage(Number(e.target.value))}
               style={{ padding: '6px 10px', borderRadius: 7, border: `1.5px solid ${C.border}`,
