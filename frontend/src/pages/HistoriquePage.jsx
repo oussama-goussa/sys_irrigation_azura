@@ -3,6 +3,7 @@
 // ============================================================
 
 import React, { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import {
   History, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
   Pencil, Trash2, X, AlertTriangle,
@@ -198,22 +199,29 @@ function SSelect({ value, onChange, options, placeholder, C, width = '100%', dis
   )
 }
 
-// ── FilterSelect — position:fixed dropdown (évite overflow:hidden) ──
+// ── FilterSelect — portal (évite overflow:hidden de la table) ──
 function FilterSelect({ value, onChange, options, C }) {
   const [open, setOpen] = useState(false)
-  const ref = useRef(null)
   const [pos, setPos] = useState({ top: 0, left: 0, width: 0 })
+  const triggerRef = useRef(null)
+  const dropRef = useRef(null)
 
   useEffect(() => {
-    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    if (!open) return
+    const close = (e) => {
+      if (
+        triggerRef.current && !triggerRef.current.contains(e.target) &&
+        dropRef.current && !dropRef.current.contains(e.target)
+      ) setOpen(false)
+    }
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
-  }, [])
+  }, [open])
 
   const handleOpen = () => {
-    if (ref.current) {
-      const r = ref.current.getBoundingClientRect()
-      setPos({ top: r.bottom + window.scrollY + 2, left: r.left + window.scrollX, width: Math.max(r.width, 120) })
+    if (triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect()
+      setPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 130) })
     }
     setOpen(v => !v)
   }
@@ -221,8 +229,51 @@ function FilterSelect({ value, onChange, options, C }) {
   const selected = options.find(o => (o.value ?? o) === value)
   const label = selected ? (selected.label ?? selected) : null
 
+  const dropdown = open && createPortal(
+    <div ref={dropRef} style={{
+      position: 'fixed',
+      top: pos.top,
+      left: pos.left,
+      width: pos.width,
+      background: C.card,
+      border: `1.5px solid ${C.border}`,
+      borderRadius: 8,
+      zIndex: 99999,
+      boxShadow: '0 6px 24px rgba(0,0,0,0.18)',
+      maxHeight: 200,
+      overflowY: 'auto',
+    }}>
+      <div onClick={() => { onChange(''); setOpen(false) }}
+        style={{ padding: '8px 12px', fontSize: 11, cursor: 'pointer',
+          color: !value ? C.green : C.textMuted,
+          background: !value ? `${C.green}12` : 'transparent' }}
+        onMouseEnter={e => e.currentTarget.style.background = !value ? `${C.green}18` : C.tableHover}
+        onMouseLeave={e => e.currentTarget.style.background = !value ? `${C.green}12` : 'transparent'}
+      >Tous</div>
+      {options.map(o => {
+        const val = o.value ?? o
+        const lbl = o.label ?? o
+        const sel = val === value
+        return (
+          <div key={val} onClick={() => { onChange(val); setOpen(false) }}
+            style={{ padding: '8px 12px', fontSize: 11, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              color: sel ? C.green : C.textMuted,
+              background: sel ? `${C.green}12` : 'transparent' }}
+            onMouseEnter={e => e.currentTarget.style.background = sel ? `${C.green}18` : C.tableHover}
+            onMouseLeave={e => e.currentTarget.style.background = sel ? `${C.green}12` : 'transparent'}
+          >
+            <span>{lbl}</span>
+            {sel && <Check size={10} strokeWidth={2.5} color={C.green}/>}
+          </div>
+        )
+      })}
+    </div>,
+    document.body
+  )
+
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={triggerRef} style={{ position: 'relative' }}>
       <div onClick={handleOpen} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         height: 28, padding: '0 7px',
@@ -238,46 +289,11 @@ function FilterSelect({ value, onChange, options, C }) {
           {open ? <ChevronUp size={10} strokeWidth={2}/> : <ChevronDown size={10} strokeWidth={2}/>}
         </span>
       </div>
-      {open && (
-        <div style={{
-          position: 'fixed',
-          top: pos.top,
-          left: pos.left,
-          width: pos.width,
-          background: C.card, border: `1.5px solid ${C.border}`,
-          borderRadius: 8, zIndex: 99999, boxShadow: `0 6px 24px rgba(0,0,0,0.18)`,
-          maxHeight: 200, overflowY: 'auto',
-        }}>
-          <div onClick={() => { onChange(''); setOpen(false) }}
-            style={{ padding: '8px 12px', fontSize: 11, cursor: 'pointer',
-              color: !value ? C.green : C.textMuted,
-              background: !value ? `${C.green}12` : 'transparent' }}
-            onMouseEnter={e => e.currentTarget.style.background = !value ? `${C.green}18` : C.tableHover}
-            onMouseLeave={e => e.currentTarget.style.background = !value ? `${C.green}12` : 'transparent'}
-          >Tous</div>
-          {options.map(o => {
-            const val = o.value ?? o
-            const lbl = o.label ?? o
-            const sel = val === value
-            return (
-              <div key={val} onClick={() => { onChange(val); setOpen(false) }}
-                style={{ padding: '8px 12px', fontSize: 11, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  color: sel ? C.green : C.textMuted,
-                  background: sel ? `${C.green}12` : 'transparent', transition: 'background 0.1s' }}
-                onMouseEnter={e => e.currentTarget.style.background = sel ? `${C.green}18` : C.tableHover}
-                onMouseLeave={e => e.currentTarget.style.background = sel ? `${C.green}12` : 'transparent'}
-              >
-                <span>{lbl}</span>
-                {sel && <Check size={10} strokeWidth={2.5} color={C.green}/>}
-              </div>
-            )
-          })}
-        </div>
-      )}
+      {dropdown}
     </div>
   )
 }
+
 
 // ── FilterInput ──────────────────────────────────────────────
 function FilterInput({ value, onChange, placeholder, C, type = 'text' }) {
