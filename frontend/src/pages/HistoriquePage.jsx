@@ -6,7 +6,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import {
   History, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
-  Pencil, Trash2, X, AlertTriangle,
+  Pencil, Trash2, X, AlertTriangle, RefreshCw,
   Plus, Save, AlertCircle, Check, Droplets, FlaskConical,
   BarChart2, ClipboardList,
 } from 'lucide-react'
@@ -985,7 +985,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
           )}
 
           {/* Sélecteurs */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 150px', gap: 14, marginBottom: 18 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 14, marginBottom: 18 }}>
             <div>
               <label style={labelStyle}>Ferme</label>
               <SSelect value={ferme} onChange={v => { setFerme(v); setStation('') }}
@@ -1203,7 +1203,10 @@ function ToursTable({ saisieId, token, C, dark }) {
 
   if (tours === null) return (
     <tr><td colSpan={20} style={{ padding: '20px 16px', textAlign: 'center', color: C.textDim, fontSize: 12 }}>
-      Chargement…
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        <RefreshCw size={16} color={C.green} style={{ animation: 'az-pulse 1.2s ease-in-out infinite' }} />
+        Chargement…
+      </div>
     </td></tr>
   )
 
@@ -1559,7 +1562,10 @@ export default function HistoriquePage({ token, auth, C, dark }) {
               <tbody style={{ overflow: 'visible' }}>
                 {loading ? (
                   <tr><td colSpan={15} style={{ padding: '48px 0', textAlign: 'center', color: C.textDim, fontSize: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    <RefreshCw size={16} color={C.green} style={{ animation: 'az-pulse 1.2s ease-in-out infinite' }} />
                     Chargement…
+                    </div>
                   </td></tr>
                 ) : filtered.length === 0 ? (
                   <tr><td colSpan={15} style={{ padding: '48px 0', textAlign: 'center', color: C.textDim, fontSize: 12 }}>
