@@ -127,7 +127,7 @@ export default function LoginPage({ onLogin, dark, toggleDark }) {
               color: C.textMuted,
               fontSize: 11,
               fontWeight: 680,
-              textTransform: 'uppercase',
+              textTransform: 'capitalize',
               letterSpacing: '0.08em',
               marginBottom: 7,
             }}>
@@ -157,7 +157,7 @@ export default function LoginPage({ onLogin, dark, toggleDark }) {
               color: C.textMuted,
               fontSize: 11,
               fontWeight: 680,
-              textTransform: 'uppercase',
+              textTransform: 'capitalize',
               letterSpacing: '0.08em',
               marginBottom: 7,
             }}>
@@ -259,7 +259,7 @@ export default function LoginPage({ onLogin, dark, toggleDark }) {
               color: C.textDim,
               fontSize: 10,
               fontWeight: 680,
-              textTransform: 'uppercase',
+              textTransform: 'capitalize',
               letterSpacing: '0.1em',
               marginBottom: 10,
               textAlign: 'center',

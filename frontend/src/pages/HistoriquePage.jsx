@@ -321,7 +321,7 @@ function FilterInput({ value, onChange, placeholder, C, type = 'text' }) {
 function THm({ children, w, color, C }) {
   return (
     <th style={{ padding: '7px 5px', textAlign: 'center', fontSize: 12, fontWeight: 680,
-      textTransform: 'uppercase', letterSpacing: '0.07em', color: color || C.textDim,
+      textTransform: 'capitalize', letterSpacing: '0.07em', color: color || C.textDim,
       whiteSpace: 'nowrap', width: w, borderBottom: `1.5px solid ${C.border}` }}>
       {children}
     </th>
@@ -592,7 +592,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
   }
   const labelStyle = {
     display: 'block', color: C.textMuted, fontSize: 12, fontWeight: 680,
-    textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4,
+    textTransform: 'capitalize', letterSpacing: '0.08em', marginBottom: 4,
   }
 
   return (
@@ -667,7 +667,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                   display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 90,
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <div style={{ fontSize: 12, fontWeight: 680, textTransform: 'uppercase',
+                    <div style={{ fontSize: 12, fontWeight: 680, textTransform: 'capitalize',
                       letterSpacing: '0.1em', color: dark ? C.textDim : '#5a7a66' }}>{card.label}</div>
                     <card.Icon size={14} strokeWidth={1.6} color={card.color} style={{ opacity: 0.65 }} />
                   </div>
@@ -714,7 +714,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
           {/* Constantes */}
           <div style={{ background: dark ? 'rgba(52,217,111,0.04)' : 'rgba(24,120,63,0.03)',
             border: `1px solid ${C.border}`, borderRadius: 12, padding: '16px 20px', marginBottom: 18 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: C.textMuted, textTransform: 'uppercase',
+            <div style={{ fontSize: 12, fontWeight: 800, color: C.textMuted, textTransform: 'capitalize',
               letterSpacing: '0.1em', marginBottom: 14 }}>Constantes &amp; Substrat</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
               {[
@@ -757,7 +757,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
             overflow: 'hidden', marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '12px 16px', borderBottom: `1px solid ${C.border}` }}>
-              <div style={{ fontSize: 12, fontWeight: 680, color: C.textMuted, textTransform: 'uppercase',
+              <div style={{ fontSize: 12, fontWeight: 680, color: C.textMuted, textTransform: 'capitalize',
                 letterSpacing: '0.1em' }}>Tours d'irrigation</div>
               <button onClick={addTour} style={{ display: 'flex', alignItems: 'center', gap: 6,
                 padding: '6px 14px', background: `${C.green}10`, border: `1.5px solid ${C.green}40`,
@@ -1141,7 +1141,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
   const TH = ({ children, color, w, center = false }) => (
     <th style={{
       padding: '11px 10px', textAlign: center ? 'center' : 'left',
-      fontSize: 12, fontWeight: 680, textTransform: 'uppercase',
+      fontSize: 12, fontWeight: 680, textTransform: 'capitalize',
       letterSpacing: '0.09em', color: color || C.textDim,
       whiteSpace: 'nowrap',
       borderBottom: `1.5px solid ${C.border}`,

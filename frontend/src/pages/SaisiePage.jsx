@@ -251,7 +251,7 @@ function BilanCard({ title, items, color, icon: Icon, C, dark }) {
       borderRadius: 12, padding: '14px 18px', flex: 1,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <div style={{ fontSize: 12, fontWeight: 680, color, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        <div style={{ fontSize: 12, fontWeight: 680, color, textTransform: 'capitalize', letterSpacing: '0.08em' }}>
           {title}
         </div>
         <div style={{
@@ -279,7 +279,7 @@ function TH({ children, w, color, C }) {
   return (
     <th style={{
       padding: '8px 6px', textAlign: 'center',
-      fontSize: 12, fontWeight: 680, textTransform: 'uppercase',
+      fontSize: 12, fontWeight: 680, textTransform: 'capitalize',
       letterSpacing: '0.07em', color: color || C.textDim,
       whiteSpace: 'nowrap', width: w,
       borderBottom: `1.5px solid ${C.border}`,
@@ -293,7 +293,7 @@ function TH({ children, w, color, C }) {
 function SLabel({ children, C }) {
   return (
     <div style={{
-      fontSize: 12, fontWeight: 680, textTransform: 'uppercase',
+      fontSize: 12, fontWeight: 680, textTransform: 'capitalize',
       letterSpacing: '0.08em', color: C.textDim, marginBottom: 5,
     }}>{children}</div>
   )
@@ -504,7 +504,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
   }
   const labelStyle = {
     display: 'block', color: C.textMuted, fontSize: 12, fontWeight: 800,
-    textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5,
+    textTransform: 'capitalize', letterSpacing: '0.08em', marginBottom: 5,
   }
   const inputStyle = {
     width: '100%', padding: '8px 12px', borderRadius: 8,
@@ -578,7 +578,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 0 }}>
               <div style={{
-                fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
+                fontSize: 11, fontWeight: 600, textTransform: 'capitalize',
                 letterSpacing: '0.12em', color: dark ? C.textDim : '#5a7a66',
               }}>
                 {card.label}
@@ -655,7 +655,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
           marginTop: 16, paddingTop: 16,
           borderTop: `1px solid ${C.border}`,
         }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: C.textMuted, textTransform: 'capitalize', letterSpacing: '0.1em', marginBottom: 12 }}>
             Constantes &amp; Substrat
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 14, alignItems: 'end' }}>
@@ -716,7 +716,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
 
       {/* ── Table Tours ──────────────────────────────────────── */}
       <div style={{ ...cardStyle, marginBottom: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: C.textMuted, textTransform: 'capitalize', letterSpacing: '0.1em', marginBottom: 14 }}>
           Tours d'irrigation
         </div>
 

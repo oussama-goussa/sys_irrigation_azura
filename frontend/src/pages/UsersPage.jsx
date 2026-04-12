@@ -142,7 +142,7 @@ function EditModal({ user, farms, onSave, onClose, C, dark }) {
             <label style={{
               display: 'block', color: C.textMuted,
               fontSize: 11, fontWeight: 680,
-              textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6,
+              textTransform: 'capitalize', letterSpacing: '0.07em', marginBottom: 6,
             }}>
               Fermes affectées
               {(user.role === 'agronome') && (
@@ -502,7 +502,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
             <div style={{ marginBottom: 14 }}>
               <label style={{
                 display: 'block', color: C.textMuted, fontSize: 11, fontWeight: 680,
-                textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6,
+                textTransform: 'capitalize', letterSpacing: '0.07em', marginBottom: 6,
               }}>Rôle</label>
               <div style={{ position: 'relative' }}>
                 <div
@@ -558,7 +558,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                 <label style={{
                   display: 'block', color: C.textMuted,
                   fontSize: 11, fontWeight: 680,
-                  textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6,
+                  textTransform: 'capitalize', letterSpacing: '0.07em', marginBottom: 6,
                 }}>
                   Fermes assignées
                   {newUser.role === 'agronome' && (
@@ -789,7 +789,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                     {['Identifiant', 'Nom / Email', 'Rôle', 'Statut', 'Dernière connexion', 'Créé le', 'Actions'].map(h => (
                       <th key={h} style={{
                         color: C.textDim, fontSize: 11, fontFamily: 'inherit',
-                        textTransform: 'uppercase', letterSpacing: '0.08em',
+                        textTransform: 'capitalize', letterSpacing: '0.08em',
                         padding: '10px 14px', textAlign: 'left',
                         borderBottom: `1.5px solid ${C.border}`,
                         whiteSpace: 'nowrap', fontWeight: 680,
