@@ -399,7 +399,7 @@ function CalendarPicker({ value, onChange, C, small = false }) {
         boxSizing: 'border-box', width: '100%',
       }}>
         <span>{displayValue || 'jj/mm/aaaa'}</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft:'5px' }}>
           {value && (
             <span onClick={e => { e.stopPropagation(); onChange('') }}
               style={{ color: C.textDim, cursor: 'pointer', display: 'flex' }}>
