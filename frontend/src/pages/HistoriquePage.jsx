@@ -1311,7 +1311,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                                 transition: 'all 0.13s', whiteSpace: 'nowrap' }}
                               onMouseEnter={e => { e.currentTarget.style.borderColor = C.green; e.currentTarget.style.color = C.green; e.currentTarget.style.background = `${C.green}08` }}
                               onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted; e.currentTarget.style.background = 'transparent' }}>
-                              <Pencil size={12} strokeWidth={2} /> Modifier
+                              <Pencil size={12} strokeWidth={2} />
                             </button>
                             <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(s) }}
                               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
