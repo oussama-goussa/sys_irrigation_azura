@@ -333,7 +333,7 @@ function CalendarPicker({ value, onChange, C, small = false }) {
     const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
-  }, [])
+  }, [open])
 
   useEffect(() => { if (value) setView(new Date(value)) }, [value])
 
@@ -410,7 +410,7 @@ function CalendarPicker({ value, onChange, C, small = false }) {
       </div>
 
       {/* ── Dropdown ── */}
-      {open && (
+      {open && createPortal(
         <div style={{
           position: 'fixed',
           top: pos.top !== 'auto' ? pos.top : 'auto',
@@ -562,7 +562,8 @@ function CalendarPicker({ value, onChange, C, small = false }) {
               Aujourd'hui
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
