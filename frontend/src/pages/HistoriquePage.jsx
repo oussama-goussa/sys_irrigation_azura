@@ -244,7 +244,7 @@ function FilterSelect({ value, onChange, options, C }) {
       overflowY: 'auto',
     }}>
       <div onClick={() => { onChange(''); setOpen(false) }}
-        style={{ padding: '8px 12px', fontSize: 11, cursor: 'pointer',
+        style={{ padding: '8px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 680,
           color: !value ? C.green : C.textMuted,
           background: !value ? `${C.green}12` : 'transparent' }}
         onMouseEnter={e => e.currentTarget.style.background = !value ? `${C.green}18` : C.tableHover}
@@ -256,7 +256,7 @@ function FilterSelect({ value, onChange, options, C }) {
         const sel = val === value
         return (
           <div key={val} onClick={() => { onChange(val); setOpen(false) }}
-            style={{ padding: '8px 12px', fontSize: 11, cursor: 'pointer',
+            style={{ padding: '8px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 680,
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               color: sel ? C.green : C.textMuted,
               background: sel ? `${C.green}12` : 'transparent' }}
@@ -281,7 +281,7 @@ function FilterSelect({ value, onChange, options, C }) {
         borderRadius: 6, background: C.inputBg,
         cursor: 'pointer', transition: 'border-color 0.15s', gap: 3,
       }}>
-        <span style={{ fontSize: 11, color: label ? C.text : C.textDim,
+        <span style={{ fontSize: 12, color: label ? C.text : C.textDim,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
           {label || 'Tous'}
         </span>
@@ -797,7 +797,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                         <div style={{ width: 26, height: 26, borderRadius: 6, margin: '0 auto',
                           background: `${C.green}12`, border: `1px solid ${C.green}30`,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 11, fontWeight: 900, color: C.green }}>{t.num}</div>
+                          fontSize: 12, fontWeight: 900, color: C.green }}>{t.num}</div>
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
                         <TInput value={t.rad} onChange={v => updateTour(t.id, 'rad', v)} C={C} />
