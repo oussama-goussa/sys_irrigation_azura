@@ -64,8 +64,13 @@ function TimeInput({ value, onChange, C, small = false }) {
 
   useEffect(() => {
     const close = (e) => { if (ref.current && !ref.current.contains(e.target) && portalRef.current && !portalRef.current.contains(e.target)) setOpen(false) }
+    const onScroll = () => setOpen(false)
     document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
+    window.addEventListener('scroll', onScroll, true)
+    return () => {
+        document.removeEventListener('mousedown', close)
+        window.removeEventListener('scroll', onScroll, true)
+    }
   }, [])
 
   const handleOpen = () => {
@@ -369,8 +374,13 @@ function CalendarPicker({ value, onChange, C, small = false }) {
 
   useEffect(() => {
     const close = (e) => { if (ref.current && !ref.current.contains(e.target) && portalRef.current && !portalRef.current.contains(e.target)) setOpen(false) }
+    const onScroll = () => setOpen(false)
     document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
+    window.addEventListener('scroll', onScroll, true)
+    return () => {
+        document.removeEventListener('mousedown', close)
+        window.removeEventListener('scroll', onScroll, true)
+    }
   }, [open])
 
   useEffect(() => { if (value) setView(new Date(value + 'T00:00:00')) }, [value])
@@ -899,7 +909,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
         boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
       }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', overflow:'hidden',
           padding: '20px 28px', borderBottom: `1px solid ${C.border}`,
           position: 'sticky', top: 0, background: C.card, zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
