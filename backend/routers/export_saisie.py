@@ -1,349 +1,340 @@
 # ============================================================
 # backend/routers/export_saisie.py
-# Export Excel — Suivi Irrigation Azura
-# Structure exacte comme les photos Excel
+# Export Excel — Suivi Irrigation (structure exacte du template)
 # ============================================================
 
 from fastapi import APIRouter, Depends, Query, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
-from datetime import date as date_type, timedelta
-from typing import List, Optional
-from loguru import logger
-import io
+from sqlalchemy import text
+from io import BytesIO
+from datetime import datetime, date
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 
 from core.database import get_db
-from core.security import require_any
-from models.saisie_model import SaisieJournaliere, SaisieTour
+from routers.auth import get_current_user
 
-router = APIRouter(prefix="/api/export", tags=["Export Excel"])
+router = APIRouter(prefix="/api/export", tags=["Export"])
 
+# ── Colors (exact from template) ─────────────────────────────
+GREEN_LIGHT  = "FF99FF66"   # Radiation / Cumul Radiation
+GREEN_MED    = "FF70AD47"   # Heure, Durée, V Apport, EC, pH, V Drain, EC/pH Drain
+ORANGE       = "FFF4B942"   # % Drain, Moy % Drain, Heure Matin/Soir, Poids, Ressuyage, EC Bassin, Summary
+WHITE        = "FFFFFFFF"
+DARK_HEADER  = "FF404040"   # Header row background
 
-def get_date_range(date_from: str, date_to: str):
-    d1 = date_type.fromisoformat(date_from)
-    d2 = date_type.fromisoformat(date_to)
-    days = []
-    cur = d1
-    while cur <= d2:
-        days.append(cur)
-        cur += timedelta(days=1)
-    return days
+# ── Helpers ───────────────────────────────────────────────────
+def _fill(hex_color):
+    return PatternFill("solid", fgColor=hex_color)
 
+def _font(bold=True, size=10, color="FF000000"):
+    return Font(bold=bold, size=size, name="Calibri", color=color)
 
-@router.get("/saisie")
-def export_saisie_excel(
-    farm_names : str   = Query(..., description="Fermes séparées par virgule"),
-    date_from  : str   = Query(..., description="YYYY-MM-DD"),
-    date_to    : str   = Query(..., description="YYYY-MM-DD"),
-    db         : Session = Depends(get_db),
-    user       : dict    = Depends(require_any),
-):
-    """
-    Export Excel du suivi d'irrigation.
-    Structure : une table par ferme/station/jour.
-    Colonnes : Tours (1..N), lignes : métriques.
-    """
+def _align():
+    return Alignment(horizontal="center", vertical="center")
+
+def _border_thin():
+    s = Side(border_style="thin", color="FF000000")
+    return Border(top=s, bottom=s, left=s, right=s)
+
+def _border_label():
+    """Label col F: thin on top, bottom, right"""
+    s = Side(border_style="thin", color="FF000000")
+    return Border(top=s, bottom=s, right=s)
+
+def _set(ws, row, col, value, fill_hex=None, bold=True, size=10,
+         font_color="FF000000", border=None, num_format=None):
+    cell = ws.cell(row=row, column=col, value=value)
+    cell.font = _font(bold=bold, size=size, color=font_color)
+    cell.alignment = _align()
+    if fill_hex:
+        cell.fill = _fill(fill_hex)
+    if border:
+        cell.border = border
+    if num_format:
+        cell.number_format = num_format
+    return cell
+
+def _parse_time_str(s):
+    """'HH:MM' or 'HH:MM:SS' → datetime.time or None"""
+    if not s:
+        return None
     try:
-        from openpyxl import Workbook
-        from openpyxl.styles import (
-            Font, PatternFill, Alignment, Border, Side, GradientFill
-        )
-        from openpyxl.utils import get_column_letter
-    except ImportError:
-        raise HTTPException(status_code=500, detail="openpyxl non installé")
+        parts = str(s).split(":")
+        h, m = int(parts[0]), int(parts[1])
+        return datetime(1900, 1, 1, h % 24, m).time()
+    except Exception:
+        return None
 
+def _min_to_time(minutes):
+    """Float minutes → datetime.time"""
+    if minutes is None:
+        return None
     try:
-        d1 = date_type.fromisoformat(date_from)
-        d2 = date_type.fromisoformat(date_to)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Format date invalide")
+        total = int(float(minutes))
+        h, m = divmod(total, 60)
+        return datetime(1900, 1, 1, h % 24, m).time()
+    except Exception:
+        return None
 
-    farms_list = [f.strip() for f in farm_names.split(",") if f.strip()]
-    if not farms_list:
-        raise HTTPException(status_code=400, detail="Aucune ferme sélectionnée")
-
-    date_range = get_date_range(date_from, date_to)
-
-    # ── Récupérer toutes les saisies ──────────────────────────
-    saisies = (
-        db.query(SaisieJournaliere)
-        .filter(
-            SaisieJournaliere.farm_name.in_(farms_list),
-            SaisieJournaliere.date >= d1,
-            SaisieJournaliere.date <= d2,
-        )
-        .order_by(SaisieJournaliere.farm_name, SaisieJournaliere.date)
-        .all()
-    )
-
-    # Map saisie_id → tours
-    saisie_ids = [s.id for s in saisies]
-    all_tours = (
-        db.query(SaisieTour)
-        .filter(SaisieTour.saisie_id.in_(saisie_ids))
-        .order_by(SaisieTour.saisie_id, SaisieTour.num_tour)
-        .all()
-    ) if saisie_ids else []
-
-    tours_by_saisie = {}
-    for t in all_tours:
-        tours_by_saisie.setdefault(t.saisie_id, []).append(t)
-
-    # ── Workbook ──────────────────────────────────────────────
-    wb = Workbook()
+# ── Main export function ──────────────────────────────────────
+def build_excel(saisies_with_tours: list) -> BytesIO:
+    wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Suivi Irrigation"
 
-    # ── Styles ────────────────────────────────────────────────
-    def make_fill(hex_color):
-        return PatternFill("solid", fgColor=hex_color)
+    # ── Column widths (exact from template) ──────────────────
+    ws.column_dimensions["A"].width = 20.0
+    ws.column_dimensions["B"].width = 9.66
+    ws.column_dimensions["C"].width = 9.0
+    ws.column_dimensions["D"].width = 9.0
+    ws.column_dimensions["E"].width = 9.22
+    ws.column_dimensions["F"].width = 25.11
+    for i in range(7, 27):   # G to Z
+        ws.column_dimensions[get_column_letter(i)].width = 7.5
+    ws.column_dimensions["AA"].width = 26.44
+    ws.column_dimensions["AB"].width = 12.11
 
-    def make_font(bold=False, color="000000", size=10):
-        return Font(bold=bold, color=color, name="Arial", size=size)
+    # ── Header row ───────────────────────────────────────────
+    header_fill   = _fill(DARK_HEADER)
+    header_font   = _font(bold=True, size=11, color="FFFFFFFF")
+    header_border = _border_thin()
 
-    def make_border(style="thin"):
-        s = Side(style=style, color="000000")
-        return Border(left=s, right=s, top=s, bottom=s)
+    for col, label in enumerate(["Date", "Ferme", "Station", "Serre", "Vanne"], start=1):
+        c = ws.cell(row=1, column=col, value=label)
+        c.font = header_font; c.fill = header_fill
+        c.alignment = _align(); c.border = header_border
 
-    def make_align(h="center", v="center", wrap=False):
-        return Alignment(horizontal=h, vertical=v, wrap_text=wrap)
+    # Tours label + numbers 1-20
+    c = ws.cell(row=1, column=6, value="Tours")
+    c.font = _font(bold=True, size=10, color="FFFFFFFF")
+    c.fill = header_fill; c.alignment = _align(); c.border = _border_label()
 
-    FILL_HEADER    = make_fill("1F7A4E")   # vert foncé
-    FILL_ROW_LABEL = make_fill("70AD47")   # vert moyen
-    FILL_TOUR_ODD  = make_fill("E2EFDA")   # vert très clair
-    FILL_TOUR_EVEN = make_fill("FFFFFF")   # blanc
-    FILL_BILAN     = make_fill("FFF2CC")   # jaune clair
-    FILL_BILAN_LBL = make_fill("F4B942")   # orange/jaune
-    FILL_WARNING   = make_fill("FF0000")   # rouge pour valeurs hors norme
+    for t in range(1, 21):
+        c = ws.cell(row=1, column=6 + t, value=t)
+        c.font = _font(bold=True, size=10, color="FFFFFFFF")
+        c.fill = header_fill; c.alignment = _align(); c.border = header_border
 
-    FONT_HEADER = make_font(bold=True, color="FFFFFF", size=10)
-    FONT_LABEL  = make_font(bold=True, color="FFFFFF", size=9)
-    FONT_DATA   = make_font(bold=False, color="000000", size=9)
-    FONT_DATA_R = make_font(bold=True, color="C00000", size=9)  # rouge pour valeurs
-    FONT_BILAN  = make_font(bold=True, color="C00000", size=9)
-    BORDER      = make_border()
+    # Empty AA/AB header
+    for col in [27, 28]:
+        c = ws.cell(row=1, column=col, value="")
+        c.fill = header_fill; c.border = header_border
 
-    def cell(ws, row, col, value="", fill=None, font=None, align=None, border=None, number_format=None):
-        c = ws.cell(row=row, column=col, value=value)
-        if fill:   c.fill = fill
-        if font:   c.font = font
-        if align:  c.alignment = align
-        if border: c.border = border
-        if number_format: c.number_format = number_format
-        return c
+    ws.row_dimensions[1].height = 18
 
-    def apply_row(ws, row, cols, fill=None, font=None, border=None):
-        for c in cols:
-            cc = ws.cell(row=row, column=c)
-            if fill:   cc.fill = fill
-            if font:   cc.font = font
-            if border: cc.border = border
+    # ── Row layout definition ─────────────────────────────────
+    # (label, label_fill, data_fill, aa_label, is_time, is_pct)
+    ROW_DEF = [
+        # idx, label,              label_fill,  data_fill,  aa_label,               is_time, is_pct
+        (0,  "Radiation",          GREEN_LIGHT, GREEN_LIGHT, None,                   False, False),
+        (1,  "Cumul Radiation",    GREEN_LIGHT, GREEN_LIGHT, None,                   False, False),
+        (2,  "Heure",              GREEN_MED,   None,        "Nombre De Bras",       True,  False),
+        (3,  "Durée (min)",        GREEN_MED,   None,        "Nombre de Goutteurs",  True,  False),
+        (4,  "Temps Repos (min)",  GREEN_MED,   None,        "Durée totale",         True,  False),
+        (5,  "V Apport (cc)",      GREEN_MED,   None,        "EC Bassin",            False, False),
+        (6,  "EC Apport",          GREEN_MED,   None,        "Total V Apport",       False, False),
+        (7,  "pH Apport",          GREEN_MED,   None,        "EC cumul apport",      False, False),
+        (8,  "V Drainage (cc)",    GREEN_MED,   None,        "PH cumul apport",      False, False),
+        (9,  "% Drainage",         GREEN_MED,   ORANGE,      "Total V Drainage",     False, True),
+        (10, "Moyenne % Drainage", GREEN_MED,   ORANGE,      "Moyenne % drainage",   False, True),
+        (11, "EC Drainage",        GREEN_MED,   None,        "EC cumul drainage",    False, False),
+        (12, "pH Drainage",        GREEN_MED,   None,        "PH cumul Drainage",    False, False),
+        (13, "Heure Matin",        ORANGE,      ORANGE,      "CC/bras consommé",     True,  False),
+        (14, "Heure Soir",         ORANGE,      ORANGE,      "Nombre des tours",     True,  False),
+        (15, "% Ressuyage",        ORANGE,      ORANGE,      None,                   False, True),
+        (16, "Poids Matin (Kg)",   ORANGE,      ORANGE,      None,                   False, False),
+        (17, "Poids Soir (Kg)",    ORANGE,      ORANGE,      None,                   False, False),
+        (18, "EC Bassin",          ORANGE,      ORANGE,      None,                   False, False),
+    ]
 
-    current_row = 1
+    # Summary labels order (rows 2→4, 5→13 of each block mapped to AA/AB)
+    # AA label appears only when aa_label is set in ROW_DEF above
 
-    # ── Pour chaque ferme ─────────────────────────────────────
-    for farm in farms_list:
-        farm_saisies = [s for s in saisies if s.farm_name == farm]
+    current_row = 2
 
-        # Grouper par station
-        stations = sorted(set(s.station or "—" for s in farm_saisies))
+    for saisie, tours in saisies_with_tours:
+        # Sort tours by num_tour
+        tours = sorted(tours, key=lambda t: t["num_tour"])
+        max_tours = min(len(tours), 20)
 
-        for station in stations:
-            station_saisies = sorted(
-                [s for s in farm_saisies if (s.station or "—") == station],
-                key=lambda x: x.date
-            )
+        # Precompute summary values
+        sum_map = {
+            "Nombre De Bras":      saisie["nbr_bras"],
+            "Nombre de Goutteurs": saisie["nbr_goutteurs"],
+            "Durée totale":        _parse_time_str(saisie.get("duree_totale")),
+            "EC Bassin":           saisie["bassin_ec"],
+            "Total V Apport":      saisie["total_v_apport"],
+            "EC cumul apport":     saisie["ec_moy_apport"],
+            "PH cumul apport":     saisie["ph_moy_apport"],
+            "Total V Drainage":    saisie["total_v_drain"],
+            "Moyenne % drainage":  (saisie["moy_drain_finale"] / 100.0
+                                    if saisie.get("moy_drain_finale") is not None else None),
+            "EC cumul drainage":   saisie["ec_moy_drain"],
+            "PH cumul Drainage":   saisie["ph_moy_drain"],
+            "CC/bras consommé":    saisie["cc_bras"],
+            "Nombre des tours":    saisie["nbr_tours"],
+        }
 
-            # ── Pour chaque saisie (jour) ──────────────────────
-            for saisie in station_saisies:
-                tours = tours_by_saisie.get(saisie.id, [])
-                n_tours = len(tours)
-                max_tours = max(n_tours, 1)
+        # Data per row index
+        def tour_value(row_idx, t):
+            m = {
+                0:  t.get("rad"),
+                1:  t.get("cumul_rad"),
+                2:  _parse_time_str(t.get("heure")),
+                3:  _min_to_time(t.get("duree_min")),
+                4:  _min_to_time(t.get("temps_repos")),
+                5:  t.get("v_apport"),
+                6:  t.get("ec_apport"),
+                7:  t.get("ph_apport"),
+                8:  t.get("v_drain"),
+                9:  (t["pct_drain"] / 100.0 if t.get("pct_drain") is not None else None),
+                10: (t["moy_pct_drain"] / 100.0 if t.get("moy_pct_drain") is not None else None),
+                11: t.get("ec_drain"),
+                12: t.get("ph_drain"),
+                13: _parse_time_str(saisie.get("heure_matin")),
+                14: _parse_time_str(saisie.get("heure_soir")),
+                15: (saisie["pct_ressuyage"] / 100.0 if saisie.get("pct_ressuyage") is not None else None),
+                16: saisie.get("poids_matin"),
+                17: saisie.get("poids_soir"),
+                18: saisie.get("bassin_ec"),
+            }
+            return m.get(row_idx)
 
-                # ── HEADER FERME / DATE ────────────────────────
-                # Ligne titre
-                ws.merge_cells(
-                    start_row=current_row, start_column=1,
-                    end_row=current_row, end_column=7 + max_tours
-                )
-                title_val = f"{farm}  |  Station: {station}  |  Serre: {saisie.serre or '—'}  |  Vanne: {saisie.vanne or '—'}  |  Date: {saisie.date.strftime('%d/%m/%Y')}"
-                c = ws.cell(row=current_row, column=1, value=title_val)
-                c.fill = FILL_HEADER
-                c.font = make_font(bold=True, color="FFFFFF", size=11)
-                c.alignment = make_align("left", "center")
-                c.border = BORDER
-                ws.row_dimensions[current_row].height = 20
-                current_row += 1
+        for rd in ROW_DEF:
+            idx, label, label_fill, data_fill, aa_label, is_time, is_pct = rd
+            r = current_row + idx
 
-                # ── HEADER COLONNES TOURS ──────────────────────
-                # Col A: Date, B: Ferme, C: Bloc, D: Serre, E: Vanne, F: Label métrique
-                # Col G+: Tour 1, Tour 2...
-                col_label = 1
-                col_first_tour = 2
+            ws.row_dimensions[r].height = 15
 
-                # Row headers
-                headers = ["", "Tours →"] + [f"Tour {i+1}" for i in range(max_tours)]
-                for ci, h in enumerate(headers):
-                    c = ws.cell(row=current_row, column=col_label + ci, value=h)
-                    c.fill = FILL_HEADER
-                    c.font = FONT_HEADER
-                    c.alignment = make_align("center", "center")
-                    c.border = BORDER
-                ws.row_dimensions[current_row].height = 18
-                current_row += 1
+            # A-E: identity cells
+            date_val = saisie["date"]
+            if isinstance(date_val, str):
+                try:
+                    date_val = datetime.strptime(date_val, "%Y-%m-%d").date()
+                except Exception:
+                    pass
 
-                # ── LIGNES MÉTRIQUES ───────────────────────────
-                metrics = [
-                    ("Radiation",              "rad",           None,   FILL_ROW_LABEL, FONT_LABEL, "0"),
-                    ("Cumul Radiation",        "cumul_rad",     None,   FILL_ROW_LABEL, FONT_LABEL, "0"),
-                    ("Heure",                  "heure",         None,   FILL_ROW_LABEL, FONT_LABEL, "@"),
-                    ("Durée (min)",            "duree_min",     None,   FILL_ROW_LABEL, FONT_LABEL, "0"),
-                    ("Temps Repos (min)",      "temps_repos",   None,   FILL_ROW_LABEL, FONT_LABEL, "0:00"),
-                    ("V Apport (cc)",          "v_apport",      None,   FILL_ROW_LABEL, FONT_LABEL, "0"),
-                    ("EC Apport",              "ec_apport",     None,   FILL_ROW_LABEL, FONT_LABEL, "0.00"),
-                    ("pH Apport",              "ph_apport",     None,   FILL_ROW_LABEL, FONT_LABEL, "0.00"),
-                    ("V Drainage (cc)",        "v_drain",       None,   FILL_ROW_LABEL, FONT_LABEL, "0"),
-                    ("% Drainage",             "pct_drain",     None,   FILL_ROW_LABEL, FONT_LABEL, "0.0%_"),
-                    ("Moyenne % Drainage",     "moy_pct_drain", None,   FILL_ROW_LABEL, FONT_LABEL, "0.0%_"),
-                    ("EC Drainage",            "ec_drain",      None,   FILL_ROW_LABEL, FONT_LABEL, "0.00"),
-                    ("pH Drainage",            "ph_drain",      None,   FILL_ROW_LABEL, FONT_LABEL, "0.00"),
-                ]
+            for col, val in enumerate([date_val, saisie["farm_name"], saisie["station"],
+                                        saisie["serre"], saisie["vanne"]], start=1):
+                sz = 11 if col <= 5 else 10
+                _set(ws, r, col, val, bold=True, size=sz)
+                if col == 1 and isinstance(val, (date, datetime)):
+                    ws.cell(r, col).number_format = "DD/MM/YYYY"
 
-                for row_idx, (label, field, _, fill_lbl, font_lbl, num_fmt) in enumerate(metrics):
-                    row = current_row + row_idx
-                    fill_row = FILL_TOUR_ODD if row_idx % 2 == 0 else FILL_TOUR_EVEN
+            # F: label
+            _set(ws, r, 6, label, fill_hex=label_fill, bold=True, size=10,
+                 border=_border_label())
 
-                    # Colonne label
-                    c = ws.cell(row=row, column=col_label, value=label)
-                    c.fill = fill_lbl
-                    c.font = font_lbl
-                    c.alignment = make_align("left", "center")
-                    c.border = BORDER
+            # G-Z: tour data
+            time_fmt = "HH:MM" if is_time else ("0%" if is_pct else "0.00")
+            for ti in range(20):
+                col = 7 + ti
+                val = None
+                if ti < len(tours):
+                    val = tour_value(idx, tours[ti])
+                cell = _set(ws, r, col, val, fill_hex=data_fill, bold=True, size=10,
+                            border=_border_thin() if data_fill else None)
+                if val is not None:
+                    if is_time:
+                        ws.cell(r, col).number_format = "HH:MM"
+                    elif is_pct:
+                        ws.cell(r, col).number_format = "0%"
+                    else:
+                        ws.cell(r, col).number_format = "0.00"
 
-                    # Colonnes tours
-                    for ti, tour in enumerate(tours):
-                        val = getattr(tour, field, None)
-                        if val is None:
-                            val = ""
-                        elif field == "pct_drain" and val is not None:
-                            val = round(val / 100, 4)
-                        elif field == "moy_pct_drain" and val is not None:
-                            val = round(val / 100, 4)
-                        elif field == "temps_repos" and val is not None:
-                            # Format HH:MM
-                            h = int(val) // 60
-                            m = int(val) % 60
-                            val = f"{h:02d}:{m:02d}"
+            # AA / AB: summary
+            if aa_label:
+                # AA label
+                _set(ws, r, 27, aa_label, fill_hex=ORANGE, bold=True, size=11,
+                     border=_border_thin())
+                # AB value
+                ab_val = sum_map.get(aa_label)
+                ab_fmt = None
+                if aa_label == "Durée totale" and isinstance(ab_val, type(datetime.now().time())):
+                    ab_fmt = "HH:MM"
+                elif aa_label == "Moyenne % drainage" and ab_val is not None:
+                    ab_fmt = "0%"
+                c = _set(ws, r, 28, ab_val, fill_hex=None, bold=True, size=11,
+                         border=_border_thin())
+                if ab_fmt:
+                    c.number_format = ab_fmt
+            else:
+                # Empty AA/AB
+                for col in [27, 28]:
+                    ws.cell(r, col).border = _border_thin()
 
-                        tc = ws.cell(row=row, column=col_first_tour + ti, value=val)
-                        tc.fill = fill_row
-                        tc.font = FONT_DATA_R if (field in ("pct_drain","moy_pct_drain","v_apport","v_drain") and val) else FONT_DATA
-                        tc.alignment = make_align("center", "center")
-                        tc.border = BORDER
-                        if num_fmt and val != "":
-                            tc.number_format = num_fmt
+        current_row += 19
 
-                    # Colonnes vides si moins de max_tours
-                    for ti in range(len(tours), max_tours):
-                        ec = ws.cell(row=row, column=col_first_tour + ti, value="")
-                        ec.fill = fill_row
-                        ec.border = BORDER
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output
 
-                    ws.row_dimensions[row].height = 15
 
-                current_row += len(metrics)
+# ── Endpoint ──────────────────────────────────────────────────
+@router.get("/saisie")
+async def export_saisie_excel(
+    farm_names: str = Query(..., description="Fermes séparées par virgule"),
+    date_from:  str = Query(...),
+    date_to:    str = Query(...),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    farms = [f.strip() for f in farm_names.split(",") if f.strip()]
+    if not farms:
+        raise HTTPException(400, "Aucune ferme spécifiée")
 
-                # ── BILAN ROW ──────────────────────────────────
-                bilan_row = current_row
+    # Sécurité : opérateur ne peut exporter que ses fermes
+    if current_user.role != "admin":
+        allowed = current_user.farm_names or []
+        farms = [f for f in farms if f in allowed]
+        if not farms:
+            raise HTTPException(403, "Accès refusé aux fermes demandées")
 
-                # Ligne bilan substrat (poids matin/soir etc)
-                bilan_labels = [
-                    ("Heure Matin",    saisie.heure_matin),
-                    ("Poids Matin (Kg)", f"{saisie.poids_matin:.1f}" if saisie.poids_matin else "—"),
-                    ("Heure Soir",     saisie.heure_soir),
-                    ("Poids Soir (Kg)", f"{saisie.poids_soir:.1f}" if saisie.poids_soir else "—"),
-                    ("% Ressuyage",    f"{saisie.pct_ressuyage:.1f}%" if saisie.pct_ressuyage else "—"),
-                    ("EC Bassin",      f"{saisie.bassin_ec}" if saisie.bassin_ec else "—"),
-                ]
-                for bi, (lbl, val) in enumerate(bilan_labels):
-                    r = bilan_row + bi // 2
-                    offset = (bi % 2) * 2
-                    lc = ws.cell(row=r, column=col_label + offset, value=lbl)
-                    lc.fill = FILL_BILAN_LBL
-                    lc.font = FONT_LABEL
-                    lc.alignment = make_align("left", "center")
-                    lc.border = BORDER
-                    vc = ws.cell(row=r, column=col_label + offset + 1, value=val)
-                    vc.fill = FILL_BILAN
-                    vc.font = FONT_BILAN
-                    vc.alignment = make_align("center", "center")
-                    vc.border = BORDER
-                    ws.row_dimensions[r].height = 15
+    try:
+        date_from_d = datetime.strptime(date_from, "%Y-%m-%d").date()
+        date_to_d   = datetime.strptime(date_to,   "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(400, "Format de date invalide (YYYY-MM-DD)")
 
-                bilan_rows = (len(bilan_labels) + 1) // 2
-                current_row += bilan_rows
+    # ── Fetch saisies ────────────────────────────────────────
+    result = db.execute(text("""
+        SELECT * FROM saisie_journaliere
+        WHERE farm_name = ANY(:farms)
+          AND date BETWEEN :date_from AND :date_to
+        ORDER BY farm_name, date, station, serre, vanne
+    """), {"farms": farms, "date_from": date_from_d, "date_to": date_to_d})
+    saisies = [dict(r._mapping) for r in result]
 
-                # ── BILAN GLOBAL (droite) ──────────────────────
-                # Place bilan global en colonne droite
-                bilan_col_start = col_first_tour + max_tours + 1
-                bilan_global = [
-                    ("Nombre De Bras",      saisie.nbr_bras),
-                    ("Nombre de Goutteurs", saisie.nbr_goutteurs),
-                    ("Durée totale",        saisie.duree_totale),
-                    ("EC Bassin",           saisie.bassin_ec),
-                    ("Total V Apport",      saisie.total_v_apport),
-                    ("EC cumul apport",     f"{saisie.ec_moy_apport:.2f}" if saisie.ec_moy_apport else "—"),
-                    ("PH cumul apport",     f"{saisie.ph_moy_apport:.2f}" if saisie.ph_moy_apport else "—"),
-                    ("Total V Drainage",    saisie.total_v_drain),
-                    ("Moyenne % drainage",  f"{saisie.moy_drain_finale:.0f}%" if saisie.moy_drain_finale else "—"),
-                    ("EC cumul drainage",   f"{saisie.ec_moy_drain:.2f}" if saisie.ec_moy_drain else "—"),
-                    ("PH cumul Drainage",   f"{saisie.ph_moy_drain:.2f}" if saisie.ph_moy_drain else "—"),
-                    ("CC/bras consommé",    f"{saisie.cc_bras:.3f}" if saisie.cc_bras else "—"),
-                    ("Nombre des tours",    saisie.nbr_tours),
-                ]
+    if not saisies:
+        raise HTTPException(404, "Aucune donnée pour les critères sélectionnés")
 
-                # On place le bilan à droite de la section tours
-                bilan_start_row = current_row - bilan_rows - len(metrics)
-                for bi, (lbl, val) in enumerate(bilan_global):
-                    r = bilan_start_row + bi
-                    lc = ws.cell(row=r, column=bilan_col_start, value=lbl)
-                    lc.fill = FILL_BILAN_LBL
-                    lc.font = FONT_LABEL
-                    lc.alignment = make_align("left", "center")
-                    lc.border = BORDER
-                    ws.column_dimensions[get_column_letter(bilan_col_start)].width = 22
+    # ── Fetch tours ──────────────────────────────────────────
+    saisie_ids = [s["id"] for s in saisies]
+    result2 = db.execute(text("""
+        SELECT * FROM saisie_tours
+        WHERE saisie_id = ANY(:ids)
+        ORDER BY saisie_id, num_tour
+    """), {"ids": saisie_ids})
+    tours_raw = [dict(r._mapping) for r in result2]
 
-                    vc = ws.cell(row=r, column=bilan_col_start + 1, value=val)
-                    vc.fill = FILL_BILAN
-                    vc.font = FONT_BILAN
-                    vc.alignment = make_align("center", "center")
-                    vc.border = BORDER
-                    ws.column_dimensions[get_column_letter(bilan_col_start + 1)].width = 12
-                    ws.row_dimensions[r].height = 15
+    tours_by_saisie = {}
+    for t in tours_raw:
+        tours_by_saisie.setdefault(t["saisie_id"], []).append(t)
 
-                # Espace entre les sections
-                current_row += 3
+    saisies_with_tours = [
+        (s, tours_by_saisie.get(s["id"], []))
+        for s in saisies
+    ]
 
-    # ── Largeurs colonnes ─────────────────────────────────────
-    ws.column_dimensions['A'].width = 25  # labels
-    for i in range(max_tours + 5):
-        col = get_column_letter(2 + i)
-        ws.column_dimensions[col].width = 10
-
-    # ── Freeze panes ──────────────────────────────────────────
-    ws.freeze_panes = "B3"
-
-    # ── Output ────────────────────────────────────────────────
-    buf = io.BytesIO()
-    wb.save(buf)
-    buf.seek(0)
-
+    # ── Build and stream ─────────────────────────────────────
+    excel_buffer = build_excel(saisies_with_tours)
     filename = f"suivi_irrigation_{date_from}_{date_to}.xlsx"
-    logger.success(f"Export Excel généré : {filename} — {len(saisies)} saisies")
 
     return StreamingResponse(
-        buf,
+        excel_buffer,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
