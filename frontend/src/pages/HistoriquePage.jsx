@@ -78,7 +78,7 @@ function TimeInput({ value, onChange, C, small = false }) {
     <div ref={ref} style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
       <div onClick={() => setOpen(v => !v)} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        height: small ? 28 : 34, padding: '0 8px', width: '100%',
+        height: small ? 28 : 32, padding: '0 8px', width: '100%',
         border: `1.5px solid ${open ? C.green : value && value !== '00:00' ? C.green + '55' : C.border}`,
         borderRadius: 7, background: C.inputBg,
         cursor: 'pointer', transition: 'border-color 0.15s',
@@ -128,7 +128,7 @@ function TimeInput({ value, onChange, C, small = false }) {
 }
 
 // ── SSelect — identique CustomSelect SaisiePage ──────────────
-function SSelect({ value, onChange, options, placeholder, C, width = '100%', disabled = false }) {
+function SSelect({ value, onChange, options, placeholder, C, disabled = false }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -145,13 +145,13 @@ function SSelect({ value, onChange, options, placeholder, C, width = '100%', dis
     <div ref={ref} style={{ position: 'relative', width }}>
       <div onClick={() => !disabled && setOpen(v => !v)} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 10px', height: 38, fontWeight: 630,
+        padding: '0 10px', height: 32, fontWeight: 630,
         border: `1.5px solid ${open ? C.green : C.border}`,
         borderRadius: 8, background: disabled ? C.toggleBg : C.inputBg,
         cursor: disabled ? 'not-allowed' : 'pointer',
         transition: 'border-color 0.15s', gap: 6, opacity: disabled ? 0.5 : 1,
       }}>
-        <span style={{ fontSize: 12, color: label ? C.text : C.textDim,
+        <span style={{ fontSize: 12, color: label ? C.text : C.textDim, fontWeight: 630,
           overflow: 'visible', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {label || placeholder}
         </span>
@@ -675,7 +675,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                     {card.items.map(it => (
                       <div key={it.sub}>
                         <div style={{ fontSize: 10, color: dark ? C.textDim : '#5a7a66', marginBottom: 2, whiteSpace: 'nowrap' }}>{it.sub}</div>
-                        <div style={{ fontSize: 18, fontWeight: 630, color: card.color }}>{it.value}</div>
+                        <div style={{ fontSize: 20, fontWeight: 630, color: card.color }}>{it.value}</div>
                       </div>
                     ))}
                   </div>
@@ -745,7 +745,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                   border: `1.5px solid ${pctRessuyage !== null ? C.green + '40' : C.border}`,
                   fontSize: 12, fontWeight: 630,
                   color: pctRessuyage !== null ? C.green : C.textDim,
-                  minHeight: 33, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  minHeight: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {pctRessuyage !== null ? `${pctRessuyage}%` : '—'}
                 </div>
               </div>
@@ -770,7 +770,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit' }}>
                 <thead>
                   <tr>
-                    <THm w={36} C={C}>N°</THm>
+                    <THm w={50} C={C}>N°</THm>
                     <THm w={68} C={C}>Rad.</THm>
                     <THm w={76} color={C.blue} C={C}>Cumul Rad</THm>
                     <THm w={108} C={C}>Heure</THm>
