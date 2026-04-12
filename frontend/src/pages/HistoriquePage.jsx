@@ -685,7 +685,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
           )}
 
           {/* Sélecteurs */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr 150px', gap: 14, marginBottom: 18 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 150px', gap: 14, marginBottom: 18 }}>
             <div>
               <label style={labelStyle}>Ferme</label>
               <SSelect value={ferme} onChange={v => { setFerme(v); setStation('') }}
