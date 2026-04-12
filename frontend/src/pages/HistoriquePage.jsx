@@ -128,7 +128,7 @@ function TimeInput({ value, onChange, C, small = false }) {
 }
 
 // ── SSelect — identique CustomSelect SaisiePage ──────────────
-function SSelect({ value, onChange, options, placeholder, C, disabled = false }) {
+function SSelect({ value, onChange, options, placeholder, C, width = '100%', disabled = false }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
