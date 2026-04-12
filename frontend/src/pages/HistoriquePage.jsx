@@ -321,7 +321,7 @@ function FilterInput({ value, onChange, placeholder, C, type = 'text' }) {
 const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
 const DAYS_FR   = ['Lu','Ma','Me','Je','Ve','Sa','Di']
 
-function CalendarPicker({ value, onChange, C }) {
+function CalendarPicker({ value, onChange, C, small = false }) {
   const [open, setOpen]       = useState(false)
   const [viewDate, setView]   = useState(() => value ? new Date(value) : new Date())
   const [mode, setMode]       = useState('days') // 'days' | 'months' | 'years'
@@ -372,11 +372,12 @@ function CalendarPicker({ value, onChange, C }) {
       {/* ── Trigger ── */}
       <div onClick={() => { setOpen(v => !v); setMode('days') }} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        height: 38, padding: '0 12px',
+        height: small ? 28 : 38, padding: small ? '0 8px' : '0 12px',
+        fontSize: small ? 11 : 13,
         border: `1.5px solid ${open ? C.green : C.border}`,
         borderRadius: 8, background: C.inputBg,
         cursor: 'pointer', transition: 'border-color 0.15s',
-        fontSize: 13, color: value ? C.text : C.textDim,
+        color: value ? C.text : C.textDim,
         fontFamily: 'inherit', fontWeight: value ? 700 : 400,
         boxSizing: 'border-box', width: '100%',
       }}>
@@ -1445,8 +1446,8 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                 {/* Filtres */}
                 <tr style={{ background: dark ? 'rgba(255,255,255,0.025)' : 'rgba(24,120,63,0.025)', borderBottom: `1.5px solid ${C.border}` }}>
                   <th style={{ padding: '4px 6px', borderBottom: `1px solid ${C.border}` }} />
-                  <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
-                    <FilterInput value={fDate} onChange={setFDate} placeholder="" C={C} type="date" />
+                  <th style={{ padding: '5px 6px', borderBottom: 'none', overflow: 'visible', position: 'relative' }}>
+                    <CalendarPicker value={fDate} onChange={setFDate} C={C} small />
                   </th>
                   <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
                     <FilterSelect value={fFerme} onChange={v => { setFFerme(v); setFStation('') }}
