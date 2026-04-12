@@ -958,19 +958,19 @@ export default function SaisiePage({ token, auth, C, dark }) {
             <div>
               <SLabel C={C}>Nbr Bras</SLabel>
               <input type="number" value={nbrBras} onChange={e => setNbrBras(e.target.value)}
-                placeholder="0" style={{ ...inputStyle, padding: '7px 10px' }} />
+                placeholder="0" style={{ ...inputStyle, height: 38, padding: '7px 10px' }} />
             </div>
 
             <div>
               <SLabel C={C}>Nbr Goutteurs</SLabel>
               <input type="number" value={nbrGoutteurs} onChange={e => setNbrGoutteurs(e.target.value)}
-                placeholder="0" style={{ ...inputStyle, padding: '7px 10px' }} />
+                placeholder="0" style={{ ...inputStyle, height: 38, padding: '7px 10px' }} />
             </div>
 
             <div>
               <SLabel C={C}>Poids matin (Kg)</SLabel>
               <input type="number" value={poidsMatin} onChange={e => setPoidsMatin(e.target.value)}
-                placeholder="0.00" step="0.01" style={{ ...inputStyle, padding: '7px 10px' }} />
+                placeholder="0.00" step="0.01" style={{ ...inputStyle, height: 38, padding: '7px 10px' }} />
             </div>
 
             <div>
@@ -981,7 +981,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
             <div>
               <SLabel C={C}>Poids soir (Kg)</SLabel>
               <input type="number" value={poidsSoir} onChange={e => setPoidsSoir(e.target.value)}
-                placeholder="0.00" step="0.01" style={{ ...inputStyle, padding: '7px 10px' }} />
+                placeholder="0.00" step="0.01" style={{ ...inputStyle, height: 38, padding: '7px 10px' }} />
             </div>
 
             <div>
@@ -992,7 +992,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
             <div>
               <SLabel C={C}>Bassin (EC)</SLabel>
               <input type="number" value={bassinEC} onChange={e => setBassinEC(e.target.value)}
-                placeholder="0.00" step="0.01" style={{ ...inputStyle, padding: '7px 10px' }} />
+                placeholder="0.00" step="0.01" style={{ ...inputStyle, height: 38, padding: '7px 10px' }} />
             </div>
 
           </div>
@@ -1003,7 +1003,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
               marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 8,
             }}>
               <span style={{ fontSize: 12, color: C.textDim }}>% Ressuyage</span>
-              <span style={{ fontSize: 12, fontWeight: 500, color: C.green }}>{pctRessuyage}%</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: C.green }}>{pctRessuyage}%</span>
             </div>
           )}
         </div>
