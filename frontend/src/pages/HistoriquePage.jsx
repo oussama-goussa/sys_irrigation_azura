@@ -322,8 +322,9 @@ const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','A
 const DAYS_FR   = ['Lu','Ma','Me','Je','Ve','Sa','Di']
 
 function CalendarPicker({ value, onChange, C }) {
-  const [open, setOpen]     = useState(false)
-  const [viewDate, setView] = useState(() => value ? new Date(value) : new Date())
+  const [open, setOpen]       = useState(false)
+  const [viewDate, setView]   = useState(() => value ? new Date(value) : new Date())
+  const [mode, setMode]       = useState('days') // 'days' | 'months' | 'years'
   const ref = useRef(null)
 
   useEffect(() => {
@@ -336,8 +337,9 @@ function CalendarPicker({ value, onChange, C }) {
 
   const year  = viewDate.getFullYear()
   const month = viewDate.getMonth()
-  const firstDay = new Date(year, month, 1)
-  let startDow = firstDay.getDay() - 1
+
+  // ── Build days grid ──
+  let startDow = new Date(year, month, 1).getDay() - 1
   if (startDow < 0) startDow = 6
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const daysInPrev  = new Date(year, month, 0).getDate()
@@ -346,21 +348,29 @@ function CalendarPicker({ value, onChange, C }) {
   for (let i = 1; i <= daysInMonth; i++) cells.push({ day: i, curr: true })
   while (cells.length % 7 !== 0) cells.push({ day: cells.length - startDow - daysInMonth + 1, curr: false })
 
-  const today = new Date()
+  const today    = new Date()
   const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`
 
   const select = (day) => {
     onChange(`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`)
     setOpen(false)
+    setMode('days')
   }
 
   const displayValue = value
     ? new Date(value + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
     : null
 
+  // ── Years range : current year ± 10 ──
+  const startYear = year - 6
+  const years = Array.from({ length: 12 }, (_, i) => startYear + i)
+
+  const btnStyle = { background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '3px 6px', borderRadius: 5, display: 'flex', alignItems: 'center' }
+
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <div onClick={() => setOpen(v => !v)} style={{
+      {/* ── Trigger ── */}
+      <div onClick={() => { setOpen(v => !v); setMode('days') }} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         height: 38, padding: '0 12px',
         border: `1.5px solid ${open ? C.green : C.border}`,
@@ -373,7 +383,7 @@ function CalendarPicker({ value, onChange, C }) {
         <span>{displayValue || 'jj / mm / aaaa'}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {value && (
-            <span onClick={e => { e.stopPropagation(); onChange(today()) }}
+            <span onClick={e => { e.stopPropagation(); onChange('') }}
               style={{ color: C.textDim, cursor: 'pointer', display: 'flex' }}>
               <X size={12} strokeWidth={2.5}/>
             </span>
@@ -382,62 +392,155 @@ function CalendarPicker({ value, onChange, C }) {
         </div>
       </div>
 
+      {/* ── Dropdown ── */}
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 6px)', right: 0,
           background: C.card, border: `1.5px solid ${C.border}`,
           borderRadius: 12, zIndex: 9999,
           boxShadow: `0 8px 32px rgba(0,0,0,0.18)`,
-          padding: '14px 14px 10px', width: 248,
+          padding: '12px 12px 10px', width: 248,
           fontFamily: 'inherit',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <button onClick={() => setView(new Date(year, month - 1, 1))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '3px 6px', borderRadius: 5, display: 'flex' }}>
+
+          {/* ── Header navigation ── */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <button onClick={() => mode === 'years'
+              ? setView(new Date(year - 12, month, 1))
+              : mode === 'months'
+              ? setView(new Date(year - 1, month, 1))
+              : setView(new Date(year, month - 1, 1))
+            } style={btnStyle}>
               <ChevronLeft size={14} strokeWidth={2.5}/>
             </button>
-            <span style={{ fontSize: 12, fontWeight: 800, color: C.text }}>{MONTHS_FR[month]} {year}</span>
-            <button onClick={() => setView(new Date(year, month + 1, 1))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '3px 6px', borderRadius: 5, display: 'flex' }}>
+
+            <div style={{ display: 'flex', gap: 4 }}>
+              {/* Click month → month picker */}
+              <button onClick={() => setMode(m => m === 'months' ? 'days' : 'months')} style={{
+                background: mode === 'months' ? `${C.green}15` : 'none',
+                border: mode === 'months' ? `1px solid ${C.green}40` : '1px solid transparent',
+                borderRadius: 6, cursor: 'pointer', color: C.text,
+                fontSize: 12, fontWeight: 800, fontFamily: 'inherit', padding: '3px 8px',
+              }}>
+                {MONTHS_FR[month]}
+              </button>
+              {/* Click year → year picker */}
+              <button onClick={() => setMode(m => m === 'years' ? 'days' : 'years')} style={{
+                background: mode === 'years' ? `${C.green}15` : 'none',
+                border: mode === 'years' ? `1px solid ${C.green}40` : '1px solid transparent',
+                borderRadius: 6, cursor: 'pointer', color: C.text,
+                fontSize: 12, fontWeight: 800, fontFamily: 'inherit', padding: '3px 8px',
+              }}>
+                {year}
+              </button>
+            </div>
+
+            <button onClick={() => mode === 'years'
+              ? setView(new Date(year + 12, month, 1))
+              : mode === 'months'
+              ? setView(new Date(year + 1, month, 1))
+              : setView(new Date(year, month + 1, 1))
+            } style={btnStyle}>
               <ChevronRight size={14} strokeWidth={2.5}/>
             </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4 }}>
-            {DAYS_FR.map(d => (
-              <div key={d} style={{ textAlign: 'center', fontSize: 9, fontWeight: 700, color: C.textDim, padding: '2px 0', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{d}</div>
-            ))}
-          </div>
+          {/* ── YEAR PICKER ── */}
+          {mode === 'years' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, marginBottom: 8 }}>
+              {years.map(y => {
+                const isCurr = y === year
+                return (
+                  <button key={y} onClick={() => { setView(new Date(y, month, 1)); setMode('months') }}
+                    style={{
+                      background: isCurr ? C.green : 'transparent',
+                      border: `1px solid ${isCurr ? C.green : C.border}`,
+                      borderRadius: 7, cursor: 'pointer',
+                      color: isCurr ? '#fff' : C.text,
+                      fontSize: 12, fontWeight: isCurr ? 800 : 500,
+                      fontFamily: 'inherit', padding: '7px 4px',
+                      transition: 'all 0.1s',
+                    }}
+                    onMouseEnter={e => { if (!isCurr) { e.currentTarget.style.background = `${C.green}15`; e.currentTarget.style.borderColor = `${C.green}50` }}}
+                    onMouseLeave={e => { if (!isCurr) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = C.border }}}
+                  >{y}</button>
+                )
+              })}
+            </div>
+          )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px 0' }}>
-            {cells.map((cell, i) => {
-              const cellStr = cell.curr ? `${year}-${String(month+1).padStart(2,'0')}-${String(cell.day).padStart(2,'0')}` : null
-              const isSelected = cellStr === value
-              const isToday    = cellStr === todayStr
-              return (
-                <div key={i} onClick={() => cell.curr && select(cell.day)}
-                  style={{
-                    textAlign: 'center', fontSize: 11, padding: '5px 0', borderRadius: 6,
-                    cursor: cell.curr ? 'pointer' : 'default',
-                    fontWeight: isSelected ? 800 : isToday ? 700 : 400,
-                    color: isSelected ? '#fff' : isToday ? C.green : cell.curr ? C.text : C.textDim,
-                    background: isSelected ? C.green : 'transparent',
-                    opacity: cell.curr ? 1 : 0.3,
-                    transition: 'all 0.1s', position: 'relative',
-                  }}
-                  onMouseEnter={e => { if (cell.curr && !isSelected) e.currentTarget.style.background = `${C.green}18` }}
-                  onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
-                >
-                  {isToday && !isSelected && (
-                    <span style={{ position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)', width: 3, height: 3, borderRadius: '50%', background: C.green }}/>
-                  )}
-                  {cell.day}
-                </div>
-              )
-            })}
-          </div>
+          {/* ── MONTH PICKER ── */}
+          {mode === 'months' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, marginBottom: 8 }}>
+              {MONTHS_FR.map((mn, mi) => {
+                const isCurr = mi === month
+                return (
+                  <button key={mn} onClick={() => { setView(new Date(year, mi, 1)); setMode('days') }}
+                    style={{
+                      background: isCurr ? C.green : 'transparent',
+                      border: `1px solid ${isCurr ? C.green : C.border}`,
+                      borderRadius: 7, cursor: 'pointer',
+                      color: isCurr ? '#fff' : C.text,
+                      fontSize: 11, fontWeight: isCurr ? 800 : 500,
+                      fontFamily: 'inherit', padding: '7px 4px',
+                      transition: 'all 0.1s',
+                    }}
+                    onMouseEnter={e => { if (!isCurr) { e.currentTarget.style.background = `${C.green}15`; e.currentTarget.style.borderColor = `${C.green}50` }}}
+                    onMouseLeave={e => { if (!isCurr) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = C.border }}}
+                  >{mn.slice(0,3)}</button>
+                )
+              })}
+            </div>
+          )}
 
+          {/* ── DAY PICKER ── */}
+          {mode === 'days' && (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4 }}>
+                {DAYS_FR.map(d => (
+                  <div key={d} style={{ textAlign: 'center', fontSize: 9, fontWeight: 700, color: C.textDim, padding: '2px 0', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{d}</div>
+                ))}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px 0' }}>
+                {cells.map((cell, i) => {
+                  const cellStr    = cell.curr ? `${year}-${String(month+1).padStart(2,'0')}-${String(cell.day).padStart(2,'0')}` : null
+                  const isSelected = cellStr === value
+                  const isToday    = cellStr === todayStr
+                  return (
+                    <div key={i} onClick={() => cell.curr && select(cell.day)}
+                      style={{
+                        textAlign: 'center', fontSize: 11, padding: '5px 0', borderRadius: 6,
+                        cursor: cell.curr ? 'pointer' : 'default',
+                        fontWeight: isSelected ? 800 : isToday ? 700 : 400,
+                        color: isSelected ? '#fff' : isToday ? C.green : cell.curr ? C.text : C.textDim,
+                        background: isSelected ? C.green : 'transparent',
+                        opacity: cell.curr ? 1 : 0.3,
+                        transition: 'all 0.1s', position: 'relative',
+                      }}
+                      onMouseEnter={e => { if (cell.curr && !isSelected) e.currentTarget.style.background = `${C.green}18` }}
+                      onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
+                    >
+                      {isToday && !isSelected && (
+                        <span style={{ position: 'absolute', bottom: 1, left: '50%', transform: 'translateX(-50%)', width: 3, height: 3, borderRadius: '50%', background: C.green }}/>
+                      )}
+                      {cell.day}
+                    </div>
+                  )
+                })}
+              </div>
+            </>
+          )}
+
+          {/* ── Footer ── */}
           <div style={{ marginTop: 10, paddingTop: 8, borderTop: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between' }}>
-            <button onClick={() => { onChange(''); setOpen(false) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textDim, fontSize: 10, fontWeight: 700, fontFamily: 'inherit', padding: '3px 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Effacer</button>
-            <button onClick={() => { onChange(todayStr); setOpen(false) }} style={{ background: `${C.green}15`, border: `1px solid ${C.green}40`, borderRadius: 6, cursor: 'pointer', color: C.green, fontSize: 10, fontWeight: 800, fontFamily: 'inherit', padding: '3px 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Aujourd'hui</button>
+            <button onClick={() => { onChange(''); setOpen(false); setMode('days') }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textDim, fontSize: 10, fontWeight: 700, fontFamily: 'inherit', padding: '3px 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Effacer
+            </button>
+            <button onClick={() => { onChange(todayStr); setOpen(false); setMode('days') }}
+              style={{ background: `${C.green}15`, border: `1px solid ${C.green}40`, borderRadius: 6, cursor: 'pointer', color: C.green, fontSize: 10, fontWeight: 800, fontFamily: 'inherit', padding: '3px 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Aujourd'hui
+            </button>
           </div>
         </div>
       )}
