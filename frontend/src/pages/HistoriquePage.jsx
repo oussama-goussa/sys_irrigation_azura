@@ -55,6 +55,8 @@ function TInput({ value, onChange, disabled = false, width = 72, C }) {
 function TimeInput({ value, onChange, C, small = false }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const triggerRef = useRef(null)
+  const [pos, setPos] = useState({ top: 0, left: 0 })
   const [h, m] = value ? value.split(':') : ['00', '00']
 
   useEffect(() => {
@@ -62,6 +64,14 @@ function TimeInput({ value, onChange, C, small = false }) {
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
   }, [])
+
+  const handleOpen = () => {
+    if (triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect()
+      setPos({ top: r.bottom + 4, left: r.left + r.width / 2 })
+    }
+    setOpen(v => !v)
+  }
 
   const inc = (type) => {
     const hv = parseInt(h || '0'); const mv = parseInt(m || '0')
@@ -76,7 +86,7 @@ function TimeInput({ value, onChange, C, small = false }) {
 
   return (
     <div ref={ref} style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
-      <div onClick={() => setOpen(v => !v)} style={{
+      <div ref={triggerRef} onClick={handleOpen} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         height: small ? 28 : 32, padding: '0 8px', width: '100%',
         border: `1.5px solid ${open ? C.green : value && value !== '00:00' ? C.green + '55' : C.border}`,
@@ -91,7 +101,7 @@ function TimeInput({ value, onChange, C, small = false }) {
       </div>
       {open && (
         <div style={{
-          position: 'absolute', top: 'calc(100% + 4px)', left: '50%',
+          position: 'fixed', top: pos.top, left: pos.left,
           transform: 'translateX(-50%)',
           background: C.card, border: `1.5px solid ${C.border}`,
           borderRadius: 10, zIndex: 9999,
