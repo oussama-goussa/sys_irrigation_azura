@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Plus, Save, ChevronDown, ChevronUp, Droplets, ChevronLeft, ChevronRight,
-  FlaskConical, BarChart2, Trash2, AlertCircle, Check,
+  FlaskConical, BarChart2, Trash2, AlertCircle, Check, X,
   ClipboardList,
 } from 'lucide-react'
 import { getDevices, saveSaisie } from '../api/client.js'
