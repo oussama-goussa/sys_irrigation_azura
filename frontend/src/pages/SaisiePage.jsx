@@ -134,7 +134,7 @@ function CalendarPicker({ value, onChange, C, small = false }) {
       {/* ── Trigger ── */}
       <div ref={triggerRef} onClick={handleOpen} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        height: small ? 28 : 32, padding: small ? '0 8px' : '0 12px',
+        height: small ? 28 : 38, padding: small ? '0 8px' : '0 12px',
         fontSize: small ? 12 : 12,
         border: `1.5px solid ${open ? C.green : C.border}`,
         borderRadius: 8, background: C.inputBg,
@@ -322,11 +322,18 @@ function TimeInput({ value, onChange, C }) {
   const triggerRef = useRef(null)
   const [pos, setPos] = useState({ top: 0, left: 0 })
   const [h, m] = value ? value.split(':') : ['00', '00']
+  const [hRaw, setHRaw] = useState(null)
+  const [mRaw, setMRaw] = useState(null)
 
   useEffect(() => {
     const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    const onScroll = () => setOpen(false)
     document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
+    window.addEventListener('scroll', onScroll, true)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      window.removeEventListener('scroll', onScroll, true)
+    }
   }, [])
 
   const handleOpen = () => {
@@ -401,9 +408,38 @@ function TimeInput({ value, onChange, C }) {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
             <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}
               onClick={() => inc('h')}><ChevronUp size={16} strokeWidth={2.5}/></button>
-            <input type="text" inputMode="numeric" maxLength={2} value={h || '00'}
-              onChange={e => { const v = parseInt(e.target.value)||0; onChange(`${String(Math.min(23,Math.max(0,v))).padStart(2,'0')}:${m||'00'}`) }}
-              style={{ fontSize: 22, fontWeight: 630, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
+            <input type="text" inputMode="numeric" maxLength={2}
+            value={type === 'h' ? (hRaw ?? h ?? '00') : (mRaw ?? m ?? '00')}
+            onChange={e => {
+                const raw = e.target.value.replace(/\D/g, '').slice(0, 2)
+                if (type === 'h') {
+                setHRaw(raw)
+                if (raw.length === 2) {
+                    const v = Math.min(23, parseInt(raw) || 0)
+                    onChange(`${String(v).padStart(2, '0')}:${m || '00'}`)
+                    setHRaw(null)
+                }
+                } else {
+                setMRaw(raw)
+                if (raw.length === 2) {
+                    const v = Math.min(59, parseInt(raw) || 0)
+                    onChange(`${h || '00'}:${String(v).padStart(2, '0')}`)
+                    setMRaw(null)
+                }
+                }
+            }}
+            onBlur={() => {
+                if (type === 'h') {
+                const v = Math.min(23, parseInt(hRaw ?? h) || 0)
+                onChange(`${String(v).padStart(2, '0')}:${m || '00'}`)
+                setHRaw(null)
+                } else {
+                const v = Math.min(59, parseInt(mRaw ?? m) || 0)
+                onChange(`${h || '00'}:${String(v).padStart(2, '0')}`)
+                setMRaw(null)
+                }
+            }}
+            style={{ fontSize: 22, fontWeight: 630, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
             />
             <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}
               onClick={() => dec('h')}><ChevronDown size={16} strokeWidth={2.5}/></button>
