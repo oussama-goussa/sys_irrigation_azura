@@ -59,6 +59,8 @@ function TimeInput({ value, onChange, C, small = false }) {
   const [pos, setPos] = useState({ top: 0, left: 0 })
   const [h, m] = value ? value.split(':') : ['00', '00']
   const portalRef = useRef(null)
+  const [hRaw, setHRaw] = useState(null)
+  const [mRaw, setMRaw] = useState(null)
 
   useEffect(() => {
     const close = (e) => { if (ref.current && !ref.current.contains(e.target) && portalRef.current && !portalRef.current.contains(e.target)) setOpen(false) }
@@ -118,23 +120,37 @@ function TimeInput({ value, onChange, C, small = false }) {
                   <ChevronUp size={16} strokeWidth={2.5} />
                 </button>
                 <input type="text" inputMode="numeric" maxLength={2}
-                  value={type === 'h' ? (h || '00') : (m || '00')}
-                  onChange={e => {
+                value={type === 'h' ? (hRaw ?? h ?? '00') : (mRaw ?? m ?? '00')}
+                onChange={e => {
                     const raw = e.target.value.replace(/\D/g, '').slice(0, 2)
                     if (type === 'h') {
-                      const v = Math.min(23, parseInt(raw) || 0)
-                      onChange(`${String(v).padStart(2, '0')}:${m || '00'}`)
-                    } else {
-                      const v = Math.min(59, parseInt(raw) || 0)
-                      onChange(`${h || '00'}:${String(v).padStart(2, '0')}`)
+                    setHRaw(raw)
+                    if (raw.length === 2) {
+                        const v = Math.min(23, parseInt(raw) || 0)
+                        onChange(`${String(v).padStart(2, '0')}:${m || '00'}`)
+                        setHRaw(null)
                     }
-                  }}
-                  onBlur={e => {
-                    const v = parseInt(e.target.value) || 0
-                    if (type === 'h') onChange(`${String(Math.min(23, v)).padStart(2, '0')}:${m || '00'}`)
-                    else onChange(`${h || '00'}:${String(Math.min(59, v)).padStart(2, '0')}`)
-                  }}
-                  style={{ fontSize: 22, fontWeight: 630, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
+                    } else {
+                    setMRaw(raw)
+                    if (raw.length === 2) {
+                        const v = Math.min(59, parseInt(raw) || 0)
+                        onChange(`${h || '00'}:${String(v).padStart(2, '0')}`)
+                        setMRaw(null)
+                    }
+                    }
+                }}
+                onBlur={() => {
+                    if (type === 'h') {
+                    const v = Math.min(23, parseInt(hRaw ?? h) || 0)
+                    onChange(`${String(v).padStart(2, '0')}:${m || '00'}`)
+                    setHRaw(null)
+                    } else {
+                    const v = Math.min(59, parseInt(mRaw ?? m) || 0)
+                    onChange(`${h || '00'}:${String(v).padStart(2, '0')}`)
+                    setMRaw(null)
+                    }
+                }}
+                style={{ fontSize: 22, fontWeight: 630, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
                 />
                 <button onClick={() => dec(type)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px' }}>
                   <ChevronDown size={16} strokeWidth={2.5} />
