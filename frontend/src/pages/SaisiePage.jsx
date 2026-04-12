@@ -316,7 +316,7 @@ function CalendarPicker({ value, onChange, C, small = false }) {
 }
 
 // ── TimeInput — style scroll hh:mm ───────────────────────────
-function TimeInput({ value, onChange, C }) {
+function TimeInput({ value, onChange, C, small = false }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
   const triggerRef = useRef(null)
@@ -365,7 +365,7 @@ function TimeInput({ value, onChange, C }) {
   }
   const numStyle = {
     fontSize: 22, fontWeight: 630, color: C.text,
-    width: 48, textAlign: 'center',
+    width: 48, textAlign: 'center', 
     background: 'none', border: 'none', outline: 'none',
     fontFamily: 'inherit', padding: 0,
   }
@@ -383,7 +383,7 @@ function TimeInput({ value, onChange, C }) {
           borderRadius: 7, background: C.inputBg,
           cursor: 'pointer', transition: 'border-color 0.15s',
           fontSize: 12, color: value ? C.text : C.textDim,
-          gap: 4, fontWeight: 630,
+          gap: 4, fontWeight: 630, height: small ? 28 : 38,
         }}
       >
         <span>{h || '00'}</span>
@@ -1066,7 +1066,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
                     </div>
                   </td>
                   <td style={{ padding: '6px 4px', textAlign: 'center' }}>
-                    <TimeInput value={t.heure} onChange={v => updateTour(t.id, 'heure', v)} C={C} />
+                    <TimeInput value={t.heure} onChange={v => updateTour(t.id, 'heure', v)} C={C} small/>
                   </td>
                   <td style={{ padding: '6px 4px', textAlign: 'center' }}>
                     <div style={{ fontSize: 12, fontWeight: 630, color: t.tempsRepos !== null ? C.textMuted : C.textDim }}>
