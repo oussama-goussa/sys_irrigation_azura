@@ -183,6 +183,7 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
   const [dateTo,   setDateTo]   = useState('')
   const [exporting, setExporting] = useState(false)
   const [error, setError] = useState('')
+  const [showCal, setShowCal] = useState(false)
 
   // Fermes autorisées
   const isAdmin = auth?.role === 'admin'
@@ -275,90 +276,76 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
 
           {/* Sélection fermes */}
           <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
               letterSpacing: '0.1em', color: C.textMuted, marginBottom: 10 }}>
               Fermes à exporter
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {allowedFarms.map(name => {
-                const selected = selectedFarms.includes(name)
-                return (
-                  <button key={name} onClick={() => toggleFarm(name)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 6,
-                      padding: '7px 14px', borderRadius: 8,
-                      border: `1.5px solid ${selected ? C.green : C.border}`,
-                      background: selected ? `${C.green}15` : 'transparent',
-                      color: selected ? C.green : C.textMuted,
-                      fontSize: 12, fontWeight: 700, fontFamily: 'inherit',
-                      cursor: 'pointer', transition: 'all 0.15s',
-                    }}>
-                    {selected && <Check size={12} strokeWidth={2.5} />}
-                    {name}
-                  </button>
-                )
-              })}
-              {allowedFarms.length === 0 && (
-                <div style={{ color: C.textDim, fontSize: 12 }}>
-                  Aucune ferme disponible
-                </div>
-              )}
-            </div>
-            {selectedFarms.length > 0 && (
-              <div style={{ fontSize: 11, color: C.textDim, marginTop: 6 }}>
-                {selectedFarms.length} ferme{selectedFarms.length > 1 ? 's' : ''} sélectionnée{selectedFarms.length > 1 ? 's' : ''}
-              </div>
-            )}
           </div>
+          <select
+              value={selectedFarms[0] || ''}
+              onChange={e => setSelectedFarms(e.target.value ? [e.target.value] : [])}
+              style={{
+              width: '100%', padding: '9px 13px', borderRadius: 8,
+              border: `1.5px solid ${selectedFarms.length ? C.green : C.border}`,
+              background: C.inputBg, color: selectedFarms.length ? C.text : C.textDim,
+              fontSize: 13, fontFamily: 'inherit', outline: 'none', cursor: 'pointer',
+              }}
+          >
+            <option value=''>Sélectionner une ferme…</option>
+            {allowedFarms.map(name => (
+            <option key={name} value={name}>{name}</option>
+            ))}
+        </select>
+        </div>
 
-          {/* Période — double calendrier */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+          {/* Période */}
+          <div style={{ marginBottom: 20, position: 'relative' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
               letterSpacing: '0.1em', color: C.textMuted, marginBottom: 10 }}>
               Période
-            </div>
-
-            {/* Affichage dates sélectionnées */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-              <div style={{
-                padding: '8px 16px', borderRadius: 8,
-                border: `1.5px solid ${dateFrom ? C.green : C.border}`,
-                background: dateFrom ? `${C.green}10` : C.toggleBg,
-                fontSize: 13, fontWeight: 700,
-                color: dateFrom ? C.green : C.textDim,
-                minWidth: 130, textAlign: 'center',
-              }}>
-                {dateFrom ? fmtDisplay(dateFrom) : 'Date début'}
-              </div>
-              <div style={{ color: C.textDim, fontSize: 16, fontWeight: 300 }}>→</div>
-              <div style={{
-                padding: '8px 16px', borderRadius: 8,
-                border: `1.5px solid ${dateTo ? C.green : C.border}`,
-                background: dateTo ? `${C.green}10` : C.toggleBg,
-                fontSize: 13, fontWeight: 700,
-                color: dateTo ? C.green : C.textDim,
-                minWidth: 130, textAlign: 'center',
-              }}>
-                {dateTo ? fmtDisplay(dateTo) : 'Date fin'}
-              </div>
+          </div>
+  
+          {/* Input cliquable */}
+          <div
+              onClick={() => setShowCal(v => !v)}
+              style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '9px 14px', borderRadius: 8, cursor: 'pointer',
+              border: `1.5px solid ${showCal ? C.green : (dateFrom ? C.green : C.border)}`,
+              background: C.inputBg, transition: 'border-color 0.15s',
+              }}
+          >
+              <span style={{ fontSize: 13, fontWeight: 700,
+              color: dateFrom ? C.green : C.textDim, minWidth: 120, textAlign: 'center' }}>
+              {dateFrom ? fmtDisplay(dateFrom) : 'Date début'}
+              </span>
+              <span style={{ color: C.textDim }}>→</span>
+              <span style={{ fontSize: 13, fontWeight: 700,
+              color: dateTo ? C.green : C.textDim, minWidth: 120, textAlign: 'center' }}>
+              {dateTo ? fmtDisplay(dateTo) : 'Date fin'}
+              </span>
               {dateFrom && dateTo && (
-                <div style={{ fontSize: 11, color: C.textDim }}>
-                  {Math.round((new Date(dateTo) - new Date(dateFrom)) / 86400000) + 1} jour{Math.round((new Date(dateTo) - new Date(dateFrom)) / 86400000) + 1 > 1 ? 's' : ''}
-                </div>
+              <span style={{ fontSize: 11, color: C.textDim, marginLeft: 'auto' }}>
+                  {Math.round((new Date(dateTo) - new Date(dateFrom)) / 86400000) + 1} jours
+              </span>
               )}
-            </div>
+          </div>
 
-            {/* Double calendrier */}
-            <div style={{
+          {/* Popover calendrier */}
+          {showCal && (
+              <div style={{
+              position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0,
               border: `1.5px solid ${C.border}`, borderRadius: 12,
               padding: '16px 20px', background: dark ? C.surface : '#fafcfb',
-            }}>
+              boxShadow: `0 8px 32px ${C.shadow}`, zIndex: 999,
+              }}>
               <RangeCalendar
-                dateFrom={dateFrom} dateTo={dateTo}
-                onChangeFrom={setDateFrom} onChangeTo={setDateTo}
-                C={C}
+                  dateFrom={dateFrom} dateTo={dateTo}
+                  onChangeFrom={setDateFrom}
+                  onChangeTo={(d) => { setDateTo(d); if (d) setShowCal(false) }}
+                  C={C}
               />
-            </div>
+              </div>
+          )}
           </div>
 
           {/* Résumé export */}
