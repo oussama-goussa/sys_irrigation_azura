@@ -151,7 +151,7 @@ function SSelect({ value, onChange, options, placeholder, C, width = '100%', dis
         transition: 'border-color 0.15s', gap: 6, opacity: disabled ? 0.5 : 1,
       }}>
         <span style={{ fontSize: 12, color: label ? C.text : C.textDim,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          overflow: 'visible', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {label || placeholder}
         </span>
         <span style={{ color: C.textDim, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
@@ -232,7 +232,7 @@ function FilterSelect({ value, onChange, options, C }) {
         cursor: 'pointer', transition: 'border-color 0.15s', gap: 3,
       }}>
         <span style={{ fontSize: 11, color: label ? C.text : C.textDim,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+          overflow: 'visible', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
           {label || 'Tous'}
         </span>
         <span style={{ color: C.textDim, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
@@ -243,7 +243,7 @@ function FilterSelect({ value, onChange, options, C }) {
         <div style={{
           position: 'absolute', top: 'calc(100% + 2px)', left: 0, minWidth: '100%',
           background: C.card, border: `1.5px solid ${C.border}`,
-          borderRadius: 8, zIndex: 9999, boxShadow: `0 6px 24px rgba(0,0,0,0.15)`,
+          borderRadius: 8, zIndex: 99999, boxShadow: `0 6px 24px rgba(0,0,0,0.15)`,
           maxHeight: 200, overflowY: 'auto',
         }}>
           <div onClick={() => { onChange(''); setOpen(false) }}
