@@ -287,7 +287,7 @@ async def export_saisie_excel(
         raise HTTPException(400, "Aucune ferme spécifiée")
 
     # Sécurité : opérateur ne peut exporter que ses fermes
-    if current_user.role != "admin":
+    if current_user["role"] != "admin":
         allowed = current_user.get("farm_names") or []
         farms = [f for f in farms if f in allowed]
         if not farms:
