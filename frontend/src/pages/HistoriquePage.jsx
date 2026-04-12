@@ -325,7 +325,9 @@ function CalendarPicker({ value, onChange, C, small = false }) {
   const [open, setOpen]       = useState(false)
   const [viewDate, setView]   = useState(() => value ? new Date(value) : new Date())
   const [mode, setMode]       = useState('days') // 'days' | 'months' | 'years'
-  const ref = useRef(null)
+  const [pos, setPos]         = useState({ top: 0, left: 0, width: 0 })
+  const ref        = useRef(null)
+  const triggerRef = useRef(null)
 
   useEffect(() => {
     const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
@@ -367,10 +369,24 @@ function CalendarPicker({ value, onChange, C, small = false }) {
 
   const btnStyle = { background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '3px 6px', borderRadius: 5, display: 'flex', alignItems: 'center' }
 
+  const handleOpen = () => {
+    const r = triggerRef.current.getBoundingClientRect()
+    // Open above if too close to bottom of viewport
+    const spaceBelow = window.innerHeight - r.bottom
+    const calH = 320
+    if (spaceBelow < calH) {
+      setPos({ bottom: window.innerHeight - r.top + 4, top: 'auto', left: r.left, width: r.width })
+    } else {
+      setPos({ top: r.bottom + 4, bottom: 'auto', left: r.left, width: r.width })
+    }
+    setOpen(v => !v)
+    setMode('days')
+  }
+
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       {/* ── Trigger ── */}
-      <div onClick={() => { setOpen(v => !v); setMode('days') }} style={{
+      <div ref={triggerRef} onClick={handleOpen} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         height: small ? 28 : 38, padding: small ? '0 8px' : '0 12px',
         fontSize: small ? 11 : 13,
@@ -396,9 +412,12 @@ function CalendarPicker({ value, onChange, C, small = false }) {
       {/* ── Dropdown ── */}
       {open && (
         <div style={{
-          position: 'absolute', top: 'calc(100% + 6px)', right: 0,
+          position: 'fixed',
+          top: pos.top !== 'auto' ? pos.top : 'auto',
+          bottom: pos.bottom !== 'auto' ? pos.bottom : 'auto',
+          left: pos.left,
           background: C.card, border: `1.5px solid ${C.border}`,
-          borderRadius: 12, zIndex: 9999,
+          borderRadius: 12, zIndex: 99999,
           boxShadow: `0 8px 32px rgba(0,0,0,0.18)`,
           padding: '12px 12px 10px', width: 248,
           fontFamily: 'inherit',
