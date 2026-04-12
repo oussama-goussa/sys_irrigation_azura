@@ -328,9 +328,10 @@ function CalendarPicker({ value, onChange, C, small = false }) {
   const [pos, setPos]         = useState({ top: 0, left: 0, width: 0 })
   const ref        = useRef(null)
   const triggerRef = useRef(null)
+  const portalRef  = useRef(null)
 
   useEffect(() => {
-    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target) && portalRef.current && !portalRef.current.contains(e.target)) setOpen(false) }
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
   }, [open])
@@ -411,7 +412,7 @@ function CalendarPicker({ value, onChange, C, small = false }) {
 
       {/* ── Dropdown ── */}
       {open && createPortal(
-        <div style={{
+        <div ref={portalRef} style={{
           position: 'fixed',
           top: pos.top !== 'auto' ? pos.top : 'auto',
           bottom: pos.bottom !== 'auto' ? pos.bottom : 'auto',
