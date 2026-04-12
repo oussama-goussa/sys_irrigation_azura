@@ -408,39 +408,25 @@ function TimeInput({ value, onChange, C }) {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
             <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}
               onClick={() => inc('h')}><ChevronUp size={16} strokeWidth={2.5}/></button>
-            <input type="text" inputMode="numeric" maxLength={2}
-            value={type === 'h' ? (hRaw ?? h ?? '00') : (mRaw ?? m ?? '00')}
+          {/* HH */}
+          <input type="text" inputMode="numeric" maxLength={2}
+            value={hRaw ?? h ?? '00'}
             onChange={e => {
-                const raw = e.target.value.replace(/\D/g, '').slice(0, 2)
-                if (type === 'h') {
-                setHRaw(raw)
-                if (raw.length === 2) {
-                    const v = Math.min(23, parseInt(raw) || 0)
-                    onChange(`${String(v).padStart(2, '0')}:${m || '00'}`)
-                    setHRaw(null)
-                }
-                } else {
-                setMRaw(raw)
-                if (raw.length === 2) {
-                    const v = Math.min(59, parseInt(raw) || 0)
-                    onChange(`${h || '00'}:${String(v).padStart(2, '0')}`)
-                    setMRaw(null)
-                }
-                }
-            }}
-            onBlur={() => {
-                if (type === 'h') {
-                const v = Math.min(23, parseInt(hRaw ?? h) || 0)
+              const raw = e.target.value.replace(/\D/g, '').slice(0, 2)
+              setHRaw(raw)
+              if (raw.length === 2) {
+                const v = Math.min(23, parseInt(raw) || 0)
                 onChange(`${String(v).padStart(2, '0')}:${m || '00'}`)
                 setHRaw(null)
-                } else {
-                const v = Math.min(59, parseInt(mRaw ?? m) || 0)
-                onChange(`${h || '00'}:${String(v).padStart(2, '0')}`)
-                setMRaw(null)
-                }
+              }
             }}
-            style={{ fontSize: 22, fontWeight: 630, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
-            />
+            onBlur={() => {
+              const v = Math.min(23, parseInt(hRaw ?? h) || 0)
+              onChange(`${String(v).padStart(2, '0')}:${m || '00'}`)
+              setHRaw(null)
+            }}
+            style={{ fontSize: 22, fontWeight: 700, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
+          />
             <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}
               onClick={() => dec('h')}><ChevronDown size={16} strokeWidth={2.5}/></button>
           </div>
@@ -451,9 +437,24 @@ function TimeInput({ value, onChange, C }) {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
             <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}
               onClick={() => inc('m')}><ChevronUp size={16} strokeWidth={2.5}/></button>
-            <input type="text" inputMode="numeric" maxLength={2} value={m || '00'}
-              onChange={e => { const v = parseInt(e.target.value)||0; onChange(`${h||'00'}:${String(Math.min(59,Math.max(0,v))).padStart(2,'0')}`) }}
-              style={{ fontSize: 22, fontWeight: 630, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
+            {/* MM */}
+            <input type="text" inputMode="numeric" maxLength={2}
+              value={mRaw ?? m ?? '00'}
+              onChange={e => {
+                const raw = e.target.value.replace(/\D/g, '').slice(0, 2)
+                setMRaw(raw)
+                if (raw.length === 2) {
+                  const v = Math.min(59, parseInt(raw) || 0)
+                  onChange(`${h || '00'}:${String(v).padStart(2, '0')}`)
+                  setMRaw(null)
+                }
+              }}
+              onBlur={() => {
+                const v = Math.min(59, parseInt(mRaw ?? m) || 0)
+                onChange(`${h || '00'}:${String(v).padStart(2, '0')}`)
+                setMRaw(null)
+              }}
+              style={{ fontSize: 22, fontWeight: 700, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
             />
             <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}
               onClick={() => dec('m')}><ChevronDown size={16} strokeWidth={2.5}/></button>
