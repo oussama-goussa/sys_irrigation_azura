@@ -288,7 +288,7 @@ async def export_saisie_excel(
 
     # Sécurité : opérateur ne peut exporter que ses fermes
     if current_user.role != "admin":
-        allowed = current_user.farm_names or []
+        allowed = current_user.get("farm_names") or []
         farms = [f for f in farms if f in allowed]
         if not farms:
             raise HTTPException(403, "Accès refusé aux fermes demandées")
