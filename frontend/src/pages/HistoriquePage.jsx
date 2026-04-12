@@ -908,7 +908,7 @@ function ToursTable({ saisieId, token, C, dark }) {
   )
 
   const TH2 = ({ children, color }) => (
-    <th style={{ padding: '7px 8px', fontSize: 12, fontWeight: 900, textTransform: 'uppercase',
+    <th style={{ padding: '7px 8px', fontSize: 12, fontWeight: 680, textTransform: 'capitalize',
       letterSpacing: '0.07em', color: color || C.textDim, textAlign: 'center',
       whiteSpace: 'nowrap', background: dark ? 'rgba(52,217,111,0.05)' : 'rgba(24,120,63,0.04)',
       borderBottom: `1px solid ${C.border}` }}>{children}</th>
