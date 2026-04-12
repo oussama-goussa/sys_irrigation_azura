@@ -323,7 +323,7 @@ const DAYS_FR   = ['Lu','Ma','Me','Je','Ve','Sa','Di']
 
 function CalendarPicker({ value, onChange, C, small = false }) {
   const [open, setOpen]       = useState(false)
-  const [viewDate, setView]   = useState(() => value ? new Date(value) : new Date())
+  const [viewDate, setView] = useState(() => value ? new Date(value + 'T00:00:00') : new Date())
   const [mode, setMode]       = useState('days') // 'days' | 'months' | 'years'
   const [pos, setPos]         = useState({ top: 0, left: 0, width: 0 })
   const ref        = useRef(null)
@@ -335,7 +335,7 @@ function CalendarPicker({ value, onChange, C, small = false }) {
     return () => document.removeEventListener('mousedown', close)
   }, [open])
 
-  useEffect(() => { if (value) setView(new Date(value)) }, [value])
+  useEffect(() => { if (value) setView(new Date(value + 'T00:00:00')) }, [value])
 
   const year  = viewDate.getFullYear()
   const month = viewDate.getMonth()
@@ -389,7 +389,7 @@ function CalendarPicker({ value, onChange, C, small = false }) {
       <div ref={triggerRef} onClick={handleOpen} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         height: small ? 28 : 38, padding: small ? '0 8px' : '0 12px',
-        fontSize: small ? 11 : 13,
+        fontSize: small ? 12 : 13,
         border: `1.5px solid ${open ? C.green : C.border}`,
         borderRadius: 8, background: C.inputBg,
         cursor: 'pointer', transition: 'border-color 0.15s',
@@ -397,7 +397,7 @@ function CalendarPicker({ value, onChange, C, small = false }) {
         fontFamily: 'inherit', fontWeight: value ? 700 : 400,
         boxSizing: 'border-box', width: '100%',
       }}>
-        <span>{displayValue || 'jj / mm / aaaa'}</span>
+        <span>{displayValue || 'jj/mm/aaaa'}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {value && (
             <span onClick={e => { e.stopPropagation(); onChange('') }}
