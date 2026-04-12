@@ -1197,19 +1197,19 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                 <tr>
                   <TH w={40} />
                   <TH w={110} center>Date</TH>
-                  <TH w={90} center>Ferme</TH>
-                  <TH w={60} center>Station</TH>
-                  <TH w={65} center>Serre</TH>
-                  <TH w={58} center>Vanne</TH>
-                  <TH w={72} center>Bras</TH>
-                  <TH w={82} center>Gout.</TH>
-                  <TH w={90} center>Pds Mat.</TH>
-                  <TH w={82} center>H. Mat.</TH>
+                  <TH w={75} center>Ferme</TH>
+                  <TH w={75} center>Station</TH>
+                  <TH w={75} center>Serre</TH>
+                  <TH w={80} center>Vanne</TH>
+                  <TH w={80} center>Bras</TH>
+                  <TH w={80} center>Gout.</TH>
+                  <TH w={80} center>Pds Mat.</TH>
+                  <TH w={80} center>H. Mat.</TH>
                   <TH w={90} center>Pds Soir</TH>
-                  <TH w={82} center>H. Soir</TH>
-                  <TH w={82} center>Bassin EC</TH>
-                  <TH w={95} center color={C.green}>Séchage %</TH>
-                  <TH w={120} center>Actions</TH>
+                  <TH w={80} center>H. Soir</TH>
+                  <TH w={80} center>Bassin EC</TH>
+                  <TH w={80} center color={C.green}>Séchage %</TH>
+                  <TH w={80} center>Actions</TH>
                 </tr>
                 {/* Filtres */}
                 <tr style={{ background: dark ? 'rgba(255,255,255,0.025)' : 'rgba(24,120,63,0.025)', borderBottom: `1.5px solid ${C.border}` }}>
