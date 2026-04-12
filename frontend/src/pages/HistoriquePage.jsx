@@ -45,7 +45,7 @@ function TInput({ value, onChange, disabled = false, width = 72, C }) {
         background: disabled ? 'transparent' : C.inputBg,
         color: disabled ? C.green : C.text,
         fontSize: 12, fontFamily: 'inherit', outline: 'none',
-        fontWeight: disabled ? 680 : 680,
+        fontWeight: disabled ? 630 : 630,
       }}
     />
   )
@@ -83,7 +83,7 @@ function TimeInput({ value, onChange, C, small = false }) {
         borderRadius: 7, background: C.inputBg,
         cursor: 'pointer', transition: 'border-color 0.15s',
         fontSize: 12, color: value && value !== '00:00' ? C.text : C.textDim,
-        gap: 4, fontWeight: 680, boxSizing: 'border-box',
+        gap: 4, fontWeight: 630, boxSizing: 'border-box',
       }}>
         <span>{h || '00'}</span>
         <span style={{ color: C.textDim }}>:</span>
@@ -113,7 +113,7 @@ function TimeInput({ value, onChange, C, small = false }) {
                     if (type === 'h') onChange(`${String(Math.min(23, Math.max(0, v))).padStart(2, '0')}:${m || '00'}`)
                     else onChange(`${h || '00'}:${String(Math.min(59, Math.max(0, v))).padStart(2, '00')}`)
                   }}
-                  style={{ fontSize: 22, fontWeight: 680, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
+                  style={{ fontSize: 22, fontWeight: 630, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
                 />
                 <button onClick={() => dec(type)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px' }}>
                   <ChevronDown size={16} strokeWidth={2.5} />
@@ -145,7 +145,7 @@ function SSelect({ value, onChange, options, placeholder, C, width = '100%', dis
     <div ref={ref} style={{ position: 'relative', width }}>
       <div onClick={() => !disabled && setOpen(v => !v)} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 10px', height: 38, fontWeight: 680,
+        padding: '0 10px', height: 38, fontWeight: 630,
         border: `1.5px solid ${open ? C.green : C.border}`,
         borderRadius: 8, background: disabled ? C.toggleBg : C.inputBg,
         cursor: disabled ? 'not-allowed' : 'pointer',
@@ -244,7 +244,7 @@ function FilterSelect({ value, onChange, options, C }) {
       overflowY: 'auto',
     }}>
       <div onClick={() => { onChange(''); setOpen(false) }}
-        style={{ padding: '8px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 680,
+        style={{ padding: '8px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 630,
           color: !value ? C.green : C.textMuted,
           background: !value ? `${C.green}12` : 'transparent' }}
         onMouseEnter={e => e.currentTarget.style.background = !value ? `${C.green}18` : C.tableHover}
@@ -256,7 +256,7 @@ function FilterSelect({ value, onChange, options, C }) {
         const sel = val === value
         return (
           <div key={val} onClick={() => { onChange(val); setOpen(false) }}
-            style={{ padding: '8px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 680,
+            style={{ padding: '8px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 630,
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               color: sel ? C.green : C.textMuted,
               background: sel ? `${C.green}12` : 'transparent' }}
@@ -302,7 +302,7 @@ function FilterInput({ value, onChange, placeholder, C, type = 'text' }) {
       <input type={type} value={value} onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         style={{ width: '100%', height: 28, padding: '0 22px 0 7px', borderRadius: 5,
-          border: `1.5px solid ${value ? C.green + '60' : C.border}`, fontWeight: 680,
+          border: `1.5px solid ${value ? C.green + '60' : C.border}`, fontWeight: 630,
           background: C.inputBg, color: C.text, fontSize: 12,
           fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
           transition: 'border-color 0.15s' }} />
@@ -320,7 +320,7 @@ function FilterInput({ value, onChange, placeholder, C, type = 'text' }) {
 // ── TH helper for EditModal ───────────────────────────────────
 function THm({ children, w, color, C }) {
   return (
-    <th style={{ padding: '7px 5px', textAlign: 'center', fontSize: 12, fontWeight: 680,
+    <th style={{ padding: '7px 5px', textAlign: 'center', fontSize: 12, fontWeight: 630,
       textTransform: 'uppercase', letterSpacing: '0em', color: color || C.textDim,
       whiteSpace: 'nowrap', width: w, borderBottom: `1.5px solid ${C.border}` }}>
       {children}
@@ -357,12 +357,12 @@ function ConfirmModal({ saisie, onConfirm, onCancel, C }) {
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onCancel} style={{ padding: '8px 16px', borderRadius: 8,
             border: `1.5px solid ${C.border}`, background: 'transparent',
-            color: C.textMuted, fontSize: 12, fontWeight: 680, fontFamily: 'inherit', cursor: 'pointer' }}>
+            color: C.textMuted, fontSize: 12, fontWeight: 630, fontFamily: 'inherit', cursor: 'pointer' }}>
             Annuler
           </button>
           <button onClick={onConfirm} style={{ padding: '8px 16px', borderRadius: 8,
             border: `1.5px solid ${C.red}`, background: 'transparent',
-            color: C.red, fontSize: 12, fontWeight: 680, fontFamily: 'inherit', cursor: 'pointer' }}>
+            color: C.red, fontSize: 12, fontWeight: 630, fontFamily: 'inherit', cursor: 'pointer' }}>
             <Trash2 size={12} strokeWidth={2} style={{ marginRight: 5, verticalAlign: 'middle' }} />
             Supprimer
           </button>
@@ -588,10 +588,10 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
     width: '100%', padding: '7px 10px', borderRadius: 8,
     border: `1.5px solid ${C.border}`, background: C.inputBg,
     color: C.text, fontSize: 12, fontFamily: 'inherit', outline: 'none',
-    boxSizing: 'border-box', fontWeight: 680,
+    boxSizing: 'border-box', fontWeight: 630,
   }
   const labelStyle = {
-    display: 'block', color: C.textMuted, fontSize: 12, fontWeight: 680,
+    display: 'block', color: C.textMuted, fontSize: 12, fontWeight: 630,
     textTransform: 'uppercase', letterSpacing: '0em', marginBottom: 4,
   }
 
@@ -667,7 +667,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                   display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 90,
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <div style={{ fontSize: 12, fontWeight: 680, textTransform: 'uppercase',
+                    <div style={{ fontSize: 12, fontWeight: 630, textTransform: 'uppercase',
                       letterSpacing: '0em', color: dark ? C.textDim : '#5a7a66' }}>{card.label}</div>
                     <card.Icon size={14} strokeWidth={1.6} color={card.color} style={{ opacity: 0.65 }} />
                   </div>
@@ -675,7 +675,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                     {card.items.map(it => (
                       <div key={it.sub}>
                         <div style={{ fontSize: 10, color: dark ? C.textDim : '#5a7a66', marginBottom: 2, whiteSpace: 'nowrap' }}>{it.sub}</div>
-                        <div style={{ fontSize: 18, fontWeight: 680, color: card.color }}>{it.value}</div>
+                        <div style={{ fontSize: 18, fontWeight: 630, color: card.color }}>{it.value}</div>
                       </div>
                     ))}
                   </div>
@@ -743,7 +743,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                 <div style={{ padding: '7px 10px', borderRadius: 8, textAlign: 'center',
                   background: pctRessuyage !== null ? `${C.green}10` : C.toggleBg,
                   border: `1.5px solid ${pctRessuyage !== null ? C.green + '40' : C.border}`,
-                  fontSize: 12, fontWeight: 680,
+                  fontSize: 12, fontWeight: 630,
                   color: pctRessuyage !== null ? C.green : C.textDim,
                   minHeight: 33, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {pctRessuyage !== null ? `${pctRessuyage}%` : '—'}
@@ -757,11 +757,11 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
             overflow: 'hidden', marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '12px 16px', borderBottom: `1px solid ${C.border}` }}>
-              <div style={{ fontSize: 12, fontWeight: 680, color: C.textMuted, textTransform: 'uppercase',
+              <div style={{ fontSize: 12, fontWeight: 630, color: C.textMuted, textTransform: 'uppercase',
                 letterSpacing: '0em' }}>Tours d'irrigation</div>
               <button onClick={addTour} style={{ display: 'flex', alignItems: 'center', gap: 6,
                 padding: '6px 14px', background: `${C.green}10`, border: `1.5px solid ${C.green}40`,
-                borderRadius: 7, color: C.green, fontSize: 12, fontWeight: 680,
+                borderRadius: 7, color: C.green, fontSize: 12, fontWeight: 630,
                 fontFamily: 'inherit', cursor: 'pointer' }}>
                 <Plus size={12} strokeWidth={2.5} /> Nouveau tour
               </button>
@@ -803,7 +803,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                         <TInput value={t.rad} onChange={v => updateTour(t.id, 'rad', v)} C={C} />
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
-                        <div style={{ fontSize: 12, fontWeight: 680, color: C.blue }}>
+                        <div style={{ fontSize: 12, fontWeight: 630, color: C.blue }}>
                           {t.cumulRad > 0 ? fmtNum(t.cumulRad, 0) : '—'}
                         </div>
                       </td>
@@ -811,7 +811,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                         <TimeInput value={t.heure} onChange={v => updateTour(t.id, 'heure', v)} C={C} />
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
-                        <div style={{ fontSize: 12, fontWeight: 680, color: t.tempsRepos !== null ? C.textMuted : C.textDim }}>
+                        <div style={{ fontSize: 12, fontWeight: 630, color: t.tempsRepos !== null ? C.textMuted : C.textDim }}>
                           {t.tempsRepos !== null ? `${t.tempsRepos} min` : i === 0 ? '—' : '?'}
                         </div>
                       </td>
@@ -837,12 +837,12 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                         <TInput value={t.phDrain} onChange={v => updateTour(t.id, 'phDrain', v)} C={C} />
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
-                        <div style={{ fontSize: 12, fontWeight: 680, color: t.pctDrain != null ? C.amber : C.textDim }}>
+                        <div style={{ fontSize: 12, fontWeight: 630, color: t.pctDrain != null ? C.amber : C.textDim }}>
                           {t.pctDrain != null ? `${fmtNum(t.pctDrain, 1)}%` : '—'}
                         </div>
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
-                        <div style={{ fontSize: 12, fontWeight: 680, color: t.moyPctDrain != null ? C.amber : C.textDim }}>
+                        <div style={{ fontSize: 12, fontWeight: 630, color: t.moyPctDrain != null ? C.amber : C.textDim }}>
                           {t.moyPctDrain != null ? `${fmtNum(t.moyPctDrain, 1)}%` : '—'}
                         </div>
                       </td>
@@ -874,13 +874,13 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
             <button onClick={onClose} style={{ padding: '9px 20px', borderRadius: 8,
               border: `1.5px solid ${C.border}`, background: 'transparent',
-              color: C.textMuted, fontSize: 12, fontWeight: 680, fontFamily: 'inherit', cursor: 'pointer' }}>
+              color: C.textMuted, fontSize: 12, fontWeight: 630, fontFamily: 'inherit', cursor: 'pointer' }}>
               Annuler
             </button>
             <button onClick={handleSave} disabled={saving}
               style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 20px',
                 background: saving ? C.toggleBg : C.green, color: saving ? C.textDim : '#fff',
-                border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 680,
+                border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 630,
                 fontFamily: 'inherit', cursor: saving ? 'not-allowed' : 'pointer' }}>
               <Save size={12} strokeWidth={2.5} />
               {saving ? 'Enregistrement…' : 'Enregistrer'}
@@ -908,7 +908,7 @@ function ToursTable({ saisieId, token, C, dark }) {
   )
 
   const TH2 = ({ children, color }) => (
-    <th style={{ padding: '7px 8px', fontSize: 12, fontWeight: 680, textTransform: 'capitalize',
+    <th style={{ padding: '7px 8px', fontSize: 12, fontWeight: 630, textTransform: 'capitalize',
       letterSpacing: '0em', color: color || C.textDim, textAlign: 'center',
       whiteSpace: 'nowrap', background: dark ? 'rgba(52,217,111,0.05)' : 'rgba(24,120,63,0.04)',
       borderBottom: `1px solid ${C.border}` }}>{children}</th>
@@ -951,7 +951,7 @@ function ToursTable({ saisieId, token, C, dark }) {
                       <div style={{ width: 26, height: 26, borderRadius: 6, margin: '0 auto',
                         background: `${C.green}12`, border: `1px solid ${C.green}30`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 12, fontWeight: 680, color: C.green }}>{t.num_tour}</div>
+                        fontSize: 12, fontWeight: 630, color: C.green }}>{t.num_tour}</div>
                     </td>
                     {[
                       { v: t.rad,          dec: 0 },
@@ -969,7 +969,7 @@ function ToursTable({ saisieId, token, C, dark }) {
                       { v: t.moy_pct_drain != null ? `${fmtNum(t.moy_pct_drain, 1)}%` : '—', raw: true, color: C.amber },
                     ].map((cell, ci) => (
                       <td key={ci} style={{ padding: '8px 8px', textAlign: 'center',
-                        fontSize: 12, fontWeight: 680,
+                        fontSize: 12, fontWeight: 630,
                         color: cell.color || C.text }}>
                         {cell.raw ? (cell.v ?? '—') : fmtNum(cell.v, cell.dec ?? 2)}
                       </td>
@@ -1141,7 +1141,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
   const TH = ({ children, color, w, center = false }) => (
     <th style={{
       padding: '11px 10px', textAlign: center ? 'center' : 'left',
-      fontSize: 12, fontWeight: 680, textTransform: 'uppercase',
+      fontSize: 12, fontWeight: 630, textTransform: 'uppercase',
       letterSpacing: '0em', color: color || C.textDim,
       whiteSpace: 'nowrap',
       borderBottom: `1.5px solid ${C.border}`,
@@ -1181,7 +1181,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
             <select value={perPage} onChange={e => setPerPage(Number(e.target.value))}
               style={{ padding: '6px 10px', borderRadius: 7, border: `1.5px solid ${C.border}`,
                 background: C.inputBg, color: C.text, fontSize: 12, fontFamily: 'inherit',
-                outline: 'none', cursor: 'pointer', fontWeight: 680 }}>
+                outline: 'none', cursor: 'pointer', fontWeight: 630 }}>
               {[10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}
             </select>
             <span style={{ fontSize: 12, color: C.textDim, fontWeight: 600 }}>/ page</span>
@@ -1285,33 +1285,33 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                             {expanded ? <ChevronUp size={12} strokeWidth={2.5}/> : <ChevronDown size={12} strokeWidth={2.5}/>}
                           </button>
                         </td>
-                        <td style={{ padding: '12px 10px', fontWeight: 680, color: C.text, fontSize: 12, whiteSpace: 'nowrap', letterSpacing: '0em' }}>{s.date}</td>
-                        <td style={{ padding: '12px 10px', fontSize: 12, color: C.green, fontWeight: 680 }}>{s.farm_name}</td>
+                        <td style={{ padding: '12px 10px', fontWeight: 630, color: C.text, fontSize: 12, whiteSpace: 'nowrap', letterSpacing: '0em' }}>{s.date}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, color: C.green, fontWeight: 630 }}>{s.farm_name}</td>
                         <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center' }}>
-                          <span style={{ background: dark ? 'rgba(77,157,224,0.12)' : 'rgba(77,157,224,0.10)', color: '#4d9de0', border: '1px solid rgba(77,157,224,0.25)', borderRadius: 5, padding: '2px 8px', fontSize: 12, fontWeight: 680 }}>
+                          <span style={{ background: dark ? 'rgba(77,157,224,0.12)' : 'rgba(77,157,224,0.10)', color: '#4d9de0', border: '1px solid rgba(77,157,224,0.25)', borderRadius: 5, padding: '2px 8px', fontSize: 12, fontWeight: 630 }}>
                             {s.station || '—'}
                           </span>
                         </td>
                         <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center' }}>
-                          <span style={{ background: dark ? 'rgba(52,217,111,0.08)' : 'rgba(24,120,63,0.07)', color: C.green, border: `1px solid ${C.green}25`, borderRadius: 5, padding: '2px 8px', fontSize: 12, fontWeight: 680 }}>
+                          <span style={{ background: dark ? 'rgba(52,217,111,0.08)' : 'rgba(24,120,63,0.07)', color: C.green, border: `1px solid ${C.green}25`, borderRadius: 5, padding: '2px 8px', fontSize: 12, fontWeight: 630 }}>
                             {s.serre || '—'}
                           </span>
                         </td>
-                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 680 }}>{s.vanne || '—'}</td>
-                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 680 }}>{s.nbr_bras ?? '—'}</td>
-                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 680 }}>{s.nbr_goutteurs ?? '—'}</td>
-                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 680 }}>{s.poids_matin ?? '—'}</td>
-                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 680 }}>{s.heure_matin || '—'}</td>
-                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 680 }}>{s.poids_soir ?? '—'}</td>
-                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 680 }}>{s.heure_soir || '—'}</td>
-                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 680 }}>{s.bassin_ec ?? '—'}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 630 }}>{s.vanne || '—'}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 630 }}>{s.nbr_bras ?? '—'}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 630 }}>{s.nbr_goutteurs ?? '—'}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 630 }}>{s.poids_matin ?? '—'}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 630 }}>{s.heure_matin || '—'}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 630 }}>{s.poids_soir ?? '—'}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 630 }}>{s.heure_soir || '—'}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 630 }}>{s.bassin_ec ?? '—'}</td>
                         <td style={{ padding: '10px 8px', textAlign: 'center' }}>
                           {s.pct_ressuyage != null ? (
                             <span style={{
                               display: 'inline-block',
                               background: `${C.green}15`, color: C.green,
                               border: `1px solid ${C.green}35`, borderRadius: 20,
-                              padding: '3px 10px', fontSize: 12, fontWeight: 680,
+                              padding: '3px 10px', fontSize: 12, fontWeight: 630,
                               letterSpacing: '0em',
                             }}>
                               {fmtNum(s.pct_ressuyage, 1)}%
@@ -1363,7 +1363,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
               <button onClick={() => load(page - 1)} disabled={page <= 1}
                 style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px',
                   borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent',
-                  color: C.textMuted, fontSize: 12, fontWeight: 680,
+                  color: C.textMuted, fontSize: 12, fontWeight: 630,
                   cursor: page <= 1 ? 'not-allowed' : 'pointer',
                   opacity: page <= 1 ? 0.4 : 1, fontFamily: 'inherit' }}>
                 <ChevronLeft size={12} strokeWidth={2} /> Préc
@@ -1376,7 +1376,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                       border: `1.5px solid ${page === p ? C.green : C.border}`,
                       background: page === p ? C.green : 'transparent',
                       color: page === p ? '#fff' : C.textMuted,
-                      fontSize: 12, fontWeight: 680, fontFamily: 'inherit', cursor: 'pointer' }}>
+                      fontSize: 12, fontWeight: 630, fontFamily: 'inherit', cursor: 'pointer' }}>
                     {p}
                   </button>
                 )
@@ -1384,7 +1384,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
               <button onClick={() => load(page + 1)} disabled={page >= pages}
                 style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px',
                   borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent',
-                  color: C.textMuted, fontSize: 12, fontWeight: 680,
+                  color: C.textMuted, fontSize: 12, fontWeight: 630,
                   cursor: page >= pages ? 'not-allowed' : 'pointer',
                   opacity: page >= pages ? 0.4 : 1, fontFamily: 'inherit' }}>
                 Suiv <ChevronRight size={12} strokeWidth={2} />

@@ -141,7 +141,7 @@ function EditModal({ user, farms, onSave, onClose, C, dark }) {
           <div style={{ marginBottom: 14 }}>
             <label style={{
               display: 'block', color: C.textMuted,
-              fontSize: 11, fontWeight: 680,
+              fontSize: 11, fontWeight: 630,
               textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6,
             }}>
               Fermes affectées
@@ -269,7 +269,7 @@ function AuditPanel({ token, filterUser, C, dark, onClose }) {
     }}>
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: 16, padding: '28px 32px', width: 680,
+        borderRadius: 16, padding: '28px 32px', width: 630,
         maxHeight: '80vh', display: 'flex', flexDirection: 'column',
         boxShadow: `0 8px 40px rgba(0,0,0,0.5)`,
       }}>
@@ -308,12 +308,12 @@ function AuditPanel({ token, filterUser, C, dark, onClose }) {
                       color: cfg.color,
                       border: `1px solid ${cfg.color}35`,
                       borderRadius: 5, padding: '2px 8px',
-                      fontSize: 10, fontWeight: 680, letterSpacing: '0.05em',
+                      fontSize: 10, fontWeight: 630, letterSpacing: '0.05em',
                       whiteSpace: 'nowrap',
                     }}>
                       {cfg.label}
                     </span>
-                    <span style={{ color: C.text, fontSize: 12, fontWeight: 680, minWidth: 80 }}>{log.username}</span>
+                    <span style={{ color: C.text, fontSize: 12, fontWeight: 630, minWidth: 80 }}>{log.username}</span>
                     <span style={{ color: C.textMuted, fontSize: 12, flex: 1 }}>{log.detail || '—'}</span>
                     <span style={{ color: C.textDim, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
                       <Clock size={10} strokeWidth={2} />
@@ -501,7 +501,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
             <Input label="Email"         value={newUser.email}    onChange={setNu('email')}    C={C} placeholder="ex: j.dupont@azura.ma" icon={Mail} />
             <div style={{ marginBottom: 14 }}>
               <label style={{
-                display: 'block', color: C.textMuted, fontSize: 11, fontWeight: 680,
+                display: 'block', color: C.textMuted, fontSize: 11, fontWeight: 630,
                 textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6,
               }}>Rôle</label>
               <div style={{ position: 'relative' }}>
@@ -557,7 +557,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
               <div style={{ marginBottom: 14 }}>
                 <label style={{
                   display: 'block', color: C.textMuted,
-                  fontSize: 11, fontWeight: 680,
+                  fontSize: 11, fontWeight: 630,
                   textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6,
                 }}>
                   Fermes assignées
@@ -760,7 +760,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
         <div style={{ display: 'flex', gap: 6 }}>
           {['tous', ...ROLES].map(r => (
             <button key={r} onClick={() => setFilterRole(r)} style={{
-              padding: '7px 13px', borderRadius: 7, fontSize: 12, fontWeight: 680,
+              padding: '7px 13px', borderRadius: 7, fontSize: 12, fontWeight: 630,
               cursor: 'pointer', fontFamily: 'inherit',
               background: filterRole === r ? C.green : C.toggleBg,
               color: filterRole === r ? '#fff' : C.textMuted,
@@ -788,11 +788,11 @@ export default function UsersPage({ token, userRole, C, dark }) {
                   <tr>
                     {['Identifiant', 'Nom / Email', 'Rôle', 'Statut', 'Dernière connexion', 'Créé le', 'Actions'].map(h => (
                       <th key={h} style={{
-                        color: C.textDim, fontSize: 11, fontFamily: 'inherit',
-                        textTransform: 'uppercase', letterSpacing: '0.08em',
+                        color: C.textDim, fontSize: 12, fontFamily: 'inherit',
+                        textTransform: 'uppercase', letterSpacing: '0em',
                         padding: '10px 14px', textAlign: 'left',
                         borderBottom: `1.5px solid ${C.border}`,
-                        whiteSpace: 'nowrap', fontWeight: 680,
+                        whiteSpace: 'nowrap', fontWeight: 630,
                       }}>{h}</th>
                     ))}
                   </tr>
@@ -907,7 +907,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
 
                       {/* Status */}
                       <td style={{ padding: '13px 14px', fontFamily: 'inherit' }}>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: u.actif ? C.green : C.red, fontWeight: 680, fontSize: 12 }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: u.actif ? C.green : C.red, fontWeight: 630, fontSize: 12 }}>
                           {u.actif ? <CircleCheck size={SZ.sm} strokeWidth={2.5} /> : <CircleSlash size={SZ.sm} strokeWidth={2.5} />}
                           {u.actif ? 'Actif' : 'Désactivé'}
                         </span>

@@ -83,7 +83,7 @@ function StatCard({ label, value, unit, status, thresh, icon: Icon, C }) {
       {/* Header — label + icon */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
         <span style={{
-          color: C.textMuted, fontSize: 11, fontWeight: 680,
+          color: C.textMuted, fontSize: 11, fontWeight: 630,
           textTransform: 'uppercase', letterSpacing: '0.10em',
         }}>
           {label}
@@ -142,7 +142,7 @@ function GaugeCard({ label, value, unit, min, max, color, C }) {
       minHeight: 210,
     }}>
       <div style={{
-        color: C.textMuted, fontSize: 10, fontWeight: 680,
+        color: C.textMuted, fontSize: 10, fontWeight: 630,
         textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 4,
       }}>
         {label}
@@ -359,7 +359,7 @@ function MiniChart({ data, color, label, unit, C, dark, onSelectRange, decimals 
             <rect x={tx} y={ty} width={tipW} height={tipH} rx="5"
               fill={dark?'#1e2a1e':'#fff'} stroke={baseColor} strokeWidth="1.2"
               style={{filter:'drop-shadow(0 2px 8px rgba(0,0,0,0.2))'}} />
-            <text x={tx+8} y={ty+14} fill={color} fontSize="11" fontWeight="680">
+            <text x={tx+8} y={ty+14} fill={color} fontSize="11" fontWeight="630">
               {Number(p.value).toFixed(decimals)} {unit}
             </text>
             <text x={tx+8} y={ty+28}
@@ -387,7 +387,7 @@ function ChartCard({ title, series, C, dark, onSelectRange }) {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <div style={{ width: 10, height: 3, borderRadius: 2, background: s.color }} />
-                <span style={{ color: C.textMuted, fontSize: 11, fontWeight: 680 }}>{s.label}</span>
+                <span style={{ color: C.textMuted, fontSize: 11, fontWeight: 630 }}>{s.label}</span>
               </div>
               <span style={{ color: s.color, fontSize: 12, fontWeight: 800 }}>
                 {s.data?.length > 0 && s.data[s.data.length - 1]?.value !== null
@@ -484,7 +484,7 @@ function PumpIndicator({ label, value, C }) {
           boxShadow: on ? `0 0 5px ${C.green}` : 'none',
         }} />
       </div>
-      <div style={{ color: C.textDim, fontSize: 10, fontWeight: 680, marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+      <div style={{ color: C.textDim, fontSize: 10, fontWeight: 630, marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
       <div style={{ color: on ? C.green : C.textDim, fontSize: 11, fontWeight: 800 }}>{on ? 'ON' : 'OFF'}</div>
     </div>
   )
@@ -518,7 +518,7 @@ function ValveIndicator({ label, value, C }) {
           boxShadow: on ? `0 0 5px ${C.green}` : 'none',
         }} />
       </div>
-      <div style={{ color: C.textDim, fontSize: 10, fontWeight: 680, marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+      <div style={{ color: C.textDim, fontSize: 10, fontWeight: 630, marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
       <div style={{ color: on ? C.green : C.textDim, fontSize: 11, fontWeight: 800 }}>
         {on ? 'ON' : 'OFF'}
       </div>
@@ -537,7 +537,7 @@ function FertCard({ num, label, open, min, act, max, flow, C }) {
       borderRadius: 10, padding: '14px 16px',
       minWidth: 110, flex: 1,
     }}>
-      <div style={{ color: C.textDim, fontSize: 10, fontWeight: 680, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+      <div style={{ color: C.textDim, fontSize: 10, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
         F{num}
       </div>
       <div style={{ color: isActive ? C.green : C.textDim, fontSize: 22, fontWeight: 900, lineHeight: 1, marginBottom: 4 }}>
@@ -742,12 +742,12 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
               display: 'flex', alignItems: 'center', gap: 5,
               background: 'transparent', border: 'none',
               color: C.textMuted, cursor: 'pointer',
-              fontSize: 12, fontWeight: 680, padding: 0, fontFamily: 'inherit',
+              fontSize: 12, fontWeight: 630, padding: 0, fontFamily: 'inherit',
             }}>
               <ArrowLeft size={14} strokeWidth={2.5} /> Dashboard
             </button>
             <span style={{ color: C.border }}>/</span>
-            <span style={{ color: C.green, fontSize: 12, fontWeight: 680 }}>
+            <span style={{ color: C.green, fontSize: 12, fontWeight: 630 }}>
               {deviceInfo.farm_name} · House {deviceInfo.house_number}
             </span>
           </div>
@@ -762,7 +762,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             <span style={{ fontFamily: 'inherit', fontSize: 11 }}>{deviceInfo.device_id || '—'}</span>
             <span style={{ color: C.border }}>·</span>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: online === null ? C.textDim : online ? C.green : C.red, fontWeight: 680 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: online === null ? C.textDim : online ? C.green : C.red, fontWeight: 630 }}>
               <div style={{ position: 'relative', width: 10, height: 10, flexShrink: 0 }}>
                 {online === true && (
                   <div style={{
@@ -795,7 +795,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
           display: 'flex', alignItems: 'center', gap: 6,
           padding: '8px 14px', background: C.toggleBg,
           border: `1.5px solid ${C.border}`, borderRadius: 8,
-          color: C.textMuted, fontSize: 12, fontWeight: 680,
+          color: C.textMuted, fontSize: 12, fontWeight: 630,
           cursor: 'pointer', fontFamily: 'inherit',
         }}>
           <RefreshCw size={12} strokeWidth={2} /> Actualiser
@@ -847,7 +847,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                 
                 {/* Pompes */}
                 <div style={{ flex: 1 }}>
-                  <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 680, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Pompes</div>
+                  <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Pompes</div>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     {[1,2,3,4,5,6].map(i => (
                       <PumpIndicator key={i} label={`Pompe ${i}`} value={cycle[`pump${i}`]} C={C} />
@@ -857,7 +857,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
                 {/* Vannes zones */}
                 <div style={{ flex: 1 }}>
-                  <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 680, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Vannes</div>
+                  <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Vannes</div>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     {[1,2,3,4].map(i => {
                       const val = parseInt(cycle[`valve${i}`])
@@ -875,7 +875,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             {/* Fertigation */}
             {live?.fertigation && (
               <div style={{ marginBottom: 16 }}>
-                <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 680, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+                <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
                   Fertigation — Canaux actifs
                 </div>
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -904,7 +904,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
               {/* Status bar */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-                <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 680, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Programme en cours
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -923,7 +923,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                         padding: '6px 14px', borderRadius: 20,
                         background: on ? (C.green + '15') : C.toggleBg,
                         border: `1.5px solid ${on ? C.green + '40' : C.border}`,
-                        fontSize: 11, fontWeight: 680,
+                        fontSize: 11, fontWeight: 630,
                         color: on ? C.green : C.textDim,
                       }}>
                         <div style={{ position: 'relative', width: 8, height: 8, flexShrink: 0 }}>
@@ -956,7 +956,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
                 {/* Groupe 1 — Cycle */}
                 <div style={{ background: C.surface, borderRadius: 10, padding: '14px 16px', border: `1px solid ${C.border}` }}>
-                  <div style={{ color: C.textDim, fontSize: 10, fontWeight: 680, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Cycle</div>
+                  <div style={{ color: C.textDim, fontSize: 10, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Cycle</div>
                   {[
                     ['Prog',      cycle.cycle_prog],
                     ['Actuel',    cycle.cycle_act],
@@ -967,7 +967,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                   ].map(([label, val]) => (
                     <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: `1px solid ${C.border}`, fontSize: 12 }}>
                       <span style={{ color: C.textMuted }}>{label}</span>
-                      <span style={{ color: C.text, fontWeight: 680, fontVariantNumeric: 'tabular-nums' }}>
+                      <span style={{ color: C.text, fontWeight: 630, fontVariantNumeric: 'tabular-nums' }}>
                         {val !== null && val !== undefined ? String(val) : '—'}
                       </span>
                     </div>
@@ -976,7 +976,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
                 {/* Groupe 2 — Eau */}
                 <div style={{ background: C.surface, borderRadius: 10, padding: '14px 16px', border: `1px solid ${C.border}` }}>
-                  <div style={{ color: C.textDim, fontSize: 10, fontWeight: 680, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Eau</div>
+                  <div style={{ color: C.textDim, fontSize: 10, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Eau</div>
                   {[
                     ['Mode',      cycle.water_mode],
                     ['Qté prog',  cycle.water_prg_qty],
@@ -987,7 +987,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                   ].map(([label, val]) => (
                     <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: `1px solid ${C.border}`, fontSize: 12 }}>
                       <span style={{ color: C.textMuted }}>{label}</span>
-                      <span style={{ color: C.text, fontWeight: 680, fontVariantNumeric: 'tabular-nums' }}>
+                      <span style={{ color: C.text, fontWeight: 630, fontVariantNumeric: 'tabular-nums' }}>
                         {val !== null && val !== undefined ? String(val) : '—'}
                       </span>
                     </div>
@@ -996,7 +996,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
                 {/* Groupe 3 — Fertigation */}
                 <div style={{ background: C.surface, borderRadius: 10, padding: '14px 16px', border: `1px solid ${C.border}` }}>
-                  <div style={{ color: C.textDim, fontSize: 10, fontWeight: 680, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Fertigation</div>
+                  <div style={{ color: C.textDim, fontSize: 10, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Fertigation</div>
                   {[
                     ['Valve prog', cycle.valve_prog],
                     ['Fert prog',  cycle.fert_prog],
@@ -1011,7 +1011,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                         color: label === 'EC/pH' && val === 'Irrigation' ? C.green
                             : label === 'EC/pH' && val === 'Wait' ? C.amber
                             : C.text,
-                        fontWeight: 680,
+                        fontWeight: 630,
                       }}>
                         {val !== null && val !== undefined ? String(val) : '—'}
                       </span>
@@ -1113,7 +1113,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                       width: '16%',
                       color: C.textDim,
                       fontSize: 12,
-                      fontWeight: 680,
+                      fontWeight: 630,
                       textTransform: 'uppercase',
                       letterSpacing: '0.07em',
                       borderBottom: `1.5px solid ${C.border}`,
@@ -1126,7 +1126,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                       width: '5%',
                       color: C.textDim,
                       fontSize: 12,
-                      fontWeight: 680,
+                      fontWeight: 630,
                       textTransform: 'uppercase',
                       letterSpacing: '0.07em',
                       borderBottom: `1.5px solid ${C.border}`,
@@ -1138,7 +1138,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                         padding: '11px 10px',
                         textAlign: 'center',
                         fontSize: 12,
-                        fontWeight: 680,
+                        fontWeight: 630,
                         borderBottom: `1.5px solid ${C.border}`,
                         whiteSpace: 'nowrap',
                         color: t ? C.green : C.textDim,
@@ -1178,7 +1178,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                         padding: '10px 14px',
                         color: C.textDim,
                         fontSize: 12,
-                        fontWeight: 680,
+                        fontWeight: 630,
                         textTransform: 'uppercase',
                         letterSpacing: '0.07em',
                         whiteSpace: 'nowrap',
@@ -1202,7 +1202,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                             textAlign: 'center',
                             color: val != null ? C.text : C.textDim,
                             fontSize: 12,
-                            fontWeight: val != null ? 680 : 400,
+                            fontWeight: val != null ? 630 : 400,
                             fontVariantNumeric: 'tabular-nums',
                             background: t?.debut
                               ? (dark ? 'rgba(52,217,111,0.04)' : 'rgba(52,217,111,0.02)')
@@ -1260,7 +1260,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             display: 'flex', alignItems: 'center', gap: 6,
             padding: '5px 14px', background: 'transparent',
             border: `1.5px solid ${C.green}`, borderRadius: 7,
-            color: C.green, fontSize: 12, fontWeight: 680,
+            color: C.green, fontSize: 12, fontWeight: 630,
             cursor: 'pointer', fontFamily: 'inherit',
           }}>
             <RefreshCw size={12} strokeWidth={2} /> Reset zoom
@@ -1413,7 +1413,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
           display:'flex', alignItems:'center', gap:6,
           padding:'5px 14px', background:'transparent',
           border:`1.5px solid ${C.green}`, borderRadius:7,
-          color:C.green, fontSize:12, fontWeight:680,
+          color:C.green, fontSize:12, fontWeight:630,
           cursor: exporting ? 'not-allowed' : 'pointer',
           opacity: exporting ? 0.6 : 1, fontFamily:'inherit',
         }}>
@@ -1454,7 +1454,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                       style={{
                         padding: '11px 14px', textAlign: 'left',
                         color: sortCol === col ? C.green : C.textDim,
-                        fontSize: 12, fontWeight: 680,
+                        fontSize: 12, fontWeight: 630,
                         textTransform: 'uppercase', letterSpacing: '0.07em',
                         borderBottom: `1.5px solid ${C.border}`, whiteSpace: 'nowrap',
                         cursor: col ? 'pointer' : 'default',
@@ -1493,25 +1493,25 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                     <td style={{ padding: '10px 14px', color: C.textDim, fontSize: 12, whiteSpace: 'nowrap' }}>
                       {fmtTs(row.timestamp)}
                     </td>
-                    <td style={{ padding: '10px 14px', fontWeight: 680, fontSize: 12, color: C.text }}>
+                    <td style={{ padding: '10px 14px', fontWeight: 630, fontSize: 12, color: C.text }}>
                       {fmt(row.ec_actual, 2)}
                     </td>
-                    <td style={{ padding: '10px 14px', fontWeight: 680, fontSize: 12, color: C.text }}>
+                    <td style={{ padding: '10px 14px', fontWeight: 630, fontSize: 12, color: C.text }}>
                       {fmt(row.ph_actual, 2)}
                     </td>
-                    <td style={{ padding: '10px 14px', fontWeight: 680, fontSize: 12, color: C.text }}>
+                    <td style={{ padding: '10px 14px', fontWeight: 630, fontSize: 12, color: C.text }}>
                       {fmt(row.avg_temp, 1)}
                     </td>
-                    <td style={{ padding: '10px 14px', fontWeight: 680, fontSize: 12, color: C.text }}>
+                    <td style={{ padding: '10px 14px', fontWeight: 630, fontSize: 12, color: C.text }}>
                       {fmt(row.humidity, 1)}
                     </td>
-                    <td style={{ padding: '10px 14px', fontWeight: 680, fontSize: 12, color: C.text }}>
+                    <td style={{ padding: '10px 14px', fontWeight: 630, fontSize: 12, color: C.text }}>
                       {fmt(row.radiation, 1)}
                     </td>
-                    <td style={{ padding: '10px 14px', fontWeight: 680, fontSize: 12, color: C.text }}>
+                    <td style={{ padding: '10px 14px', fontWeight: 630, fontSize: 12, color: C.text }}>
                       {fmt(row.flow, 0)}
                     </td>
-                    <td style={{ padding: '10px 14px', fontWeight: 680, fontSize: 12 }}>
+                    <td style={{ padding: '10px 14px', fontWeight: 630, fontSize: 12 }}>
                       <span style={{
                         background: row.ec_ph_status === 'Irrigation' ? C.green + '18'
                           : row.ec_ph_status === 'Wait' ? C.amber + '18'
@@ -1521,7 +1521,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                           : C.textDim,
                         border: `1px solid ${row.ec_ph_status === 'Irrigation' ? C.green : C.amber}30`,
                         borderRadius: 5, padding: '2px 7px',
-                        fontWeight: 680, fontSize: 12,
+                        fontWeight: 630, fontSize: 12,
                       }}>
                         {row.ec_ph_status || '—'}
                       </span>
@@ -1546,7 +1546,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                 display: 'flex', alignItems: 'center', gap: 4,
                 padding: '5px 10px', borderRadius: 6,
                 border: `1.5px solid ${C.border}`, background: 'transparent',
-                color: C.textMuted, fontSize: 12, fontWeight: 680,
+                color: C.textMuted, fontSize: 12, fontWeight: 630,
                 cursor: page <= 1 ? 'not-allowed' : 'pointer',
                 opacity: page <= 1 ? 0.4 : 1, fontFamily: 'inherit',
               }}>
@@ -1556,7 +1556,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                 display: 'flex', alignItems: 'center', gap: 4,
                 padding: '5px 10px', borderRadius: 6,
                 border: `1.5px solid ${C.border}`, background: 'transparent',
-                color: C.textMuted, fontSize: 12, fontWeight: 680,
+                color: C.textMuted, fontSize: 12, fontWeight: 630,
                 cursor: page >= (history?.pages ?? 1) ? 'not-allowed' : 'pointer',
                 opacity: page >= (history?.pages ?? 1) ? 0.4 : 1, fontFamily: 'inherit',
               }}>
