@@ -194,7 +194,7 @@ function HouseCard({ house, onSelectDevice, C, dark, accentColor }) {
               borderRadius: 10, padding: '14px 16px',
             }}>
               <div style={{
-                fontSize: 10, fontWeight: 600, textTransform: 'capitalize',
+                fontSize: 10, fontWeight: 600, textTransform: 'uppercase',
                 letterSpacing: '0.12em', color: dark ? '#3a5a44' : '#4a7a5a',
                 marginBottom: 6,
               }}>
@@ -462,7 +462,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
                 marginBottom: 14,
               }}>
                 <div style={{
-                  fontSize: 11, fontWeight: 600, textTransform: 'capitalize',
+                  fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
                   letterSpacing: '0.12em', color: dark ? C.textDim : '#5a7a66',
                 }}>
                   {s.label}
@@ -520,7 +520,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                 <div style={{
                   fontSize: 10, color: dark ? '#3a5a44' : '#5a7a66',
-                  textTransform: 'capitalize', letterSpacing: '0.1em',
+                  textTransform: 'uppercase', letterSpacing: '0.1em',
                 }}>
                   {r.label}
                 </div>
@@ -579,7 +579,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
 
           {/* Label ferme */}
           <div style={{
-            fontSize: 12, fontWeight: 680, textTransform: 'capitalize',
+            fontSize: 12, fontWeight: 680, textTransform: 'uppercase',
             letterSpacing: '0.14em', color: dark ? '#2a5a38' : '#2a7a48',
             marginBottom: 14, marginTop: fi > 0 ? 32 : 0,
             display: 'flex', alignItems: 'center', gap: 12,

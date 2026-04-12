@@ -84,7 +84,7 @@ function StatCard({ label, value, unit, status, thresh, icon: Icon, C }) {
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
         <span style={{
           color: C.textMuted, fontSize: 11, fontWeight: 680,
-          textTransform: 'capitalize', letterSpacing: '0.10em',
+          textTransform: 'uppercase', letterSpacing: '0.10em',
         }}>
           {label}
         </span>
@@ -143,7 +143,7 @@ function GaugeCard({ label, value, unit, min, max, color, C }) {
     }}>
       <div style={{
         color: C.textMuted, fontSize: 10, fontWeight: 680,
-        textTransform: 'capitalize', letterSpacing: '0.12em', marginBottom: 4,
+        textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 4,
       }}>
         {label}
       </div>
@@ -484,7 +484,7 @@ function PumpIndicator({ label, value, C }) {
           boxShadow: on ? `0 0 5px ${C.green}` : 'none',
         }} />
       </div>
-      <div style={{ color: C.textDim, fontSize: 10, fontWeight: 680, marginBottom: 3, textTransform: 'capitalize', letterSpacing: '0.05em' }}>{label}</div>
+      <div style={{ color: C.textDim, fontSize: 10, fontWeight: 680, marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
       <div style={{ color: on ? C.green : C.textDim, fontSize: 11, fontWeight: 800 }}>{on ? 'ON' : 'OFF'}</div>
     </div>
   )
@@ -518,7 +518,7 @@ function ValveIndicator({ label, value, C }) {
           boxShadow: on ? `0 0 5px ${C.green}` : 'none',
         }} />
       </div>
-      <div style={{ color: C.textDim, fontSize: 10, fontWeight: 680, marginBottom: 3, textTransform: 'capitalize', letterSpacing: '0.05em' }}>{label}</div>
+      <div style={{ color: C.textDim, fontSize: 10, fontWeight: 680, marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
       <div style={{ color: on ? C.green : C.textDim, fontSize: 11, fontWeight: 800 }}>
         {on ? 'ON' : 'OFF'}
       </div>
@@ -537,7 +537,7 @@ function FertCard({ num, label, open, min, act, max, flow, C }) {
       borderRadius: 10, padding: '14px 16px',
       minWidth: 110, flex: 1,
     }}>
-      <div style={{ color: C.textDim, fontSize: 10, fontWeight: 680, textTransform: 'capitalize', letterSpacing: '0.08em', marginBottom: 8 }}>
+      <div style={{ color: C.textDim, fontSize: 10, fontWeight: 680, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
         F{num}
       </div>
       <div style={{ color: isActive ? C.green : C.textDim, fontSize: 22, fontWeight: 900, lineHeight: 1, marginBottom: 4 }}>
@@ -847,7 +847,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                 
                 {/* Pompes */}
                 <div style={{ flex: 1 }}>
-                  <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 680, textTransform: 'capitalize', letterSpacing: '0.08em', marginBottom: 10 }}>Pompes</div>
+                  <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 680, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Pompes</div>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     {[1,2,3,4,5,6].map(i => (
                       <PumpIndicator key={i} label={`Pompe ${i}`} value={cycle[`pump${i}`]} C={C} />
@@ -857,7 +857,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
                 {/* Vannes zones */}
                 <div style={{ flex: 1 }}>
-                  <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 680, textTransform: 'capitalize', letterSpacing: '0.08em', marginBottom: 10 }}>Vannes</div>
+                  <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 680, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Vannes</div>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     {[1,2,3,4].map(i => {
                       const val = parseInt(cycle[`valve${i}`])
@@ -875,7 +875,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             {/* Fertigation */}
             {live?.fertigation && (
               <div style={{ marginBottom: 16 }}>
-                <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 680, textTransform: 'capitalize', letterSpacing: '0.08em', marginBottom: 10 }}>
+                <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 680, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
                   Fertigation — Canaux actifs
                 </div>
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -904,7 +904,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
               {/* Status bar */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-                <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 680, textTransform: 'capitalize', letterSpacing: '0.08em' }}>
+                <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 680, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Programme en cours
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -956,7 +956,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
                 {/* Groupe 1 — Cycle */}
                 <div style={{ background: C.surface, borderRadius: 10, padding: '14px 16px', border: `1px solid ${C.border}` }}>
-                  <div style={{ color: C.textDim, fontSize: 10, fontWeight: 680, textTransform: 'capitalize', letterSpacing: '0.08em', marginBottom: 10 }}>Cycle</div>
+                  <div style={{ color: C.textDim, fontSize: 10, fontWeight: 680, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Cycle</div>
                   {[
                     ['Prog',      cycle.cycle_prog],
                     ['Actuel',    cycle.cycle_act],
@@ -976,7 +976,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
                 {/* Groupe 2 — Eau */}
                 <div style={{ background: C.surface, borderRadius: 10, padding: '14px 16px', border: `1px solid ${C.border}` }}>
-                  <div style={{ color: C.textDim, fontSize: 10, fontWeight: 680, textTransform: 'capitalize', letterSpacing: '0.08em', marginBottom: 10 }}>Eau</div>
+                  <div style={{ color: C.textDim, fontSize: 10, fontWeight: 680, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Eau</div>
                   {[
                     ['Mode',      cycle.water_mode],
                     ['Qté prog',  cycle.water_prg_qty],
@@ -996,7 +996,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
                 {/* Groupe 3 — Fertigation */}
                 <div style={{ background: C.surface, borderRadius: 10, padding: '14px 16px', border: `1px solid ${C.border}` }}>
-                  <div style={{ color: C.textDim, fontSize: 10, fontWeight: 680, textTransform: 'capitalize', letterSpacing: '0.08em', marginBottom: 10 }}>Fertigation</div>
+                  <div style={{ color: C.textDim, fontSize: 10, fontWeight: 680, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Fertigation</div>
                   {[
                     ['Valve prog', cycle.valve_prog],
                     ['Fert prog',  cycle.fert_prog],
@@ -1114,7 +1114,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                       color: C.textDim,
                       fontSize: 12,
                       fontWeight: 680,
-                      textTransform: 'capitalize',
+                      textTransform: 'uppercase',
                       letterSpacing: '0.07em',
                       borderBottom: `1.5px solid ${C.border}`,
                       whiteSpace: 'nowrap',
@@ -1127,7 +1127,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                       color: C.textDim,
                       fontSize: 12,
                       fontWeight: 680,
-                      textTransform: 'capitalize',
+                      textTransform: 'uppercase',
                       letterSpacing: '0.07em',
                       borderBottom: `1.5px solid ${C.border}`,
                       whiteSpace: 'nowrap',
@@ -1179,7 +1179,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                         color: C.textDim,
                         fontSize: 12,
                         fontWeight: 680,
-                        textTransform: 'capitalize',
+                        textTransform: 'uppercase',
                         letterSpacing: '0.07em',
                         whiteSpace: 'nowrap',
                       }}>{row.label}</td>
@@ -1455,7 +1455,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                         padding: '11px 14px', textAlign: 'left',
                         color: sortCol === col ? C.green : C.textDim,
                         fontSize: 12, fontWeight: 680,
-                        textTransform: 'capitalize', letterSpacing: '0.07em',
+                        textTransform: 'uppercase', letterSpacing: '0.07em',
                         borderBottom: `1.5px solid ${C.border}`, whiteSpace: 'nowrap',
                         cursor: col ? 'pointer' : 'default',
                         userSelect: 'none',
