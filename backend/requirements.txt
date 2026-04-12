@@ -52,6 +52,9 @@ python-dotenv==1.0.1
 pytest==8.3.4
 pytest-asyncio==0.24.0
 
+# Export Excel
+openpyxl==3.1.5
+
 # Utilitaires
 python-dateutil==2.9.0
 python-multipart==0.0.20
