@@ -72,8 +72,13 @@ function CalendarPicker({ value, onChange, C, small = false }) {
 
   useEffect(() => {
     const close = (e) => { if (ref.current && !ref.current.contains(e.target) && portalRef.current && !portalRef.current.contains(e.target)) setOpen(false) }
+    const onScroll = () => setOpen(false)
     document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
+    window.addEventListener('scroll', onScroll, true)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      window.removeEventListener('scroll', onScroll, true)
+    }
   }, [open])
 
   useEffect(() => { if (value) setView(new Date(value + 'T00:00:00')) }, [value])
