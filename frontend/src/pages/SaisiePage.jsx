@@ -605,7 +605,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
       
       {/* ── Ferme / Station / Serre / Vanne / Date ─────────── */}
       <div style={{ ...cardStyle }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.2fr 1fr 0.8fr 180px', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 180px', gap: 14 }}>
           <div>
             <label style={labelStyle}>Ferme</label>
             <CustomSelect
