@@ -317,6 +317,134 @@ function FilterInput({ value, onChange, placeholder, C, type = 'text' }) {
   )
 }
 
+// ── CalendarPicker — custom date picker Azura ────────────────
+const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
+const DAYS_FR   = ['Lu','Ma','Me','Je','Ve','Sa','Di']
+
+function CalendarPicker({ value, onChange, C }) {
+  const [open, setOpen]     = useState(false)
+  const [viewDate, setView] = useState(() => value ? new Date(value) : new Date())
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [])
+
+  useEffect(() => { if (value) setView(new Date(value)) }, [value])
+
+  const year  = viewDate.getFullYear()
+  const month = viewDate.getMonth()
+  const firstDay = new Date(year, month, 1)
+  let startDow = firstDay.getDay() - 1
+  if (startDow < 0) startDow = 6
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const daysInPrev  = new Date(year, month, 0).getDate()
+  const cells = []
+  for (let i = 0; i < startDow; i++) cells.push({ day: daysInPrev - startDow + 1 + i, curr: false })
+  for (let i = 1; i <= daysInMonth; i++) cells.push({ day: i, curr: true })
+  while (cells.length % 7 !== 0) cells.push({ day: cells.length - startDow - daysInMonth + 1, curr: false })
+
+  const today = new Date()
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`
+
+  const select = (day) => {
+    onChange(`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`)
+    setOpen(false)
+  }
+
+  const displayValue = value
+    ? new Date(value + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    : null
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <div onClick={() => setOpen(v => !v)} style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        height: 38, padding: '0 12px',
+        border: `1.5px solid ${open ? C.green : C.border}`,
+        borderRadius: 8, background: C.inputBg,
+        cursor: 'pointer', transition: 'border-color 0.15s',
+        fontSize: 13, color: value ? C.text : C.textDim,
+        fontFamily: 'inherit', fontWeight: value ? 700 : 400,
+        boxSizing: 'border-box', width: '100%',
+      }}>
+        <span>{displayValue || 'jj / mm / aaaa'}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {value && (
+            <span onClick={e => { e.stopPropagation(); onChange(today()) }}
+              style={{ color: C.textDim, cursor: 'pointer', display: 'flex' }}>
+              <X size={12} strokeWidth={2.5}/>
+            </span>
+          )}
+          {open ? <ChevronUp size={13} strokeWidth={2}/> : <ChevronDown size={13} strokeWidth={2}/>}
+        </div>
+      </div>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 6px)', right: 0,
+          background: C.card, border: `1.5px solid ${C.border}`,
+          borderRadius: 12, zIndex: 9999,
+          boxShadow: `0 8px 32px rgba(0,0,0,0.18)`,
+          padding: '14px 14px 10px', width: 248,
+          fontFamily: 'inherit',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <button onClick={() => setView(new Date(year, month - 1, 1))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '3px 6px', borderRadius: 5, display: 'flex' }}>
+              <ChevronLeft size={14} strokeWidth={2.5}/>
+            </button>
+            <span style={{ fontSize: 12, fontWeight: 800, color: C.text }}>{MONTHS_FR[month]} {year}</span>
+            <button onClick={() => setView(new Date(year, month + 1, 1))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '3px 6px', borderRadius: 5, display: 'flex' }}>
+              <ChevronRight size={14} strokeWidth={2.5}/>
+            </button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4 }}>
+            {DAYS_FR.map(d => (
+              <div key={d} style={{ textAlign: 'center', fontSize: 9, fontWeight: 700, color: C.textDim, padding: '2px 0', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{d}</div>
+            ))}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px 0' }}>
+            {cells.map((cell, i) => {
+              const cellStr = cell.curr ? `${year}-${String(month+1).padStart(2,'0')}-${String(cell.day).padStart(2,'0')}` : null
+              const isSelected = cellStr === value
+              const isToday    = cellStr === todayStr
+              return (
+                <div key={i} onClick={() => cell.curr && select(cell.day)}
+                  style={{
+                    textAlign: 'center', fontSize: 11, padding: '5px 0', borderRadius: 6,
+                    cursor: cell.curr ? 'pointer' : 'default',
+                    fontWeight: isSelected ? 800 : isToday ? 700 : 400,
+                    color: isSelected ? '#fff' : isToday ? C.green : cell.curr ? C.text : C.textDim,
+                    background: isSelected ? C.green : 'transparent',
+                    opacity: cell.curr ? 1 : 0.3,
+                    transition: 'all 0.1s', position: 'relative',
+                  }}
+                  onMouseEnter={e => { if (cell.curr && !isSelected) e.currentTarget.style.background = `${C.green}18` }}
+                  onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
+                >
+                  {isToday && !isSelected && (
+                    <span style={{ position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)', width: 3, height: 3, borderRadius: '50%', background: C.green }}/>
+                  )}
+                  {cell.day}
+                </div>
+              )
+            })}
+          </div>
+
+          <div style={{ marginTop: 10, paddingTop: 8, borderTop: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between' }}>
+            <button onClick={() => { onChange(''); setOpen(false) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textDim, fontSize: 10, fontWeight: 700, fontFamily: 'inherit', padding: '3px 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Effacer</button>
+            <button onClick={() => { onChange(todayStr); setOpen(false) }} style={{ background: `${C.green}15`, border: `1px solid ${C.green}40`, borderRadius: 6, cursor: 'pointer', color: C.green, fontSize: 10, fontWeight: 800, fontFamily: 'inherit', padding: '3px 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Aujourd'hui</button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── TH helper for EditModal ───────────────────────────────────
 function THm({ children, w, color, C }) {
   return (
@@ -707,7 +835,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
             </div>
             <div>
               <label style={labelStyle}>Date</label>
-              <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} />
+              <CalendarPicker value={date} onChange={setDate} C={C} />
             </div>
           </div>
 
