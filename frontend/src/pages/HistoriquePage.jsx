@@ -770,7 +770,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit' }}>
                 <thead>
                   <tr>
-                    <THm w={50} C={C}>N°</THm>
+                    <THm w={45} C={C}>N°</THm>
                     <THm w={68} C={C}>Rad.</THm>
                     <THm w={76} color={C.blue} C={C}>Cumul Rad</THm>
                     <THm w={108} C={C}>Heure</THm>

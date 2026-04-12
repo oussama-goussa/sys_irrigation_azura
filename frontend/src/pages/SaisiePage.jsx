@@ -50,7 +50,7 @@ function TInput({ value, onChange, placeholder = '', disabled = false, width = 7
         background: disabled ? 'transparent' : (C?.inputBg || '#f9fbfa'),
         color: disabled ? (C?.green || '#18783f') : (C?.text || '#0d1f14'),
         fontSize: 12, fontFamily: 'inherit', outline: 'none',
-        fontWeight: disabled ? 630 : 400, 
+        fontWeight: 630, 
       }}
     />
   )
@@ -193,7 +193,7 @@ function CustomSelect({ value, onChange, options, placeholder, C, disabled = fal
           border: `1.5px solid ${open ? C.green : C.border}`,
           borderRadius: 8, background: disabled ? C.toggleBg : C.inputBg,
           cursor: disabled ? 'not-allowed' : 'pointer',
-          transition: 'border-color 0.15s', gap: 6,
+          transition: 'border-color 0.15s', gap: 6, fontWeight: 630,
           opacity: disabled ? 0.5 : 1,
         }}
       >
@@ -209,7 +209,7 @@ function CustomSelect({ value, onChange, options, placeholder, C, disabled = fal
           position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
           background: C.card, border: `1.5px solid ${C.border}`,
           borderRadius: 8, zIndex: 200, boxShadow: `0 4px 20px ${C.shadow}`,
-          maxHeight: 200, overflowY: 'auto',
+          maxHeight: 200, overflowY: 'auto', fontWeight: 630,
         }}>
           {options.length === 0 ? (
             <div style={{ padding: '10px 14px', color: C.textDim, fontSize: 12 }}>Aucune option</div>
@@ -507,7 +507,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
     textTransform: 'uppercase', letterSpacing: '0em', marginBottom: 5,
   }
   const inputStyle = {
-    width: '100%', padding: '8px 12px', borderRadius: 8,
+    width: '100%', padding: '8px 12px', borderRadius: 8, fontWeight: 630,
     border: `1.5px solid ${C.border}`, background: C.inputBg,
     color: C.text, fontSize: 12, fontFamily: 'inherit', outline: 'none',
   }
