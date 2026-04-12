@@ -97,7 +97,7 @@ function TimeInput({ value, onChange, C, small = false }) {
       <div ref={triggerRef} onClick={handleOpen} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         height: small ? 28 : 32, padding: '0 8px', width: '100%',
-        border: `1.5px solid ${open ? C.green : value && value !== '00:00' ? C.green + '55' : C.border}`,
+        border: `1.5px solid ${open ? C.green : C.border}`,
         borderRadius: 7, background: C.inputBg,
         cursor: 'pointer', transition: 'border-color 0.15s',
         fontSize: 12, color: value && value !== '00:00' ? C.text : C.textDim,
