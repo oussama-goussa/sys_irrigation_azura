@@ -58,9 +58,10 @@ function TimeInput({ value, onChange, C, small = false }) {
   const triggerRef = useRef(null)
   const [pos, setPos] = useState({ top: 0, left: 0 })
   const [h, m] = value ? value.split(':') : ['00', '00']
+  const portalRef = useRef(null)
 
   useEffect(() => {
-    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target) && portalRef.current && !portalRef.current.contains(e.target)) setOpen(false) }
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
   }, [])
@@ -99,12 +100,12 @@ function TimeInput({ value, onChange, C, small = false }) {
         <span style={{ color: C.textDim }}>:</span>
         <span>{m || '00'}</span>
       </div>
-      {open && (
-        <div style={{
+      {open && createPortal(
+        <div ref={portalRef} style={{
           position: 'fixed', top: pos.top, left: pos.left,
           transform: 'translateX(-50%)',
           background: C.card, border: `1.5px solid ${C.border}`,
-          borderRadius: 10, zIndex: 9999,
+          borderRadius: 10, zIndex: 99999,
           boxShadow: `0 4px 24px rgba(0,0,0,0.2)`,
           padding: '10px 16px',
           display: 'flex', alignItems: 'center', gap: 4,
@@ -119,9 +120,19 @@ function TimeInput({ value, onChange, C, small = false }) {
                 <input type="text" inputMode="numeric" maxLength={2}
                   value={type === 'h' ? (h || '00') : (m || '00')}
                   onChange={e => {
+                    const raw = e.target.value.replace(/\D/g, '').slice(0, 2)
+                    if (type === 'h') {
+                      const v = Math.min(23, parseInt(raw) || 0)
+                      onChange(`${String(v).padStart(2, '0')}:${m || '00'}`)
+                    } else {
+                      const v = Math.min(59, parseInt(raw) || 0)
+                      onChange(`${h || '00'}:${String(v).padStart(2, '0')}`)
+                    }
+                  }}
+                  onBlur={e => {
                     const v = parseInt(e.target.value) || 0
-                    if (type === 'h') onChange(`${String(Math.min(23, Math.max(0, v))).padStart(2, '0')}:${m || '00'}`)
-                    else onChange(`${h || '00'}:${String(Math.min(59, Math.max(0, v))).padStart(2, '00')}`)
+                    if (type === 'h') onChange(`${String(Math.min(23, v)).padStart(2, '0')}:${m || '00'}`)
+                    else onChange(`${h || '00'}:${String(Math.min(59, v)).padStart(2, '0')}`)
                   }}
                   style={{ fontSize: 22, fontWeight: 630, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
                 />
@@ -131,7 +142,8 @@ function TimeInput({ value, onChange, C, small = false }) {
               </div>
             </React.Fragment>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
@@ -303,7 +315,6 @@ function FilterSelect({ value, onChange, options, C }) {
     </div>
   )
 }
-
 
 // ── FilterInput ──────────────────────────────────────────────
 function FilterInput({ value, onChange, placeholder, C, type = 'text' }) {
