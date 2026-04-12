@@ -202,7 +202,6 @@ function SSelect({ value, onChange, options, placeholder, C, width = '100%', dis
 function FilterSelect({ value, onChange, options, C }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
-  const triggerRef = useRef(null)
   const [pos, setPos] = useState({ top: 0, left: 0, width: 0 })
 
   useEffect(() => {
@@ -212,9 +211,9 @@ function FilterSelect({ value, onChange, options, C }) {
   }, [])
 
   const handleOpen = () => {
-    if (triggerRef.current) {
-      const r = triggerRef.current.getBoundingClientRect()
-      setPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 120) })
+    if (ref.current) {
+      const r = ref.current.getBoundingClientRect()
+      setPos({ top: r.bottom + window.scrollY + 2, left: r.left + window.scrollX, width: Math.max(r.width, 120) })
     }
     setOpen(v => !v)
   }
@@ -224,7 +223,7 @@ function FilterSelect({ value, onChange, options, C }) {
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <div ref={triggerRef} onClick={handleOpen} style={{
+      <div onClick={handleOpen} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         height: 28, padding: '0 7px',
         border: `1.5px solid ${open ? C.green : value ? C.green + '55' : C.border}`,
@@ -232,7 +231,7 @@ function FilterSelect({ value, onChange, options, C }) {
         cursor: 'pointer', transition: 'border-color 0.15s', gap: 3,
       }}>
         <span style={{ fontSize: 11, color: label ? C.text : C.textDim,
-          overflow: 'visible', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
           {label || 'Tous'}
         </span>
         <span style={{ color: C.textDim, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
@@ -241,9 +240,12 @@ function FilterSelect({ value, onChange, options, C }) {
       </div>
       {open && (
         <div style={{
-          position: 'absolute', top: 'calc(100% + 2px)', left: 0, minWidth: '100%',
+          position: 'fixed',
+          top: pos.top,
+          left: pos.left,
+          width: pos.width,
           background: C.card, border: `1.5px solid ${C.border}`,
-          borderRadius: 8, zIndex: 99999, boxShadow: `0 6px 24px rgba(0,0,0,0.15)`,
+          borderRadius: 8, zIndex: 99999, boxShadow: `0 6px 24px rgba(0,0,0,0.18)`,
           maxHeight: 200, overflowY: 'auto',
         }}>
           <div onClick={() => { onChange(''); setOpen(false) }}
