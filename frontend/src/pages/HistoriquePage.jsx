@@ -1285,8 +1285,8 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                             {expanded ? <ChevronUp size={12} strokeWidth={2.5}/> : <ChevronDown size={12} strokeWidth={2.5}/>}
                           </button>
                         </td>
-                        <td style={{ padding: '12px 10px', fontWeight: 630, color: C.text, fontSize: 12, whiteSpace: 'nowrap', letterSpacing: '0em' }}>{s.date}</td>
-                        <td style={{ padding: '12px 10px', fontSize: 12, color: C.green, fontWeight: 630 }}>{s.farm_name}</td>
+                        <td style={{ padding: '12px 10px', fontWeight: 630, color: C.text, fontSize: 12, textAlign: 'center', whiteSpace: 'nowrap', letterSpacing: '0em' }}>{s.date}</td>
+                        <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.green, fontWeight: 630 }}>{s.farm_name}</td>
                         <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center' }}>
                           <span style={{ background: dark ? 'rgba(77,157,224,0.12)' : 'rgba(77,157,224,0.10)', color: '#4d9de0', border: '1px solid rgba(77,157,224,0.25)', borderRadius: 5, padding: '2px 8px', fontSize: 12, fontWeight: 630 }}>
                             {s.station || '—'}
