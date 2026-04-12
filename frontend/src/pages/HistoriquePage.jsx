@@ -389,13 +389,13 @@ function CalendarPicker({ value, onChange, C, small = false }) {
       {/* ── Trigger ── */}
       <div ref={triggerRef} onClick={handleOpen} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        height: small ? 28 : 38, padding: small ? '0 8px' : '0 12px',
-        fontSize: small ? 12 : 13,
+        height: small ? 28 : 32, padding: small ? '0 8px' : '0 12px',
+        fontSize: small ? 12 : 12,
         border: `1.5px solid ${open ? C.green : C.border}`,
         borderRadius: 8, background: C.inputBg,
         cursor: 'pointer', transition: 'border-color 0.15s',
         color: value ? C.text : C.textDim,
-        fontFamily: 'inherit', fontWeight: value ? 700 : 400,
+        fontFamily: 'inherit', fontWeight: value ? 700 : 700,
         boxSizing: 'border-box', width: '100%',
       }}>
         <span>{displayValue || 'jj/mm/aaaa'}</span>
