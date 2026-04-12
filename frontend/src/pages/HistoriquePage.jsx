@@ -6,11 +6,12 @@ import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import {
   History, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
-  Pencil, Trash2, X, AlertTriangle, RefreshCw,
+  Pencil, Trash2, X, AlertTriangle, Download, RefreshCw,
   Plus, Save, AlertCircle, Check, Droplets, FlaskConical,
   BarChart2, ClipboardList,
 } from 'lucide-react'
 import { getSaisies, getSaisie, updateSaisie, deleteSaisie, getDevices, getMe } from '../api/client.js'
+import ExportModal from '../components/ExportModal.jsx'
 
 // ── helpers ───────────────────────────────────────────────────
 const fmtNum = (v, dec = 2) => {
@@ -1300,6 +1301,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
   const [expandedIds, setExpandedIds] = useState(new Set())
   const [editingSaisie, setEditingSaisie] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [showExport, setShowExport] = useState(false)
 
   // Filtres
   const [fDate,      setFDate]      = useState('')
@@ -1461,6 +1463,10 @@ export default function HistoriquePage({ token, auth, C, dark }) {
       {confirmDelete && (
         <ConfirmModal saisie={confirmDelete} onConfirm={handleDelete}
           onCancel={() => setConfirmDelete(null)} C={C} />
+      )}
+      {showExport && (
+        <ExportModal token={token} auth={auth} farms={farms}
+          C={C} dark={dark} onClose={() => setShowExport(false)} />
       )}
       {editingSaisie && (
         <EditModal saisie={editingSaisie} token={token} farms={farms}
