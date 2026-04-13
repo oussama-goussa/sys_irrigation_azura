@@ -900,7 +900,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}
                           >
                             <Badge role={u.role} dark={dark} />
-                            <UserPen size={15} color={C.textDim} strokeWidth={2} />
+                            <Pencil size={14} color={C.textDim} strokeWidth={2} />
                           </button>
                         )}
                       </td>
@@ -908,7 +908,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                       {/* Status */}
                       <td style={{ padding: '13px 14px', fontFamily: 'inherit' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: u.actif ? C.green : C.red, fontWeight: 630, fontSize: 12 }}>
-                          {u.actif ? <CircleCheck size={15} strokeWidth={2.5} /> : <CircleSlash size={15} strokeWidth={2.5} />}
+                          {u.actif ? <CircleCheck size={14} strokeWidth={2.5} /> : <CircleSlash size={14} strokeWidth={2.5} />}
                           {u.actif ? 'Actif' : 'Désactivé'}
                         </span>
                       </td>
@@ -916,7 +916,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                       {/* Last login */}
                       <td style={{ padding: '13px 14px', fontSize: 12, color: C.textDim, fontFamily: 'inherit' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <Clock size={15} strokeWidth={2} />
+                          <Clock size={14} strokeWidth={2} />
                           {formatDateTime(u.last_login)}
                         </span>
                       </td>
@@ -929,11 +929,11 @@ export default function UsersPage({ token, userRole, C, dark }) {
                       {/* Actions */}
                       <td style={{ padding: '13px 14px', fontFamily: 'inherit' }}>
                         <div style={{ display: 'flex', gap: 6 }}>
-                          <Btn onClick={(e) => { e.stopPropagation(); setEditingUser(u) }} size={15} variant="ghost" C={C} icon={UserPen}>
+                          <Btn onClick={(e) => { e.stopPropagation(); setEditingUser(u) }} size={14} variant="ghost" C={C} icon={UserPen}>
                             Modifier
                           </Btn>
-                          <Btn onClick={() => { setLogsUser(u.username); setShowLogs(true) }} size={15} variant="ghost"  C={C} icon={History} />
-                          <Btn onClick={() => setConfirmUser(u)} variant={u.actif ? 'danger' : 'secondary'} size={15} C={C}
+                          <Btn onClick={() => { setLogsUser(u.username); setShowLogs(true) }} size={14} variant="ghost"  C={C} icon={History} />
+                          <Btn onClick={() => setConfirmUser(u)} variant={u.actif ? 'danger' : 'secondary'} size={14} C={C}
                             icon={u.actif ? UserX : UserCheck}>
                             {u.actif ? 'Désactiver' : 'Activer'}
                           </Btn>
