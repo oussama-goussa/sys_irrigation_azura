@@ -971,18 +971,16 @@ export default function SaisiePage({ token, auth, C, dark }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
             <span style={{
               display: 'inline-flex', alignItems: 'center',
-              fontSize: 9, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase',
-              color: C.amber, background: `${C.amber}12`,
-              border: `1px solid ${C.amber}28`, borderRadius: 5,
-              padding: '3px 8px',
+              fontSize: 12, fontWeight: 630, letterSpacing: '0.1em', textTransform: 'uppercase',
+              color: C.text,
             }}>Constantes &amp; Substrat</span>
 
             {pctRessuyage !== null && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                <div style={{ width: 1, height: 14, background: C.border }} />
-                <span style={{ fontSize: 11, color: C.textDim, fontWeight: 500 }}>Ressuyage</span>
+                <div style={{ width: 1, height: 15, background: C.border }} />
+                <span style={{ fontSize: 12, color: C.textDim, fontWeight: 500 }}>Ressuyage</span>
                 <span style={{
-                  fontSize: 11, fontWeight: 800, color: C.green,
+                  fontSize: 12, fontWeight: 630, color: C.green,
                   background: `${C.green}12`, border: `1px solid ${C.green}30`,
                   borderRadius: 20, padding: '2px 10px',
                 }}>{pctRessuyage}%</span>
@@ -996,20 +994,20 @@ export default function SaisiePage({ token, auth, C, dark }) {
             {/* Substrat */}
             <div style={{ paddingRight: 24 }}>
               <div style={{
-                fontSize: 9, fontWeight: 700, color: C.textDim,
+                fontSize: 10, fontWeight: 630, color: C.textDim,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
                 marginBottom: 10, opacity: 0.65,
               }}>Substrat</div>
               <div style={{ display: 'flex', gap: 10 }}>
                 <div>
-                  <SLabel C={C}>Nbr Bras</SLabel>
+                  <label style={labelStyle} C={C}>Nbr Bras</label>
                   <input type="number" value={nbrBras} onChange={e => setNbrBras(e.target.value)}
-                    placeholder="0" style={{ ...inputStyle, width: 86, height: 36, padding: '7px 10px' }} />
+                    placeholder="0" style={{ ...inputStyle, width: 130, height: 36, padding: '7px 10px' }} />
                 </div>
                 <div>
-                  <SLabel C={C}>Nbr Goutteurs</SLabel>
+                  <label style={labelStyle} C={C}>Nbr Goutteurs</label>
                   <input type="number" value={nbrGoutteurs} onChange={e => setNbrGoutteurs(e.target.value)}
-                    placeholder="0" style={{ ...inputStyle, width: 86, height: 36, padding: '7px 10px' }} />
+                    placeholder="0" style={{ ...inputStyle, width: 130, height: 36, padding: '7px 10px' }} />
                 </div>
               </div>
             </div>
@@ -1019,29 +1017,29 @@ export default function SaisiePage({ token, auth, C, dark }) {
             {/* Pesée */}
             <div style={{ paddingRight: 24 }}>
               <div style={{
-                fontSize: 9, fontWeight: 700, color: C.textDim,
+                fontSize: 10, fontWeight: 630, color: C.textDim,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
                 marginBottom: 10, opacity: 0.65,
               }}>Pesée</div>
               <div style={{ display: 'flex', gap: 10 }}>
                 <div>
-                  <SLabel C={C}>Poids matin (kg)</SLabel>
+                  <label style={labelStyle} C={C}>Poids matin (kg)</label>
                   <input type="number" value={poidsMatin} onChange={e => setPoidsMatin(e.target.value)}
                     placeholder="0.00" step="0.01"
-                    style={{ ...inputStyle, width: 86, height: 36, padding: '7px 10px' }} />
+                    style={{ ...inputStyle, width: 86, height: 130, padding: '7px 10px' }} />
                 </div>
                 <div>
-                  <SLabel C={C}>Heure matin</SLabel>
+                  <label style={labelStyle} C={C}>Heure matin</label>
                   <TimeInput value={heureMatin} onChange={setHeureMatin} C={C} />
                 </div>
                 <div>
-                  <SLabel C={C}>Poids soir (kg)</SLabel>
+                  <label style={labelStyle} C={C}>Poids soir (kg)</label>
                   <input type="number" value={poidsSoir} onChange={e => setPoidsSoir(e.target.value)}
                     placeholder="0.00" step="0.01"
-                    style={{ ...inputStyle, width: 86, height: 36, padding: '7px 10px' }} />
+                    style={{ ...inputStyle, width: 86, height: 130, padding: '7px 10px' }} />
                 </div>
                 <div>
-                  <SLabel C={C}>Heure soir</SLabel>
+                  <label style={labelStyle} C={C}>Heure soir</label>
                   <TimeInput value={heureSoir} onChange={setHeureSoir} C={C} />
                 </div>
               </div>
@@ -1052,15 +1050,15 @@ export default function SaisiePage({ token, auth, C, dark }) {
             {/* EC Bassin */}
             <div>
               <div style={{
-                fontSize: 9, fontWeight: 700, color: C.textDim,
+                fontSize: 10, fontWeight: 630, color: C.textDim,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
                 marginBottom: 10, opacity: 0.65,
               }}>Bassin</div>
               <div>
-                <SLabel C={C}>EC Bassin</SLabel>
+                <label style={labelStyle} C={C}>EC Bassin</label>
                 <input type="number" value={bassinEC} onChange={e => setBassinEC(e.target.value)}
                   placeholder="0.00" step="0.01"
-                  style={{ ...inputStyle, width: 86, height: 36, padding: '7px 10px' }} />
+                  style={{ ...inputStyle, width: 86, height: 130, padding: '7px 10px' }} />
               </div>
             </div>
 
