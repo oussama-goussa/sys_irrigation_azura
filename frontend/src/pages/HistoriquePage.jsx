@@ -1543,7 +1543,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                 </tr>
                 {/* Filtres */}
                 <tr style={{ background: dark ? 'rgba(255,255,255,0.025)' : 'rgba(24,120,63,0.025)', borderBottom: `1.5px solid ${C.border}` }}>
-                  <th style={{ padding: '4px 14px', borderBottom: `1px solid ${C.border}` }} />
+                  <th style={{ padding: '4px 6px', borderBottom: `1px solid ${C.border}` }} />
                   <th style={{ padding: '5px 6px', borderBottom: 'none', overflow: 'visible', position: 'relative' }}>
                     <CalendarPicker value={fDate} onChange={setFDate} C={C} small />
                   </th>
@@ -1606,7 +1606,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                         onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
 
-                        <td style={{ padding: '12px 6px', textAlign: 'center' }}>
+                        <td style={{ padding: '0px 14px', textAlign: 'center' }}>
                           <button onClick={() => toggleExpand(s.id)} style={{
                             background: expanded ? `${C.green}15` : 'transparent',
                             border: `1.5px solid ${expanded ? C.green + '50' : C.border}`,
