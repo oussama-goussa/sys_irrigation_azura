@@ -694,9 +694,9 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
                       size={15}
                       color={C.textDim}
                       strokeWidth={2}
-                      style={{ marginRight: 8 }}
+                      style={{ marginRight: 8.5 }}
                     />
-                    Sélectionner une ferme...
+                    Sélectionner une ferme
                   </span>
                 )}
                 {selectedFarms.map((f) => (
