@@ -378,12 +378,12 @@ function TimeInput({ value, onChange, C, small = false }) {
         onClick={handleOpen}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          height: 34, padding: '0 10px', minWidth: 80,
+          padding: '0 10px', minWidth: small ? 80 : 130,
           border: `1.5px solid ${open ? C.green : C.border}`,
           borderRadius: 7, background: C.inputBg,
           cursor: 'pointer', transition: 'border-color 0.15s',
           fontSize: 12, color: value ? C.text : C.textDim,
-          gap: 4, fontWeight: 630, height: small ? 28 : 38,
+          gap: 4, fontWeight: 630, height: small ? 28 : 36,
         }}
       >
         <span>{h || '00'}</span>
