@@ -987,7 +987,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
           </div>
 
           {/* Groupes en ligne avec séparateurs */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1px auto 1px 1fr', alignItems: 'end', gap: 0 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'auto auto 1fr', alignItems: 'end', gap: 0 }}>
 
             {/* Substrat */}
             <div style={{ paddingRight: 18, flex: 1 }}>
