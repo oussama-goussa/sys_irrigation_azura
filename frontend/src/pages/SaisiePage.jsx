@@ -994,7 +994,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
             {/* Substrat */}
             <div style={{ paddingRight: 24 }}>
               <div style={{
-                fontSize: 10, fontWeight: 630, color: C.textDim,
+                fontSize: 9, fontWeight: 630, color: C.textDim,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
                 marginBottom: 10, opacity: 0.65,
               }}>Substrat</div>
@@ -1017,7 +1017,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
             {/* Pesée */}
             <div style={{ paddingRight: 24 }}>
               <div style={{
-                fontSize: 10, fontWeight: 630, color: C.textDim,
+                fontSize: 9, fontWeight: 630, color: C.textDim,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
                 marginBottom: 10, opacity: 0.65,
               }}>Pesée</div>
@@ -1050,7 +1050,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
             {/* EC Bassin */}
             <div>
               <div style={{
-                fontSize: 10, fontWeight: 630, color: C.textDim,
+                fontSize: 9, fontWeight: 630, color: C.textDim,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
                 marginBottom: 10, opacity: 0.65,
               }}>Bassin</div>
