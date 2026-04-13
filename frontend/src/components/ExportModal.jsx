@@ -36,224 +36,435 @@ const DAYS_FR = ["Lu", "Ma", "Me", "Je", "Ve", "Sa", "Di"];
 
 // ── Range Calendar ────────────────────────────────────────────
 function RangeCalendar({ dateFrom, dateTo, onChangeFrom, onChangeTo, C }) {
-  const today = new Date()
-  const [leftYear,   setLeftYear]   = useState(today.getFullYear())
-  const [leftMonth,  setLeftMonth]  = useState(today.getMonth())
-  const [hovering,   setHovering]   = useState(null)
-  const [modeLeft,   setModeLeft]   = useState('days')
-  const [modeRight,  setModeRight]  = useState('days')
+  const today = new Date();
+  const [leftYear, setLeftYear] = useState(today.getFullYear());
+  const [leftMonth, setLeftMonth] = useState(today.getMonth());
+  const [hovering, setHovering] = useState(null);
+  const [modeLeft, setModeLeft] = useState("days");
+  const [modeRight, setModeRight] = useState("days");
 
-  const rightMonth = leftMonth === 11 ? 0  : leftMonth + 1
-  const rightYear  = leftMonth === 11 ? leftYear + 1 : leftYear
+  const rightMonth = leftMonth === 11 ? 0 : leftMonth + 1;
+  const rightYear = leftMonth === 11 ? leftYear + 1 : leftYear;
 
   const prevLeft = () => {
-    if (leftMonth === 0) { setLeftMonth(11); setLeftYear(y => y - 1) }
-    else setLeftMonth(m => m - 1)
-  }
+    if (leftMonth === 0) {
+      setLeftMonth(11);
+      setLeftYear((y) => y - 1);
+    } else setLeftMonth((m) => m - 1);
+  };
   const nextLeft = () => {
-    if (leftMonth === 11) { setLeftMonth(0); setLeftYear(y => y + 1) }
-    else setLeftMonth(m => m + 1)
-  }
+    if (leftMonth === 11) {
+      setLeftMonth(0);
+      setLeftYear((y) => y + 1);
+    } else setLeftMonth((m) => m + 1);
+  };
 
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
   const handleDay = (dateStr) => {
     if (!dateFrom || (dateFrom && dateTo)) {
-      onChangeFrom(dateStr); onChangeTo('')
+      onChangeFrom(dateStr);
+      onChangeTo("");
     } else {
-      if (dateStr < dateFrom) { onChangeTo(dateFrom); onChangeFrom(dateStr) }
-      else onChangeTo(dateStr)
+      if (dateStr < dateFrom) {
+        onChangeTo(dateFrom);
+        onChangeFrom(dateStr);
+      } else onChangeTo(dateStr);
     }
-  }
+  };
 
   const isInRange = (dateStr) => {
-    const end = dateTo || hovering
-    if (!dateFrom || !end) return false
-    const lo = dateFrom < end ? dateFrom : end
-    const hi = dateFrom < end ? end : dateFrom
-    return dateStr > lo && dateStr < hi
-  }
+    const end = dateTo || hovering;
+    if (!dateFrom || !end) return false;
+    const lo = dateFrom < end ? dateFrom : end;
+    const hi = dateFrom < end ? end : dateFrom;
+    return dateStr > lo && dateStr < hi;
+  };
 
   const buildCells = (year, month) => {
-    let startDow = new Date(year, month, 1).getDay() - 1
-    if (startDow < 0) startDow = 6
-    const daysInMonth = new Date(year, month + 1, 0).getDate()
-    const daysInPrev  = new Date(year, month, 0).getDate()
-    const cells = []
+    let startDow = new Date(year, month, 1).getDay() - 1;
+    if (startDow < 0) startDow = 6;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrev = new Date(year, month, 0).getDate();
+    const cells = [];
     for (let i = 0; i < startDow; i++)
-      cells.push({ day: daysInPrev - startDow + 1 + i, curr: false })
-    for (let i = 1; i <= daysInMonth; i++)
-      cells.push({ day: i, curr: true })
+      cells.push({ day: daysInPrev - startDow + 1 + i, curr: false });
+    for (let i = 1; i <= daysInMonth; i++) cells.push({ day: i, curr: true });
     while (cells.length % 7 !== 0)
-      cells.push({ day: cells.length - startDow - daysInMonth + 1, curr: false })
-    return cells
-  }
+      cells.push({
+        day: cells.length - startDow - daysInMonth + 1,
+        curr: false,
+      });
+    return cells;
+  };
 
   const MonthGrid = ({ year, month, mode, setMode, setYear, setMonth }) => {
-    const cells = buildCells(year, month)
-    const years = Array.from({ length: 12 }, (_, i) => year - 5 + i)
+    const cells = buildCells(year, month);
+    const years = Array.from({ length: 12 }, (_, i) => year - 5 + i);
     const btnStyle = {
-      background: 'none', border: '1px solid transparent', borderRadius: 6,
-      cursor: 'pointer', color: C.text, fontSize: 12, fontWeight: 800,
-      fontFamily: 'inherit', padding: '2px 6px',
-    }
+      background: "none",
+      border: "1px solid transparent",
+      borderRadius: 6,
+      cursor: "pointer",
+      color: C.text,
+      fontSize: 12,
+      fontWeight: 800,
+      fontFamily: "inherit",
+      padding: "2px 6px",
+    };
     return (
       <div style={{ flex: 1 }}>
         {/* Header mois/année cliquables */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 10 }}>
-          <button onClick={() => setMode(m => m === 'months' ? 'days' : 'months')} style={{
-            ...btnStyle,
-            background: mode === 'months' ? `${C.green}15` : 'none',
-            border: mode === 'months' ? `1px solid ${C.green}40` : '1px solid transparent',
-          }}>{MONTHS_FR[month].slice(0,3)}</button>
-          <button onClick={() => setMode(m => m === 'years' ? 'days' : 'years')} style={{
-            ...btnStyle,
-            background: mode === 'years' ? `${C.green}15` : 'none',
-            border: mode === 'years' ? `1px solid ${C.green}40` : '1px solid transparent',
-          }}>{year}</button>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 4,
+            marginBottom: 10,
+          }}
+        >
+          <button
+            onClick={() => setMode((m) => (m === "months" ? "days" : "months"))}
+            style={{
+              ...btnStyle,
+              background: mode === "months" ? `${C.green}15` : "none",
+              border:
+                mode === "months"
+                  ? `1px solid ${C.green}40`
+                  : "1px solid transparent",
+            }}
+          >
+            {MONTHS_FR[month].slice(0, 3)}
+          </button>
+          <button
+            onClick={() => setMode((m) => (m === "years" ? "days" : "years"))}
+            style={{
+              ...btnStyle,
+              background: mode === "years" ? `${C.green}15` : "none",
+              border:
+                mode === "years"
+                  ? `1px solid ${C.green}40`
+                  : "1px solid transparent",
+            }}
+          >
+            {year}
+          </button>
         </div>
 
         {/* Year picker */}
-        {mode === 'years' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 3, marginBottom: 6 }}>
-            {years.map(y => (
-              <button key={y} onClick={() => { setYear(y); setMode('months') }} style={{
-                background: y === year ? C.green : 'transparent',
-                border: `1px solid ${y === year ? C.green : C.border}`,
-                borderRadius: 6, cursor: 'pointer',
-                color: y === year ? '#fff' : C.text,
-                fontSize: 11, fontWeight: y === year ? 800 : 400,
-                fontFamily: 'inherit', padding: '5px 2px',
-              }}>{y}</button>
+        {mode === "years" && (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3,1fr)",
+              gap: 3,
+              marginBottom: 6,
+            }}
+          >
+            {years.map((y) => (
+              <button
+                key={y}
+                onClick={() => {
+                  setYear(y);
+                  setMode("months");
+                }}
+                style={{
+                  background: y === year ? C.green : "transparent",
+                  border: `1px solid ${y === year ? C.green : C.border}`,
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  color: y === year ? "#fff" : C.text,
+                  fontSize: 11,
+                  fontWeight: y === year ? 800 : 400,
+                  fontFamily: "inherit",
+                  padding: "5px 2px",
+                }}
+              >
+                {y}
+              </button>
             ))}
           </div>
         )}
 
         {/* Month picker */}
-        {mode === 'months' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 3, marginBottom: 6 }}>
+        {mode === "months" && (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3,1fr)",
+              gap: 3,
+              marginBottom: 6,
+            }}
+          >
             {MONTHS_FR.map((mn, mi) => (
-              <button key={mn} onClick={() => { setMonth(mi); setMode('days') }} style={{
-                background: mi === month ? C.green : 'transparent',
-                border: `1px solid ${mi === month ? C.green : C.border}`,
-                borderRadius: 6, cursor: 'pointer',
-                color: mi === month ? '#fff' : C.text,
-                fontSize: 11, fontWeight: mi === month ? 800 : 400,
-                fontFamily: 'inherit', padding: '5px 2px',
-              }}>{mn.slice(0,3)}</button>
+              <button
+                key={mn}
+                onClick={() => {
+                  setMonth(mi);
+                  setMode("days");
+                }}
+                style={{
+                  background: mi === month ? C.green : "transparent",
+                  border: `1px solid ${mi === month ? C.green : C.border}`,
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  color: mi === month ? "#fff" : C.text,
+                  fontSize: 11,
+                  fontWeight: mi === month ? 800 : 400,
+                  fontFamily: "inherit",
+                  padding: "5px 2px",
+                }}
+              >
+                {mn.slice(0, 3)}
+              </button>
             ))}
           </div>
         )}
 
         {/* Days grid */}
-        {mode === 'days' && (
+        {mode === "days" && (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', marginBottom: 4 }}>
-              {DAYS_FR.map(d => (
-                <div key={d} style={{ textAlign: 'center', fontSize: 9, fontWeight: 700,
-                  color: C.textDim, padding: '2px 0', textTransform: 'uppercase' }}>{d}</div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(7,1fr)",
+                marginBottom: 4,
+              }}
+            >
+              {DAYS_FR.map((d) => (
+                <div
+                  key={d}
+                  style={{
+                    textAlign: "center",
+                    fontSize: 9,
+                    fontWeight: 700,
+                    color: C.textDim,
+                    padding: "2px 0",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {d}
+                </div>
               ))}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '2px 0' }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(7,1fr)",
+                gap: "2px 0",
+              }}
+            >
               {cells.map((cell, i) => {
-                if (!cell.curr) return <div key={i} />
-                const ds      = `${year}-${String(month+1).padStart(2,'0')}-${String(cell.day).padStart(2,'0')}`
-                const start   = ds === dateFrom
-                const end     = ds === dateTo
-                const inRange = isInRange(ds)
-                const isT     = ds === todayStr
+                if (!cell.curr) return <div key={i} />;
+                const ds = `${year}-${String(month + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}`;
+                const start = ds === dateFrom;
+                const end = ds === dateTo;
+                const inRange = isInRange(ds);
+                const isT = ds === todayStr;
                 return (
-                  <div key={i}
+                  <div
+                    key={i}
                     onClick={() => handleDay(ds)}
                     onMouseEnter={() => dateFrom && !dateTo && setHovering(ds)}
                     onMouseLeave={() => setHovering(null)}
                     style={{
-                      textAlign: 'center', fontSize: 11, padding: '6px 0', cursor: 'pointer',
-                      background: start || end ? C.green : inRange ? `${C.green}25` : 'transparent',
-                      color: start || end ? '#fff' : isT ? C.green : C.text,
+                      textAlign: "center",
+                      fontSize: 11,
+                      padding: "6px 0",
+                      cursor: "pointer",
+                      background:
+                        start || end
+                          ? C.green
+                          : inRange
+                            ? `${C.green}25`
+                            : "transparent",
+                      color: start || end ? "#fff" : isT ? C.green : C.text,
                       fontWeight: start || end ? 800 : isT ? 700 : 400,
-                      borderRadius: start ? '6px 0 0 6px' : end ? '0 6px 6px 0' : inRange ? 0 : 6,
-                      transition: 'background 0.1s', position: 'relative',
+                      borderRadius: start
+                        ? "6px 0 0 6px"
+                        : end
+                          ? "0 6px 6px 0"
+                          : inRange
+                            ? 0
+                            : 6,
+                      transition: "background 0.1s",
+                      position: "relative",
                     }}
                   >
                     {isT && !start && !end && (
-                      <span style={{ position: 'absolute', bottom: 1, left: '50%',
-                        transform: 'translateX(-50%)', width: 3, height: 3,
-                        borderRadius: '50%', background: C.green }} />
+                      <span
+                        style={{
+                          position: "absolute",
+                          bottom: 1,
+                          left: "50%",
+                          transform: "translateX(-50%)",
+                          width: 3,
+                          height: 3,
+                          borderRadius: "50%",
+                          background: C.green,
+                        }}
+                      />
                     )}
                     {cell.day}
                   </div>
-                )
+                );
               })}
             </div>
           </>
         )}
       </div>
-    )
-  }
+    );
+  };
 
   // Setter mois droit → on recalcule depuis le mois gauche
-  const setRightYear  = (y) => setLeftYear(leftMonth === 11 ? y - 1 : y)
+  const setRightYear = (y) => setLeftYear(leftMonth === 11 ? y - 1 : y);
   const setRightMonth = (m) => {
-    if (m === 0) { setLeftMonth(11); setLeftYear(y => y - 1) }
-    else setLeftMonth(m - 1)
-  }
+    if (m === 0) {
+      setLeftMonth(11);
+      setLeftYear((y) => y - 1);
+    } else setLeftMonth(m - 1);
+  };
 
   return (
     <div>
       {/* Navigation */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <button onClick={prevLeft} style={{ background: 'none', border: 'none',
-          cursor: 'pointer', color: C.textMuted, padding: '4px 8px',
-          borderRadius: 6, display: 'flex', alignItems: 'center' }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 12,
+        }}
+      >
+        <button
+          onClick={prevLeft}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: C.textMuted,
+            padding: "4px 8px",
+            borderRadius: 6,
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
           <ChevronLeft size={16} strokeWidth={2.5} />
         </button>
-        <div style={{ display: 'flex', gap: 32, flex: 1, justifyContent: 'space-around' }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 32,
+            flex: 1,
+            justifyContent: "space-around",
+          }}
+        >
           <MonthGrid
-            year={leftYear}  month={leftMonth}
-            mode={modeLeft}  setMode={setModeLeft}
-            setYear={setLeftYear} setMonth={setLeftMonth}
+            year={leftYear}
+            month={leftMonth}
+            mode={modeLeft}
+            setMode={setModeLeft}
+            setYear={setLeftYear}
+            setMonth={setLeftMonth}
           />
           <div style={{ width: 1, background: C.border }} />
           <MonthGrid
-            year={rightYear}  month={rightMonth}
-            mode={modeRight}  setMode={setModeRight}
-            setYear={setRightYear} setMonth={setRightMonth}
+            year={rightYear}
+            month={rightMonth}
+            mode={modeRight}
+            setMode={setModeRight}
+            setYear={setRightYear}
+            setMonth={setRightMonth}
           />
         </div>
-        <button onClick={nextLeft} style={{ background: 'none', border: 'none',
-          cursor: 'pointer', color: C.textMuted, padding: '4px 8px',
-          borderRadius: 6, display: 'flex', alignItems: 'center' }}>
+        <button
+          onClick={nextLeft}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: C.textMuted,
+            padding: "4px 8px",
+            borderRadius: 6,
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
           <ChevronRight size={16} strokeWidth={2.5} />
         </button>
       </div>
 
       {/* Shortcuts */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          justifyContent: "center",
+          flexWrap: "wrap",
+        }}
+      >
         {[
-          { label: "Aujourd'hui", action: () => { onChangeFrom(todayStr); onChangeTo(todayStr) }},
-          { label: '7 derniers jours', action: () => {
-            const t = new Date(); const f = new Date(); f.setDate(f.getDate() - 6)
-            const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-            onChangeFrom(fmt(f)); onChangeTo(fmt(t))
-          }},
-          { label: 'Ce mois', action: () => {
-            const t = new Date()
-            onChangeFrom(`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-01`)
-            onChangeTo(`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(new Date(t.getFullYear(), t.getMonth()+1, 0).getDate()).padStart(2,'0')}`)
-          }},
-          { label: 'Effacer', action: () => { onChangeFrom(''); onChangeTo('') }},
-        ].map(s => (
-          <button key={s.label} onClick={s.action} style={{
-            padding: '4px 12px', borderRadius: 6,
-            border: `1px solid ${C.border}`, background: 'transparent',
-            color: C.textMuted, fontSize: 11, fontWeight: 600,
-            fontFamily: 'inherit', cursor: 'pointer',
-          }}>{s.label}</button>
+          {
+            label: "Aujourd'hui",
+            action: () => {
+              onChangeFrom(todayStr);
+              onChangeTo(todayStr);
+            },
+          },
+          {
+            label: "7 derniers jours",
+            action: () => {
+              const t = new Date();
+              const f = new Date();
+              f.setDate(f.getDate() - 6);
+              const fmt = (d) =>
+                `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+              onChangeFrom(fmt(f));
+              onChangeTo(fmt(t));
+            },
+          },
+          {
+            label: "Ce mois",
+            action: () => {
+              const t = new Date();
+              onChangeFrom(
+                `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-01`,
+              );
+              onChangeTo(
+                `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate()).padStart(2, "0")}`,
+              );
+            },
+          },
+          {
+            label: "Effacer",
+            action: () => {
+              onChangeFrom("");
+              onChangeTo("");
+            },
+          },
+        ].map((s) => (
+          <button
+            key={s.label}
+            onClick={s.action}
+            style={{
+              padding: "4px 12px",
+              borderRadius: 6,
+              border: `1px solid ${C.border}`,
+              background: "transparent",
+              color: C.textMuted,
+              fontSize: 11,
+              fontWeight: 600,
+              fontFamily: "inherit",
+              cursor: "pointer",
+            }}
+          >
+            {s.label}
+          </button>
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 // ── Main ExportModal ──────────────────────────────────────────
@@ -269,6 +480,30 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
   const [calPos, setCalPos] = useState({});
   const [modeLeft, setModeLeft] = useState("days");
   const [modeRight, setModeRight] = useState("days");
+
+  // Ajouter après les useState existants
+  const dropRef = useRef(null);
+  const calPortalRef = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => {
+      // Fermer dropdown fermes
+      if (dropRef.current && !dropRef.current.contains(e.target)) {
+        setDropOpen(false);
+      }
+      // Fermer calendrier
+      if (
+        calTriggerRef.current &&
+        !calTriggerRef.current.contains(e.target) &&
+        calPortalRef.current &&
+        !calPortalRef.current.contains(e.target)
+      ) {
+        setShowCal(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   // Fermes autorisées
   const isAdmin = auth?.role === "admin";
@@ -425,7 +660,7 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
                 </span>
               )}
             </div>
-            <div style={{ position: "relative" }}>
+            <div ref={dropRef} style={{ position: "relative" }}>
               <div
                 onClick={() => setDropOpen((v) => !v)}
                 style={{
@@ -443,7 +678,9 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
                 }}
               >
                 {selectedFarms.length === 0 && (
-                  <span style={{ color: C.textDim, fontSize: 12, fontWeight: 630, }}>
+                  <span
+                    style={{ color: C.textDim, fontSize: 12, fontWeight: 630 }}
+                  >
                     Sélectionner une ferme...
                   </span>
                 )}
@@ -600,7 +837,8 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
                 alignItems: "center",
                 gap: 10,
                 padding: "9px 14px",
-                borderRadius: 8, minHeight: 32,
+                borderRadius: 8,
+                minHeight: 32,
                 cursor: "pointer",
                 border: `1.5px solid ${showCal ? C.green : C.border}`,
                 background: C.inputBg,
@@ -652,6 +890,7 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
           {showCal &&
             createPortal(
               <div
+                ref={calPortalRef}
                 style={{
                   position: "fixed",
                   top: calPos.top,
