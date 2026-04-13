@@ -441,7 +441,9 @@ function RangeCalendar({ dateFrom, dateTo, onChangeFrom, onChangeTo, C }) {
             action: () => {
               onChangeFrom("");
               onChangeTo("");
+              onClose();
             },
+            
           },
         ].map((s) => (
           <button
@@ -913,6 +915,7 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
                     if (d) setShowCal(false);
                   }}
                   C={C}
+                  onClose={() => setShowCal(false)}
                 />
               </div>,
               document.body,
