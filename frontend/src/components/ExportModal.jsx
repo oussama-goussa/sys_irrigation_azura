@@ -15,6 +15,7 @@ import {
   Check,
   AlertCircle,
   Calendar,
+  ArrowRight,
 } from "lucide-react";
 
 const MONTHS_FR = [
@@ -432,9 +433,9 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
                   flexWrap: "wrap",
                   alignItems: "center",
                   gap: 6,
-                  minHeight: 38,
+                  minHeight: 32,
                   padding: "4px 36px 4px 8px",
-                  border: `1.5px solid ${dropOpen ? C.green : selectedFarms.length ? C.green : C.border}`,
+                  border: `1.5px solid ${dropOpen ? C.green : C.border}`,
                   borderRadius: 8,
                   background: C.inputBg,
                   cursor: "pointer",
@@ -577,10 +578,10 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
           <div style={{ marginBottom: 20 }}>
             <div
               style={{
-                fontSize: 11,
-                fontWeight: 700,
+                fontSize: 12,
+                fontWeight: 630,
                 textTransform: "uppercase",
-                letterSpacing: "0.1em",
+                letterSpacing: "0em",
                 color: C.textMuted,
                 marginBottom: 10,
               }}
@@ -599,22 +600,22 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
                 alignItems: "center",
                 gap: 10,
                 padding: "9px 14px",
-                borderRadius: 8,
+                borderRadius: 8, minHeight: 32,
                 cursor: "pointer",
-                border: `1.5px solid ${showCal ? C.green : dateFrom ? C.green : C.border}`,
+                border: `1.5px solid ${showCal ? C.green : C.border}`,
                 background: C.inputBg,
                 transition: "border-color 0.15s",
               }}
             >
               <Calendar
-                size={14}
+                size={15}
                 color={showCal || dateFrom ? C.green : C.textDim}
                 strokeWidth={2}
               />
               <span
                 style={{
-                  fontSize: 13,
-                  fontWeight: 700,
+                  fontSize: 12,
+                  fontWeight: 630,
                   color: dateFrom ? C.green : C.textDim,
                   minWidth: 110,
                   textAlign: "center",
@@ -622,11 +623,11 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
               >
                 {dateFrom ? fmtDisplay(dateFrom) : "Date début"}
               </span>
-              <span style={{ color: C.textDim }}>→</span>
+              <ArrowRight size={14} strokeWidth={2} color={C.textDim} />
               <span
                 style={{
-                  fontSize: 13,
-                  fontWeight: 700,
+                  fontSize: 12,
+                  fontWeight: 630,
                   color: dateTo ? C.green : C.textDim,
                   minWidth: 110,
                   textAlign: "center",
