@@ -1607,16 +1607,17 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
 
                         <td style={{ textAlign: 'center' }}>
-                          <button onClick={() => toggleExpand(s.id)} style={{
+                        <button onClick={() => toggleExpand(s.id)} style={{
                             background: expanded ? `${C.green}15` : 'transparent',
                             border: `1.5px solid ${expanded ? C.green + '50' : C.border}`,
                             borderRadius: 6, padding: '6px 6px', cursor: 'pointer',
                             color: expanded ? C.green : C.textMuted,
-                            display: 'flex', alignItems: 'center', textAlign: 'center',
+                            display: 'flex', alignItems: 'center',
+                            margin: '0 auto',                        // ← ajouter
                             transition: 'all 0.15s',
-                          }}>
+                        }}>
                             {expanded ? <ChevronUp size={12} strokeWidth={2.5}/> : <ChevronDown size={12} strokeWidth={2.5}/>}
-                          </button>
+                        </button>
                         </td>
                         <td style={{ padding: '12px 10px', fontWeight: 630, color: C.text, fontSize: 12, textAlign: 'center', whiteSpace: 'nowrap', letterSpacing: '0em' }}>{s.date}</td>
                         <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.green, fontWeight: 630 }}>{s.farm_name}</td>
