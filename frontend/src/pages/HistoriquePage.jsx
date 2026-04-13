@@ -1543,7 +1543,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                 </tr>
                 {/* Filtres */}
                 <tr style={{ background: dark ? 'rgba(255,255,255,0.025)' : 'rgba(24,120,63,0.025)', borderBottom: `1.5px solid ${C.border}` }}>
-                  <th style={{ padding: '4px 6px', borderBottom: `1px solid ${C.border}` }} />
+                  <th style={{ padding: '4px 14px', borderBottom: `1px solid ${C.border}` }} />
                   <th style={{ padding: '5px 6px', borderBottom: 'none', overflow: 'visible', position: 'relative' }}>
                     <CalendarPicker value={fDate} onChange={setFDate} C={C} small />
                   </th>
