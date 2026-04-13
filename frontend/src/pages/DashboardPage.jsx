@@ -156,7 +156,7 @@ function HouseCard({ house, onSelectDevice, C, dark, accentColor }) {
             fontSize: 18, fontWeight: 630, color: C.text, marginBottom: 3,
             fontFamily: 'inherit',
           }}>
-            House {house.house_number}
+            Station {house.house_number}
           </div>
           {/* FIX 4 : toujours afficher la vraie heure si dispo */}
           <div style={{ fontSize: 11, color: C.textDim }}>
