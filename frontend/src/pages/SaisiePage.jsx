@@ -913,7 +913,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
         <div style={{ padding: '18px 24px 20px' }}>
           <span style={{
             display: 'inline-flex', alignItems: 'center',
-            fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+            fontSize: 12, fontWeight: 700, letterSpacing: '0em', textTransform: 'uppercase',
             color: C.green, marginBottom: 14,
           }}>Identification</span>
 
@@ -962,15 +962,15 @@ export default function SaisiePage({ token, auth, C, dark }) {
         {/* ── Constantes & Substrat ── */}
         <div style={{
           padding: '16px 24px 20px',
-          background: dark ? 'rgba(52,217,111,0.02)' : 'rgba(24,120,63,0.018)',
+          background: C.card,
         }}>
 
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
             <span style={{
               display: 'inline-flex', alignItems: 'center',
-              fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-              color: C.text,
+              fontSize: 12, fontWeight: 700, letterSpacing: '0em', textTransform: 'uppercase',
+              color: C.green,
             }}>Constantes &amp; Substrat</span>
 
             {pctRessuyage !== null && (
