@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react'
 import {
   Users, UserPlus, Search, X, Check, ShieldCheck,
-  UserCheck, UserX, UserPen, CircleSlash, CircleCheck,
+  UserCheck, UserX, UserPen, CircleSlash, CircleCheck, Pencil
   RefreshCw, Download, History, Mail, Phone,
   AlertTriangle, Clock, Save, ChevronDown, ChevronUp,  // ← ajouter
 } from 'lucide-react'
@@ -122,7 +122,7 @@ function EditModal({ user, farms, onSave, onClose, C, dark }) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <UserPen size={18} color={C.green} strokeWidth={2} />
+            <Pencil size={15} color={C.green} strokeWidth={2} />
             <div style={{ color: C.text, fontWeight: 800, fontSize: 15 }}>
               Modifier — {user.username}
             </div>
@@ -900,7 +900,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}
                           >
                             <Badge role={u.role} dark={dark} />
-                            <UserPen size={11} color={C.textDim} strokeWidth={2} />
+                            <UserPen size={15} color={C.textDim} strokeWidth={2} />
                           </button>
                         )}
                       </td>
@@ -908,7 +908,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                       {/* Status */}
                       <td style={{ padding: '13px 14px', fontFamily: 'inherit' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: u.actif ? C.green : C.red, fontWeight: 630, fontSize: 12 }}>
-                          {u.actif ? <CircleCheck size={18} strokeWidth={2.5} /> : <CircleSlash size={18} strokeWidth={2.5} />}
+                          {u.actif ? <CircleCheck size={15} strokeWidth={2.5} /> : <CircleSlash size={15} strokeWidth={2.5} />}
                           {u.actif ? 'Actif' : 'Désactivé'}
                         </span>
                       </td>
@@ -916,7 +916,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                       {/* Last login */}
                       <td style={{ padding: '13px 14px', fontSize: 12, color: C.textDim, fontFamily: 'inherit' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <Clock size={18} strokeWidth={2} />
+                          <Clock size={15} strokeWidth={2} />
                           {formatDateTime(u.last_login)}
                         </span>
                       </td>
