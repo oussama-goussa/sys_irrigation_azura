@@ -223,7 +223,7 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
 
           {/* Saisie journalière */}
           <button
-            onClick={() => setPage('saisie')}
+            onClick={() => { setPage('saisie'); setSelectedDevice(null) }}
             style={{
               width: '100%', display: 'flex', alignItems: 'center',
               gap: 9, padding: '9px 10px', borderRadius: 8,
@@ -251,7 +251,7 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
 
           {/* Historique */}
           <button
-            onClick={() => setPage('historique')}
+            onClick={() => { setPage('historique'); setSelectedDevice(null) }}
             style={{
               width: '100%', display: 'flex', alignItems: 'center',
               gap: 9, padding: '9px 10px', borderRadius: 8,
@@ -276,7 +276,7 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
           {/* Users — admin only */}
           {auth.role === 'admin' && (
             <button
-              onClick={() => setPage('users')}
+              onClick={() => { setPage('users'); setSelectedDevice(null) }}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center',
                 gap: 9, padding: '9px 10px', borderRadius: 8,
