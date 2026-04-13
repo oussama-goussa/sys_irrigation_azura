@@ -443,7 +443,7 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
                 }}
               >
                 {selectedFarms.length === 0 && (
-                  <span style={{ color: C.textDim, fontSize: 12 }}>
+                  <span style={{ color: C.textDim, fontSize: 12, fontWeight: 630, }}>
                     Sélectionner une ferme...
                   </span>
                 )}
@@ -617,7 +617,7 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
                   fontSize: 12,
                   fontWeight: 630,
                   color: dateFrom ? C.green : C.textDim,
-                  minWidth: 110,
+                  minWidth: 70,
                   textAlign: "center",
                 }}
               >
@@ -629,7 +629,7 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
                   fontSize: 12,
                   fontWeight: 630,
                   color: dateTo ? C.green : C.textDim,
-                  minWidth: 110,
+                  minWidth: 60,
                   textAlign: "center",
                 }}
               >
