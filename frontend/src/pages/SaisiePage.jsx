@@ -913,7 +913,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
         <div style={{ padding: '18px 24px 20px' }}>
           <span style={{
             display: 'inline-flex', alignItems: 'center',
-            fontSize: 12, fontWeight: 700, letterSpacing: '0em', textTransform: 'uppercase',
+            fontSize: 12, fontWeight: 800, letterSpacing: '0em', textTransform: 'uppercase',
             color: C.green, marginBottom: 14,
           }}>Identification</span>
 
@@ -969,7 +969,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
             <span style={{
               display: 'inline-flex', alignItems: 'center',
-              fontSize: 12, fontWeight: 700, letterSpacing: '0em', textTransform: 'uppercase',
+              fontSize: 12, fontWeight: 800, letterSpacing: '0em', textTransform: 'uppercase',
               color: C.green,
             }}>Constantes &amp; Substrat</span>
 
