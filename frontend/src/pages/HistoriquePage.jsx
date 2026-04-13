@@ -6,7 +6,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import {
   History, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
-  Pencil, Trash2, X, AlertTriangle, Download, RefreshCw,
+  SquarePen, Trash2, X, AlertTriangle, Download, RefreshCw,
   Plus, Save, AlertCircle, Check, Droplets, FlaskConical,
   BarChart2, ClipboardList,
 } from 'lucide-react'
@@ -914,7 +914,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
           padding: '20px 28px', borderBottom: `1px solid ${C.border}`,
           position: 'sticky', top: 0, background: C.card, zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Pencil size={18} color={C.green} strokeWidth={2} />
+            <SquarePen size={18} color={C.green} strokeWidth={2} />
             <div style={{ color: C.text, fontWeight: 800, fontSize: 15 }}>
               Modifier saisie — {saisie.date} · {saisie.farm_name}
             </div>
@@ -1662,7 +1662,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                                 transition: 'all 0.13s', whiteSpace: 'nowrap' }}
                               onMouseEnter={e => { e.currentTarget.style.borderColor = C.green; e.currentTarget.style.color = C.green; e.currentTarget.style.background = `${C.green}08` }}
                               onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted; e.currentTarget.style.background = 'transparent' }}>
-                              <Pencil size={12} strokeWidth={2} />
+                              <SquarePen size={12} strokeWidth={2} />
                             </button>
                             <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(s) }}
                               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
