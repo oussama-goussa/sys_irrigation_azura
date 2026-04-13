@@ -35,7 +35,7 @@ const MONTHS_FR = [
 const DAYS_FR = ["Lu", "Ma", "Me", "Je", "Ve", "Sa", "Di"];
 
 // ── Range Calendar ────────────────────────────────────────────
-function RangeCalendar({ dateFrom, dateTo, onChangeFrom, onChangeTo, C }) {
+function RangeCalendar({ dateFrom, dateTo, onChangeFrom, onChangeTo, onClose, C }) {
   const today = new Date();
   const [leftYear, setLeftYear] = useState(today.getFullYear());
   const [leftMonth, setLeftMonth] = useState(today.getMonth());
