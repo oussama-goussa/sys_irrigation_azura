@@ -427,7 +427,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
             noDataSince: null,
           },
           {
-            label: 'Secteurs en ligne',
+            label: 'Stations en ligne',
             value: totalHouses > 0 ? onlineHouses : null,
             suffix: totalHouses > 0 ? `/${totalHouses}` : null,
             color: '#4d9de0',
