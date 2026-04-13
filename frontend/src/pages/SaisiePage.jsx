@@ -1010,7 +1010,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
               </div>
             </div>
 
-            <div style={{ width: 1, background: C.border, alignSelf: 'stretch', opacity: 0.4, margin: '0 18px 0 0' }} />
+            <div style={{ width: 1, background: C.border, alignSelf: 'stretch', opacity: 0.4, margin: '0 18px 0 18px' }} />
 
             {/* Pesée */}
             <div style={{ paddingRight: 18, flex: 3 }}>
@@ -1043,7 +1043,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
               </div>
             </div>
 
-            <div style={{ width: 1, background: C.border, alignSelf: 'stretch', opacity: 0.4, margin: '0 18px 0 0' }} />
+            <div style={{ width: 1, background: C.border, alignSelf: 'stretch', opacity: 0.4, margin: '0 18px 0 18px' }} />
 
             {/* EC Bassin */}
             <div>
