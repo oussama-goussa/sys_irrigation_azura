@@ -51,24 +51,24 @@ function TInput({ value, onChange, placeholder = '', disabled = false, width = 7
         background: disabled ? 'transparent' : (C?.inputBg || '#f9fbfa'),
         color: disabled ? (C?.green || '#18783f') : (C?.text || '#0d1f14'),
         fontSize: 12, fontFamily: 'inherit', outline: 'none',
-        fontWeight: 630, 
+        fontWeight: 630,
       }}
     />
   )
 }
 
 // ── CalendarPicker — custom date picker Azura ────────────────
-const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
-const DAYS_FR   = ['Lu','Ma','Me','Je','Ve','Sa','Di']
+const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+const DAYS_FR = ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di']
 
 function CalendarPicker({ value, onChange, C, small = false }) {
-  const [open, setOpen]       = useState(false)
+  const [open, setOpen] = useState(false)
   const [viewDate, setView] = useState(() => value ? new Date(value + 'T00:00:00') : new Date())
-  const [mode, setMode]       = useState('days') // 'days' | 'months' | 'years'
-  const [pos, setPos]         = useState({ top: 0, left: 0, width: 0 })
-  const ref        = useRef(null)
+  const [mode, setMode] = useState('days') // 'days' | 'months' | 'years'
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 })
+  const ref = useRef(null)
   const triggerRef = useRef(null)
-  const portalRef  = useRef(null)
+  const portalRef = useRef(null)
 
   useEffect(() => {
     const close = (e) => { if (ref.current && !ref.current.contains(e.target) && portalRef.current && !portalRef.current.contains(e.target)) setOpen(false) }
@@ -83,24 +83,24 @@ function CalendarPicker({ value, onChange, C, small = false }) {
 
   useEffect(() => { if (value) setView(new Date(value + 'T00:00:00')) }, [value])
 
-  const year  = viewDate.getFullYear()
+  const year = viewDate.getFullYear()
   const month = viewDate.getMonth()
 
   // ── Build days grid ──
   let startDow = new Date(year, month, 1).getDay() - 1
   if (startDow < 0) startDow = 6
   const daysInMonth = new Date(year, month + 1, 0).getDate()
-  const daysInPrev  = new Date(year, month, 0).getDate()
+  const daysInPrev = new Date(year, month, 0).getDate()
   const cells = []
   for (let i = 0; i < startDow; i++) cells.push({ day: daysInPrev - startDow + 1 + i, curr: false })
   for (let i = 1; i <= daysInMonth; i++) cells.push({ day: i, curr: true })
   while (cells.length % 7 !== 0) cells.push({ day: cells.length - startDow - daysInMonth + 1, curr: false })
 
-  const today    = new Date()
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`
+  const today = new Date()
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
 
   const select = (day) => {
-    onChange(`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`)
+    onChange(`${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`)
     setOpen(false)
     setMode('days')
   }
@@ -144,14 +144,14 @@ function CalendarPicker({ value, onChange, C, small = false }) {
         boxSizing: 'border-box', width: '100%',
       }}>
         <span>{displayValue || 'jj/mm/aaaa'}</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft:'5px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: '5px' }}>
           {value && (
             <span onClick={e => { e.stopPropagation(); onChange('') }}
               style={{ color: C.textDim, cursor: 'pointer', display: 'flex' }}>
-              <X size={12} strokeWidth={2.5}/>
+              <X size={12} strokeWidth={2.5} />
             </span>
           )}
-          {open ? <ChevronUp size={13} strokeWidth={2}/> : <ChevronDown size={13} strokeWidth={2}/>}
+          {open ? <ChevronUp size={13} strokeWidth={2} /> : <ChevronDown size={13} strokeWidth={2} />}
         </div>
       </div>
 
@@ -174,10 +174,10 @@ function CalendarPicker({ value, onChange, C, small = false }) {
             <button onClick={() => mode === 'years'
               ? setView(new Date(year - 12, month, 1))
               : mode === 'months'
-              ? setView(new Date(year - 1, month, 1))
-              : setView(new Date(year, month - 1, 1))
+                ? setView(new Date(year - 1, month, 1))
+                : setView(new Date(year, month - 1, 1))
             } style={btnStyle}>
-              <ChevronLeft size={14} strokeWidth={2.5}/>
+              <ChevronLeft size={14} strokeWidth={2.5} />
             </button>
 
             <div style={{ display: 'flex', gap: 4 }}>
@@ -204,10 +204,10 @@ function CalendarPicker({ value, onChange, C, small = false }) {
             <button onClick={() => mode === 'years'
               ? setView(new Date(year + 12, month, 1))
               : mode === 'months'
-              ? setView(new Date(year + 1, month, 1))
-              : setView(new Date(year, month + 1, 1))
+                ? setView(new Date(year + 1, month, 1))
+                : setView(new Date(year, month + 1, 1))
             } style={btnStyle}>
-              <ChevronRight size={14} strokeWidth={2.5}/>
+              <ChevronRight size={14} strokeWidth={2.5} />
             </button>
           </div>
 
@@ -227,8 +227,8 @@ function CalendarPicker({ value, onChange, C, small = false }) {
                       fontFamily: 'inherit', padding: '7px 4px',
                       transition: 'all 0.1s',
                     }}
-                    onMouseEnter={e => { if (!isCurr) { e.currentTarget.style.background = `${C.green}15`; e.currentTarget.style.borderColor = `${C.green}50` }}}
-                    onMouseLeave={e => { if (!isCurr) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = C.border }}}
+                    onMouseEnter={e => { if (!isCurr) { e.currentTarget.style.background = `${C.green}15`; e.currentTarget.style.borderColor = `${C.green}50` } }}
+                    onMouseLeave={e => { if (!isCurr) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = C.border } }}
                   >{y}</button>
                 )
               })}
@@ -251,9 +251,9 @@ function CalendarPicker({ value, onChange, C, small = false }) {
                       fontFamily: 'inherit', padding: '7px 4px',
                       transition: 'all 0.1s',
                     }}
-                    onMouseEnter={e => { if (!isCurr) { e.currentTarget.style.background = `${C.green}15`; e.currentTarget.style.borderColor = `${C.green}50` }}}
-                    onMouseLeave={e => { if (!isCurr) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = C.border }}}
-                  >{mn.slice(0,3)}</button>
+                    onMouseEnter={e => { if (!isCurr) { e.currentTarget.style.background = `${C.green}15`; e.currentTarget.style.borderColor = `${C.green}50` } }}
+                    onMouseLeave={e => { if (!isCurr) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = C.border } }}
+                  >{mn.slice(0, 3)}</button>
                 )
               })}
             </div>
@@ -269,9 +269,9 @@ function CalendarPicker({ value, onChange, C, small = false }) {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px 0' }}>
                 {cells.map((cell, i) => {
-                  const cellStr    = cell.curr ? `${year}-${String(month+1).padStart(2,'0')}-${String(cell.day).padStart(2,'0')}` : null
+                  const cellStr = cell.curr ? `${year}-${String(month + 1).padStart(2, '0')}-${String(cell.day).padStart(2, '0')}` : null
                   const isSelected = cellStr === value
-                  const isToday    = cellStr === todayStr
+                  const isToday = cellStr === todayStr
                   return (
                     <div key={i} onClick={() => cell.curr && select(cell.day)}
                       style={{
@@ -287,7 +287,7 @@ function CalendarPicker({ value, onChange, C, small = false }) {
                       onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
                     >
                       {isToday && !isSelected && (
-                        <span style={{ position: 'absolute', bottom: 1, left: '50%', transform: 'translateX(-50%)', width: 3, height: 3, borderRadius: '50%', background: C.green }}/>
+                        <span style={{ position: 'absolute', bottom: 1, left: '50%', transform: 'translateX(-50%)', width: 3, height: 3, borderRadius: '50%', background: C.green }} />
                       )}
                       {cell.day}
                     </div>
@@ -365,7 +365,7 @@ function TimeInput({ value, onChange, C, small = false }) {
   }
   const numStyle = {
     fontSize: 22, fontWeight: 630, color: C.text,
-    width: 48, textAlign: 'center', 
+    width: 48, textAlign: 'center',
     background: 'none', border: 'none', outline: 'none',
     fontFamily: 'inherit', padding: 0,
   }
@@ -407,28 +407,28 @@ function TimeInput({ value, onChange, C, small = false }) {
           {/* HH */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
             <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}
-              onClick={() => inc('h')}><ChevronUp size={16} strokeWidth={2.5}/></button>
-          {/* HH */}
-          <input type="text" inputMode="numeric" maxLength={2}
-            value={hRaw ?? h ?? '00'}
-            onChange={e => {
-              const raw = e.target.value.replace(/\D/g, '').slice(0, 2)
-              setHRaw(raw)
-              if (raw.length === 2) {
-                const v = Math.min(23, parseInt(raw) || 0)
+              onClick={() => inc('h')}><ChevronUp size={16} strokeWidth={2.5} /></button>
+            {/* HH */}
+            <input type="text" inputMode="numeric" maxLength={2}
+              value={hRaw ?? h ?? '00'}
+              onChange={e => {
+                const raw = e.target.value.replace(/\D/g, '').slice(0, 2)
+                setHRaw(raw)
+                if (raw.length === 2) {
+                  const v = Math.min(23, parseInt(raw) || 0)
+                  onChange(`${String(v).padStart(2, '0')}:${m || '00'}`)
+                  setHRaw(null)
+                }
+              }}
+              onBlur={() => {
+                const v = Math.min(23, parseInt(hRaw ?? h) || 0)
                 onChange(`${String(v).padStart(2, '0')}:${m || '00'}`)
                 setHRaw(null)
-              }
-            }}
-            onBlur={() => {
-              const v = Math.min(23, parseInt(hRaw ?? h) || 0)
-              onChange(`${String(v).padStart(2, '0')}:${m || '00'}`)
-              setHRaw(null)
-            }}
-            style={{ fontSize: 22, fontWeight: 700, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
-          />
+              }}
+              style={{ fontSize: 22, fontWeight: 700, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
+            />
             <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}
-              onClick={() => dec('h')}><ChevronDown size={16} strokeWidth={2.5}/></button>
+              onClick={() => dec('h')}><ChevronDown size={16} strokeWidth={2.5} /></button>
           </div>
 
           <span style={{ fontSize: 22, fontWeight: 900, color: C.textMuted }}>:</span>
@@ -436,7 +436,7 @@ function TimeInput({ value, onChange, C, small = false }) {
           {/* MM */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
             <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}
-              onClick={() => inc('m')}><ChevronUp size={16} strokeWidth={2.5}/></button>
+              onClick={() => inc('m')}><ChevronUp size={16} strokeWidth={2.5} /></button>
             {/* MM */}
             <input type="text" inputMode="numeric" maxLength={2}
               value={mRaw ?? m ?? '00'}
@@ -457,7 +457,7 @@ function TimeInput({ value, onChange, C, small = false }) {
               style={{ fontSize: 22, fontWeight: 700, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
             />
             <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}
-              onClick={() => dec('m')}><ChevronDown size={16} strokeWidth={2.5}/></button>
+              onClick={() => dec('m')}><ChevronDown size={16} strokeWidth={2.5} /></button>
           </div>
         </div>
       )}
@@ -497,7 +497,7 @@ function CustomSelect({ value, onChange, options, placeholder, C, disabled = fal
           {label || placeholder}
         </span>
         <span style={{ color: C.textDim, display: 'flex', alignItems: 'center' }}>
-          {open ? <ChevronUp size={12} strokeWidth={2}/> : <ChevronDown size={12} strokeWidth={2}/>}
+          {open ? <ChevronUp size={12} strokeWidth={2} /> : <ChevronDown size={12} strokeWidth={2} />}
         </span>
       </div>
       {open && (
@@ -528,7 +528,7 @@ function CustomSelect({ value, onChange, options, placeholder, C, disabled = fal
                 onMouseLeave={e => e.currentTarget.style.background = sel ? `${C.green}12` : 'transparent'}
               >
                 <span>{lbl}</span>
-                {sel && <Check size={12} strokeWidth={2.5}/>}
+                {sel && <Check size={12} strokeWidth={2.5} />}
               </div>
             )
           })}
@@ -598,26 +598,26 @@ function SLabel({ children, C }) {
 // ── Main ──────────────────────────────────────────────────────
 export default function SaisiePage({ token, auth, C, dark }) {
 
-  const [farms, setFarms]           = useState([])
-  const [ferme, setFerme]           = useState('')
-  const [station, setStation]       = useState('')
-  const [serre, setSerre]           = useState('')
-  const [vanne, setVanne]           = useState('')
-  const [date, setDate]             = useState(today())
+  const [farms, setFarms] = useState([])
+  const [ferme, setFerme] = useState('')
+  const [station, setStation] = useState('')
+  const [serre, setSerre] = useState('')
+  const [vanne, setVanne] = useState('')
+  const [date, setDate] = useState(today())
 
-  const [nbrBras, setNbrBras]               = useState('')
-  const [nbrGoutteurs, setNbrGoutteurs]     = useState('')
-  const [poidsMatin, setPoidsMatin]         = useState('')
-  const [heureMatin, setHeureMatin]         = useState('')
-  const [poidsSoir, setPoidsSoir]           = useState('')
-  const [heureSoir, setHeureSoir]           = useState('')
-  const [bassinEC, setBassinEC]             = useState('')
+  const [nbrBras, setNbrBras] = useState('')
+  const [nbrGoutteurs, setNbrGoutteurs] = useState('')
+  const [poidsMatin, setPoidsMatin] = useState('')
+  const [heureMatin, setHeureMatin] = useState('')
+  const [poidsSoir, setPoidsSoir] = useState('')
+  const [heureSoir, setHeureSoir] = useState('')
+  const [bassinEC, setBassinEC] = useState('')
 
-  const [tours, setTours]     = useState([])
-  const [saving, setSaving]   = useState(false)
-  const [saved, setSaved]     = useState(false)
+  const [tours, setTours] = useState([])
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
   const [savedId, setSavedId] = useState(null)
-  const [error, setError]     = useState('')
+  const [error, setError] = useState('')
 
   const tableBottomRef = useRef(null)
 
@@ -626,18 +626,18 @@ export default function SaisiePage({ token, auth, C, dark }) {
   }, [token])
 
   // ── Options dérivées ──
-  const fermeOptions   = [...new Set(farms.map(f => f.farm_name))].map(v => ({ value: v, label: v }))
-  const selectedFarm   = farms.find(f => f.farm_name === ferme)
-  const houses         = selectedFarm?.houses || []
+  const fermeOptions = [...new Set(farms.map(f => f.farm_name))].map(v => ({ value: v, label: v }))
+  const selectedFarm = farms.find(f => f.farm_name === ferme)
+  const houses = selectedFarm?.houses || []
   const stationOptions = [...new Set(houses.map(h => h.house_number))].map(v => ({
     value: v,
     label: `Station ${v}`,
   }))
-  const serreOptions   = station
+  const serreOptions = station
     ? Array.from({ length: 20 }, (_, i) => ({
-        value: `S${String(i + 1).padStart(2, '0')}`,
-        label: `S${String(i + 1).padStart(2, '0')}`,
-      }))
+      value: `S${String(i + 1).padStart(2, '0')}`,
+      label: `S${String(i + 1).padStart(2, '0')}`,
+    }))
     : []
 
   // ── % Ressuyage ──
@@ -702,16 +702,16 @@ export default function SaisiePage({ token, auth, C, dark }) {
   }
 
   // ── Bilan ──
-  const lastTour        = tours[tours.length - 1]
-  const totalVApport    = tours.reduce((s, t) => s + (Number(t.vApport) || 0), 0)
-  const totalVDrain     = tours.reduce((s, t) => s + (Number(t.vDrain) || 0), 0)
+  const lastTour = tours[tours.length - 1]
+  const totalVApport = tours.reduce((s, t) => s + (Number(t.vApport) || 0), 0)
+  const totalVDrain = tours.reduce((s, t) => s + (Number(t.vDrain) || 0), 0)
   // Durée totale = somme des durées seulement
-  const dureeTotal      = tours.reduce((s, t) => s + (Number(t.duree) || 0), 0)
-  const ecMoyApport     = tours.length ? (tours.reduce((s, t) => s + (Number(t.ecApport) || 0), 0) / tours.filter(t => t.ecApport).length || null) : null
-  const phMoyApport     = tours.length ? (tours.reduce((s, t) => s + (Number(t.phApport) || 0), 0) / tours.filter(t => t.phApport).length || null) : null
-  const ecMoyDrain      = tours.length ? (tours.reduce((s, t) => s + (Number(t.ecDrain) || 0), 0) / tours.filter(t => t.ecDrain).length || null) : null
-  const phMoyDrain      = tours.length ? (tours.reduce((s, t) => s + (Number(t.phDrain) || 0), 0) / tours.filter(t => t.phDrain).length || null) : null
-  const moyDrainFinale  = lastTour?.moyPctDrain ?? null
+  const dureeTotal = tours.reduce((s, t) => s + (Number(t.duree) || 0), 0)
+  const ecMoyApport = tours.length ? (tours.reduce((s, t) => s + (Number(t.ecApport) || 0), 0) / tours.filter(t => t.ecApport).length || null) : null
+  const phMoyApport = tours.length ? (tours.reduce((s, t) => s + (Number(t.phApport) || 0), 0) / tours.filter(t => t.phApport).length || null) : null
+  const ecMoyDrain = tours.length ? (tours.reduce((s, t) => s + (Number(t.ecDrain) || 0), 0) / tours.filter(t => t.ecDrain).length || null) : null
+  const phMoyDrain = tours.length ? (tours.reduce((s, t) => s + (Number(t.phDrain) || 0), 0) / tours.filter(t => t.phDrain).length || null) : null
+  const moyDrainFinale = lastTour?.moyPctDrain ?? null
 
   const ccBras = totalVApport && moyDrainFinale !== null && nbrGoutteurs && nbrBras && Number(nbrBras) > 0
     ? ((totalVApport * (1 - moyDrainFinale / 100) * Number(nbrGoutteurs)) / Number(nbrBras)).toFixed(1)
@@ -731,42 +731,42 @@ export default function SaisiePage({ token, auth, C, dark }) {
         vanne,
         date,
         constantes: {
-          nbrBras       : nbrBras      !== '' ? Number(nbrBras)      : null,
-          nbrGoutteurs  : nbrGoutteurs !== '' ? Number(nbrGoutteurs) : null,
-          poidsMatin    : poidsMatin   !== '' ? Number(poidsMatin)   : null,
+          nbrBras: nbrBras !== '' ? Number(nbrBras) : null,
+          nbrGoutteurs: nbrGoutteurs !== '' ? Number(nbrGoutteurs) : null,
+          poidsMatin: poidsMatin !== '' ? Number(poidsMatin) : null,
           heureMatin,
-          poidsSoir     : poidsSoir    !== '' ? Number(poidsSoir)    : null,
+          poidsSoir: poidsSoir !== '' ? Number(poidsSoir) : null,
           heureSoir,
-          bassinEC      : bassinEC     !== '' ? Number(bassinEC)     : null,
-          pctRessuyage  : pctRessuyage != null ? Number(pctRessuyage) : null,
+          bassinEC: bassinEC !== '' ? Number(bassinEC) : null,
+          pctRessuyage: pctRessuyage != null ? Number(pctRessuyage) : null,
         },
         tours: tours.map(t => ({
-          num_tour     : t.num,
-          rad          : t.rad      !== '' ? Number(t.rad)      : null,
-          cumul_rad    : t.cumulRad != null ? Number(t.cumulRad) : null,
-          heure        : t.heure    || null,
-          duree_min    : t.duree    !== '' ? Number(t.duree)    : null,
-          temps_repos  : t.tempsRepos,
-          v_apport     : t.vApport  !== '' ? Number(t.vApport)  : null,
-          ec_apport    : t.ecApport !== '' ? Number(t.ecApport) : null,
-          ph_apport    : t.phApport !== '' ? Number(t.phApport) : null,
-          v_drain      : t.vDrain   !== '' ? Number(t.vDrain)   : null,
-          ec_drain     : t.ecDrain  !== '' ? Number(t.ecDrain)  : null,
-          ph_drain     : t.phDrain  !== '' ? Number(t.phDrain)  : null,
-          pct_drain    : t.pctDrain  != null ? Number(t.pctDrain)   : null,
+          num_tour: t.num,
+          rad: t.rad !== '' ? Number(t.rad) : null,
+          cumul_rad: t.cumulRad != null ? Number(t.cumulRad) : null,
+          heure: t.heure || null,
+          duree_min: t.duree !== '' ? Number(t.duree) : null,
+          temps_repos: t.tempsRepos,
+          v_apport: t.vApport !== '' ? Number(t.vApport) : null,
+          ec_apport: t.ecApport !== '' ? Number(t.ecApport) : null,
+          ph_apport: t.phApport !== '' ? Number(t.phApport) : null,
+          v_drain: t.vDrain !== '' ? Number(t.vDrain) : null,
+          ec_drain: t.ecDrain !== '' ? Number(t.ecDrain) : null,
+          ph_drain: t.phDrain !== '' ? Number(t.phDrain) : null,
+          pct_drain: t.pctDrain != null ? Number(t.pctDrain) : null,
           moy_pct_drain: t.moyPctDrain != null ? Number(t.moyPctDrain) : null,
         })),
         bilan: {
-          nbrTours      : tours.length,
-          dureeTotal    : dureeTotal > 0 ? fmtDuree(dureeTotal) : null,
-          totalVApport  : totalVApport  != null ? totalVApport  : null,
-          totalVDrain   : totalVDrain   != null ? totalVDrain   : null,
-          ecMoyApport   : ecMoyApport   != null ? Number(ecMoyApport)   : null,
-          phMoyApport   : phMoyApport   != null ? Number(phMoyApport)   : null,
-          ecMoyDrain    : ecMoyDrain    != null ? Number(ecMoyDrain)    : null,
-          phMoyDrain    : phMoyDrain    != null ? Number(phMoyDrain)    : null,
+          nbrTours: tours.length,
+          dureeTotal: dureeTotal > 0 ? fmtDuree(dureeTotal) : null,
+          totalVApport: totalVApport != null ? totalVApport : null,
+          totalVDrain: totalVDrain != null ? totalVDrain : null,
+          ecMoyApport: ecMoyApport != null ? Number(ecMoyApport) : null,
+          phMoyApport: phMoyApport != null ? Number(phMoyApport) : null,
+          ecMoyDrain: ecMoyDrain != null ? Number(ecMoyDrain) : null,
+          phMoyDrain: phMoyDrain != null ? Number(phMoyDrain) : null,
           moyDrainFinale: moyDrainFinale != null ? Number(moyDrainFinale) : null,
-          ccBras        : ccBras        != null ? Number(ccBras)        : null,
+          ccBras: ccBras != null ? Number(ccBras) : null,
         },
       }
       const result = await saveSaisie(token, payload)
@@ -799,8 +799,8 @@ export default function SaisiePage({ token, auth, C, dark }) {
     borderRadius: 14, padding: '18px 22px', marginBottom: 16,
   }
   const labelStyle = {
-    display: 'block', color: C.textMuted, fontSize: 12, fontWeight: 800,
-    textTransform: 'uppercase', letterSpacing: '0em', marginBottom: 5,
+    display: 'block', color: C.green, fontSize: 11, fontWeight: 800,
+    textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 7,
   }
   const inputStyle = {
     width: '100%', padding: '8px 12px', borderRadius: 8, fontWeight: 630,
@@ -812,7 +812,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
     <div style={{ maxWidth: 1500 }}>
 
       {/* ── Header ──────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>          
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
         <div>
           <h1 style={{ color: C.text, fontSize: 22, fontWeight: 900, marginBottom: 4, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 10 }}>
             <ClipboardList size={22} color={C.green} strokeWidth={2} />
@@ -898,10 +898,23 @@ export default function SaisiePage({ token, auth, C, dark }) {
           </div>
         ))}
       </div>
-      
+
       {/* ── Ferme / Station / Serre / Vanne / Date ─────────── */}
-      <div style={{ ...cardStyle }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 14 }}>
+      <div style={{ ...cardStyle, padding: '0 0 0 0', overflow: 'hidden' }}>
+        {/* Barre titre */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '12px 22px',
+          borderBottom: `1px solid ${C.border}`,
+          background: dark ? 'rgba(52,217,111,0.04)' : 'rgba(24,120,63,0.03)',
+        }}>
+          <div style={{ width: 3, height: 16, borderRadius: 4, background: C.green }} />
+          <span style={{ fontSize: 11, fontWeight: 800, color: C.green, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            Identification
+          </span>
+        </div>
+        <div style={{ padding: '16px 22px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 0.7fr 1.1fr', gap: 14 }}></div>
           <div>
             <label style={labelStyle}>Ferme</label>
             <CustomSelect
@@ -944,286 +957,329 @@ export default function SaisiePage({ token, auth, C, dark }) {
             <CalendarPicker value={date} onChange={setDate} C={C} />
           </div>
         </div>
-
-        {/* ── Constantes & Substrat — ligne sous les sélecteurs ── */}
-        <div style={{
-          marginTop: 16, paddingTop: 16,
-          borderTop: `1px solid ${C.border}`,
-        }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0em', marginBottom: 12 }}>
+      </div>
+      
+      {/* ── Constantes & Substrat ── */}
+      <div style={{
+        marginTop: 0, padding: '14px 22px 18px',
+        borderTop: `1px solid ${C.border}`,
+        background: dark ? 'rgba(52,217,111,0.03)' : 'rgba(24,120,63,0.025)',
+      }}>
+        {/* Titre */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+          <div style={{ width: 3, height: 14, borderRadius: 4, background: C.amber }} />
+          <span style={{ fontSize: 11, fontWeight: 800, color: C.amber, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             Constantes &amp; Substrat
+          </span>
+          {pctRessuyage !== null && (
+            <span style={{
+              marginLeft: 10, fontSize: 11, fontWeight: 700,
+              background: dark ? 'rgba(52,217,111,0.15)' : 'rgba(24,120,63,0.1)',
+              color: C.green, border: `1px solid ${C.green}40`,
+              borderRadius: 20, padding: '2px 10px',
+            }}>
+              Ressuyage : {pctRessuyage}%
+            </span>
+          )}
+        </div>
+
+        {/* Groupes */}
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+
+          {/* Substrat */}
+          <div style={{
+            flex: '0 0 auto', background: C.card,
+            border: `1px solid ${C.border}`, borderRadius: 10,
+            padding: '12px 14px',
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Substrat</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div>
+                <SLabel C={C}>Nbr Bras</SLabel>
+                <input type="number" value={nbrBras} onChange={e => setNbrBras(e.target.value)}
+                  placeholder="0" style={{ ...inputStyle, height: 36, padding: '7px 10px', width: 90 }} />
+              </div>
+              <div>
+                <SLabel C={C}>Nbr Goutteurs</SLabel>
+                <input type="number" value={nbrGoutteurs} onChange={e => setNbrGoutteurs(e.target.value)}
+                  placeholder="0" style={{ ...inputStyle, height: 36, padding: '7px 10px', width: 90 }} />
+              </div>
+            </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 14, alignItems: 'end' }}>
 
-            <div>
-              <SLabel C={C}>Nbr Bras</SLabel>
-              <input type="number" value={nbrBras} onChange={e => setNbrBras(e.target.value)}
-                placeholder="0" style={{ ...inputStyle, height: 38, padding: '7px 10px' }} />
+          {/* Pesée matin */}
+          <div style={{
+            flex: '0 0 auto', background: C.card,
+            border: `1px solid ${C.border}`, borderRadius: 10,
+            padding: '12px 14px',
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Pesée matin</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div>
+                <SLabel C={C}>Poids (Kg)</SLabel>
+                <input type="number" value={poidsMatin} onChange={e => setPoidsMatin(e.target.value)}
+                  placeholder="0.00" step="0.01" style={{ ...inputStyle, height: 36, padding: '7px 10px', width: 90 }} />
+              </div>
+              <div>
+                <SLabel C={C}>Heure</SLabel>
+                <TimeInput value={heureMatin} onChange={setHeureMatin} C={C} />
+              </div>
             </div>
+          </div>
 
-            <div>
-              <SLabel C={C}>Nbr Goutteurs</SLabel>
-              <input type="number" value={nbrGoutteurs} onChange={e => setNbrGoutteurs(e.target.value)}
-                placeholder="0" style={{ ...inputStyle, height: 38, padding: '7px 10px' }} />
+          {/* Pesée soir */}
+          <div style={{
+            flex: '0 0 auto', background: C.card,
+            border: `1px solid ${C.border}`, borderRadius: 10,
+            padding: '12px 14px',
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Pesée soir</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div>
+                <SLabel C={C}>Poids (Kg)</SLabel>
+                <input type="number" value={poidsSoir} onChange={e => setPoidsSoir(e.target.value)}
+                  placeholder="0.00" step="0.01" style={{ ...inputStyle, height: 36, padding: '7px 10px', width: 90 }} />
+              </div>
+              <div>
+                <SLabel C={C}>Heure</SLabel>
+                <TimeInput value={heureSoir} onChange={setHeureSoir} C={C} />
+              </div>
             </div>
+          </div>
 
-            <div>
-              <SLabel C={C}>Poids matin (Kg)</SLabel>
-              <input type="number" value={poidsMatin} onChange={e => setPoidsMatin(e.target.value)}
-                placeholder="0.00" step="0.01" style={{ ...inputStyle, height: 38, padding: '7px 10px' }} />
-            </div>
-
-            <div>
-              <SLabel C={C}>Heure matin</SLabel>
-              <TimeInput value={heureMatin} onChange={setHeureMatin} C={C} />
-            </div>
-
-            <div>
-              <SLabel C={C}>Poids soir (Kg)</SLabel>
-              <input type="number" value={poidsSoir} onChange={e => setPoidsSoir(e.target.value)}
-                placeholder="0.00" step="0.01" style={{ ...inputStyle, height: 38, padding: '7px 10px' }} />
-            </div>
-
-            <div>
-              <SLabel C={C}>Heure soir</SLabel>
-              <TimeInput value={heureSoir} onChange={setHeureSoir} C={C} />
-            </div>
-
+          {/* Bassin EC */}
+          <div style={{
+            flex: '0 0 auto', background: C.card,
+            border: `1px solid ${C.border}`, borderRadius: 10,
+            padding: '12px 14px',
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>EC Bassin</div>
             <div>
               <SLabel C={C}>Bassin (EC)</SLabel>
               <input type="number" value={bassinEC} onChange={e => setBassinEC(e.target.value)}
-                placeholder="0.00" step="0.01" style={{ ...inputStyle, height: 38, padding: '7px 10px' }} />
+                placeholder="0.00" step="0.01" style={{ ...inputStyle, height: 36, padding: '7px 10px', width: 90 }} />
             </div>
-
           </div>
 
-          {/* % Ressuyage */}
-          {pctRessuyage !== null && (
-            <div style={{
-              marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 8,
-            }}>
-              <span style={{ fontSize: 12, color: C.textDim }}>% Ressuyage</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: C.green }}>{pctRessuyage}%</span>
-            </div>
-          )}
         </div>
       </div>
-
-      {/* ── Table Tours ──────────────────────────────────────── */}
-      <div style={{ ...cardStyle, marginBottom: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0em', marginBottom: 14 }}>
-          Tours d'irrigation
-        </div>
-
-        <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit' }}>
-            <thead>
-              <tr>
-                <TH w={36} C={C}>N°</TH>
-                <TH w={70} C={C}>Rad.</TH>
-                <TH w={80} color={C.blue} C={C}>Cumul Rad</TH>
-                <TH w={120} C={C}>Heure</TH>
-                <TH w={80} color={C.textDim} C={C}>T.Repos</TH>
-                <TH w={72} C={C}>Durée (min)</TH>
-                <TH w={78} C={C}>V.Apport</TH>
-                <TH w={72} C={C}>EC Apport</TH>
-                <TH w={72} C={C}>pH Apport</TH>
-                <TH w={72} C={C}>V.Drain</TH>
-                <TH w={72} C={C}>EC Drain</TH>
-                <TH w={72} C={C}>pH Drain</TH>
-                <TH w={72} color={C.amber} C={C}>% Drain</TH>
-                <TH w={80} color={C.amber} C={C}>Moy % Drain</TH>
-                <TH w={36} C={C}></TH>
-              </tr>
-            </thead>
-            <tbody style={{ overflow: 'visible' }}>
-              {tours.length === 0 ? (
-                <tr>
-                  <td colSpan={15} style={{ padding: '40px 0', textAlign: 'center', color: C.textDim, fontSize: 12 }}>
-                    Cliquez sur <strong style={{ color: C.green }}>+ Nouveau tour</strong> pour ajouter le premier tour
-                  </td>
-                </tr>
-              ) : tours.map((t, i) => (
-                <tr key={t.id} style={{
-                  borderBottom: i < tours.length - 1 ? `1px solid ${C.border}` : 'none',
-                  background: i % 2 === 0 ? 'transparent' : (dark ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)'),
-                }}>
-                  <td style={{ padding: '6px 4px', textAlign: 'center' }}>
-                    <div style={{
-                      width: 26, height: 26, borderRadius: 7,
-                      background: dark ? 'rgba(52,217,111,0.12)' : 'rgba(24,120,63,0.08)',
-                      border: `1.5px solid ${C.green}30`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 12, fontWeight: 900, color: C.green, margin: '0 auto',
-                    }}>{t.num}</div>
-                  </td>
-                  <td style={{ padding: '6px 4px', textAlign: 'center' }}>
-                    <TInput value={t.rad} onChange={v => updateTour(t.id, 'rad', v)} width={68} C={C} />
-                  </td>
-                  <td style={{ padding: '6px 4px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 12, fontWeight: 630, color: C.blue }}>
-                      {t.cumulRad > 0 ? fmtNum(t.cumulRad, 1) : '—'}
-                    </div>
-                  </td>
-                  <td style={{ padding: '6px 4px', textAlign: 'center' }}>
-                    <TimeInput value={t.heure} onChange={v => updateTour(t.id, 'heure', v)} C={C} small/>
-                  </td>
-                  <td style={{ padding: '6px 4px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 12, fontWeight: 630, color: t.tempsRepos !== null ? C.textMuted : C.textDim }}>
-                      {t.tempsRepos !== null ? `${t.tempsRepos} min` : i === 0 ? '—' : '?'}
-                    </div>
-                  </td>
-                  <td style={{ padding: '6px 4px', fontWeight: 630, textAlign: 'center' }}>
-                    <TInput value={t.duree} onChange={v => updateTour(t.id, 'duree', v)} width={68} C={C} />
-                  </td>
-                  <td style={{ padding: '6px 4px', fontWeight: 630, textAlign: 'center' }}>
-                    <TInput value={t.vApport} onChange={v => updateTour(t.id, 'vApport', v)} width={72} C={C} />
-                  </td>
-                  <td style={{ padding: '6px 4px', fontWeight: 630, textAlign: 'center' }}>
-                    <TInput value={t.ecApport} onChange={v => updateTour(t.id, 'ecApport', v)} width={68} C={C} />
-                  </td>
-                  <td style={{ padding: '6px 4px', fontWeight: 630, textAlign: 'center' }}>
-                    <TInput value={t.phApport} onChange={v => updateTour(t.id, 'phApport', v)} width={68} C={C} />
-                  </td>
-                  <td style={{ padding: '6px 4px', fontWeight: 630, textAlign: 'center' }}>
-                    <TInput value={t.vDrain} onChange={v => updateTour(t.id, 'vDrain', v)} width={68} C={C} />
-                  </td>
-                  <td style={{ padding: '6px 4px', fontWeight: 630, textAlign: 'center' }}>
-                    <TInput value={t.ecDrain} onChange={v => updateTour(t.id, 'ecDrain', v)} width={68} C={C} />
-                  </td>
-                  <td style={{ padding: '6px 4px', fontWeight: 630, textAlign: 'center' }}>
-                    <TInput value={t.phDrain} onChange={v => updateTour(t.id, 'phDrain', v)} width={68} C={C} />
-                  </td>
-                  <td style={{ padding: '6px 4px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 12, fontWeight: 630, color: t.pctDrain !== null ? C.amber : C.textDim }}>
-                      {t.pctDrain !== null ? `${fmtNum(t.pctDrain, 1)}%` : '—'}
-                    </div>
-                  </td>
-                  <td style={{ padding: '6px 4px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 12, fontWeight: 630, color: t.moyPctDrain !== null ? C.amber : C.textDim }}>
-                      {t.moyPctDrain !== null ? `${fmtNum(t.moyPctDrain, 1)}%` : '—'}
-                    </div>
-                  </td>
-                  <td style={{ padding: '6px 4px', textAlign: 'center' }}>
-                    <button onClick={() => deleteTour(t.id)} style={{
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      color: C.textDim, padding: 4, borderRadius: 5,
-                      display: 'flex', alignItems: 'center',
-                    }}
-                      onMouseEnter={e => e.currentTarget.style.color = C.red}
-                      onMouseLeave={e => e.currentTarget.style.color = C.textDim}
-                    >
-                      <Trash2 size={12} strokeWidth={2} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-
-            {tours.length > 0 && (
-              <tfoot>
-                <tr style={{ borderTop: `2px solid ${C.border}` }}>
-                  <td colSpan={6} style={{ padding: '8px 6px', fontSize: 12, fontWeight: 630, color: C.textMuted }}>TOTAUX</td>
-                  <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 900, color: C.green }}>{fmtNum(totalVApport, 1)}</td>
-                  <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 630, color: C.textMuted }}>{ecMoyApport ? fmtNum(ecMoyApport, 2) : '—'}</td>
-                  <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 630, color: C.textMuted }}>{phMoyApport ? fmtNum(phMoyApport, 2) : '—'}</td>
-                  <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 900, color: C.blue }}>{fmtNum(totalVDrain, 1)}</td>
-                  <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 630, color: C.textMuted }}>{ecMoyDrain ? fmtNum(ecMoyDrain, 2) : '—'}</td>
-                  <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 630, color: C.textMuted }}>{phMoyDrain ? fmtNum(phMoyDrain, 2) : '—'}</td>
-                  <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 900, color: C.amber }}>{moyDrainFinale !== null ? `${fmtNum(moyDrainFinale, 1)}%` : '—'}</td>
-                  <td colSpan={2} />
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        </div>
-
-        {/* ── + Nouveau tour en bas de table ── */}
-        <div ref={tableBottomRef} style={{
-          marginTop: 12, display: 'flex',
-          alignItems: 'center', justifyContent: 'flex-end',  // ← droite
-        }}>
-          <button
-            onClick={addTour}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '9px 18px',
-              background: dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.08)',
-              border: `1.5px solid ${C.green}40`,
-              borderRadius: 8, color: C.green,
-              fontSize: 12, fontWeight: 630, fontFamily: 'inherit', cursor: 'pointer',
-            }}
-          >
-            <Plus size={12} strokeWidth={2.5} />
-            Nouveau tour
-          </button>
-        </div>
-
-        {/* Résumé CC/bras */}
-        {tours.length > 0 && (
-          <div style={{
-            marginTop: 14, padding: '12px 16px',
-            background: dark ? 'rgba(52,217,111,0.06)' : 'rgba(24,120,63,0.04)',
-            border: `1px solid ${C.green}20`,
-            borderRadius: 10, display: 'flex', gap: 32, flexWrap: 'wrap',
-          }}>
-            {[
-              { label: 'Durée totale', value: fmtDuree(dureeTotal) },
-              { label: 'Total V.Apport', value: fmtNum(totalVApport, 1) },
-              { label: 'Total V.Drain', value: fmtNum(totalVDrain, 1) },
-              { label: 'Moy % Drainage finale', value: moyDrainFinale !== null ? `${fmtNum(moyDrainFinale, 1)}%` : '—' },
-              { label: 'CC/bras consommé (cc)', value: ccBras ?? '—', highlight: true },
-            ].map(item => (
-              <div key={item.label}>
-                <div style={{ fontSize: 12, color: C.textDim, marginBottom: 3 }}>{item.label}</div>
-                <div style={{ fontSize: item.highlight ? 12 : 12, fontWeight: 630, color: item.highlight ? C.green : C.text }}>
-                  {item.value}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ── Enregistrer — bas de page droite ── */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
-        {error && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 6, marginRight: 10,
-            background: dark ? '#2a0a0a' : '#fef2f2',
-            border: `1px solid ${C.red}30`,
-            borderRadius: 8, padding: '8px 14px', color: C.red, fontSize: 12,
-          }}>
-            <AlertCircle size={12} strokeWidth={2} />{error}
-          </div>
-        )}
-        {saved && (
-          <div style={{
-            marginRight: 10,
-            background: dark ? 'rgba(52,217,111,0.12)' : 'rgba(24,120,63,0.08)',
-            border: `1px solid ${C.green}30`,
-            borderRadius: 8, padding: '8px 14px', color: C.green, fontSize: 12, fontWeight: 630,
-          }}>✓ Enregistré</div>
-        )}
-        <button
-          onClick={handleSave}
-          disabled={saving || tours.length === 0}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 7,
-            padding: '11px 28px',
-            background: saving || tours.length === 0 ? C.toggleBg : C.green,
-            color: saving || tours.length === 0 ? C.textDim : '#fff',
-            border: 'none', borderRadius: 9,
-            fontSize: 12, fontWeight: 630, fontFamily: 'inherit',
-            cursor: saving || tours.length === 0 ? 'not-allowed' : 'pointer',
-            transition: 'all 0.15s',
-          }}
-        >
-          <Save size={12} strokeWidth={2.5} />
-          {saving ? 'Enregistrement…' : 'Enregistrer'}
-        </button>
-      </div>
-    
     </div>
+
+      {/* ── Table Tours ──────────────────────────────────────── */ }
+  <div style={{ ...cardStyle, marginBottom: 0 }}>
+    <div style={{ fontSize: 12, fontWeight: 800, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0em', marginBottom: 14 }}>
+      Tours d'irrigation
+    </div>
+
+    <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit' }}>
+        <thead>
+          <tr>
+            <TH w={36} C={C}>N°</TH>
+            <TH w={70} C={C}>Rad.</TH>
+            <TH w={80} color={C.blue} C={C}>Cumul Rad</TH>
+            <TH w={120} C={C}>Heure</TH>
+            <TH w={80} color={C.textDim} C={C}>T.Repos</TH>
+            <TH w={72} C={C}>Durée (min)</TH>
+            <TH w={78} C={C}>V.Apport</TH>
+            <TH w={72} C={C}>EC Apport</TH>
+            <TH w={72} C={C}>pH Apport</TH>
+            <TH w={72} C={C}>V.Drain</TH>
+            <TH w={72} C={C}>EC Drain</TH>
+            <TH w={72} C={C}>pH Drain</TH>
+            <TH w={72} color={C.amber} C={C}>% Drain</TH>
+            <TH w={80} color={C.amber} C={C}>Moy % Drain</TH>
+            <TH w={36} C={C}></TH>
+          </tr>
+        </thead>
+        <tbody style={{ overflow: 'visible' }}>
+          {tours.length === 0 ? (
+            <tr>
+              <td colSpan={15} style={{ padding: '40px 0', textAlign: 'center', color: C.textDim, fontSize: 12 }}>
+                Cliquez sur <strong style={{ color: C.green }}>+ Nouveau tour</strong> pour ajouter le premier tour
+              </td>
+            </tr>
+          ) : tours.map((t, i) => (
+            <tr key={t.id} style={{
+              borderBottom: i < tours.length - 1 ? `1px solid ${C.border}` : 'none',
+              background: i % 2 === 0 ? 'transparent' : (dark ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)'),
+            }}>
+              <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                <div style={{
+                  width: 26, height: 26, borderRadius: 7,
+                  background: dark ? 'rgba(52,217,111,0.12)' : 'rgba(24,120,63,0.08)',
+                  border: `1.5px solid ${C.green}30`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 12, fontWeight: 900, color: C.green, margin: '0 auto',
+                }}>{t.num}</div>
+              </td>
+              <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                <TInput value={t.rad} onChange={v => updateTour(t.id, 'rad', v)} width={68} C={C} />
+              </td>
+              <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                <div style={{ fontSize: 12, fontWeight: 630, color: C.blue }}>
+                  {t.cumulRad > 0 ? fmtNum(t.cumulRad, 1) : '—'}
+                </div>
+              </td>
+              <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                <TimeInput value={t.heure} onChange={v => updateTour(t.id, 'heure', v)} C={C} small />
+              </td>
+              <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                <div style={{ fontSize: 12, fontWeight: 630, color: t.tempsRepos !== null ? C.textMuted : C.textDim }}>
+                  {t.tempsRepos !== null ? `${t.tempsRepos} min` : i === 0 ? '—' : '?'}
+                </div>
+              </td>
+              <td style={{ padding: '6px 4px', fontWeight: 630, textAlign: 'center' }}>
+                <TInput value={t.duree} onChange={v => updateTour(t.id, 'duree', v)} width={68} C={C} />
+              </td>
+              <td style={{ padding: '6px 4px', fontWeight: 630, textAlign: 'center' }}>
+                <TInput value={t.vApport} onChange={v => updateTour(t.id, 'vApport', v)} width={72} C={C} />
+              </td>
+              <td style={{ padding: '6px 4px', fontWeight: 630, textAlign: 'center' }}>
+                <TInput value={t.ecApport} onChange={v => updateTour(t.id, 'ecApport', v)} width={68} C={C} />
+              </td>
+              <td style={{ padding: '6px 4px', fontWeight: 630, textAlign: 'center' }}>
+                <TInput value={t.phApport} onChange={v => updateTour(t.id, 'phApport', v)} width={68} C={C} />
+              </td>
+              <td style={{ padding: '6px 4px', fontWeight: 630, textAlign: 'center' }}>
+                <TInput value={t.vDrain} onChange={v => updateTour(t.id, 'vDrain', v)} width={68} C={C} />
+              </td>
+              <td style={{ padding: '6px 4px', fontWeight: 630, textAlign: 'center' }}>
+                <TInput value={t.ecDrain} onChange={v => updateTour(t.id, 'ecDrain', v)} width={68} C={C} />
+              </td>
+              <td style={{ padding: '6px 4px', fontWeight: 630, textAlign: 'center' }}>
+                <TInput value={t.phDrain} onChange={v => updateTour(t.id, 'phDrain', v)} width={68} C={C} />
+              </td>
+              <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                <div style={{ fontSize: 12, fontWeight: 630, color: t.pctDrain !== null ? C.amber : C.textDim }}>
+                  {t.pctDrain !== null ? `${fmtNum(t.pctDrain, 1)}%` : '—'}
+                </div>
+              </td>
+              <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                <div style={{ fontSize: 12, fontWeight: 630, color: t.moyPctDrain !== null ? C.amber : C.textDim }}>
+                  {t.moyPctDrain !== null ? `${fmtNum(t.moyPctDrain, 1)}%` : '—'}
+                </div>
+              </td>
+              <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                <button onClick={() => deleteTour(t.id)} style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: C.textDim, padding: 4, borderRadius: 5,
+                  display: 'flex', alignItems: 'center',
+                }}
+                  onMouseEnter={e => e.currentTarget.style.color = C.red}
+                  onMouseLeave={e => e.currentTarget.style.color = C.textDim}
+                >
+                  <Trash2 size={12} strokeWidth={2} />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+
+        {tours.length > 0 && (
+          <tfoot>
+            <tr style={{ borderTop: `2px solid ${C.border}` }}>
+              <td colSpan={6} style={{ padding: '8px 6px', fontSize: 12, fontWeight: 630, color: C.textMuted }}>TOTAUX</td>
+              <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 900, color: C.green }}>{fmtNum(totalVApport, 1)}</td>
+              <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 630, color: C.textMuted }}>{ecMoyApport ? fmtNum(ecMoyApport, 2) : '—'}</td>
+              <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 630, color: C.textMuted }}>{phMoyApport ? fmtNum(phMoyApport, 2) : '—'}</td>
+              <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 900, color: C.blue }}>{fmtNum(totalVDrain, 1)}</td>
+              <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 630, color: C.textMuted }}>{ecMoyDrain ? fmtNum(ecMoyDrain, 2) : '—'}</td>
+              <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 630, color: C.textMuted }}>{phMoyDrain ? fmtNum(phMoyDrain, 2) : '—'}</td>
+              <td style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 900, color: C.amber }}>{moyDrainFinale !== null ? `${fmtNum(moyDrainFinale, 1)}%` : '—'}</td>
+              <td colSpan={2} />
+            </tr>
+          </tfoot>
+        )}
+      </table>
+    </div>
+
+    {/* ── + Nouveau tour en bas de table ── */}
+    <div ref={tableBottomRef} style={{
+      marginTop: 12, display: 'flex',
+      alignItems: 'center', justifyContent: 'flex-end',  // ← droite
+    }}>
+      <button
+        onClick={addTour}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '9px 18px',
+          background: dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.08)',
+          border: `1.5px solid ${C.green}40`,
+          borderRadius: 8, color: C.green,
+          fontSize: 12, fontWeight: 630, fontFamily: 'inherit', cursor: 'pointer',
+        }}
+      >
+        <Plus size={12} strokeWidth={2.5} />
+        Nouveau tour
+      </button>
+    </div>
+
+    {/* Résumé CC/bras */}
+    {tours.length > 0 && (
+      <div style={{
+        marginTop: 14, padding: '12px 16px',
+        background: dark ? 'rgba(52,217,111,0.06)' : 'rgba(24,120,63,0.04)',
+        border: `1px solid ${C.green}20`,
+        borderRadius: 10, display: 'flex', gap: 32, flexWrap: 'wrap',
+      }}>
+        {[
+          { label: 'Durée totale', value: fmtDuree(dureeTotal) },
+          { label: 'Total V.Apport', value: fmtNum(totalVApport, 1) },
+          { label: 'Total V.Drain', value: fmtNum(totalVDrain, 1) },
+          { label: 'Moy % Drainage finale', value: moyDrainFinale !== null ? `${fmtNum(moyDrainFinale, 1)}%` : '—' },
+          { label: 'CC/bras consommé (cc)', value: ccBras ?? '—', highlight: true },
+        ].map(item => (
+          <div key={item.label}>
+            <div style={{ fontSize: 12, color: C.textDim, marginBottom: 3 }}>{item.label}</div>
+            <div style={{ fontSize: item.highlight ? 12 : 12, fontWeight: 630, color: item.highlight ? C.green : C.text }}>
+              {item.value}
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+
+  {/* ── Enregistrer — bas de page droite ── */ }
+  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+    {error && (
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 6, marginRight: 10,
+        background: dark ? '#2a0a0a' : '#fef2f2',
+        border: `1px solid ${C.red}30`,
+        borderRadius: 8, padding: '8px 14px', color: C.red, fontSize: 12,
+      }}>
+        <AlertCircle size={12} strokeWidth={2} />{error}
+      </div>
+    )}
+    {saved && (
+      <div style={{
+        marginRight: 10,
+        background: dark ? 'rgba(52,217,111,0.12)' : 'rgba(24,120,63,0.08)',
+        border: `1px solid ${C.green}30`,
+        borderRadius: 8, padding: '8px 14px', color: C.green, fontSize: 12, fontWeight: 630,
+      }}>✓ Enregistré</div>
+    )}
+    <button
+      onClick={handleSave}
+      disabled={saving || tours.length === 0}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 7,
+        padding: '11px 28px',
+        background: saving || tours.length === 0 ? C.toggleBg : C.green,
+        color: saving || tours.length === 0 ? C.textDim : '#fff',
+        border: 'none', borderRadius: 9,
+        fontSize: 12, fontWeight: 630, fontFamily: 'inherit',
+        cursor: saving || tours.length === 0 ? 'not-allowed' : 'pointer',
+        transition: 'all 0.15s',
+      }}
+    >
+      <Save size={12} strokeWidth={2.5} />
+      {saving ? 'Enregistrement…' : 'Enregistrer'}
+    </button>
+  </div>
+    
+    </div >
   )
 }
