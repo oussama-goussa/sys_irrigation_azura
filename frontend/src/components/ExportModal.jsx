@@ -972,10 +972,10 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
                 border: `1.5px solid ${C.border}`,
                 background: "transparent",
                 color: C.textMuted,
-                fontSize: 13,
-                fontWeight: 700,
+                fontSize: 12,
+                fontWeight: 630,
                 fontFamily: "inherit",
-                cursor: "pointer",
+                cursor: "pointer", minHeight: 32,
               }}
             >
               Annuler
@@ -992,15 +992,15 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
                 background: canExport && !exporting ? C.green : C.toggleBg,
                 color: canExport && !exporting ? "#fff" : C.textDim,
                 border: "none",
-                fontSize: 13,
-                fontWeight: 700,
+                fontSize: 12,
+                fontWeight: 630, minHeight: 32,
                 fontFamily: "inherit",
                 cursor: canExport && !exporting ? "pointer" : "not-allowed",
                 transition: "all 0.15s",
               }}
             >
               <Download size={14} strokeWidth={2.5} />
-              {exporting ? "Export en cours…" : "Exporter Excel"}
+              {exporting ? "Export en cours..." : "Exporter Excel"}
             </button>
           </div>
         </div>
