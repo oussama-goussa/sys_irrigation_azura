@@ -900,169 +900,173 @@ export default function SaisiePage({ token, auth, C, dark }) {
       </div>
       
       {/* ── Ferme / Station / Serre / Vanne / Date ─────────── */}
-      <div style={{ ...cardStyle, padding: '0 0 0 0', overflow: 'hidden' }}>
-        {/* Barre titre */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: '12px 22px',
-          borderBottom: `1px solid ${C.border}`,
-          background: dark ? 'rgba(52,217,111,0.04)' : 'rgba(24,120,63,0.03)',
-        }}>
-          <div style={{ width: 3, height: 16, borderRadius: 4, background: C.green }} />
-          <span style={{ fontSize: 11, fontWeight: 800, color: C.green, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            Identification
-          </span>
-        </div>
-        <div style={{ padding: '16px 22px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 0.7fr 1.1fr', gap: 14 }}></div>
-          <div>
-            <label style={labelStyle}>Ferme</label>
-            <CustomSelect
-              value={ferme}
-              onChange={v => { setFerme(v); setStation(''); setSerre('') }}
-              options={fermeOptions}
-              placeholder="Sélectionner…"
-              C={C}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>Station</label>
-            <CustomSelect
-              value={station}
-              onChange={v => { setStation(v); setSerre('') }}
-              options={stationOptions}
-              placeholder="Sélectionner…"
-              C={C}
-              disabled={!ferme}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>Serre</label>
-            <CustomSelect
-              value={serre}
-              onChange={setSerre}
-              options={serreOptions}
-              placeholder="S01"
-              C={C}
-              disabled={!station}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>Vanne</label>
-            <input value={vanne} onChange={e => setVanne(e.target.value)}
-              placeholder="ex: 1" style={{ ...inputStyle, height: 38, padding: '0 12px', boxSizing: 'border-box' }} />
-          </div>
-          <div>
-            <label style={labelStyle}>Date</label>
-            <CalendarPicker value={date} onChange={setDate} C={C} />
+      {/* ── Formulaire principal ─────────────────────────────── */}
+      <div style={{
+        background: C.card,
+        border: `1.5px solid ${C.border}`,
+        borderRadius: 16,
+        marginBottom: 16,
+        overflow: 'hidden',
+      }}>
+
+        {/* ── Identification ── */}
+        <div style={{ padding: '18px 24px 20px' }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center',
+            fontSize: 9, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase',
+            color: C.green, background: `${C.green}12`,
+            border: `1px solid ${C.green}28`, borderRadius: 5,
+            padding: '3px 8px', marginBottom: 14,
+          }}>Identification</span>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1.3fr 1fr 0.55fr 1.1fr', gap: 14 }}>
+            <div>
+              <label style={labelStyle}>Ferme</label>
+              <CustomSelect
+                value={ferme}
+                onChange={v => { setFerme(v); setStation(''); setSerre('') }}
+                options={fermeOptions} placeholder="Sélectionner…" C={C}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Station</label>
+              <CustomSelect
+                value={station}
+                onChange={v => { setStation(v); setSerre('') }}
+                options={stationOptions} placeholder="Sélectionner…"
+                C={C} disabled={!ferme}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Serre</label>
+              <CustomSelect
+                value={serre} onChange={setSerre}
+                options={serreOptions} placeholder="S01"
+                C={C} disabled={!station}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Vanne</label>
+              <input value={vanne} onChange={e => setVanne(e.target.value)}
+                placeholder="ex: 1"
+                style={{ ...inputStyle, height: 38, padding: '0 12px', boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <label style={labelStyle}>Date</label>
+              <CalendarPicker value={date} onChange={setDate} C={C} />
+            </div>
           </div>
         </div>
 
-        {/* ── Constantes & Substrat — ligne sous les sélecteurs ── */}
+        {/* ── Divider ── */}
+        <div style={{ height: 1, background: C.border, margin: '0' }} />
+
         {/* ── Constantes & Substrat ── */}
         <div style={{
-          marginTop: 0, padding: '14px 22px 18px',
-          borderTop: `1px solid ${C.border}`,
-          background: dark ? 'rgba(52,217,111,0.03)' : 'rgba(24,120,63,0.025)',
+          padding: '16px 24px 20px',
+          background: dark ? 'rgba(52,217,111,0.02)' : 'rgba(24,120,63,0.018)',
         }}>
-          {/* Titre */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-            <div style={{ width: 3, height: 14, borderRadius: 4, background: C.amber }} />
-            <span style={{ fontSize: 11, fontWeight: 800, color: C.amber, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Constantes &amp; Substrat
-            </span>
+
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center',
+              fontSize: 9, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase',
+              color: C.amber, background: `${C.amber}12`,
+              border: `1px solid ${C.amber}28`, borderRadius: 5,
+              padding: '3px 8px',
+            }}>Constantes &amp; Substrat</span>
+
             {pctRessuyage !== null && (
-              <span style={{
-                marginLeft: 10, fontSize: 11, fontWeight: 700,
-                background: dark ? 'rgba(52,217,111,0.15)' : 'rgba(24,120,63,0.1)',
-                color: C.green, border: `1px solid ${C.green}40`,
-                borderRadius: 20, padding: '2px 10px',
-              }}>
-                Ressuyage : {pctRessuyage}%
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <div style={{ width: 1, height: 14, background: C.border }} />
+                <span style={{ fontSize: 11, color: C.textDim, fontWeight: 500 }}>Ressuyage</span>
+                <span style={{
+                  fontSize: 11, fontWeight: 800, color: C.green,
+                  background: `${C.green}12`, border: `1px solid ${C.green}30`,
+                  borderRadius: 20, padding: '2px 10px',
+                }}>{pctRessuyage}%</span>
+              </div>
             )}
           </div>
 
-          {/* Groupes */}
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          {/* Groupes en ligne avec séparateurs */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 0 }}>
 
             {/* Substrat */}
-            <div style={{
-              flex: '0 0 auto', background: C.card,
-              border: `1px solid ${C.border}`, borderRadius: 10,
-              padding: '12px 14px',
-            }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Substrat</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ paddingRight: 24 }}>
+              <div style={{
+                fontSize: 9, fontWeight: 700, color: C.textDim,
+                textTransform: 'uppercase', letterSpacing: '0.08em',
+                marginBottom: 10, opacity: 0.65,
+              }}>Substrat</div>
+              <div style={{ display: 'flex', gap: 10 }}>
                 <div>
                   <SLabel C={C}>Nbr Bras</SLabel>
                   <input type="number" value={nbrBras} onChange={e => setNbrBras(e.target.value)}
-                    placeholder="0" style={{ ...inputStyle, height: 36, padding: '7px 10px', width: 90 }} />
+                    placeholder="0" style={{ ...inputStyle, width: 86, height: 36, padding: '7px 10px' }} />
                 </div>
                 <div>
                   <SLabel C={C}>Nbr Goutteurs</SLabel>
                   <input type="number" value={nbrGoutteurs} onChange={e => setNbrGoutteurs(e.target.value)}
-                    placeholder="0" style={{ ...inputStyle, height: 36, padding: '7px 10px', width: 90 }} />
+                    placeholder="0" style={{ ...inputStyle, width: 86, height: 36, padding: '7px 10px' }} />
                 </div>
               </div>
             </div>
 
-            {/* Pesée matin */}
-            <div style={{
-              flex: '0 0 auto', background: C.card,
-              border: `1px solid ${C.border}`, borderRadius: 10,
-              padding: '12px 14px',
-            }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Pesée matin</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ width: 1, background: C.border, alignSelf: 'stretch', opacity: 0.5, margin: '0 24px 0 0' }} />
+
+            {/* Pesée */}
+            <div style={{ paddingRight: 24 }}>
+              <div style={{
+                fontSize: 9, fontWeight: 700, color: C.textDim,
+                textTransform: 'uppercase', letterSpacing: '0.08em',
+                marginBottom: 10, opacity: 0.65,
+              }}>Pesée</div>
+              <div style={{ display: 'flex', gap: 10 }}>
                 <div>
-                  <SLabel C={C}>Poids (Kg)</SLabel>
+                  <SLabel C={C}>Poids matin (kg)</SLabel>
                   <input type="number" value={poidsMatin} onChange={e => setPoidsMatin(e.target.value)}
-                    placeholder="0.00" step="0.01" style={{ ...inputStyle, height: 36, padding: '7px 10px', width: 90 }} />
+                    placeholder="0.00" step="0.01"
+                    style={{ ...inputStyle, width: 86, height: 36, padding: '7px 10px' }} />
                 </div>
                 <div>
-                  <SLabel C={C}>Heure</SLabel>
+                  <SLabel C={C}>Heure matin</SLabel>
                   <TimeInput value={heureMatin} onChange={setHeureMatin} C={C} />
                 </div>
-              </div>
-            </div>
-
-            {/* Pesée soir */}
-            <div style={{
-              flex: '0 0 auto', background: C.card,
-              border: `1px solid ${C.border}`, borderRadius: 10,
-              padding: '12px 14px',
-            }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Pesée soir</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div>
-                  <SLabel C={C}>Poids (Kg)</SLabel>
+                  <SLabel C={C}>Poids soir (kg)</SLabel>
                   <input type="number" value={poidsSoir} onChange={e => setPoidsSoir(e.target.value)}
-                    placeholder="0.00" step="0.01" style={{ ...inputStyle, height: 36, padding: '7px 10px', width: 90 }} />
+                    placeholder="0.00" step="0.01"
+                    style={{ ...inputStyle, width: 86, height: 36, padding: '7px 10px' }} />
                 </div>
                 <div>
-                  <SLabel C={C}>Heure</SLabel>
+                  <SLabel C={C}>Heure soir</SLabel>
                   <TimeInput value={heureSoir} onChange={setHeureSoir} C={C} />
                 </div>
               </div>
             </div>
 
-            {/* Bassin EC */}
-            <div style={{
-              flex: '0 0 auto', background: C.card,
-              border: `1px solid ${C.border}`, borderRadius: 10,
-              padding: '12px 14px',
-            }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>EC Bassin</div>
+            <div style={{ width: 1, background: C.border, alignSelf: 'stretch', opacity: 0.5, margin: '0 24px 0 0' }} />
+
+            {/* EC Bassin */}
+            <div>
+              <div style={{
+                fontSize: 9, fontWeight: 700, color: C.textDim,
+                textTransform: 'uppercase', letterSpacing: '0.08em',
+                marginBottom: 10, opacity: 0.65,
+              }}>Bassin</div>
               <div>
-                <SLabel C={C}>Bassin (EC)</SLabel>
+                <SLabel C={C}>EC Bassin</SLabel>
                 <input type="number" value={bassinEC} onChange={e => setBassinEC(e.target.value)}
-                  placeholder="0.00" step="0.01" style={{ ...inputStyle, height: 36, padding: '7px 10px', width: 90 }} />
+                  placeholder="0.00" step="0.01"
+                  style={{ ...inputStyle, width: 86, height: 36, padding: '7px 10px' }} />
               </div>
             </div>
 
           </div>
         </div>
+
       </div>
   
       {/* ── Table Tours ──────────────────────────────────────── */}
