@@ -929,11 +929,11 @@ export default function UsersPage({ token, userRole, C, dark }) {
                       {/* Actions */}
                       <td style={{ padding: '13px 14px', fontFamily: 'inherit' }}>
                         <div style={{ display: 'flex', gap: 6 }}>
-                          <Btn onClick={(e) => { e.stopPropagation(); setEditingUser(u) }} variant="ghost" small C={C} icon={UserPen}>
+                          <Btn onClick={(e) => { e.stopPropagation(); setEditingUser(u) }} size={15} variant="ghost" C={C} icon={UserPen}>
                             Modifier
                           </Btn>
-                          <Btn onClick={() => { setLogsUser(u.username); setShowLogs(true) }} variant="ghost" small C={C} icon={History} />
-                          <Btn onClick={() => setConfirmUser(u)} variant={u.actif ? 'danger' : 'secondary'} small C={C}
+                          <Btn onClick={() => { setLogsUser(u.username); setShowLogs(true) }} size={15} variant="ghost"  C={C} icon={History} />
+                          <Btn onClick={() => setConfirmUser(u)} variant={u.actif ? 'danger' : 'secondary'} size={15} C={C}
                             icon={u.actif ? UserX : UserCheck}>
                             {u.actif ? 'Désactiver' : 'Activer'}
                           </Btn>
