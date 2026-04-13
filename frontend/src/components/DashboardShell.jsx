@@ -76,7 +76,7 @@ function FarmItem({ farm, selectedDevice, onSelectDevice, C, dark }) {
                 background: C.green,
               }} />
             )}
-            House {house.house_number}
+            Station {house.house_number}
           </button>
         )
       })}

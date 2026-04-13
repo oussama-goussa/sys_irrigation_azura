@@ -1374,7 +1374,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
       <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:32, marginBottom:12 }}>
         <div style={{ width:3, height:18, background:C.green, borderRadius:2 }} />
         <span style={{ color:C.text, fontSize:14, fontWeight:800 }}>
-          Historique — {deviceInfo.farm_name} House {deviceInfo.house_number}
+          Historique — {deviceInfo.farm_name} Station {deviceInfo.house_number}
         </span>
       </div>
 
