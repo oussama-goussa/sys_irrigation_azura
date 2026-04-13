@@ -1010,10 +1010,8 @@ export default function SaisiePage({ token, auth, C, dark }) {
               </div>
             </div>
 
-            <div style={{ width: 1, background: C.border, alignSelf: 'stretch', opacity: 0.4, margin: '0 18px 0 18px' }} />
-
             {/* Pesée */}
-            <div style={{ paddingRight: 18, flex: 3 }}>
+            <div style={{ paddingRight: 18, flex: 3, borderLeft: `1px solid ${C.border}`, paddingLeft: 18 }}>
               <div style={{
                 fontSize: 9, fontWeight: 630, color: C.textDim,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
@@ -1043,8 +1041,6 @@ export default function SaisiePage({ token, auth, C, dark }) {
               </div>
             </div>
 
-            <div style={{ width: 1, background: C.border, alignSelf: 'stretch', opacity: 0.4, margin: '0 18px 0 18px' }} />
-
             {/* EC Bassin */}
             <div>
               <div style={{
@@ -1052,7 +1048,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
                 textTransform: 'uppercase', letterSpacing: '0.08em',
                 marginBottom: 7, opacity: 0.65,
               }}>Bassin</div>
-              <div style={{ flex: 1 }}>
+              <div style={{ flex: 1, borderLeft: `1px solid ${C.border}`, paddingLeft: 18 }}>
                 <label style={labelStyle} C={C}>EC Bassin</label>
                 <input type="number" value={bassinEC} onChange={e => setBassinEC(e.target.value)}
                   placeholder="0.00" step="0.01"
