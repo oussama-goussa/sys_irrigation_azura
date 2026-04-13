@@ -905,7 +905,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
         background: C.card,
         border: `1.5px solid ${C.border}`,
         borderRadius: 16,
-        marginBottom: 16,
+        marginBottom: 7,
         overflow: 'hidden',
       }}>
 
@@ -961,7 +961,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
 
         {/* ── Constantes & Substrat ── */}
         <div style={{
-          padding: '16px 24px 20px',
+          padding: '12px 24px 14px',
           background: C.card,
         }}>
 
@@ -990,11 +990,11 @@ export default function SaisiePage({ token, auth, C, dark }) {
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 0 }}>
 
             {/* Substrat */}
-            <div style={{ paddingRight: 24 }}>
+            <div style={{ paddingRight: 18 }}>
               <div style={{
                 fontSize: 9, fontWeight: 630, color: C.textDim,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
-                marginBottom: 10, opacity: 0.65,
+                marginBottom: 7, opacity: 0.65,
               }}>Substrat</div>
               <div style={{ display: 'flex', gap: 10 }}>
                 <div>
@@ -1010,14 +1010,14 @@ export default function SaisiePage({ token, auth, C, dark }) {
               </div>
             </div>
 
-            <div style={{ width: 1, background: C.border, alignSelf: 'stretch', opacity: 0.5, margin: '0 24px 0 0' }} />
+            <div style={{ width: 1, background: C.border, alignSelf: 'stretch', opacity: 0.4, margin: '0 18px 0 0' }} />
 
             {/* Pesée */}
-            <div style={{ paddingRight: 24 }}>
+            <div style={{ paddingRight: 18 }}>
               <div style={{
                 fontSize: 9, fontWeight: 630, color: C.textDim,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
-                marginBottom: 10, opacity: 0.65,
+                marginBottom: 7, opacity: 0.65,
               }}>Pesée</div>
               <div style={{ display: 'flex', gap: 10 }}>
                 <div>
@@ -1043,14 +1043,14 @@ export default function SaisiePage({ token, auth, C, dark }) {
               </div>
             </div>
 
-            <div style={{ width: 1, background: C.border, alignSelf: 'stretch', opacity: 0.5, margin: '0 24px 0 0' }} />
+            <div style={{ width: 1, background: C.border, alignSelf: 'stretch', opacity: 0.4, margin: '0 18px 0 0' }} />
 
             {/* EC Bassin */}
             <div>
               <div style={{
                 fontSize: 9, fontWeight: 630, color: C.textDim,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
-                marginBottom: 10, opacity: 0.65,
+                marginBottom: 7, opacity: 0.65,
               }}>Bassin</div>
               <div>
                 <label style={labelStyle} C={C}>EC Bassin</label>
