@@ -1525,7 +1525,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
               <thead>
                 {/* Headers */}
                 <tr>
-                  <TH w={50} center>Voire</TH>
+                  <TH w={70} center>Voire</TH>
                   <TH w={110} center>Date</TH>
                   <TH w={75} center>Ferme</TH>
                   <TH w={75} center>Station</TH>
@@ -1606,13 +1606,13 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                         onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
 
-                        <td style={{ padding: '0px 14px', textAlign: 'center' }}>
+                        <td style={{ textAlign: 'center' }}>
                           <button onClick={() => toggleExpand(s.id)} style={{
                             background: expanded ? `${C.green}15` : 'transparent',
                             border: `1.5px solid ${expanded ? C.green + '50' : C.border}`,
                             borderRadius: 6, padding: '6px 6px', cursor: 'pointer',
                             color: expanded ? C.green : C.textMuted,
-                            display: 'flex', alignItems: 'center',
+                            display: 'flex', alignItems: 'center', textAlign: 'center',
                             transition: 'all 0.15s',
                           }}>
                             {expanded ? <ChevronUp size={12} strokeWidth={2.5}/> : <ChevronDown size={12} strokeWidth={2.5}/>}
