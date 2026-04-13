@@ -15,7 +15,7 @@ import {
   Check,
   AlertCircle,
   Calendar,
-  ArrowRight,
+  MoveRight,
 } from "lucide-react";
 
 const MONTHS_FR = [
@@ -35,7 +35,14 @@ const MONTHS_FR = [
 const DAYS_FR = ["Lu", "Ma", "Me", "Je", "Ve", "Sa", "Di"];
 
 // ── Range Calendar ────────────────────────────────────────────
-function RangeCalendar({ dateFrom, dateTo, onChangeFrom, onChangeTo, onClose, C }) {
+function RangeCalendar({
+  dateFrom,
+  dateTo,
+  onChangeFrom,
+  onChangeTo,
+  onClose,
+  C,
+}) {
   const today = new Date();
   const [leftYear, setLeftYear] = useState(today.getFullYear());
   const [leftMonth, setLeftMonth] = useState(today.getMonth());
@@ -443,7 +450,6 @@ function RangeCalendar({ dateFrom, dateTo, onChangeFrom, onChangeTo, onClose, C 
               onChangeTo("");
               onClose();
             },
-            
           },
         ].map((s) => (
           <button
@@ -640,10 +646,10 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
           <div style={{ marginBottom: 24 }}>
             <div
               style={{
-                fontSize: 11,
-                fontWeight: 700,
+                fontSize: 12,
+                fontWeight: 630,
                 textTransform: "uppercase",
-                letterSpacing: "0.1em",
+                letterSpacing: "0em",
                 color: C.textMuted,
                 marginBottom: 10,
               }}
@@ -683,6 +689,11 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
                   <span
                     style={{ color: C.textDim, fontSize: 12, fontWeight: 630 }}
                   >
+                    <MousePointer2
+                      size={15}
+                      color={C.textDim}
+                      strokeWidth={2}
+                    />
                     Sélectionner une ferme...
                   </span>
                 )}
@@ -863,7 +874,7 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
               >
                 {dateFrom ? fmtDisplay(dateFrom) : "Date début"}
               </span>
-              <ArrowRight size={14} strokeWidth={2} color={C.textDim} />
+              <MoveRight size={14} strokeWidth={2} color={C.textDim} />
               <span
                 style={{
                   fontSize: 12,
@@ -978,7 +989,8 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
                 fontSize: 12,
                 fontWeight: 630,
                 fontFamily: "inherit",
-                cursor: "pointer", minHeight: 32,
+                cursor: "pointer",
+                minHeight: 32,
               }}
             >
               Annuler
@@ -996,7 +1008,8 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
                 color: canExport && !exporting ? "#fff" : C.textDim,
                 border: "none",
                 fontSize: 12,
-                fontWeight: 630, minHeight: 32,
+                fontWeight: 630,
+                minHeight: 32,
                 fontFamily: "inherit",
                 cursor: canExport && !exporting ? "pointer" : "not-allowed",
                 transition: "all 0.15s",
