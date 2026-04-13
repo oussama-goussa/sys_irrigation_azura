@@ -1013,7 +1013,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
           </div>
 
           {/* Constantes */}
-          <div style={{ background: dark ? 'rgba(52,217,111,0.04)' : 'rgba(24,120,63,0.03)',
+          <div style={{ background: C.card,
             border: `1px solid ${C.border}`, borderRadius: 12, padding: '16px 20px', marginBottom: 18 }}>
             <div style={{ fontSize: 12, fontWeight: 800, color: C.textMuted, textTransform: 'uppercase',
               letterSpacing: '0em', marginBottom: 14 }}>Constantes &amp; Substrat</div>
