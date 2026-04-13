@@ -446,7 +446,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
             Icon: BookOpen,
             detail: readings24h !== null ? 'enregistrements' : null,
             detailHighlight: false,
-            noDataSince: readings24h === null && lastRefresh ? lastRefresh : null,
+            noDataSince: null,
           },
         ].map(s => {
           return (
@@ -498,55 +498,6 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
           )
         })}
       </div>
-
-      {/* ── Barre de moyennes globales ────────────────────────── */}
-      {avgs && (
-        <div style={{
-          background: dark ? '#111a14' : '#ffffff',
-          border: `1px solid ${dark ? '#1c2e22' : '#d0e8d8'}`,
-          borderRadius: 12, padding: '16px 24px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          marginBottom: 32, flexWrap: 'wrap', gap: 16, fontWeight: 600,
-        }}>
-          {[
-            { label: 'EC moy.', value: avgs.ec, unit: 'mS/cm', color: '#34d96f' },
-            { label: 'pH moy.', value: avgs.ph, unit: '', color: '#4d9de0' },
-            { label: 'Temp moy.', value: avgs.temp, unit: '°C', color: '#f5a623' },
-            { label: 'Hum moy.', value: avgs.hum, unit: '%', color: '#b197fc' },
-            { label: 'Radiation', value: avgs.rad, unit: 'W/m²', color: dark ? '#f5e642' : '#c4a800' },
-            { label: 'Débit moy.', value: avgs.flow, unit: 'L/h', color: '#34d96f' },
-          ].map((r, i, arr) => (
-            <div key={r.label} style={{ display: 'flex', alignItems: 'center' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                <div style={{
-                  fontSize: 10, color: dark ? '#3a5a44' : '#5a7a66',
-                  textTransform: 'uppercase', letterSpacing: '0.1em',
-                }}>
-                  {r.label}
-                </div>
-                <div style={{
-                  fontSize: 18, fontWeight: 630,
-                  color: r.color,
-                }}>
-                  {r.value}
-                  {r.unit && (
-                    <span style={{ fontSize: 11, color: dark ? C.textDim : '#5a7a66', marginLeft: 2 }}>
-                      {r.unit}
-                    </span>
-                  )}
-                </div>
-              </div>
-              {i < arr.length - 1 && (
-                <div style={{
-                  width: 1, height: 36,
-                  background: dark ? '#1c2e22' : '#d0e8d8',
-                  marginLeft: 24, marginRight: 24,
-                }} />
-              )}
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* ── État chargement / erreur ──────────────────────────── */}
       {loading && (
