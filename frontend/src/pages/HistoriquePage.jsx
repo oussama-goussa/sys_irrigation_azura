@@ -1493,8 +1493,8 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                 display: 'flex', alignItems: 'center', gap: 7,
                 padding: '8px 18px', borderRadius: 9,
                 background: `${C.green}12`,
-                border: `1.5px solid ${C.green}40`,
-                color: C.green, fontSize: 13, fontWeight: 700,
+                border: `1.5px solid ${C.green}40`, minHeight: 32,
+                color: C.green, fontSize: 12, fontWeight: 630,
                 fontFamily: 'inherit', cursor: 'pointer',
                 transition: 'all 0.15s',
               }}
