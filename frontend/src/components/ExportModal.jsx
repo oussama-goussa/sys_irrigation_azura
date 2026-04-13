@@ -434,7 +434,7 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
                   alignItems: "center",
                   gap: 6,
                   minHeight: 32,
-                  padding: "4px 36px 4px 8px",
+                  padding: "4px 36px 4px 15px",
                   border: `1.5px solid ${dropOpen ? C.green : C.border}`,
                   borderRadius: 8,
                   background: C.inputBg,
@@ -444,7 +444,7 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
               >
                 {selectedFarms.length === 0 && (
                   <span style={{ color: C.textDim, fontSize: 12 }}>
-                    Sélectionner une ferme…
+                    Sélectionner une ferme...
                   </span>
                 )}
                 {selectedFarms.map((f) => (
