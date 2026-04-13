@@ -1026,7 +1026,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
                   <label style={labelStyle} C={C}>Poids matin (kg)</label>
                   <input type="number" value={poidsMatin} onChange={e => setPoidsMatin(e.target.value)}
                     placeholder="0.00" step="0.01"
-                    style={{ ...inputStyle, width: 86, height: 130, padding: '7px 10px' }} />
+                    style={{ ...inputStyle, width: 130, height: 36, padding: '7px 10px' }} />
                 </div>
                 <div>
                   <label style={labelStyle} C={C}>Heure matin</label>
@@ -1036,7 +1036,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
                   <label style={labelStyle} C={C}>Poids soir (kg)</label>
                   <input type="number" value={poidsSoir} onChange={e => setPoidsSoir(e.target.value)}
                     placeholder="0.00" step="0.01"
-                    style={{ ...inputStyle, width: 86, height: 130, padding: '7px 10px' }} />
+                    style={{ ...inputStyle, width: 130, height: 36, padding: '7px 10px' }} />
                 </div>
                 <div>
                   <label style={labelStyle} C={C}>Heure soir</label>
@@ -1058,7 +1058,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
                 <label style={labelStyle} C={C}>EC Bassin</label>
                 <input type="number" value={bassinEC} onChange={e => setBassinEC(e.target.value)}
                   placeholder="0.00" step="0.01"
-                  style={{ ...inputStyle, width: 86, height: 130, padding: '7px 10px' }} />
+                  style={{ ...inputStyle, width: 130, height: 36, padding: '7px 10px' }} />
               </div>
             </div>
 
