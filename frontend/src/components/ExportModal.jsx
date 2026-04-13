@@ -16,6 +16,7 @@ import {
   AlertCircle,
   Calendar,
   MoveRight,
+  MousePointer2,
 } from "lucide-react";
 
 const MONTHS_FR = [
