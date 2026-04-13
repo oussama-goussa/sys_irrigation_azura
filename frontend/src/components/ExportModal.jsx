@@ -16,7 +16,7 @@ import {
   AlertCircle,
   Calendar,
   MoveRight,
-  MousePointer2,
+  SquareMousePointer,
 } from "lucide-react";
 
 const MONTHS_FR = [
@@ -690,11 +690,11 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
                   <span
                     style={{ color: C.textDim, fontSize: 12, fontWeight: 630 }}
                   >
-                    <MousePointer2
+                    <SquareMousePointer
                       size={15}
                       color={C.textDim}
                       strokeWidth={2}
-                      style={{ marginRight: 5 }}
+                      style={{ marginRight: 8 }}
                     />
                     Sélectionner une ferme...
                   </span>
