@@ -1525,20 +1525,20 @@ export default function HistoriquePage({ token, auth, C, dark }) {
               <thead>
                 {/* Headers */}
                 <tr>
-                  <TH w={70} center>Voire</TH>
-                  <TH w={110} center>Date</TH>
+                  <TH w={60} center>Voire</TH>
+                  <TH w={150} center>Date</TH>
                   <TH w={75} center>Ferme</TH>
                   <TH w={75} center>Station</TH>
                   <TH w={75} center>Serre</TH>
-                  <TH w={80} center>Vanne</TH>
-                  <TH w={80} center>Bras</TH>
-                  <TH w={80} center>Gout.</TH>
-                  <TH w={80} center>Pds Mat.</TH>
-                  <TH w={80} center>H. Mat.</TH>
-                  <TH w={80} center>Pds Soir</TH>
-                  <TH w={80} center>H. Soir</TH>
-                  <TH w={80} center>Bassin EC</TH>
-                  <TH w={80} center color={C.green}>Séchage %</TH>
+                  <TH w={75} center>Vanne</TH>
+                  <TH w={75} center>Bras</TH>
+                  <TH w={75} center>Gout.</TH>
+                  <TH w={75} center>Pds Mat.</TH>
+                  <TH w={75} center>H. Mat.</TH>
+                  <TH w={75} center>Pds Soir</TH>
+                  <TH w={75} center>H. Soir</TH>
+                  <TH w={75} center>Bassin EC</TH>
+                  <TH w={75} center color={C.green}>Séchage %</TH>
                   <TH w={90} center>Actions</TH>
                 </tr>
                 {/* Filtres */}
