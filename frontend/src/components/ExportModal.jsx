@@ -694,6 +694,7 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
                       size={15}
                       color={C.textDim}
                       strokeWidth={2}
+                      style={{ marginRight: 5 }}
                     />
                     Sélectionner une ferme...
                   </span>
