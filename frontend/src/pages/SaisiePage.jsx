@@ -378,7 +378,7 @@ function TimeInput({ value, onChange, C, small = false }) {
         onClick={handleOpen}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '0 10px', minWidth: small ? 80 : 140,
+          padding: '0 10px', minWidth: small ? 80 : '100%',
           border: `1.5px solid ${open ? C.green : C.border}`,
           borderRadius: 7, background: C.inputBg,
           cursor: 'pointer', transition: 'border-color 0.15s',
@@ -987,25 +987,25 @@ export default function SaisiePage({ token, auth, C, dark }) {
           </div>
 
           {/* Groupes en ligne avec séparateurs */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 0 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1px auto 1px 1fr', alignItems: 'end', gap: 0 }}>
 
             {/* Substrat */}
-            <div style={{ paddingRight: 18 }}>
+            <div style={{ paddingRight: 18, flex: 1 }}>
               <div style={{
                 fontSize: 9, fontWeight: 630, color: C.textDim,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
                 marginBottom: 7, opacity: 0.65,
               }}>Substrat</div>
-              <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ display: 'flex', gap: 10, width: '100%' }}>
                 <div>
                   <label style={labelStyle} C={C}>Nbr Bras</label>
                   <input type="number" value={nbrBras} onChange={e => setNbrBras(e.target.value)}
-                    placeholder="0" style={{ ...inputStyle, width: 140, height: 36, padding: '7px 10px' }} />
+                    placeholder="0" style={{ ...inputStyle, width: '100%', height: 36, padding: '7px 10px' }} />
                 </div>
                 <div>
                   <label style={labelStyle} C={C}>Nbr Goutteurs</label>
                   <input type="number" value={nbrGoutteurs} onChange={e => setNbrGoutteurs(e.target.value)}
-                    placeholder="0" style={{ ...inputStyle, width: 140, height: 36, padding: '7px 10px' }} />
+                    placeholder="0" style={{ ...inputStyle, width: '100%', height: 36, padding: '7px 10px' }} />
                 </div>
               </div>
             </div>
@@ -1013,18 +1013,18 @@ export default function SaisiePage({ token, auth, C, dark }) {
             <div style={{ width: 1, background: C.border, alignSelf: 'stretch', opacity: 0.4, margin: '0 18px 0 0' }} />
 
             {/* Pesée */}
-            <div style={{ paddingRight: 18 }}>
+            <div style={{ paddingRight: 18, flex: 3 }}>
               <div style={{
                 fontSize: 9, fontWeight: 630, color: C.textDim,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
                 marginBottom: 7, opacity: 0.65,
               }}>Pesée</div>
-              <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ display: 'flex', gap: 10, width: '100%' }}>
                 <div>
                   <label style={labelStyle} C={C}>Poids matin (kg)</label>
                   <input type="number" value={poidsMatin} onChange={e => setPoidsMatin(e.target.value)}
                     placeholder="0.00" step="0.01"
-                    style={{ ...inputStyle, width: 140, height: 36, padding: '7px 10px' }} />
+                    style={{ ...inputStyle, width: '100%', height: 36, padding: '7px 10px' }} />
                 </div>
                 <div>
                   <label style={labelStyle} C={C}>Heure matin</label>
@@ -1034,7 +1034,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
                   <label style={labelStyle} C={C}>Poids soir (kg)</label>
                   <input type="number" value={poidsSoir} onChange={e => setPoidsSoir(e.target.value)}
                     placeholder="0.00" step="0.01"
-                    style={{ ...inputStyle, width: 140, height: 36, padding: '7px 10px' }} />
+                    style={{ ...inputStyle, width: '100%', height: 36, padding: '7px 10px' }} />
                 </div>
                 <div>
                   <label style={labelStyle} C={C}>Heure soir</label>
@@ -1052,11 +1052,11 @@ export default function SaisiePage({ token, auth, C, dark }) {
                 textTransform: 'uppercase', letterSpacing: '0.08em',
                 marginBottom: 7, opacity: 0.65,
               }}>Bassin</div>
-              <div>
+              <div style={{ flex: 1 }}>
                 <label style={labelStyle} C={C}>EC Bassin</label>
                 <input type="number" value={bassinEC} onChange={e => setBassinEC(e.target.value)}
                   placeholder="0.00" step="0.01"
-                  style={{ ...inputStyle, width: 140, height: 36, padding: '7px 10px' }} />
+                  style={{ ...inputStyle, width: '100%', height: 36, padding: '7px 10px' }} />
               </div>
             </div>
 
