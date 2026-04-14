@@ -987,16 +987,16 @@ export default function SaisiePage({ token, auth, C, dark }) {
           </div>
 
           {/* Groupes en ligne avec séparateurs */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'auto auto 1fr', alignItems: 'end', gap: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'end', gap: 0, width: '100%' }}>
 
             {/* Substrat */}
-            <div style={{ paddingRight: 18, flex: 1 }}>
+            <div style={{ flex: 2, paddingRight: 18 }}>
               <div style={{
                 fontSize: 9, fontWeight: 630, color: C.textDim,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
                 marginBottom: 7, opacity: 0.65,
               }}>Substrat</div>
-              <div style={{ display: 'flex', gap: 10, width: '100%' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div>
                   <label style={labelStyle} C={C}>Nbr Bras</label>
                   <input type="number" value={nbrBras} onChange={e => setNbrBras(e.target.value)}
@@ -1011,13 +1011,13 @@ export default function SaisiePage({ token, auth, C, dark }) {
             </div>
 
             {/* Pesée */}
-            <div style={{ paddingRight: 18, flex: 3, borderLeft: `1px solid ${C.border}`, paddingLeft: 18 }}>
+            <div style={{ flex: 4, paddingRight: 18, borderLeft: `1px solid ${C.border}`, paddingLeft: 18 }}>
               <div style={{
                 fontSize: 9, fontWeight: 630, color: C.textDim,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
                 marginBottom: 7, opacity: 0.65,
               }}>Pesée</div>
-              <div style={{ display: 'flex', gap: 10, width: '100%' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 10 }}>
                 <div>
                   <label style={labelStyle} C={C}>Poids matin (kg)</label>
                   <input type="number" value={poidsMatin} onChange={e => setPoidsMatin(e.target.value)}
@@ -1042,7 +1042,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
             </div>
 
             {/* EC Bassin */}
-            <div style={{ paddingRight: 18, flex: 3, borderLeft: `1px solid ${C.border}`, paddingLeft: 18 }}>
+            <div style={{ flex: 1, borderLeft: `1px solid ${C.border}`, paddingLeft: 18 }}>
               <div style={{
                 fontSize: 9, fontWeight: 630, color: C.textDim,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
