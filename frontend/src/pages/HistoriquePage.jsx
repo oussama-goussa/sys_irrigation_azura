@@ -1586,8 +1586,8 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                         padding: '5px 10px', borderRadius: 6, cursor: hasFilters ? 'pointer' : 'default',
                         background: hasFilters ? `${C.red}10` : C.toggleBg,
                         border: `1.5px solid ${hasFilters ? C.red + '35' : C.border}`,
-                        color: hasFilters ? C.red : C.textDim,
-                        fontSize: 11, fontWeight: 630, fontFamily: 'inherit',
+                        color: hasFilters ? C.red : C.textDim, height:'30px',
+                        fontSize: 12, fontWeight: 630, fontFamily: 'inherit',
                         whiteSpace: 'nowrap', opacity: hasFilters ? 1 : 0.4,
                         transition: 'all 0.15s', margin: '0 auto',
                         pointerEvents: hasFilters ? 'auto' : 'none',
@@ -1595,7 +1595,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                       onMouseEnter={e => { if (hasFilters) { e.currentTarget.style.background = `${C.red}20`; e.currentTarget.style.borderColor = `${C.red}60` }}}
                       onMouseLeave={e => { e.currentTarget.style.background = `${C.red}10`; e.currentTarget.style.borderColor = `${C.red}35` }}
                     >
-                      <X size={10} strokeWidth={2.5} /> Reset
+                      <X size={11} strokeWidth={2.5} /> Reset
                     </button>
                   </th>
 
