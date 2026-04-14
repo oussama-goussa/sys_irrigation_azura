@@ -371,7 +371,7 @@ function TimeInput({ value, onChange, C, small = false }) {
   }
 
   return (
-    <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
+    <div ref={ref} style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
       {/* Trigger */}
       <div
         ref={triggerRef}
