@@ -865,7 +865,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
         ].map(card => (
           <div key={card.label} style={{
             background: dark ? '#111a14' : '#ffffff',
-            border: `1px solid ${dark ? '#1c2e22' : '#d0e8d8'}`,
+            border: `1px solid ${C.border}`,
             borderRadius: 16, padding: '20px 24px',
             position: 'relative', overflow: 'hidden',
             display: 'flex', flexDirection: 'column', justifyContent: 'space-between', // ← ajout
@@ -914,7 +914,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
           <span style={{
             display: 'inline-flex', alignItems: 'center',
             fontSize: 12, fontWeight: 800, letterSpacing: '0em', textTransform: 'uppercase',
-            color: C.green, marginBottom: 14,
+            color: C.textMuted, marginBottom: 14,
           }}>Identification</span>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 14 }}>
@@ -970,7 +970,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
             <span style={{
               display: 'inline-flex', alignItems: 'center',
               fontSize: 12, fontWeight: 800, letterSpacing: '0em', textTransform: 'uppercase',
-              color: C.green,
+              color: C.textMuted,
             }}>Constantes &amp; Substrat</span>
 
             {pctRessuyage !== null && (
