@@ -1316,6 +1316,13 @@ export default function HistoriquePage({ token, auth, C, dark }) {
   const [fPoidsSoir, setFPoidsSoir] = useState('')
   const [fHeureSoir, setFHeureSoir] = useState('')
   const [fBassin,    setFBassin]    = useState('')
+  const resetFilters = () => {
+    setFDate(''); setFFerme(''); setFStation(''); setFSerre('')
+    setFVanne(''); setFNbrBras(''); setFNbrGoutt(''); setFPoidsMat('')
+    setFHeureMat(''); setFPoidsSoir(''); setFHeureSoir(''); setFBassin('')
+  }
+  const hasFilters = !!(fDate || fFerme || fStation || fSerre || fVanne ||
+    fNbrBras || fNbrGoutt || fPoidsMat || fHeureMat || fPoidsSoir || fHeureSoir || fBassin)
 
   useEffect(() => {
     getDevices(token).then(setFarms).catch(() => {})
@@ -1504,17 +1511,6 @@ export default function HistoriquePage({ token, auth, C, dark }) {
               <Download size={14} strokeWidth={2.5} />
               Export Excel
             </button>
-
-            <div style={{ width: 1, height: 24, background: C.border }} />
-
-            <span style={{ fontSize: 11, color: C.textDim, fontWeight: 600 }}>Afficher</span>
-            <select value={perPage} onChange={e => setPerPage(Number(e.target.value))}
-              style={{ padding: '6px 10px', borderRadius: 7, border: `1.5px solid ${C.border}`,
-                background: C.inputBg, color: C.text, fontSize: 12, fontFamily: 'inherit',
-                outline: 'none', cursor: 'pointer', fontWeight: 630 }}>
-              {[10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
-            <span style={{ fontSize: 12, color: C.textDim, fontWeight: 600 }}>/ page</span>
           </div>
         </div>
 
@@ -1583,7 +1579,27 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                   <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
                     <FilterInput value={fBassin} onChange={setFBassin} placeholder="" C={C} />
                   </th>
-                  <th colSpan={2} />
+                  <th colSpan={2} style={{ padding: '5px 8px', borderBottom: 'none', textAlign: 'center' }}>
+                    <button onClick={resetFilters}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 5,
+                        padding: '5px 10px', borderRadius: 6, cursor: hasFilters ? 'pointer' : 'default',
+                        background: hasFilters ? `${C.red}10` : C.toggleBg,
+                        border: `1.5px solid ${hasFilters ? C.red + '35' : C.border}`,
+                        color: hasFilters ? C.red : C.textDim,
+                        fontSize: 11, fontWeight: 630, fontFamily: 'inherit',
+                        whiteSpace: 'nowrap', opacity: hasFilters ? 1 : 0.4,
+                        transition: 'all 0.15s', margin: '0 auto',
+                        pointerEvents: hasFilters ? 'auto' : 'none',
+                      }}
+                      onMouseEnter={e => { if (hasFilters) { e.currentTarget.style.background = `${C.red}20`; e.currentTarget.style.borderColor = `${C.red}60` }}}
+                      onMouseLeave={e => { e.currentTarget.style.background = `${C.red}10`; e.currentTarget.style.borderColor = `${C.red}35` }}
+                    >
+                      <X size={10} strokeWidth={2.5} /> Reset
+                    </button>
+                  </th>
+
+            
                 </tr>
               </thead>
               <tbody style={{ overflow: 'visible' }}>
@@ -1687,43 +1703,97 @@ export default function HistoriquePage({ token, auth, C, dark }) {
             </table>
           </div>
 
-          {/* Pagination */}
-          <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.border}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ color: C.textDim, fontSize: 12 }}>
-              {total} saisie{total > 1 ? 's' : ''} · page {page}/{pages}
+          {/* Footer */}
+          <div style={{
+            padding: '10px 16px', borderTop: `1px solid ${C.border}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+          }}>
+
+            {/* Gauche : perPage custom + total */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <SSelect
+                value={perPage}
+                onChange={v => setPerPage(Number(v))}
+                options={[
+                  { value: 10, label: '10' },
+                  { value: 20, label: '20' },
+                  { value: 50, label: '50' },
+                ]}
+                C={C}
+                width={68}
+              />
+              <span style={{ fontSize: 12, color: C.textDim, fontWeight: 600 }}>/ page</span>
+              <span style={{ width: 1, height: 14, background: C.border, display: 'inline-block', margin: '0 4px' }} />
+              <span style={{ fontSize: 12, color: C.textDim }}>
+                <span style={{ fontWeight: 700, color: C.text }}>{total}</span>{' '}
+                saisie{total > 1 ? 's' : ''}
+                {hasFilters && (
+                  <span style={{ color: C.amber, fontWeight: 630 }}> · filtré</span>
+                )}
+              </span>
             </div>
-            <div style={{ display: 'flex', gap: 6 }}>
+
+            {/* Droite : pagination */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              {/* ⟨⟨ First */}
+              <button onClick={() => load(1)} disabled={page <= 1}
+                style={{ display: 'flex', alignItems: 'center', padding: '5px 7px',
+                  borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent',
+                  color: C.textMuted, cursor: page <= 1 ? 'not-allowed' : 'pointer',
+                  opacity: page <= 1 ? 0.3 : 1, fontFamily: 'inherit' }}>
+                <ChevronLeft size={10} strokeWidth={2.5}/><ChevronLeft size={10} strokeWidth={2.5}/>
+              </button>
+              {/* ⟨ Préc */}
               <button onClick={() => load(page - 1)} disabled={page <= 1}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px',
+                style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '5px 10px',
                   borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent',
                   color: C.textMuted, fontSize: 12, fontWeight: 630,
                   cursor: page <= 1 ? 'not-allowed' : 'pointer',
-                  opacity: page <= 1 ? 0.4 : 1, fontFamily: 'inherit' }}>
+                  opacity: page <= 1 ? 0.3 : 1, fontFamily: 'inherit' }}>
                 <ChevronLeft size={12} strokeWidth={2} /> Préc
               </button>
-              {Array.from({ length: Math.min(pages, 5) }, (_, i) => {
-                const p = i + 1
-                return (
-                  <button key={p} onClick={() => load(p)}
-                    style={{ width: 32, height: 32, borderRadius: 6,
-                      border: `1.5px solid ${page === p ? C.green : C.border}`,
-                      background: page === p ? C.green : 'transparent',
-                      color: page === p ? '#fff' : C.textMuted,
-                      fontSize: 12, fontWeight: 630, fontFamily: 'inherit', cursor: 'pointer' }}>
-                    {p}
-                  </button>
-                )
-              })}
+
+              {/* Numéros */}
+              <div style={{ display: 'flex', gap: 4 }}>
+                {Array.from({ length: Math.min(pages, 5) }, (_, i) => {
+                  let p
+                  if (pages <= 5)        p = i + 1
+                  else if (page <= 3)    p = i + 1
+                  else if (page >= pages - 2) p = pages - 4 + i
+                  else                   p = page - 2 + i
+                  return (
+                    <button key={p} onClick={() => load(p)}
+                      style={{ width: 32, height: 32, borderRadius: 7,
+                        border: `1.5px solid ${page === p ? C.green : C.border}`,
+                        background: page === p ? C.green : 'transparent',
+                        color: page === p ? '#fff' : C.textMuted,
+                        fontSize: 12, fontWeight: page === p ? 800 : 630,
+                        fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s' }}>
+                      {p}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Suiv ⟩ */}
               <button onClick={() => load(page + 1)} disabled={page >= pages}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px',
+                style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '5px 10px',
                   borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent',
                   color: C.textMuted, fontSize: 12, fontWeight: 630,
                   cursor: page >= pages ? 'not-allowed' : 'pointer',
-                  opacity: page >= pages ? 0.4 : 1, fontFamily: 'inherit' }}>
+                  opacity: page >= pages ? 0.3 : 1, fontFamily: 'inherit' }}>
                 Suiv <ChevronRight size={12} strokeWidth={2} />
               </button>
+              {/* Last ⟩⟩ */}
+              <button onClick={() => load(pages)} disabled={page >= pages}
+                style={{ display: 'flex', alignItems: 'center', padding: '5px 7px',
+                  borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent',
+                  color: C.textMuted, cursor: page >= pages ? 'not-allowed' : 'pointer',
+                  opacity: page >= pages ? 0.3 : 1, fontFamily: 'inherit' }}>
+                <ChevronRight size={10} strokeWidth={2.5}/><ChevronRight size={10} strokeWidth={2.5}/>
+              </button>
             </div>
+
           </div>
         </div>
       </div>

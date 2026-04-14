@@ -748,12 +748,12 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             </button>
             <span style={{ color: C.border }}>/</span>
             <span style={{ color: C.green, fontSize: 12, fontWeight: 630 }}>
-              {deviceInfo.farm_name} · House {deviceInfo.house_number}
+              {deviceInfo.farm_name} · Station {deviceInfo.house_number}
             </span>
           </div>
 
           <h1 style={{ color: C.text, fontSize: 20, fontWeight: 900, marginBottom: 4 }}>
-            {deviceInfo.farm_name} — House {deviceInfo.house_number}
+            {deviceInfo.farm_name} — Station {deviceInfo.house_number}
           </h1>
 
           <div style={{ color: C.textDim, fontSize: 12, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
