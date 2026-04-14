@@ -1452,7 +1452,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
       borderBottom: `1.5px solid ${C.border}`,
       borderTop: 'none',
       width: w,
-      background: dark ? 'rgba(52,217,111,0.04)' : 'rgba(24,120,63,0.03)',
+      background: C.card,
       userSelect: 'none',
     }}>{children}</th>
   )
