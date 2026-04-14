@@ -823,7 +823,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
       </div>
 
       {/* ── Bilan ligne ─────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: 16, marginBottom: 28, marginTop: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: 14, marginBottom: 28, marginTop: 20 }}>
         {[
           {
             label: 'Irrigation',
@@ -905,7 +905,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
         background: C.card,
         border: `1.5px solid ${C.border}`,
         borderRadius: 16,
-        marginBottom: 7,
+        marginBottom: 28,
         overflow: 'hidden',
       }}>
 
@@ -961,7 +961,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
 
         {/* ── Constantes & Substrat ── */}
         <div style={{
-          padding: '12px 24px 14px',
+          padding: '18px 24px 20px',
           background: C.card,
         }}>
 
@@ -996,7 +996,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
                 textTransform: 'uppercase', letterSpacing: '0.08em',
                 marginBottom: 7, opacity: 0.65,
               }}>Substrat</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 <div>
                   <label style={labelStyle} C={C}>Nbr Bras</label>
                   <input type="number" value={nbrBras} onChange={e => setNbrBras(e.target.value)}
@@ -1017,7 +1017,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
                 textTransform: 'uppercase', letterSpacing: '0.08em',
                 marginBottom: 7, opacity: 0.65,
               }}>Pesée</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 14 }}>
                 <div>
                   <label style={labelStyle} C={C}>Poids matin (kg)</label>
                   <input type="number" value={poidsMatin} onChange={e => setPoidsMatin(e.target.value)}
