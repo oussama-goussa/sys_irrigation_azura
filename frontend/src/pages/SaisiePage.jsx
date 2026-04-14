@@ -380,7 +380,7 @@ function TimeInput({ value, onChange, C, small = false }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: '0 10px', minWidth: small ? 80 : '100%',
           border: `1.5px solid ${open ? C.green : C.border}`,
-          borderRadius: 7, background: C.inputBg,
+          borderRadius: 7, background: C.inputBg, width: '100%', boxSizing: 'border-box',
           cursor: 'pointer', transition: 'border-color 0.15s',
           fontSize: 12, color: value ? C.text : C.textDim,
           gap: 4, fontWeight: 630, height: small ? 28 : 36,
@@ -480,7 +480,7 @@ function CustomSelect({ value, onChange, options, placeholder, C, disabled = fal
   const label = selected ? (selected.label ?? selected) : null
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} style={{ position: 'relative', width: '100%' }}>
       <div
         onClick={() => !disabled && setOpen(v => !v)}
         style={{
@@ -1024,9 +1024,9 @@ export default function SaisiePage({ token, auth, C, dark }) {
                     placeholder="0.00" step="0.01"
                     style={{ ...inputStyle, width: '100%', height: 36, padding: '7px 10px' }} />
                 </div>
-                <div>
+                <div style={{ minWidth: 0 }}>
                   <label style={labelStyle} C={C}>Heure matin</label>
-                  <TimeInput value={heureMatin} onChange={setHeureMatin} C={C} />
+                  <TimeInput value={heureMatin} onChange={setHeureMatin} C={C} fullWidth />
                 </div>
                 <div>
                   <label style={labelStyle} C={C}>Poids soir (kg)</label>
@@ -1034,9 +1034,9 @@ export default function SaisiePage({ token, auth, C, dark }) {
                     placeholder="0.00" step="0.01"
                     style={{ ...inputStyle, width: '100%', height: 36, padding: '7px 10px' }} />
                 </div>
-                <div>
+                <div style={{ minWidth: 0 }}>
                   <label style={labelStyle} C={C}>Heure soir</label>
-                  <TimeInput value={heureSoir} onChange={setHeureSoir} C={C} />
+                  <TimeInput value={heureSoir} onChange={setHeureSoir} C={C} fullWidth/>
                 </div>
               </div>
             </div>
