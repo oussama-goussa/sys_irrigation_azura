@@ -56,7 +56,7 @@ function ConfirmModal({ user, onConfirm, onCancel, C, dark }) {
           </span>}
         </p>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <Btn onClick={onCancel} variant="ghost" C={C} icon={X}>Annuler</Btn>
+          <Btn onClick={onCancel} variant="ghost" C={C} icon={X} >Annuler</Btn>
           <Btn onClick={onConfirm} variant={user.actif ? 'danger' : 'primary'} C={C} icon={user.actif ? UserX : UserCheck}>
             {user.actif ? 'Désactiver' : 'Activer'}
           </Btn>
@@ -489,10 +489,10 @@ export default function UsersPage({ token, userRole, C, dark }) {
             <RefreshCw size={13} strokeWidth={2} style={{ animation: refreshing ? 'az-spin 0.7s linear infinite' : 'none' }} />
             Actualiser
           </button>
-          <Btn onClick={handleExport} variant="ghost" C={C} icon={Download} disabled={exporting}>
+          <Btn onClick={handleExport} variant="ghost" C={C} icon={Download} style={{ background: 'transparent'}} disabled={exporting}>
             {exporting ? 'Export…' : 'Export CSV'}
           </Btn>
-          <Btn onClick={() => { setShowLogs(true); setLogsUser(null) }} variant="ghost" C={C} icon={History}>
+          <Btn onClick={() => { setShowLogs(true); setLogsUser(null) }} style={{ background: 'transparent'}} variant="ghost" C={C} icon={History}>
             Historique
           </Btn>
           <Btn onClick={() => { setShowCreate(!showCreate); setCreateError('') }} variant={showCreate ? 'danger' : 'primary'} C={C} icon={showCreate ? X : UserPlus}>
