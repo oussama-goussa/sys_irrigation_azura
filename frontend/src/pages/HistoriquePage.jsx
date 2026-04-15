@@ -1499,7 +1499,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
               style={{
                 display: 'flex', alignItems: 'center', gap: 7,
                 padding: '8px 18px', borderRadius: 9,
-                background: `${C.green}12`,
+                background: C.toggleBg,
                 border: `1px solid ${dark ? '#1c2e22' : '#c0d8c8'}`, minHeight: 32,
                 color: C.green, fontSize: 12, fontWeight: 630,
                 fontFamily: 'inherit', cursor: 'pointer',
