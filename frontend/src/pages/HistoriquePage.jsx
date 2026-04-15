@@ -1595,7 +1595,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                       onMouseEnter={e => { if (hasFilters) { e.currentTarget.style.background = `${C.red}20`; e.currentTarget.style.borderColor = `${C.red}60` }}}
                       onMouseLeave={e => { e.currentTarget.style.background = `${C.red}10`; e.currentTarget.style.borderColor = `${C.red}35` }}
                     >
-                      <X size={11} strokeWidth={2.5} /> Reset
+                      <X size={11} strokeWidth={2.5} /> Réinitialiser
                     </button>
                   </th>
 
