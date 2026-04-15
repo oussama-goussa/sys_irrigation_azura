@@ -480,7 +480,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '6px 18px', borderRadius: 8,
-              border: `1.5px solid ${C.border}`, background: C.toggleBg,
+              border: `1px solid ${dark ? '#1c2e22' : '#c0d8c8'}`, background: C.toggleBg,
               color: C.textMuted, fontSize: 12, fontWeight: 630,
               cursor: refreshing ? 'not-allowed' : 'pointer',
               fontFamily: 'inherit', opacity: refreshing ? 0.6 : 1,
@@ -489,10 +489,10 @@ export default function UsersPage({ token, userRole, C, dark }) {
             <RefreshCw size={13} strokeWidth={2} style={{ animation: refreshing ? 'az-spin 0.7s linear infinite' : 'none' }} />
             Actualiser
           </button>
-          <Btn onClick={handleExport} variant="ghost" C={C} icon={Download} style={{ background: C.toggleBg }} disabled={exporting}>
+          <Btn onClick={handleExport} variant="ghost" C={C} icon={Download} style={{ border: `1px solid ${dark ? '#1c2e22' : '#c0d8c8'}`, background: C.toggleBg }} disabled={exporting}>
             {exporting ? 'Export…' : 'Export CSV'}
           </Btn>
-          <Btn onClick={() => { setShowLogs(true); setLogsUser(null) }} style={{ background: C.toggleBg }} variant="ghost" C={C} icon={History}>
+          <Btn onClick={() => { setShowLogs(true); setLogsUser(null) }} style={{ border: `1px solid ${dark ? '#1c2e22' : '#c0d8c8'}`, background: C.toggleBg }} variant="ghost" C={C} icon={History}>
             Historique
           </Btn>
           <Btn onClick={() => { setShowCreate(!showCreate); setCreateError('') }} variant={showCreate ? 'danger' : 'primary'} C={C} icon={showCreate ? X : UserPlus}>
