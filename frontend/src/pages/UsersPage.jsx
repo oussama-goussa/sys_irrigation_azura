@@ -355,6 +355,16 @@ export default function UsersPage({ token, userRole, C, dark }) {
 
   const canAccess = userRole === 'admin'
 
+  useEffect(() => {
+      const id = 'az-spin-style'
+      if (!document.getElementById(id)) {
+        const s = document.createElement('style')
+        s.id = id
+        s.textContent = '@keyframes az-spin { to { transform: rotate(360deg); } }'
+        document.head.appendChild(s)
+      }
+    }, [])
+
   const load = async (refresh = false) => {
     if (refresh) setRefreshing(true)
     try { setUsers(await getUsers(token)) }
@@ -464,9 +474,21 @@ export default function UsersPage({ token, userRole, C, dark }) {
           <p style={{ color: C.textDim, fontSize: 11 }}>Contrôle d'accès basé sur les rôles</p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <Btn onClick={() => load(true)} variant="ghost" C={C} icon={RefreshCw} style={{ opacity: refreshing ? 0.5 : 1 }}>
+          <button
+            onClick={() => load(true)}
+            disabled={refreshing}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '6px 18px', borderRadius: 8,
+              border: `1.5px solid ${C.border}`, background: 'transparent',
+              color: C.textMuted, fontSize: 12, fontWeight: 630,
+              cursor: refreshing ? 'not-allowed' : 'pointer',
+              fontFamily: 'inherit', opacity: refreshing ? 0.6 : 1,
+            }}
+          >
+            <RefreshCw size={13} strokeWidth={2} style={{ animation: refreshing ? 'az-spin 0.7s linear infinite' : 'none' }} />
             Actualiser
-          </Btn>
+          </button>
           <Btn onClick={handleExport} variant="ghost" C={C} icon={Download} disabled={exporting}>
             {exporting ? 'Export…' : 'Export CSV'}
           </Btn>
