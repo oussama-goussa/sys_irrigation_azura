@@ -592,6 +592,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
   const [tours,        setTours]        = useState(null)
   const [tourDate,     setTourDate]     = useState(today())
   const [loadingTours, setLoadingTours] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
 
   // ── load live ──
   const loadLive = useCallback(async () => {
@@ -791,14 +792,14 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
           </div>
         </div>
 
-        <button onClick={loadLive} style={{
+        <button disabled={refreshing} onClick={loadLive} style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          padding: '8px 14px', background: C.toggleBg,
-          border: `1.5px solid ${C.border}`, borderRadius: 8,
+          padding: '8px 16px', background: C.toggleBg,
+          border: `1px solid ${dark ? '#1c2e22' : '#c0d8c8'}`, borderRadius: 8,
           color: C.textMuted, fontSize: 12, fontWeight: 630,
           cursor: 'pointer', fontFamily: 'inherit',
         }}>
-          <RefreshCw size={12} strokeWidth={2} /> Actualiser
+          <RefreshCw size={12} strokeWidth={2} style={{transition: 'transform 0.5s', transform: refreshing ? 'rotate(360deg)' : 'rotate(0deg)'}} /> Actualiser
         </button>
       </div>
 
