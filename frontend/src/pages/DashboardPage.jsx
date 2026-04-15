@@ -330,7 +330,10 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
           0%   { transform:translate(-50%,-50%) scale(1); opacity:0.4; }
           100% { transform:translate(-50%,-50%) scale(2.8); opacity:0; }
         }
-      `
+        @keyframes az-spin {        ← ajouter ces 3 lignes ici
+          to { transform: rotate(360deg); }
+        }
+      ` 
       document.head.appendChild(s)
     }
   }, [])
@@ -405,10 +408,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
           >
             <RefreshCw
               size={12} strokeWidth={2}
-              style={{
-                transition: 'transform 0.5s',
-                transform: refreshing ? 'rotate(360deg)' : 'rotate(0deg)',
-              }}
+              style={{ animation: refreshing ? 'az-spin 0.7s linear infinite' : 'none' }}
             />
             Actualiser
           </button>

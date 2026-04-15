@@ -596,16 +596,18 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
   // ── load live ──
   const loadLive = useCallback(async () => {
-    try {
-      const d = await getDeviceLatest(token, deviceId)
-      setLive(d)
-      setErrorL('')
-    } catch (e) {
-      setErrorL(e.message)
-    } finally {
-      setLoadingL(false)
-    }
-  }, [token, deviceId])
+      setRefreshing(true)
+      try {
+        const d = await getDeviceLatest(token, deviceId)
+        setLive(d)
+        setErrorL('')
+      } catch (e) {
+        setErrorL(e.message)
+      } finally {
+        setLoadingL(false)
+        setRefreshing(false)
+      }
+    }, [token, deviceId])
 
   // ── load history ──
   const loadHistory = useCallback(async (p = 1) => {
@@ -733,6 +735,15 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
       })
       .map(d => ({ timestamp: d.timestamp, value: d[field] ?? 0 }))
   }
+
+  // ── spin keyframe ──
+    if (typeof document !== 'undefined' && !document.getElementById('az-spin-style')) {
+      const s = document.createElement('style')
+      s.id = 'az-spin-style'
+      s.textContent = '@keyframes az-spin { to { transform: rotate(360deg); } }'
+      document.head.appendChild(s)
+    }  
+
   return (
     <div>
       {/* ── Header ──────────────────────────────────────────── */}
@@ -799,7 +810,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
           color: C.textMuted, fontSize: 12, fontWeight: 630,
           cursor: 'pointer', fontFamily: 'inherit',
         }}>
-          <RefreshCw size={12} strokeWidth={2} style={{transition: 'transform 0.5s', transform: refreshing ? 'rotate(360deg)' : 'rotate(0deg)'}} /> Actualiser
+          <RefreshCw size={12} strokeWidth={2} style={{ animation: refreshing ? 'az-spin 0.7s linear infinite' : 'none' }} /> Actualiser
         </button>
       </div>
 
