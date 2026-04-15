@@ -1199,7 +1199,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
             onClick={addTour}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              padding: '0px 18px',
+              padding: '8px 18px',
               background: C.toggleBg,
               border: `1px solid ${dark ? '#1c2e22' : '#c0d8c8'}`,
               borderRadius: 8, color: C.green,
