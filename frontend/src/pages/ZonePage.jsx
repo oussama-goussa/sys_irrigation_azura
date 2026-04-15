@@ -1229,8 +1229,8 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
         </div>
         <button onClick={handleExport} disabled={exporting} style={{
           display:'flex', alignItems:'center', gap:6,
-          padding:'5px 14px', background:'transparent',
-          border:`1.5px solid ${C.green}`, borderRadius:7,
+          padding:'8px 18px', background: C.toggleBg,
+          border: `1px solid ${dark ? '#1c2e22' : '#c0d8c8'}`, borderRadius:7,
           color:C.green, fontSize:12, fontWeight:630,
           cursor: exporting ? 'not-allowed' : 'pointer',
           opacity: exporting ? 0.6 : 1, fontFamily:'inherit',

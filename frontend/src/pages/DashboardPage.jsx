@@ -398,7 +398,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark }) {
             disabled={refreshing}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              padding: '8px 16px',
+              padding: '8px 18px',
               background: C.toggleBg,
               border: `1px solid ${dark ? '#1c2e22' : '#c0d8c8'}`,
               borderRadius: 8,
