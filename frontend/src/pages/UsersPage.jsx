@@ -27,7 +27,7 @@ const ACTION_LABELS = {
 }
 
 // ── Confirm modal ─────────────────────────────────────────────
-function ConfirmModal({ user, onConfirm, onCancel, isMobile, C, dark }) {
+function ConfirmModal({ user, onConfirm, onCancel, isMobile, C, dark, isMobile }) {
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 100,
@@ -68,7 +68,7 @@ function ConfirmModal({ user, onConfirm, onCancel, isMobile, C, dark }) {
 }
 
 // ── Edit modal ────────────────────────────────────────────────
-function EditModal({ user, farms, onSave, onClose, C, dark }) {
+function EditModal({ user, farms, onSave, onClose, C, dark, isMobile }) {
   const [nom, setNom]             = useState(user.nom)
   const [email, setEmail]         = useState(user.email || '')
   const [pwd, setPwd]             = useState('')
@@ -251,7 +251,7 @@ function EditModal({ user, farms, onSave, onClose, C, dark }) {
 }
 
 // ── Audit logs panel ──────────────────────────────────────────
-function AuditPanel({ token, filterUser, C, dark, onClose }) {
+function AuditPanel({ token, filterUser, C, dark, onClose, isMobile }) {
   const [logs, setLogs]     = useState([])
   const [loading, setLoading] = useState(true)
 
