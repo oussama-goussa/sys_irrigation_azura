@@ -3,12 +3,11 @@
 // ============================================================
 
 import { useState, useEffect } from 'react'
-import { createPortal } from 'react-dom'
 import {
   Users, UserPlus, Search, X, Check, ShieldCheck,
   UserCheck, UserX, UserPen, CircleSlash, CircleCheck, Pencil,
   RefreshCw, Download, History, Mail, Phone,
-  AlertTriangle, Clock, Save, ChevronDown, ChevronUp,
+  AlertTriangle, Clock, Save, ChevronDown, ChevronUp,  // ← ajouter
 } from 'lucide-react'
 
 import { ROLES, ROLE_OPTIONS, ROLE_CONFIG } from '../theme.js'
@@ -26,32 +25,21 @@ const ACTION_LABELS = {
   EXPORT_CSV    : { label: 'Export CSV',        color: '#4d9de0' },
 }
 
-// ── Overlay wrapper (portal) ──────────────────────────────────
-function ModalOverlay({ children }) {
-  return createPortal(
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999,
-      background: 'rgba(0,0,0,0.65)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: 16,
-    }}>
-      {children}
-    </div>,
-    document.body
-  )
-}
-
 // ── Confirm modal ─────────────────────────────────────────────
 function ConfirmModal({ user, onConfirm, onCancel, C, dark }) {
   return (
-    <ModalOverlay>
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 100,
+      background: 'rgba(0,0,0,0.65)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: 16, padding: '28px 32px', width: '100%', maxWidth: 420,
+        borderRadius: 16, padding: '28px 32px', width: 400,
         boxShadow: `0 8px 40px rgba(0,0,0,0.5)`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 10, background: `${C.amber}18`, border: `1.5px solid ${C.amber}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 10, background: `${C.amber}18`, border: `1.5px solid ${C.amber}40`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <AlertTriangle size={20} color={C.amber} strokeWidth={2} />
           </div>
           <div>
@@ -68,13 +56,13 @@ function ConfirmModal({ user, onConfirm, onCancel, C, dark }) {
           </span>}
         </p>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <Btn onClick={onCancel} variant="ghost" C={C} icon={X}>Annuler</Btn>
+          <Btn onClick={onCancel} variant="ghost" C={C} icon={X} >Annuler</Btn>
           <Btn onClick={onConfirm} variant={user.actif ? 'danger' : 'primary'} C={C} icon={user.actif ? UserX : UserCheck}>
             {user.actif ? 'Désactiver' : 'Activer'}
           </Btn>
         </div>
       </div>
-    </ModalOverlay>
+    </div>
   )
 }
 
@@ -89,10 +77,11 @@ function EditModal({ user, farms, onSave, onClose, C, dark }) {
   const [error, setError]         = useState('')
 
   const isAdmin = user.role === 'admin'
-  const farmList = farms
+  const farmList = farms  // farms est déjà une liste de strings
 
   const toggleFarm = (f) => {
     if (user.role === 'operateur' || user.role === 'auditeur') {
+      // une seule ferme autorisée
       setFarmNames([f])
       setDropOpen(false)
     } else {
@@ -121,12 +110,15 @@ function EditModal({ user, farms, onSave, onClose, C, dark }) {
   }
 
   return (
-    <ModalOverlay>
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 100,
+      background: 'rgba(0,0,0,0.65)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: 16, padding: '28px 32px', width: '100%', maxWidth: 500,
+        borderRadius: 16, padding: '28px 32px', width: 480,
         boxShadow: `0 8px 40px rgba(0,0,0,0.5)`,
-        maxHeight: '90vh', overflowY: 'auto',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -159,6 +151,7 @@ function EditModal({ user, farms, onSave, onClose, C, dark }) {
             </label>
 
             <div style={{ position: 'relative' }}>
+              {/* Trigger */}
               <div
                 onClick={() => setDropOpen(v => !v)}
                 style={{
@@ -193,6 +186,7 @@ function EditModal({ user, farms, onSave, onClose, C, dark }) {
                 }} />
               </div>
 
+              {/* Dropdown */}
               {dropOpen && (
                 <div style={{
                   position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
@@ -251,7 +245,7 @@ function EditModal({ user, farms, onSave, onClose, C, dark }) {
           </Btn>
         </div>
       </div>
-    </ModalOverlay>
+    </div>
   )
 }
 
@@ -268,15 +262,19 @@ function AuditPanel({ token, filterUser, C, dark, onClose }) {
   }, [filterUser])
 
   return (
-    <ModalOverlay>
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 100,
+      background: 'rgba(0,0,0,0.65)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: 16, padding: '28px 32px', width: '100%', maxWidth: 680,
-        maxHeight: '85vh', display: 'flex', flexDirection: 'column',
+        borderRadius: 16, padding: '28px 32px', width: 630,
+        maxHeight: '80vh', display: 'flex', flexDirection: 'column',
         boxShadow: `0 8px 40px rgba(0,0,0,0.5)`,
       }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <History size={18} color={C.green} strokeWidth={2} />
             <div style={{ color: C.text, fontWeight: 800, fontSize: 15 }}>
@@ -311,13 +309,13 @@ function AuditPanel({ token, filterUser, C, dark, onClose }) {
                       border: `1px solid ${cfg.color}35`,
                       borderRadius: 5, padding: '2px 8px',
                       fontSize: 10, fontWeight: 630, letterSpacing: '0.05em',
-                      whiteSpace: 'nowrap', flexShrink: 0,
+                      whiteSpace: 'nowrap',
                     }}>
                       {cfg.label}
                     </span>
                     <span style={{ color: C.text, fontSize: 12, fontWeight: 630, minWidth: 80 }}>{log.username}</span>
-                    <span style={{ color: C.textMuted, fontSize: 12, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{log.detail || '—'}</span>
-                    <span style={{ color: C.textDim, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                    <span style={{ color: C.textMuted, fontSize: 12, flex: 1 }}>{log.detail || '—'}</span>
+                    <span style={{ color: C.textDim, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
                       <Clock size={10} strokeWidth={2} />
                       {new Date(log.created_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                     </span>
@@ -328,7 +326,7 @@ function AuditPanel({ token, filterUser, C, dark, onClose }) {
           )}
         </div>
       </div>
-    </ModalOverlay>
+    </div>
   )
 }
 
@@ -358,14 +356,14 @@ export default function UsersPage({ token, userRole, C, dark }) {
   const canAccess = userRole === 'admin'
 
   useEffect(() => {
-    const id = 'az-spin-style'
-    if (!document.getElementById(id)) {
-      const s = document.createElement('style')
-      s.id = id
-      s.textContent = '@keyframes az-spin { to { transform: rotate(360deg); } }'
-      document.head.appendChild(s)
-    }
-  }, [])
+      const id = 'az-spin-style'
+      if (!document.getElementById(id)) {
+        const s = document.createElement('style')
+        s.id = id
+        s.textContent = '@keyframes az-spin { to { transform: rotate(360deg); } }'
+        document.head.appendChild(s)
+      }
+    }, [])
 
   const load = async (refresh = false) => {
     if (refresh) setRefreshing(true)
@@ -377,7 +375,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
   useEffect(() => {
     if (!canAccess) { setLoading(false); return }
     load()
-    getFarms(token).then(data => setFarms(data.map(f => f.farm_name))).catch(() => setFarms([]))
+    getFarms(token).then(data => setFarms(data.map(f => f.farm_name))).catch(() => setFarms([]))   // ← ajouter
   }, [])
 
   useEffect(() => {
@@ -461,7 +459,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
 
   return (
     <div>
-      {/* Modals — rendus via portals sur document.body */}
+      {/* Modals */}
       {confirmUser && <ConfirmModal user={confirmUser} onConfirm={handleToggleConfirm} onCancel={() => setConfirmUser(null)} C={C} dark={dark} />}
       {editingUser && <EditModal user={editingUser} farms={farms} onSave={handleEdit} onClose={() => setEditingUser(null)} C={C} dark={dark} />}
       {showLogs && <AuditPanel token={token} filterUser={logsUser} C={C} dark={dark} onClose={() => { setShowLogs(false); setLogsUser(null) }} />}
@@ -576,7 +574,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                   </div>
                 )}
               </div>
-            </div>
+            </div>            
             {newUser.role !== 'admin' && (
               <div style={{ marginBottom: 14 }}>
                 <label style={{
@@ -598,11 +596,11 @@ export default function UsersPage({ token, userRole, C, dark }) {
                       onClick={() => setDropOpen(v => !v)}
                       style={{
                         display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6,
-                        padding: '0 36px 0 8px', height: 38,
+                        padding: '0 36px 0 8px', height: 38,          // ← height fixe
                         border: `1.5px solid ${dropOpen ? C.green : C.border}`,
                         borderRadius: 8, background: C.inputBg, cursor: 'pointer',
                         position: 'relative', transition: 'border-color 0.15s',
-                        overflowX: 'auto', overflowY: 'hidden',
+                        overflowX: 'auto', overflowY: 'hidden',        // ← scroll horizontal si trop de tags
                       }}
                     >
                       {newUser.farm_names.map(f => (
@@ -616,26 +614,47 @@ export default function UsersPage({ token, userRole, C, dark }) {
                           <span
                             onClick={e => {
                               e.stopPropagation()
-                              setNewUser(prev => ({ ...prev, farm_names: prev.farm_names.filter(x => x !== f) }))
+                              setNewUser(prev => ({
+                                ...prev,
+                                farm_names: prev.farm_names.filter(x => x !== f)
+                              }))
                             }}
                             style={{ cursor: 'pointer', opacity: 0.7, fontSize: 12, lineHeight: 1 }}
                           >×</span>
                         </span>
                       ))}
+
                       {newUser.farm_names.length === 0 && (
-                        <span style={{ color: C.textDim, fontSize: 12 }}>Sélectionner des fermes…</span>
+                        <span style={{ color: C.textDim, fontSize: 12 }}>
+                          Sélectionner des fermes…
+                        </span>
                       )}
-                      <div style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: 4 }}>
+
+                      <div style={{
+                        position: 'absolute', right: 6, top: '50%',
+                        transform: 'translateY(-50%)',
+                        display: 'flex', alignItems: 'center', gap: 4,
+                      }}>
                         {newUser.farm_names.length > 0 && (
-                          <span onClick={e => { e.stopPropagation(); setNewUser(prev => ({ ...prev, farm_names: [] })) }} style={{ cursor: 'pointer', color: C.textDim, display: 'flex', alignItems: 'center' }}>
+                          <span
+                            onClick={e => {
+                              e.stopPropagation()
+                              setNewUser(prev => ({ ...prev, farm_names: [] }))
+                            }}
+                            style={{ cursor: 'pointer', color: C.textDim, display: 'flex', alignItems: 'center' }}
+                          >
                             <X size={12} strokeWidth={2} />
                           </span>
                         )}
                         <span style={{ color: C.textDim, display: 'flex', alignItems: 'center' }}>
-                          {dropOpen ? <ChevronUp size={12} strokeWidth={2} /> : <ChevronDown size={12} strokeWidth={2} />}
+                          {dropOpen
+                            ? <ChevronUp size={12} strokeWidth={2} />
+                            : <ChevronDown size={12} strokeWidth={2} />
+                          }
                         </span>
                       </div>
                     </div>
+
                     {dropOpen && (
                       <div style={{
                         position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
@@ -644,13 +663,26 @@ export default function UsersPage({ token, userRole, C, dark }) {
                         maxHeight: 180, overflowY: 'auto',
                       }}>
                         {farms.filter(f => !newUser.farm_names.includes(f)).length === 0 ? (
-                          <div style={{ padding: '10px 14px', color: C.textDim, fontSize: 12 }}>Toutes les fermes sélectionnées</div>
+                          <div style={{ padding: '10px 14px', color: C.textDim, fontSize: 12 }}>
+                            Toutes les fermes sélectionnées
+                          </div>
                         ) : farms.filter(f => !newUser.farm_names.includes(f)).map(f => (
-                          <div key={f} onClick={() => { setNewUser(prev => ({ ...prev, farm_names: [...prev.farm_names, f] })); setDropOpen(false) }}
-                            style={{ padding: '9px 14px', fontSize: 12, color: C.textMuted, cursor: 'pointer', transition: 'background 0.1s' }}
+                          <div
+                            key={f}
+                            onClick={() => {
+                              setNewUser(prev => ({ ...prev, farm_names: [...prev.farm_names, f] }))
+                              setDropOpen(false)
+                            }}
+                            style={{
+                              padding: '9px 14px', fontSize: 12,
+                              color: C.textMuted, cursor: 'pointer',
+                              transition: 'background 0.1s',
+                            }}
                             onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
                             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                          >{f}</div>
+                          >
+                            {f}
+                          </div>
                         ))}
                       </div>
                     )}
@@ -672,7 +704,13 @@ export default function UsersPage({ token, userRole, C, dark }) {
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         {newUser.farm_names[0] && (
-                          <span onClick={e => { e.stopPropagation(); setNewUser(prev => ({ ...prev, farm_names: [] })) }} style={{ cursor: 'pointer', color: C.textDim, display: 'flex', alignItems: 'center' }}>
+                          <span
+                            onClick={e => {
+                              e.stopPropagation()
+                              setNewUser(prev => ({ ...prev, farm_names: [] }))
+                            }}
+                            style={{ cursor: 'pointer', color: C.textDim, display: 'flex', alignItems: 'center' }}
+                          >
                             <X size={12} strokeWidth={2}/>
                           </span>
                         )}
@@ -689,13 +727,27 @@ export default function UsersPage({ token, userRole, C, dark }) {
                         maxHeight: 180, overflowY: 'auto',
                       }}>
                         {farms.length === 0 ? (
-                          <div style={{ padding: '10px 14px', color: C.textDim, fontSize: 12 }}>Aucune ferme disponible</div>
+                          <div style={{ padding: '10px 14px', color: C.textDim, fontSize: 12 }}>
+                            Aucune ferme disponible
+                          </div>
                         ) : farms.map(f => (
-                          <div key={f} onClick={() => { setNewUser(prev => ({ ...prev, farm_names: [f] })); setDropOpen(false) }}
-                            style={{ padding: '9px 14px', fontSize: 12, cursor: 'pointer', color: newUser.farm_names[0] === f ? C.green : C.textMuted, background: newUser.farm_names[0] === f ? `${C.green}12` : 'transparent', transition: 'background 0.1s' }}
+                          <div
+                            key={f}
+                            onClick={() => {
+                              setNewUser(prev => ({ ...prev, farm_names: [f] }))
+                              setDropOpen(false)
+                            }}
+                            style={{
+                              padding: '9px 14px', fontSize: 12, cursor: 'pointer',
+                              color: newUser.farm_names[0] === f ? C.green : C.textMuted,
+                              background: newUser.farm_names[0] === f ? `${C.green}12` : 'transparent',
+                              transition: 'background 0.1s',
+                            }}
                             onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
                             onMouseLeave={e => e.currentTarget.style.background = newUser.farm_names[0] === f ? `${C.green}12` : 'transparent'}
-                          >{f}</div>
+                          >
+                            {f}
+                          </div>
                         ))}
                       </div>
                     )}
@@ -720,7 +772,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
           <Search size={SZ.md} strokeWidth={1.8} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: C.textDim, pointerEvents: 'none' }} />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Rechercher par nom ou identifiant…"
-            style={{ width: '100%', padding: '9px 14px 9px 36px', borderRadius: 8, border: `1.5px solid ${C.border}`, background: C.card, color: C.text, fontSize: 12, outline: 'none', fontFamily: 'inherit' }} />
+            style={{ width: '100%', padding: '9px 14px 9px 36px', borderRadius: 8, border: `1.5px solid ${C.border}`, background: C.card, color: C.text, fontSize: 12, outline: 'none' }} />
           {search && (
             <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: C.textDim }}>
               <X size={SZ.sm} strokeWidth={2} />
@@ -863,6 +915,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                             )}
                           </div>
                         ) : (
+
                           <button
                             onClick={(e) => { e.stopPropagation(); setEditingRole(u.username); setRoleDropUser(null) }}
                             title="Modifier le rôle"
