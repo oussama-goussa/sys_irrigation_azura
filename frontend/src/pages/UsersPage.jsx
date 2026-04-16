@@ -36,9 +36,7 @@ function ConfirmModal({ user, onConfirm, onCancel, isMobile, C, dark }) {
     }}>
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: isMobile ? 16 : 0, padding: isMobile ? '20px 16px' : '32px 40px',
-        width: isMobile ? 'calc(100vw - 32px)' : '100vw',
-        height: isMobile ? 'auto' : '100vh',
+        borderRadius: 16, padding: '28px 32px', width: isMobile ? 'calc(100vw - 32px)' : 400,
         boxShadow: `0 8px 40px rgba(0,0,0,0.5)`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
@@ -114,15 +112,13 @@ function EditModal({ user, farms, onSave, onClose, C, dark, isMobile }) {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 100,
+      position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 9999,
       background: 'rgba(0,0,0,0.65)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: isMobile ? 16 : 0, padding: isMobile ? '20px 16px' : '32px 40px',
-        width: isMobile ? 'calc(100vw - 32px)' : '100vw',
-        height: isMobile ? 'auto' : '100vh', overflowY: isMobile ? 'visible' : 'auto',
+        borderRadius: 16, padding: '28px 32px', width: isMobile ? 'calc(100vw - 32px)' : 480,
         boxShadow: `0 8px 40px rgba(0,0,0,0.5)`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
@@ -274,10 +270,8 @@ function AuditPanel({ token, filterUser, C, dark, onClose, isMobile }) {
     }}>
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: isMobile ? 16 : 0, padding: isMobile ? '20px 16px' : '32px 40px',
-        width: isMobile ? 'calc(100vw - 32px)' : '100vw',
-        height: isMobile ? 'auto' : '100vh', maxHeight: isMobile ? '80vh' : '100vh',
-        display: 'flex', flexDirection: 'column',
+        borderRadius: 16, padding: '28px 32px', width: isMobile ? 'calc(100vw - 32px)' : 630,
+        maxHeight: '80vh', display: 'flex', flexDirection: 'column',
         boxShadow: `0 8px 40px rgba(0,0,0,0.5)`,
       }}>
         {/* Header */}
