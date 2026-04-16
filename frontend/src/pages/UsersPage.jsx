@@ -124,7 +124,8 @@ function EditModal({ user, farms, onSave, onClose, C, dark, isMobile }) {
         width: '100%', maxWidth: 480,
         maxHeight: '90vh', overflowY: 'auto',
         boxShadow: `0 8px 40px rgba(0,0,0,0.5)`,
-        boxSizing: 'border-box',
+        boxSizing: 'border-box', position: 'relative', // ← important
+        zIndex: 10000,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
