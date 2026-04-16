@@ -26,7 +26,7 @@ const ACTION_LABELS = {
 }
 
 // ── Confirm modal ─────────────────────────────────────────────
-function ConfirmModal({ user, onConfirm, onCancel, C, dark }) {
+function ConfirmModal({ user, onConfirm, onCancel, isMobile, C, dark }) {
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 100,
@@ -35,7 +35,7 @@ function ConfirmModal({ user, onConfirm, onCancel, C, dark }) {
     }}>
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: 16, padding: '28px 32px', width: 400,
+        borderRadius: 16, padding: '28px 32px', width: isMobile ? 'calc(100vw - 32px)' : 400,
         boxShadow: `0 8px 40px rgba(0,0,0,0.5)`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
@@ -117,7 +117,7 @@ function EditModal({ user, farms, onSave, onClose, C, dark }) {
     }}>
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: 16, padding: '28px 32px', width: 480,
+        borderRadius: 16, padding: '28px 32px', width: isMobile ? 'calc(100vw - 32px)' : 480,
         boxShadow: `0 8px 40px rgba(0,0,0,0.5)`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
@@ -269,7 +269,7 @@ function AuditPanel({ token, filterUser, C, dark, onClose }) {
     }}>
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: 16, padding: '28px 32px', width: 630,
+        borderRadius: 16, padding: '28px 32px', width: isMobile ? 'calc(100vw - 32px)' : 630,
         maxHeight: '80vh', display: 'flex', flexDirection: 'column',
         boxShadow: `0 8px 40px rgba(0,0,0,0.5)`,
       }}>
@@ -331,7 +331,7 @@ function AuditPanel({ token, filterUser, C, dark, onClose }) {
 }
 
 // ── Main page ─────────────────────────────────────────────────
-export default function UsersPage({ token, userRole, C, dark }) {
+export default function UsersPage({ token, userRole, C, dark, isMobile = false, isTablet = false }) {
   const [users, setUsers]           = useState([])
   const [loading, setLoading]       = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -460,12 +460,12 @@ export default function UsersPage({ token, userRole, C, dark }) {
   return (
     <div>
       {/* Modals */}
-      {confirmUser && <ConfirmModal user={confirmUser} onConfirm={handleToggleConfirm} onCancel={() => setConfirmUser(null)} C={C} dark={dark} />}
-      {editingUser && <EditModal user={editingUser} farms={farms} onSave={handleEdit} onClose={() => setEditingUser(null)} C={C} dark={dark} />}
-      {showLogs && <AuditPanel token={token} filterUser={logsUser} C={C} dark={dark} onClose={() => { setShowLogs(false); setLogsUser(null) }} />}
+      {confirmUser && <ConfirmModal user={confirmUser} onConfirm={handleToggleConfirm} onCancel={() => setConfirmUser(null)} C={C} dark={dark} isMobile={isMobile} />}
+      {editingUser && <EditModal user={editingUser} farms={farms} onSave={handleEdit} onClose={() => setEditingUser(null)} C={C} dark={dark} isMobile={isMobile} />}
+      {showLogs && <AuditPanel token={token} filterUser={logsUser} C={C} dark={dark} onClose={() => { setShowLogs(false); setLogsUser(null) }} isMobile={isMobile} />}
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'flex-start', marginBottom: 28, gap: isMobile ? 12 : 0 }}>
         <div>
           <h1 style={{ color: C.text, fontSize: 22, fontWeight: 900, marginBottom: 4, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 10 }}>
             <Users size={22} color={C.green} strokeWidth={2} />
@@ -473,7 +473,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
           </h1>
           <p style={{ color: C.textDim, fontSize: 11 }}>Contrôle d'accès basé sur les rôles</p>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 8, width: isMobile ? '100%' : undefined, flexWrap: 'wrap' }}>
           <button
             onClick={() => load(true)}
             disabled={refreshing}
@@ -502,7 +502,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'flex', gap: 14, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gap: 14, gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', marginBottom: 24 }}>
         <StatCard label="Total"    value={stats.total}    icon={Users}       color={C.green}  C={C} />
         <StatCard label="Actifs"   value={stats.actifs}   icon={UserCheck}   color={C.green}  C={C} />
         <StatCard label="Inactifs" value={stats.inactifs} icon={UserX}       color={C.red}    C={C} />
@@ -516,7 +516,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
             <UserPlus size={SZ.md} color={C.blue} strokeWidth={2} />
             Créer un utilisateur
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 20px', overflow: 'visible' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '0 20px', overflow: 'visible' }}>
             <Input label="Identifiant"   value={newUser.username} onChange={setNu('username')} C={C} placeholder="ex: jdupont" />
             <Input label="Mot de passe"  value={newUser.password} onChange={setNu('password')} type="password" C={C} placeholder="Min. 8 caractères" />
             <Input label="Nom complet"   value={newUser.nom}      onChange={setNu('nom')}      C={C} placeholder="ex: Jean Dupont" />
@@ -767,7 +767,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
       )}
 
       {/* Search + filter */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
         <div style={{ flex: 1, position: 'relative' }}>
           <Search size={SZ.md} strokeWidth={1.8} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: C.textDim, pointerEvents: 'none' }} />
           <input value={search} onChange={e => setSearch(e.target.value)}
@@ -779,7 +779,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
             </button>
           )}
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', gap: 6, overflowX: isMobile ? 'auto' : 'visible', flexShrink: 0, maxWidth: isMobile ? '55vw' : undefined, paddingBottom: isMobile ? 2 : 0 }}>
           {['tous', ...ROLES].map(r => (
             <button key={r} onClick={() => setFilterRole(r)} style={{
               padding: '7px 13px', borderRadius: 7, fontSize: 12, fontWeight: 630,

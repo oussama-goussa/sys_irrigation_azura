@@ -1,32 +1,80 @@
 // ============================================================
 // frontend/src/components/DashboardShell.jsx
-// Shell avec sidebar dynamique + routing pages
-// Projet Azura Irrigation IA — GOUSSA Oussama
+// Responsive : Desktop / Tablet / Mobile
 // ============================================================
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Users, Sun, Moon, LogOut, Leaf, ClipboardList, History,
-  LayoutDashboard, Home, ChevronDown, ChevronRight,
-  Wifi, WifiOff, Settings, RefreshCw,
+  LayoutDashboard, ChevronDown, ChevronRight,
+  AlignLeft, X,
 } from 'lucide-react'
 import { getColors } from '../theme.js'
 import { Badge, Spinner, SZ } from './ui.jsx'
 import { getDevices } from '../api/client.js'
 
-import UsersPage     from '../pages/UsersPage.jsx'
-import SaisiePage      from '../pages/SaisiePage.jsx'
-import HistoriquePage  from '../pages/HistoriquePage.jsx'
-import DashboardPage from '../pages/DashboardPage.jsx'
-import ZonePage      from '../pages/ZonePage.jsx'
+import UsersPage      from '../pages/UsersPage.jsx'
+import SaisiePage     from '../pages/SaisiePage.jsx'
+import HistoriquePage from '../pages/HistoriquePage.jsx'
+import DashboardPage  from '../pages/DashboardPage.jsx'
+import ZonePage       from '../pages/ZonePage.jsx'
 
-// ── Sidebar farm item ─────────────────────────────────────────
-function FarmItem({ farm, selectedDevice, onSelectDevice, C, dark }) {
+// ── Breakpoints ───────────────────────────────────────────────
+const BP_MOBILE = 640
+const BP_TABLET = 900
+
+export function useWindowWidth() {
+  const [w, setW] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200)
+  useEffect(() => {
+    const handler = () => setW(window.innerWidth)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+  return w
+}
+
+// ── FarmItem ─────────────────────────────────────────────────
+function FarmItem({ farm, selectedDevice, onSelectDevice, C, dark, collapsed, onClose }) {
   const [open, setOpen] = useState(true)
+
+  if (collapsed) {
+    return (
+      <div style={{ marginBottom: 4 }}>
+        {(farm.houses || []).map(house => {
+          const active = selectedDevice?.id === house.id
+          return (
+            <button
+              key={house.id}
+              title={`${farm.farm_name} · Station ${house.house_number}`}
+              onClick={() => { onSelectDevice(house); onClose?.() }}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '8px 0', borderRadius: 7, border: 'none',
+                cursor: 'pointer', background: active
+                  ? (dark ? 'rgba(52,217,111,0.12)' : 'rgba(24,120,63,0.08)')
+                  : 'transparent',
+                transition: 'background 0.15s',
+              }}
+            >
+              <div style={{
+                width: 26, height: 26, borderRadius: 7,
+                background: active ? C.green : (dark ? '#1c3122' : '#e8f4ed'),
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 10, fontWeight: 900,
+                color: active ? '#fff' : C.textDim,
+                transition: 'all 0.15s',
+              }}>
+                {house.house_number}
+              </div>
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
 
   return (
     <div style={{ marginBottom: 4 }}>
-      {/* Farm header */}
       <button
         onClick={() => setOpen(o => !o)}
         style={{
@@ -40,19 +88,15 @@ function FarmItem({ farm, selectedDevice, onSelectDevice, C, dark }) {
         }}
       >
         <span>{farm.farm_name}</span>
-        {open
-          ? <ChevronDown  size={12} strokeWidth={2} />
-          : <ChevronRight size={12} strokeWidth={2} />
-        }
+        {open ? <ChevronDown size={12} strokeWidth={2} /> : <ChevronRight size={12} strokeWidth={2} />}
       </button>
 
-      {/* Houses */}
-      {open && farm.houses.map(house => {
+      {open && (farm.houses || []).map(house => {
         const active = selectedDevice?.id === house.id
         return (
           <button
             key={house.id}
-            onClick={() => onSelectDevice(house)}
+            onClick={() => { onSelectDevice(house); onClose?.() }}
             style={{
               width: '100%', display: 'flex', alignItems: 'center',
               gap: 8, padding: '8px 10px 8px 24px',
@@ -64,16 +108,14 @@ function FarmItem({ farm, selectedDevice, onSelectDevice, C, dark }) {
                 ? (dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.08)')
                 : 'transparent',
               color: active ? C.green : C.textMuted,
-              position: 'relative',
-              transition: 'all 0.13s',
+              position: 'relative', transition: 'all 0.13s',
               textAlign: 'left',
             }}
           >
             {active && (
               <span style={{
                 position: 'absolute', left: 0, top: '18%', bottom: '18%',
-                width: 3, borderRadius: '0 3px 3px 0',
-                background: C.green,
+                width: 3, borderRadius: '0 3px 3px 0', background: C.green,
               }} />
             )}
             Station {house.house_number}
@@ -84,242 +126,136 @@ function FarmItem({ farm, selectedDevice, onSelectDevice, C, dark }) {
   )
 }
 
-// ── Main Shell ────────────────────────────────────────────────
-export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
-  const C = getColors(dark)
+// ── SidebarContent ────────────────────────────────────────────
+function SidebarContent({
+  C, dark, auth, farms, loadingFarms,
+  page, selectedDevice,
+  setPage, handleSelectDevice, toggleDark, onLogout,
+  collapsed = false,
+  onClose = null,
+}) {
+  const navigate = (p) => { setPage(p); onClose?.() }
 
-  // page: 'dashboard' | 'users' | 'zone'
-  const [page,           setPage]           = useState('dashboard')
-  const [selectedDevice, setSelectedDevice] = useState(null)
-  const [farms,          setFarms]          = useState([])
-  const [loadingFarms,   setLoadingFarms]   = useState(true)
-
-  // Load devices for sidebar
-  useEffect(() => {
-    getDevices(auth.access_token)
-      .then(setFarms)
-      .catch(() => setFarms([]))
-      .finally(() => setLoadingFarms(false))
-  }, [auth.access_token])
-
-  const handleSelectDevice = (device) => {
-    setSelectedDevice(device)
-    setPage('zone')
-  }
-
-  const handleBackToDashboard = () => {
-    setPage('dashboard')
-    setSelectedDevice(null)
+  const navBtn = (id, Icon, label) => {
+    const active = page === id
+    return (
+      <button
+        onClick={() => navigate(id)}
+        title={collapsed ? label : undefined}
+        style={{
+          width: '100%',
+          display: 'flex', alignItems: 'center',
+          gap: collapsed ? 0 : 9,
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          padding: collapsed ? '10px 0' : '9px 10px',
+          borderRadius: 8, border: 'none', cursor: 'pointer',
+          fontSize: 13, fontWeight: active ? 680 : 500,
+          fontFamily: 'inherit',
+          background: active
+            ? (dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.08)')
+            : 'transparent',
+          color: active ? C.green : C.textMuted,
+          position: 'relative', transition: 'all 0.13s',
+          marginBottom: 4,
+        }}
+      >
+        {active && !collapsed && (
+          <span style={{
+            position: 'absolute', left: 0, top: '18%', bottom: '18%',
+            width: 3, borderRadius: '0 3px 3px 0', background: C.green,
+          }} />
+        )}
+        <Icon size={15} strokeWidth={active ? 2.5 : 1.8} />
+        {!collapsed && label}
+      </button>
+    )
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: C.bg,
-      color: C.text,
-      display: 'flex',
-      fontFamily: "'JetBrains Mono', monospace",
-    }}>
-
-      {/* ── Sidebar ─────────────────────────────────────────── */}
-      <aside style={{
-        width: 220,
-        background: C.surface,
-        borderRight: `1px solid ${C.border}`,
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'fixed',
-        top: 0, bottom: 0, left: 0,
-        zIndex: 20,
+    <>
+      {/* Logo */}
+      <div style={{
+        padding: collapsed ? '14px 8px' : '18px 16px',
+        borderBottom: `1px solid ${C.border}`,
+        display: 'flex', alignItems: 'center',
+        justifyContent: collapsed ? 'center' : 'flex-start',
+        gap: 10, flexShrink: 0,
       }}>
-
-        {/* Logo */}
-        <div style={{
-          padding: '18px 16px',
-          borderBottom: `1px solid ${C.border}`,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-        }}>
-          <img
-            src={dark ? '/a_logo_dark.png' : '/a_logo_light.png'}
-            alt="Azura"
-            style={{ height: 40, width: 'auto', objectFit: 'contain', borderRadius: 6, border: `1px solid ${C.border}` }}
-          />
+        <img
+          src={dark ? '/a_logo_dark.png' : '/a_logo_light.png'}
+          alt="Azura"
+          style={{
+            height: collapsed ? 30 : 40, width: 'auto',
+            objectFit: 'contain', borderRadius: 6,
+            border: `1px solid ${C.border}`,
+            transition: 'height 0.2s',
+          }}
+        />
+        {!collapsed && (
           <div style={{ color: C.textDim, fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
             Système<br />d'Irrigation
           </div>
-        </div>
+        )}
+      </div>
 
-        {/* Nav */}
-        <nav style={{ flex: 1, padding: '12px 10px', overflowY: 'auto' }}>
+      {/* Nav */}
+      <nav style={{ flex: 1, padding: collapsed ? '10px 6px' : '12px 10px', overflowY: 'auto' }}>
+        {navBtn('dashboard', LayoutDashboard, 'Dashboard')}
 
-          {/* Dashboard link */}
-          <button
-            onClick={handleBackToDashboard}
-            style={{
-              width: '100%', display: 'flex', alignItems: 'center',
-              gap: 9, padding: '9px 10px', borderRadius: 8,
-              border: 'none', cursor: 'pointer', fontSize: 13,
-              fontWeight: page === 'dashboard' ? 680 : 500,
-              fontFamily: 'inherit',
-              background: page === 'dashboard'
-                ? (dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.08)')
-                : 'transparent',
-              color: page === 'dashboard' ? C.green : C.textMuted,
-              position: 'relative',
-              transition: 'all 0.13s',
-              marginBottom: 12,
-            }}
-          >
-            {page === 'dashboard' && (
-              <span style={{
-                position: 'absolute', left: 0, top: '18%', bottom: '18%',
-                width: 3, borderRadius: '0 3px 3px 0', background: C.green,
-              }} />
-            )}
-            <LayoutDashboard size={15} strokeWidth={page === 'dashboard' ? 2.5 : 1.8} />
-            Dashboard
-          </button>
-
-          {/* Section label */}
+        {!collapsed && (
           <div style={{
             color: C.textDim, fontSize: 11, fontWeight: 600,
             textTransform: 'uppercase', letterSpacing: '0.10em',
             padding: '0 10px', marginBottom: 8,
-          }}>
-            Fermes
-          </div>
+          }}>Fermes</div>
+        )}
+        {collapsed && <div style={{ height: 1, background: C.border, margin: '6px 8px' }} />}
 
-          {/* Dynamic farms */}
-          {loadingFarms ? (
-            <div style={{ padding: '8px 10px' }}>
-              <div style={{ color: C.textDim, fontSize: 11 }}>Chargement…</div>
-            </div>
-          ) : farms.length === 0 ? (
-            <div style={{ padding: '8px 10px', color: C.textDim, fontSize: 11 }}>
-              Aucune serre
-            </div>
-          ) : farms.map(farm => (
-            <FarmItem
-              key={farm.farm_name}
-              farm={farm}
-              selectedDevice={selectedDevice}
-              onSelectDevice={handleSelectDevice}
-              C={C}
-              dark={dark}
-            />
-          ))}
+        {loadingFarms ? (
+          !collapsed && <div style={{ padding: '8px 10px', color: C.textDim, fontSize: 11 }}>Chargement…</div>
+        ) : farms.length === 0 ? (
+          !collapsed && <div style={{ padding: '8px 10px', color: C.textDim, fontSize: 11 }}>Aucune serre</div>
+        ) : farms.map(farm => (
+          <FarmItem
+            key={farm.farm_name}
+            farm={farm}
+            selectedDevice={selectedDevice}
+            onSelectDevice={handleSelectDevice}
+            C={C} dark={dark}
+            collapsed={collapsed}
+            onClose={onClose}
+          />
+        ))}
 
-          {auth.role === 'admin' && (
-            <div style={{
-              color: C.textDim, fontSize: 11, fontWeight: 600,
-              textTransform: 'uppercase', letterSpacing: '0.10em',
-              padding: '0 10px', marginTop: 16, marginBottom: 8,
-            }}>
-              Système
-            </div>
-          )}
+        {collapsed && <div style={{ height: 1, background: C.border, margin: '6px 8px' }} />}
+        {!collapsed && auth.role === 'admin' && (
+          <div style={{
+            color: C.textDim, fontSize: 11, fontWeight: 600,
+            textTransform: 'uppercase', letterSpacing: '0.10em',
+            padding: '0 10px', marginTop: 16, marginBottom: 8,
+          }}>Système</div>
+        )}
 
-          {/* Saisie journalière */}
-          <button
-            onClick={() => { setPage('saisie'); setSelectedDevice(null) }}
-            style={{
-              width: '100%', display: 'flex', alignItems: 'center',
-              gap: 9, padding: '9px 10px', borderRadius: 8,
-              border: 'none', cursor: 'pointer', fontSize: 13,
-              fontWeight: page === 'saisie' ? 680 : 500,
-              fontFamily: 'inherit',
-              background: page === 'saisie'
-                ? (dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.08)')
-                : 'transparent',
-              color: page === 'saisie' ? C.green : C.textMuted,
-              position: 'relative',
-              transition: 'all 0.13s',
-              marginBottom: 4,
-            }}
-          >
-            {page === 'saisie' && (
-              <span style={{
-                position: 'absolute', left: 0, top: '18%', bottom: '18%',
-                width: 3, borderRadius: '0 3px 3px 0', background: C.green,
-              }} />
-            )}
-            <ClipboardList size={15} strokeWidth={page === 'saisie' ? 2.5 : 1.8} />
-            Saisie journalière
-          </button>
+        {navBtn('saisie', ClipboardList, 'Saisie journalière')}
+        {navBtn('historique', History, 'Historique')}
+        {auth.role === 'admin' && navBtn('users', Users, 'Utilisateurs')}
+      </nav>
 
-          {/* Historique */}
-          <button
-            onClick={() => { setPage('historique'); setSelectedDevice(null) }}
-            style={{
-              width: '100%', display: 'flex', alignItems: 'center',
-              gap: 9, padding: '9px 10px', borderRadius: 8,
-              border: 'none', cursor: 'pointer', fontSize: 13,
-              fontWeight: page === 'historique' ? 680 : 500,
-              fontFamily: 'inherit',
-              background: page === 'historique'
-                ? (dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.08)')
-                : 'transparent',
-              color: page === 'historique' ? C.green : C.textMuted,
-              position: 'relative', transition: 'all 0.13s', marginBottom: 4,
-            }}
-          >
-            {page === 'historique' && (
-              <span style={{ position: 'absolute', left: 0, top: '18%', bottom: '18%',
-                width: 3, borderRadius: '0 3px 3px 0', background: C.green }} />
-            )}
-            <History size={15} strokeWidth={page === 'historique' ? 2.5 : 1.8} />
-            Historique
-          </button>
-
-          {/* Users — admin only */}
-          {auth.role === 'admin' && (
-            <button
-              onClick={() => { setPage('users'); setSelectedDevice(null) }}
-              style={{
-                width: '100%', display: 'flex', alignItems: 'center',
-                gap: 9, padding: '9px 10px', borderRadius: 8,
-                border: 'none', cursor: 'pointer', fontSize: 13,
-                fontWeight: page === 'users' ? 680 : 500,
-                fontFamily: 'inherit',
-                background: page === 'users'
-                  ? (dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.08)')
-                  : 'transparent',
-                color: page === 'users' ? C.green : C.textMuted,
-                position: 'relative',
-                transition: 'all 0.13s',
-              }}
-            >
-              {page === 'users' && (
-                <span style={{
-                  position: 'absolute', left: 0, top: '18%', bottom: '18%',
-                  width: 3, borderRadius: '0 3px 3px 0', background: C.green,
-                }} />
-              )}
-              <Users size={15} strokeWidth={page === 'users' ? 2.5 : 1.8} />
-              Utilisateurs
-            </button>
-          )}
-        </nav>
-
-        {/* Bottom */}
-        <div style={{ padding: '12px 10px', borderTop: `1px solid ${C.border}` }}>
-
-          {/* User card */}
+      {/* Bottom */}
+      <div style={{ padding: collapsed ? '10px 6px' : '12px 10px', borderTop: `1px solid ${C.border}`, flexShrink: 0 }}>
+        {!collapsed && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 9,
             padding: '9px 10px', borderRadius: 9,
             background: dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
-            border: `1px solid ${C.border}`,
-            marginBottom: 8,
+            border: `1px solid ${C.border}`, marginBottom: 8,
           }}>
             <div style={{
-              width: 30, height: 30, borderRadius: 7,
+              width: 30, height: 30, borderRadius: 7, flexShrink: 0,
               background: dark ? 'rgba(52,217,111,0.12)' : 'rgba(24,120,63,0.10)',
               border: `1.5px solid ${dark ? 'rgba(52,217,111,0.25)' : 'rgba(24,120,63,0.2)'}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: C.green, fontSize: 11, fontWeight: 900, flexShrink: 0,
+              color: C.green, fontSize: 11, fontWeight: 900,
             }}>
               {auth.username[0].toUpperCase()}
             </div>
@@ -330,106 +266,234 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
               }}>
                 {auth.username}
               </div>
-              <div style={{ marginTop: 3 }}>
-                <Badge role={auth.role} dark={dark} />
-              </div>
+              <div style={{ marginTop: 3 }}><Badge role={auth.role} dark={dark} /></div>
             </div>
           </div>
+        )}
 
-          {/* Actions */}
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button
-              onClick={toggleDark}
-              style={{
-                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                padding: '7px 0', background: 'transparent',
-                border: `1px solid ${C.border}`, borderRadius: 7,
-                color: C.textMuted, cursor: 'pointer', fontSize: 11,
-                fontWeight: 600, fontFamily: 'inherit',
-              }}
-            >
-              {dark ? <><Sun size={12} strokeWidth={2} /> Clair</> : <><Moon size={12} strokeWidth={2} /> Sombre</>}
-            </button>
-
-            <button
-              onClick={onLogout}
-              style={{
-                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                padding: '7px 0', background: 'transparent',
-                border: `1px solid ${C.border}`, borderRadius: 7,
-                color: C.textMuted, cursor: 'pointer', fontSize: 11,
-                fontWeight: 600, fontFamily: 'inherit',
-              }}
-            >
-              <LogOut size={12} strokeWidth={2} />
-              Quitter
-            </button>
-          </div>
+        <div style={{
+          display: 'flex', gap: collapsed ? 0 : 6,
+          flexDirection: collapsed ? 'column' : 'row',
+          alignItems: 'center',
+        }}>
+          <button
+            onClick={toggleDark}
+            title={dark ? 'Mode clair' : 'Mode sombre'}
+            style={{
+              flex: collapsed ? 'unset' : 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: 5, padding: collapsed ? '8px 0' : '7px 0',
+              width: collapsed ? '100%' : undefined,
+              background: 'transparent', border: `1px solid ${C.border}`,
+              borderRadius: 7, color: C.textMuted, cursor: 'pointer',
+              fontSize: 11, fontWeight: 600, fontFamily: 'inherit',
+              marginBottom: collapsed ? 4 : 0,
+            }}
+          >
+            {dark ? <><Sun size={12} strokeWidth={2} />{!collapsed && ' Clair'}</> : <><Moon size={12} strokeWidth={2} />{!collapsed && ' Sombre'}</>}
+          </button>
+          <button
+            onClick={onLogout}
+            title="Quitter"
+            style={{
+              flex: collapsed ? 'unset' : 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: 5, padding: collapsed ? '8px 0' : '7px 0',
+              width: collapsed ? '100%' : undefined,
+              background: 'transparent', border: `1px solid ${C.border}`,
+              borderRadius: 7, color: C.textMuted, cursor: 'pointer',
+              fontSize: 11, fontWeight: 600, fontFamily: 'inherit',
+            }}
+          >
+            <LogOut size={12} strokeWidth={2} />
+            {!collapsed && ' Quitter'}
+          </button>
         </div>
-      </aside>
+      </div>
+    </>
+  )
+}
+
+// ── Main Shell ────────────────────────────────────────────────
+export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
+  const C = getColors(dark)
+  const width = useWindowWidth()
+
+  const isMobile = width < BP_MOBILE
+  const isTablet = width >= BP_MOBILE && width < BP_TABLET
+
+  const [page,           setPage]           = useState('dashboard')
+  const [selectedDevice, setSelectedDevice] = useState(null)
+  const [farms,          setFarms]          = useState([])
+  const [loadingFarms,   setLoadingFarms]   = useState(true)
+  const [mobileOpen,     setMobileOpen]     = useState(false)
+
+  useEffect(() => { if (!isMobile) setMobileOpen(false) }, [isMobile])
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [mobileOpen])
+
+  useEffect(() => {
+    getDevices(auth.access_token)
+      .then(setFarms).catch(() => setFarms([]))
+      .finally(() => setLoadingFarms(false))
+  }, [auth.access_token])
+
+  const handleSelectDevice = (device) => {
+    setSelectedDevice(device); setPage('zone'); setMobileOpen(false)
+  }
+  const handleBackToDashboard = () => { setPage('dashboard'); setSelectedDevice(null) }
+
+  const sidebarWidth = isMobile ? 0 : isTablet ? 52 : 220
+
+  const sharedProps = {
+    C, dark, auth, farms, loadingFarms,
+    page, selectedDevice,
+    setPage: (p) => { setPage(p); setSelectedDevice(null) },
+    handleSelectDevice, toggleDark, onLogout,
+  }
+
+  // Props responsive passés aux pages
+  const responsiveProps = { isMobile, isTablet }
+
+  return (
+    <div style={{
+      minHeight: '100vh', background: C.bg, color: C.text,
+      display: 'flex', fontFamily: "'JetBrains Mono', monospace",
+    }}>
+
+      {/* ── Desktop / Tablet sidebar fixe ───────────────────── */}
+      {!isMobile && (
+        <aside style={{
+          width: sidebarWidth,
+          background: C.surface, borderRight: `1px solid ${C.border}`,
+          display: 'flex', flexDirection: 'column',
+          position: 'fixed', top: 0, bottom: 0, left: 0, zIndex: 20,
+          overflow: 'hidden',
+          transition: 'width 0.25s cubic-bezier(.22,1,.36,1)',
+        }}>
+          <SidebarContent {...sharedProps} collapsed={isTablet} />
+        </aside>
+      )}
+
+      {/* ── Mobile overlay sidebar ───────────────────────────── */}
+      {isMobile && (
+        <>
+          <div
+            onClick={() => setMobileOpen(false)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 29,
+              background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(2px)',
+              opacity: mobileOpen ? 1 : 0,
+              pointerEvents: mobileOpen ? 'auto' : 'none',
+              transition: 'opacity 0.3s cubic-bezier(.22,1,.36,1)',
+            }}
+          />
+          <aside style={{
+            position: 'fixed', top: 0, bottom: 0, left: 0, width: 260,
+            background: C.surface, borderRight: `1px solid ${C.border}`,
+            display: 'flex', flexDirection: 'column', zIndex: 30,
+            transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
+            transition: 'transform 0.32s cubic-bezier(.22,1,.36,1)',
+            boxShadow: mobileOpen ? '4px 0 32px rgba(0,0,0,0.25)' : 'none',
+          }}>
+            <button
+              onClick={() => setMobileOpen(false)}
+              style={{
+                position: 'absolute', top: 14, right: 14,
+                background: 'none', border: 'none',
+                cursor: 'pointer', color: C.textDim, padding: 4, zIndex: 1,
+              }}
+            >
+              <X size={16} strokeWidth={2} />
+            </button>
+            <SidebarContent
+              {...sharedProps} collapsed={false}
+              onClose={() => setMobileOpen(false)}
+            />
+          </aside>
+        </>
+      )}
 
       {/* ── Main content ─────────────────────────────────────── */}
-      <main style={{ marginLeft: 220, flex: 1, padding: '36px 40px', minHeight: '100vh' }}>
+      <main style={{
+        marginLeft: sidebarWidth, flex: 1, minHeight: '100vh',
+        transition: 'margin-left 0.25s cubic-bezier(.22,1,.36,1)',
+      }}>
 
-        {page === 'dashboard' && (
-          <DashboardPage
-            token={auth.access_token}
-            onSelectDevice={handleSelectDevice}
-            C={C}
-            dark={dark}
-          />
-        )}
-
-        {page === 'zone' && selectedDevice && (
-          <ZonePage
-            token={auth.access_token}
-            device={selectedDevice}
-            onBack={handleBackToDashboard}
-            C={C}
-            dark={dark}
-          />
-        )}
-
-        {page === 'historique' && (
-          <HistoriquePage
-            token={auth.access_token}
-            auth={auth}
-            C={C}            
-            dark={dark}
-          />
-        )}
-
-        {page === 'saisie' && (
-          <SaisiePage
-            token={auth.access_token}
-            auth={auth}
-            C={C}
-            dark={dark}
-          />
-        )}
-
-        {page === 'users' && auth.role === 'admin' && (
-          <UsersPage
-            token={auth.access_token}
-            userRole={auth.role}
-            C={C}
-            dark={dark}
-          />
-        )}
-
-        {/* Fallback pour rôles sans accès */}
-        {page === 'dashboard' || page === 'zone' || page === 'users' || page === 'saisie' || page === 'historique' ? null : (
+        {/* Topbar mobile */}
+        {isMobile && (
           <div style={{
-            display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
-            height: '60vh', gap: 16,
+            position: 'sticky', top: 0, zIndex: 10,
+            background: C.surface, borderBottom: `1px solid ${C.border}`,
+            padding: '12px 16px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
-            <Leaf size={28} color={C.textDim} strokeWidth={1.4} />
-            <div style={{ color: C.textDim, fontSize: 14 }}>
-              Aucune section disponible pour votre rôle.
+            <button
+              onClick={() => setMobileOpen(true)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: 4, display: 'flex', alignItems: 'center' }}
+            >
+              <AlignLeft size={20} strokeWidth={1.8} />
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <img
+                src={dark ? '/a_logo_dark.png' : '/a_logo_light.png'}
+                alt="Azura"
+                style={{ height: 28, width: 'auto', objectFit: 'contain', borderRadius: 5 }}
+              />
+              <span style={{ fontSize: 13, fontWeight: 800, color: C.text }}>Azura</span>
             </div>
+            <button
+              onClick={toggleDark}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: 4, display: 'flex', alignItems: 'center' }}
+            >
+              {dark ? <Sun size={16} strokeWidth={1.8} /> : <Moon size={16} strokeWidth={1.8} />}
+            </button>
           </div>
         )}
+
+        {/* Pages */}
+        <div style={{
+          padding: isMobile ? '16px 12px 24px' : isTablet ? '28px 24px' : '36px 40px',
+          animation: 'az-fade-up 0.3s ease both',
+        }}>
+          {page === 'dashboard' && (
+            <DashboardPage
+              token={auth.access_token}
+              onSelectDevice={handleSelectDevice}
+              C={C} dark={dark} {...responsiveProps}
+            />
+          )}
+          {page === 'zone' && selectedDevice && (
+            <ZonePage
+              token={auth.access_token}
+              device={selectedDevice}
+              onBack={handleBackToDashboard}
+              C={C} dark={dark} {...responsiveProps}
+            />
+          )}
+          {page === 'historique' && (
+            <HistoriquePage
+              token={auth.access_token} auth={auth}
+              C={C} dark={dark} {...responsiveProps}
+            />
+          )}
+          {page === 'saisie' && (
+            <SaisiePage
+              token={auth.access_token} auth={auth}
+              C={C} dark={dark} {...responsiveProps}
+            />
+          )}
+          {page === 'users' && auth.role === 'admin' && (
+            <UsersPage
+              token={auth.access_token} userRole={auth.role}
+              C={C} dark={dark} {...responsiveProps}
+            />
+          )}
+        </div>
+
+
       </main>
     </div>
   )
