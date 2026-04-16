@@ -418,7 +418,7 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
 
       {/* ── Main content ─────────────────────────────────────── */}
       <main style={{
-        marginLeft: sidebarWidth, flex: 1, minHeight: '100vh',
+        marginLeft: sidebarWidth, flex: 1, minHeight: '100vh', minWidth: 0,
         transition: 'margin-left 0.25s cubic-bezier(.22,1,.36,1)',
       }}>
 
