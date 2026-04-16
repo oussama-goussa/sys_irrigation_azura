@@ -13,6 +13,7 @@ import {
 import { ROLES, ROLE_OPTIONS, ROLE_CONFIG } from '../theme.js'
 import { Card, Btn, Input, Badge, Spinner, StatCard, Alert, SZ } from '../components/ui.jsx'
 import { getUsers, createUser, editUser, changeRole, toggleUser, getAuditLogs, exportCSV, getFarms } from '../api/client.js'
+import { useWindowWidth } from '../components/DashboardShell.jsx'
 
 // ── Action label map ──────────────────────────────────────────
 const ACTION_LABELS = {
@@ -354,6 +355,9 @@ export default function UsersPage({ token, userRole, C, dark, isMobile = false, 
   const [roleDropPos, setRoleDropPos] = useState(null)
 
   const canAccess = userRole === 'admin'
+  const width = useWindowWidth()
+  const isMobile = width < 640
+  const isTablet = width >= 640 && width < 900
 
   useEffect(() => {
       const id = 'az-spin-style'
