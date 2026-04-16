@@ -112,7 +112,7 @@ function EditModal({ user, farms, onSave, onClose, C, dark, isMobile }) {
 
   return (
     <div style={{
-      position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 9999,
+      position: 'fixed', inset: 0, zIndex: 100,
       background: 'rgba(0,0,0,0.65)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
