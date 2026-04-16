@@ -332,7 +332,7 @@ function AuditPanel({ token, filterUser, C, dark, onClose }) {
 }
 
 // ── Main page ─────────────────────────────────────────────────
-export default function UsersPage({ token, userRole, C, dark, isMobile = false, isTablet = false }) {
+export default function UsersPage({ token, userRole, C, dark }) {
   const [users, setUsers]           = useState([])
   const [loading, setLoading]       = useState(true)
   const [refreshing, setRefreshing] = useState(false)
