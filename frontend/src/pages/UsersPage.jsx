@@ -14,6 +14,7 @@ import { ROLES, ROLE_OPTIONS, ROLE_CONFIG } from '../theme.js'
 import { Card, Btn, Input, Badge, Spinner, StatCard, Alert, SZ } from '../components/ui.jsx'
 import { getUsers, createUser, editUser, changeRole, toggleUser, getAuditLogs, exportCSV, getFarms } from '../api/client.js'
 import { useWindowWidth } from '../components/DashboardShell.jsx'
+import { createPortal } from 'react-dom'
 
 // ── Action label map ──────────────────────────────────────────
 const ACTION_LABELS = {
