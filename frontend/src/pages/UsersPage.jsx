@@ -36,7 +36,9 @@ function ConfirmModal({ user, onConfirm, onCancel, isMobile, C, dark }) {
     }}>
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: 16, padding: '28px 32px', width: isMobile ? 'calc(100vw - 32px)' : 400,
+        borderRadius: isMobile ? 16 : 0, padding: isMobile ? '20px 16px' : '32px 40px',
+        width: isMobile ? 'calc(100vw - 32px)' : '100vw',
+        height: isMobile ? 'auto' : '100vh',
         boxShadow: `0 8px 40px rgba(0,0,0,0.5)`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
@@ -118,7 +120,9 @@ function EditModal({ user, farms, onSave, onClose, C, dark, isMobile }) {
     }}>
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: 16, padding: '28px 32px', width: isMobile ? 'calc(100vw - 32px)' : 480,
+        borderRadius: isMobile ? 16 : 0, padding: isMobile ? '20px 16px' : '32px 40px',
+        width: isMobile ? 'calc(100vw - 32px)' : '100vw',
+        height: isMobile ? 'auto' : '100vh', overflowY: isMobile ? 'visible' : 'auto',
         boxShadow: `0 8px 40px rgba(0,0,0,0.5)`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
@@ -270,8 +274,10 @@ function AuditPanel({ token, filterUser, C, dark, onClose, isMobile }) {
     }}>
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: 16, padding: '28px 32px', width: isMobile ? 'calc(100vw - 32px)' : 630,
-        maxHeight: '80vh', display: 'flex', flexDirection: 'column',
+        borderRadius: isMobile ? 16 : 0, padding: isMobile ? '20px 16px' : '32px 40px',
+        width: isMobile ? 'calc(100vw - 32px)' : '100vw',
+        height: isMobile ? 'auto' : '100vh', maxHeight: isMobile ? '80vh' : '100vh',
+        display: 'flex', flexDirection: 'column',
         boxShadow: `0 8px 40px rgba(0,0,0,0.5)`,
       }}>
         {/* Header */}
