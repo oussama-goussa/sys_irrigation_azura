@@ -462,7 +462,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
     : <span style={{ color: C.textDim }}>Jamais</span>
 
   return (
-    <div>
+    <div style={{ width: '100%', boxSizing: 'border-box', overflowX: 'hidden' }}>
       {/* Modals */}
       {confirmUser && <ConfirmModal user={confirmUser} onConfirm={handleToggleConfirm} onCancel={() => setConfirmUser(null)} C={C} dark={dark} isMobile={isMobile} />}
       {editingUser && <EditModal user={editingUser} farms={farms} onSave={handleEdit} onClose={() => setEditingUser(null)} C={C} dark={dark} isMobile={isMobile} />}
@@ -506,7 +506,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gap: 14, gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', marginBottom: 24 }}>
+      <div style={{ display: 'grid', gap: 14, gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', marginBottom: 24, width: '100%', boxSizing: 'border-box' }}>
         <StatCard label="Total"    value={stats.total}    icon={Users}       color={C.green}  C={C} />
         <StatCard label="Actifs"   value={stats.actifs}   icon={UserCheck}   color={C.green}  C={C} />
         <StatCard label="Inactifs" value={stats.inactifs} icon={UserX}       color={C.red}    C={C} />
