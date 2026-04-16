@@ -27,7 +27,7 @@ const ACTION_LABELS = {
 }
 
 // ── Confirm modal ─────────────────────────────────────────────
-function ConfirmModal({ user, onConfirm, onCancel, isMobile, C, dark, isMobile }) {
+function ConfirmModal({ user, onConfirm, onCancel, isMobile, C, dark }) {
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 100,
