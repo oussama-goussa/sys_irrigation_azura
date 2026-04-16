@@ -189,7 +189,6 @@ export function Spinner({ C, size = 28 }) {
 export function StatCard({ label, value, icon: Icon, color, C }) {
   return (
     <div style={{
-      flex: 1,
       background: C.card,
       border: `1.5px solid ${C.border}`,
       borderRadius: 12,
