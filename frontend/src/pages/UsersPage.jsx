@@ -31,14 +31,19 @@ const ACTION_LABELS = {
 function ConfirmModal({ user, onConfirm, onCancel, isMobile, C, dark }) {
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 100,
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      width: '100vw', height: '100vh', zIndex: 1000,
       background: 'rgba(0,0,0,0.65)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 16, boxSizing: 'border-box',
     }}>
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: 16, padding: '28px 32px', width: isMobile ? 'calc(100vw - 32px)' : 400,
+        borderRadius: 16, padding: isMobile ? '20px 16px' : '28px 32px',
+        width: '100%', maxWidth: 400,
         boxShadow: `0 8px 40px rgba(0,0,0,0.5)`,
+        boxSizing: 'border-box', position: 'relative', // ← important
+        zIndex: 10000,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <div style={{ width: 42, height: 42, borderRadius: 10, background: `${C.amber}18`, border: `1.5px solid ${C.amber}40`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -64,7 +69,8 @@ function ConfirmModal({ user, onConfirm, onCancel, isMobile, C, dark }) {
           </Btn>
         </div>
       </div>
-    </div>
+    </div>,
+  document.body
   )
 }
 
@@ -270,17 +276,22 @@ function AuditPanel({ token, filterUser, C, dark, onClose, isMobile }) {
       .finally(() => setLoading(false))
   }, [filterUser])
 
-  return (
+  return createPortal(
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 100,
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      width: '100vw', height: '100vh', zIndex: 1000,
       background: 'rgba(0,0,0,0.65)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 16, boxSizing: 'border-box',
     }}>
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: 16, padding: '28px 32px', width: isMobile ? 'calc(100vw - 32px)' : 630,
-        maxHeight: '80vh', display: 'flex', flexDirection: 'column',
+        borderRadius: 16, padding: isMobile ? '20px 16px' : '28px 32px',
+        width: '100%', maxWidth: 630,
+        maxHeight: '90vh', display: 'flex', flexDirection: 'column',
         boxShadow: `0 8px 40px rgba(0,0,0,0.5)`,
+        boxSizing: 'border-box', position: 'relative', // ← important
+        zIndex: 10000,
       }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -335,7 +346,8 @@ function AuditPanel({ token, filterUser, C, dark, onClose, isMobile }) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+  document.body
   )
 }
 
