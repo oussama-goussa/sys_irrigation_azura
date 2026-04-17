@@ -201,7 +201,7 @@ function EditModal({ user, farms, onSave, onClose, C, dark, isMobile }) {
               </div>
 
               {/* Dropdown */}
-              {dropOpen && createPortal(
+              {dropOpen && (
                 <div style={{
                   position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
                   background: C.card, border: `1.5px solid ${C.border}`,
@@ -223,7 +223,7 @@ function EditModal({ user, farms, onSave, onClose, C, dark, isMobile }) {
                           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                           background: selected ? `${C.green}12` : 'transparent',
                           color: selected ? C.green : C.textMuted,
-                          transition: 'background 0.1s', boxShadow: `0 8px 32px rgba(0,0,0,0.18)`,
+                          transition: 'background 0.1s',
                         }}
                         onMouseEnter={e => e.currentTarget.style.background = selected ? `${C.green}18` : C.tableHover}
                         onMouseLeave={e => e.currentTarget.style.background = selected ? `${C.green}12` : 'transparent'}
@@ -233,8 +233,7 @@ function EditModal({ user, farms, onSave, onClose, C, dark, isMobile }) {
                       </div>
                     )
                   })}
-                </div>,
-                document.body
+                </div>
               )}
             </div>
           </div>
