@@ -987,10 +987,22 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
           </div>
 
           {/* Groupes en ligne avec séparateurs */}
-          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'end', gap: isMobile ? 14 : 0, width: '100%' }}>
+          <div style={
+            isMobile
+              ? { display: 'flex', flexDirection: 'column', gap: 16 }
+              : isTablet
+              ? { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }
+              : { display: 'flex', flexDirection: 'row', alignItems: 'end', gap: 0, width: '100%' }
+          }>
 
             {/* Substrat */}
-            <div style={{ flex: 2, paddingRight: 18 }}>
+            <div style={
+              isMobile
+                ? { background: dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', borderRadius: 10, padding: '12px 14px' }
+                : isTablet
+                ? {}
+                : { flex: 2, paddingRight: 18 }
+            }>
               <div style={{
                 fontSize: 9, fontWeight: 630, color: C.textDim,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
@@ -998,12 +1010,12 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
               }}>Substrat</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 <div>
-                  <label style={labelStyle} C={C}>Nbr Bras</label>
+                  <label style={labelStyle}>Nbr Bras</label>
                   <input type="number" value={nbrBras} onChange={e => setNbrBras(e.target.value)}
                     placeholder="0" style={{ ...inputStyle, width: '100%', height: 36, padding: '7px 10px' }} />
                 </div>
                 <div>
-                  <label style={labelStyle} C={C}>Nbr Goutteurs</label>
+                  <label style={labelStyle}>Nbr Goutteurs</label>
                   <input type="number" value={nbrGoutteurs} onChange={e => setNbrGoutteurs(e.target.value)}
                     placeholder="0" style={{ ...inputStyle, width: '100%', height: 36, padding: '7px 10px' }} />
                 </div>
@@ -1011,45 +1023,61 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
             </div>
 
             {/* Pesée */}
-            <div style={{ flex: 4, paddingRight: 18, borderLeft: `1px solid ${C.border}`, paddingLeft: 18 }}>
+            <div style={
+              isMobile
+                ? { background: dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', borderRadius: 10, padding: '12px 14px' }
+                : isTablet
+                ? {}
+                : { flex: 4, paddingRight: 18, borderLeft: `1px solid ${C.border}`, paddingLeft: 18 }
+            }>
               <div style={{
                 fontSize: 9, fontWeight: 630, color: C.textDim,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
                 marginBottom: 7, opacity: 0.65,
               }}>Pesée</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 14 }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: isMobile ? '1fr 1fr' : isTablet ? '1fr 1fr 1fr 1fr' : '1fr 1fr 1fr 1fr',
+                gap: 14,
+              }}>
                 <div>
-                  <label style={labelStyle} C={C}>Poids matin (kg)</label>
+                  <label style={labelStyle}>Poids matin (kg)</label>
                   <input type="number" value={poidsMatin} onChange={e => setPoidsMatin(e.target.value)}
                     placeholder="0.00" step="0.01"
                     style={{ ...inputStyle, width: '100%', height: 36, padding: '7px 10px' }} />
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <label style={labelStyle} C={C}>Heure matin</label>
+                  <label style={labelStyle}>Heure matin</label>
                   <TimeInput value={heureMatin} onChange={setHeureMatin} C={C} fullWidth />
                 </div>
                 <div>
-                  <label style={labelStyle} C={C}>Poids soir (kg)</label>
+                  <label style={labelStyle}>Poids soir (kg)</label>
                   <input type="number" value={poidsSoir} onChange={e => setPoidsSoir(e.target.value)}
                     placeholder="0.00" step="0.01"
                     style={{ ...inputStyle, width: '100%', height: 36, padding: '7px 10px' }} />
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <label style={labelStyle} C={C}>Heure soir</label>
-                  <TimeInput value={heureSoir} onChange={setHeureSoir} C={C} fullWidth/>
+                  <label style={labelStyle}>Heure soir</label>
+                  <TimeInput value={heureSoir} onChange={setHeureSoir} C={C} fullWidth />
                 </div>
               </div>
             </div>
 
             {/* EC Bassin */}
-            <div style={{ flex: 1, borderLeft: `1px solid ${C.border}`, paddingLeft: 18 }}>
+            <div style={
+              isMobile
+                ? { background: dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', borderRadius: 10, padding: '12px 14px' }
+                : isTablet
+                ? { gridColumn: '1 / -1', borderTop: `1px solid ${C.border}`, paddingTop: 14 }
+                : { flex: 1, borderLeft: `1px solid ${C.border}`, paddingLeft: 18 }
+            }>
               <div style={{
                 fontSize: 9, fontWeight: 630, color: C.textDim,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
                 marginBottom: 7, opacity: 0.65,
               }}>Bassin</div>
-              <div style={{ flex: 1 }}>
-                <label style={labelStyle} C={C}>EC Bassin</label>
+              <div style={{ maxWidth: isTablet ? 200 : undefined }}>
+                <label style={labelStyle}>EC Bassin</label>
                 <input type="number" value={bassinEC} onChange={e => setBassinEC(e.target.value)}
                   placeholder="0.00" step="0.01"
                   style={{ ...inputStyle, width: '100%', height: 36, padding: '7px 10px' }} />
@@ -1057,8 +1085,8 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
             </div>
 
           </div>
-        </div>
 
+        </div>
       </div>
   
       {/* ── Table Tours ──────────────────────────────────────── */}
