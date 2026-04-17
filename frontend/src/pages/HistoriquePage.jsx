@@ -1715,7 +1715,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
           {/* Footer */}
           <div style={{
             padding: '10px 16px', borderTop: `1px solid ${C.border}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+            display: 'flex', alignItems: isMobile ? 'stretch' : 'center', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: isMobile ? 8 : 12,
           }}>
 
             {/* Gauche : perPage custom + total */}
@@ -1743,9 +1743,9 @@ export default function HistoriquePage({ token, auth, C, dark }) {
             </div>
 
             {/* Droite : pagination */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: isMobile ? 'center' : 'flex-end' }}>
               {/* ⟨⟨ First */}
-              <button onClick={() => load(1)} disabled={page <= 1}
+              <button onClick={() => load(pages)} disabled={page >= pages}
                 style={{ display: 'flex', alignItems: 'center', padding: '5px 7px',
                   borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent',
                   color: C.textMuted, cursor: page <= 1 ? 'not-allowed' : 'pointer',
