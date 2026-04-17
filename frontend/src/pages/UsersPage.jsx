@@ -899,7 +899,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                               padding: '5px 8px',
                               fontSize: 12,
                               fontFamily: 'inherit',
-                              fontWeight: 700,
+                              fontWeight: 630,
                               cursor: 'pointer',
                               outline: 'none',
                               colorScheme: dark ? 'dark' : 'light',
