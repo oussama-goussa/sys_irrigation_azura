@@ -596,7 +596,7 @@ function SLabel({ children, C }) {
 }
 
 // ── Main ──────────────────────────────────────────────────────
-export default function SaisiePage({ token, auth, C, dark }) {
+export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet }) {
 
   const [farms, setFarms]           = useState([])
   const [ferme, setFerme]           = useState('')
@@ -809,13 +809,13 @@ export default function SaisiePage({ token, auth, C, dark }) {
   }
 
   return (
-    <div style={{ maxWidth: 1500 }}>
+    <div style={{ maxWidth: 1500, width: '100%' }}>
 
       {/* ── Header ──────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>          
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? 16 : 28 }}>          
         <div>
-          <h1 style={{ color: C.text, fontSize: 22, fontWeight: 900, marginBottom: 4, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <ClipboardList size={22} color={C.green} strokeWidth={2} />
+          <h1 style={{ color: C.text, fontSize: isMobile ? 18 : 22, fontWeight: 900, marginBottom: 4, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <ClipboardList size={isMobile ? 18 : 22} color={C.green} strokeWidth={2} />
             Saisie journalière
           </h1>
           <p style={{ fontSize: 11, color: C.textDim }}>{date}</p>
@@ -823,7 +823,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
       </div>
 
       {/* ── Bilan ligne ─────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: 14, marginBottom: 28, marginTop: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr 1fr' : '1.5fr 1fr 1fr 1fr', gap: 14, marginBottom: isMobile ? 16 : 28, marginTop: 20 }}>
         {[
           {
             label: 'Irrigation',
@@ -917,7 +917,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
             color: C.textMuted, marginBottom: 14,
           }}>Identification</span>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : isTablet ? '1fr 1fr 1fr' : '1fr 1fr 1fr 1fr 1fr', gap: 14 }}>
             <div>
               <label style={labelStyle}>Ferme</label>
               <CustomSelect
@@ -987,7 +987,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
           </div>
 
           {/* Groupes en ligne avec séparateurs */}
-          <div style={{ display: 'flex', alignItems: 'end', gap: 0, width: '100%' }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'end', gap: isMobile ? 14 : 0, width: '100%' }}>
 
             {/* Substrat */}
             <div style={{ flex: 2, paddingRight: 18 }}>
@@ -1238,7 +1238,7 @@ export default function SaisiePage({ token, auth, C, dark }) {
       </div>
 
       {/* ── Enregistrer — bas de page droite ── */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
         {error && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 6, marginRight: 10,
@@ -1262,13 +1262,13 @@ export default function SaisiePage({ token, auth, C, dark }) {
           disabled={saving || tours.length === 0}
           style={{
             display: 'flex', alignItems: 'center', gap: 7,
-            padding: '11px 28px',
+            padding: '11px 28px', justifyContent: 'center',
             background: saving || tours.length === 0 ? C.toggleBg : C.green,
             color: saving || tours.length === 0 ? C.textDim : '#fff',
             border: 'none', borderRadius: 9,
             fontSize: 12, fontWeight: 630, fontFamily: 'inherit',
             cursor: saving || tours.length === 0 ? 'not-allowed' : 'pointer',
-            transition: 'all 0.15s',
+            transition: 'all 0.15s', width: isMobile ? '100%' : undefined,
           }}
         >
           <Save size={12} strokeWidth={2.5} />
