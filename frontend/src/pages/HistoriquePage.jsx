@@ -1309,6 +1309,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
   const [showExport, setShowExport] = useState(false)
   const width = useWindowWidth()
   const isMobile = width < 640
+  const isTablet = width >= 640 && width < 900
 
   // Filtres
   const [fDate,      setFDate]      = useState('')
@@ -1480,7 +1481,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
       )}
       {showExport && (
         <ExportModal token={token} auth={auth} farms={farms}
-          C={C} dark={dark} onClose={() => setShowExport(false)} />
+          C={C} dark={dark} onClose={() => setShowExport(false)} isMobile={isMobile} isTablet={isTablet} />
       )}
       {editingSaisie && (
         <EditModal saisie={editingSaisie} token={token} farms={farms}

@@ -43,6 +43,7 @@ function RangeCalendar({
   onChangeTo,
   onClose,
   C,
+  singleMonth = false,
 }) {
   const today = new Date();
   const [leftYear, setLeftYear] = useState(today.getFullYear());
@@ -376,15 +377,19 @@ function RangeCalendar({
             setYear={setLeftYear}
             setMonth={setLeftMonth}
           />
-          <div style={{ width: 1, background: C.border }} />
-          <MonthGrid
-            year={rightYear}
-            month={rightMonth}
-            mode={modeRight}
-            setMode={setModeRight}
-            setYear={setRightYear}
-            setMonth={setRightMonth}
-          />
+          {!singleMonth && (
+            <>
+              <div style={{ width: 1, background: C.border }} />
+              <MonthGrid
+                year={rightYear}
+                month={rightMonth}
+                mode={modeRight}
+                setMode={setModeRight}
+                setYear={setRightYear}
+                setMonth={setRightMonth}
+              />
+            </>
+          )}
         </div>
         <button
           onClick={nextLeft}
@@ -477,7 +482,7 @@ function RangeCalendar({
 }
 
 // ── Main ExportModal ──────────────────────────────────────────
-export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
+export default function ExportModal({ token, auth, farms, C, dark, onClose, isMobile, isTablet }) {
   const [selectedFarms, setSelectedFarms] = useState([]);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -579,16 +584,16 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: 24,
+        padding: isMobile ? 12 : 24,
       }}
     >
       <div
         style={{
           background: C.card,
           border: `1.5px solid ${C.border}`,
-          borderRadius: 18,
+          borderRadius: isMobile ? 14 : 18,
           width: "100%",
-          maxWidth: 820,
+          maxWidth: isMobile ? "100%" : isTablet ? 560 : 820,
           boxShadow: "0 24px 80px rgba(0,0,0,0.5)",
           maxHeight: "92vh",
           overflowY: "auto",
@@ -600,7 +605,7 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "20px 28px",
+            padding: isMobile ? "14px 16px" : "20px 28px",
             borderBottom: `1px solid ${C.border}`,
           }}
         >
@@ -642,7 +647,7 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
           </button>
         </div>
 
-        <div style={{ padding: "24px 28px" }}>
+        <div style={{ padding: isMobile ? "16px 16px" : "24px 28px" }}>
           {/* Sélection fermes */}
           <div style={{ marginBottom: 24 }}>
             <div
@@ -902,7 +907,27 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
           </div>
 
           {/* Calendrier en portal — au-dessus du modal */}
-          {showCal &&
+          {showCal && (isMobile || isTablet) && (
+            <div style={{
+              marginTop: 8,
+              border: `1.5px solid ${C.border}`,
+              borderRadius: 12,
+              padding: "16px 12px",
+              background: dark ? C.surface : "#fafcfb",
+            }}>
+              <RangeCalendar
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+                onChangeFrom={setDateFrom}
+                onChangeTo={(d) => { setDateTo(d); if (d) setShowCal(false); }}
+                C={C}
+                onClose={() => setShowCal(false)}
+                singleMonth={true}
+              />
+            </div>
+          )}
+
+          {showCal && !isMobile && !isTablet &&
             createPortal(
               <div
                 ref={calPortalRef}
@@ -923,10 +948,7 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose }) {
                   dateFrom={dateFrom}
                   dateTo={dateTo}
                   onChangeFrom={setDateFrom}
-                  onChangeTo={(d) => {
-                    setDateTo(d);
-                    if (d) setShowCal(false);
-                  }}
+                  onChangeTo={(d) => { setDateTo(d); if (d) setShowCal(false); }}
                   C={C}
                   onClose={() => setShowCal(false)}
                 />
