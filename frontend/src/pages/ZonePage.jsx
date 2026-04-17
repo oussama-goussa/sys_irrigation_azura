@@ -1206,7 +1206,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
       </div>
 
       {/* Date filtre + Export CSV sur même ligne */}
-      <div style={{ display:'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', justifyContent:'space-between', marginBottom:8, gap: isMobile ? 8 : 0 }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', justifyContent:'space-between', marginBottom:8, gap: isMobile ? 8 : 0 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <DateRangePicker
             dateFrom={dateFrom}
