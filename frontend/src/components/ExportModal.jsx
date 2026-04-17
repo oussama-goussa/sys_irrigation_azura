@@ -582,7 +582,7 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose, isMo
         zIndex: 99999,
         background: "rgba(0,0,0,0.70)",
         display: "flex",
-        alignItems: "center",
+        alignItems: isMobile ? "flex-end" : "center",
         justifyContent: "center",
         padding: isMobile ? 12 : 24,
       }}
@@ -591,11 +591,11 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose, isMo
         style={{
           background: C.card,
           border: `1.5px solid ${C.border}`,
-          borderRadius: isMobile ? 14 : 18,
+          borderRadius: isMobile ? "18px 18px 0 0" : 18,
           width: "100%",
           maxWidth: isMobile ? "100%" : isTablet ? 560 : 820,
           boxShadow: "0 24px 80px rgba(0,0,0,0.5)",
-          maxHeight: "92vh",
+          maxHeight: isMobile ? "90vh" : "92vh",
           overflowY: "auto",
         }}
       >
