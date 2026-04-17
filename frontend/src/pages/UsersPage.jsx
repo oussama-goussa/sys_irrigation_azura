@@ -886,12 +886,14 @@ export default function UsersPage({ token, userRole, C, dark }) {
                                   setRoleDropUser(null)
                                 } else {
                                   const rect = e.currentTarget.getBoundingClientRect()
-                                  const dropHeight = 160 // hauteur approximative du dropdown (4 rôles)
+                                  const dropHeight = 180
                                   const spaceBelow = window.innerHeight - rect.bottom
-                                  const showAbove = spaceBelow < dropHeight + 8
+                                  const spaceAbove = rect.top
+
+                                  const showAbove = spaceBelow < dropHeight && spaceAbove > spaceBelow
 
                                   setRoleDropPos({
-                                    top: showAbove ? rect.top - dropHeight - 4 : rect.bottom + 4,
+                                    top: showAbove ? rect.top - dropHeight : rect.bottom + 4,
                                     left: rect.left,
                                   })
                                 }
@@ -926,7 +928,8 @@ export default function UsersPage({ token, userRole, C, dark }) {
                                   zIndex: 99999,
                                   boxShadow: `0 4px 20px ${C.shadow}`,
                                   minWidth: 140,
-                                  overflow: 'hidden',
+                                  overflow: 'hidden',   maxHeight: 200,      // ← ajouter
+                                  overflowY: 'auto',  // ← ajouter
                                 }}
                               >
                                 {ROLES.map(r => (
