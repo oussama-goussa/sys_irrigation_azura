@@ -1494,8 +1494,8 @@ export default function HistoriquePage({ token, auth, C, dark }) {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', marginBottom: 28, gap: isMobile ? 12 : 0  }}>
           <div>
-              <h1 style={{ color: C.text, fontSize: 22, fontWeight: 900, marginBottom: 4, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <History size={22} color={C.green} strokeWidth={2} />
+              <h1 style={{ color: C.text, fontSize: isMobile ? 18 : 22, fontWeight: 900, marginBottom: 4, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <History size={isMobile ? 18 : 22} color={C.green} strokeWidth={2} />
                 Historique
               </h1>
               <p style={{ fontSize: 11, color: C.textDim }}>{total} saisie{total > 1 ? 's' : ''} enregistrée{total > 1 ? 's' : ''}</p>

@@ -582,16 +582,16 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose, isMo
         zIndex: 99999,
         background: "rgba(0,0,0,0.70)",
         display: "flex",
-        alignItems: isMobile ? "flex-end" : "center",
+        alignItems: "center",
         justifyContent: "center",
-        padding: isMobile ? 12 : 24,
+        padding: isMobile ? 0 : 24,
       }}
     >
       <div
         style={{
           background: C.card,
           border: `1.5px solid ${C.border}`,
-          borderRadius: isMobile ? "18px 18px 0 0" : 18,
+          borderRadius: 18,
           width: "100%",
           maxWidth: isMobile ? "100%" : isTablet ? 560 : 820,
           boxShadow: "0 24px 80px rgba(0,0,0,0.5)",
