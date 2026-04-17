@@ -876,86 +876,39 @@ export default function UsersPage({ token, userRole, C, dark }) {
                       </td>
 
                       {/* Role */}
-                      <td style={{ padding: '13px 14px', fontFamily: 'inherit', position: 'relative' }}>
+                      <td style={{ padding: '13px 14px', fontFamily: 'inherit' }}>
                         {editingRole === u.username ? (
-                          <div style={{ position: 'relative', minWidth: 130 }}>
-                            <div
-                              // APRÈS — ajout de setRoleDropUser(u.username) manquant
-                              onClick={e => {
-                                e.stopPropagation()
-                                if (roleDropUser === u.username) {
-                                  setRoleDropUser(null)
-                                } else {
-                                  const rect = e.currentTarget.getBoundingClientRect()
-                                  const dropHeight = 180
-                                  const spaceBelow = window.innerHeight - rect.bottom
-
-                                  setRoleDropPos({
-                                    top: spaceBelow >= dropHeight
-                                      ? rect.bottom + 4
-                                      : rect.top - dropHeight - 4,
-                                    left: rect.left,
-                                  })
-                                  setRoleDropUser(u.username)
-                                }
-                              }}
-                            >
-                              <Badge role={u.role} dark={dark} />
-                              <span style={{ color: C.textDim, display: 'flex', alignItems: 'center' }}>
-                                {roleDropUser === u.username
-                                  ? <ChevronUp size={12} strokeWidth={2}/>
-                                  : <ChevronDown size={12} strokeWidth={2}/>
-                                }
-                              </span>
-                            </div>
-
-                            {roleDropUser === u.username && createPortal(
-                              <div
-                                onClick={e => e.stopPropagation()}
-                                style={{
-                                  position: 'fixed',
-                                  top: roleDropPos?.top ?? 0,
-                                  left: roleDropPos?.left ?? 0,
-                                  background: C.card,
-                                  border: `1.5px solid ${C.border}`,
-                                  borderRadius: 8,
-                                  zIndex: 99999,
-                                  boxShadow: `0 4px 20px ${C.shadow}`,
-                                  minWidth: 140,
-                                  overflow: 'hidden',   maxHeight: 200,      // ← ajouter
-                                  overflowY: 'auto',  // ← ajouter
-                                }}
-                              >
-                                {ROLES.map(r => (
-                                  <div
-                                    key={r}
-                                    onClick={e => {
-                                      e.stopPropagation()
-                                      handleRoleChange(u.username, r)
-                                      setRoleDropUser(null)
-                                      setEditingRole(null)
-                                    }}
-                                    style={{
-                                      padding: '8px 12px', fontSize: 12, cursor: 'pointer',
-                                      background: u.role === r ? `${C.green}12` : 'transparent',
-                                      transition: 'background 0.1s',
-                                      display: 'flex', alignItems: 'center',
-                                    }}
-                                    onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
-                                    onMouseLeave={e => e.currentTarget.style.background = u.role === r ? `${C.green}12` : 'transparent'}
-                                  >
-                                    <Badge role={r} dark={dark} />
-                                  </div>
-                                ))}
-                              </div>,
-                              document.body
-                            )}
-
-                          </div>
+                          <select
+                            value={u.role}
+                            autoFocus
+                            onChange={e => {
+                              handleRoleChange(u.username, e.target.value)
+                              setEditingRole(null)
+                            }}
+                            onBlur={() => setEditingRole(null)}
+                            style={{
+                              background: C.inputBg,
+                              color: C.text,
+                              border: `1.5px solid ${C.green}`,
+                              borderRadius: 7,
+                              padding: '5px 8px',
+                              fontSize: 12,
+                              fontFamily: 'inherit',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              outline: 'none',
+                              colorScheme: dark ? 'dark' : 'light',
+                            }}
+                          >
+                            {ROLES.map(r => (
+                              <option key={r} value={r}>
+                                {r.charAt(0).toUpperCase() + r.slice(1)}
+                              </option>
+                            ))}
+                          </select>
                         ) : (
-
                           <button
-                            onClick={(e) => { e.stopPropagation(); setEditingRole(u.username); setRoleDropUser(null) }}
+                            onClick={(e) => { e.stopPropagation(); setEditingRole(u.username) }}
                             title="Modifier le rôle"
                             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}
                           >
