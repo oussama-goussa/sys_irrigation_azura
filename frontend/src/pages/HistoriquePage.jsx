@@ -934,7 +934,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
 
           {/* Bilan calculé en temps réel */}
           {tours.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : isTablet ? '1fr 1fr' : '1.5fr 1fr 1fr 1fr', gap: isMobile ? 8 : 12, marginBottom: 18 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr 1fr' : '1.5fr 1fr 1fr 1fr', gap: isMobile ? 8 : 12, marginBottom: 18 }}>
               {[
                 {
                   label: 'Irrigation', color: C.green, Icon: ClipboardList,
