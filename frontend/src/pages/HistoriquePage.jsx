@@ -631,12 +631,12 @@ function THm({ children, w, color, C }) {
 
 // ── Confirm Delete Modal ──────────────────────────────────────
 function ConfirmModal({ saisie, onConfirm, onCancel, C }) {
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.65)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+  return createPortal(
+    <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.70)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div style={{ background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: 16, padding: '28px 32px', width: 400,
-        boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }}>
+        borderRadius: 16, padding: '28px 32px', width: '100%', maxWidth: 420,
+        boxShadow: '0 24px 80px rgba(0,0,0,0.5)', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <div style={{ width: 42, height: 42, borderRadius: 10,
             background: `${C.amber}18`, border: `1.5px solid ${C.amber}40`,
@@ -669,7 +669,8 @@ function ConfirmModal({ saisie, onConfirm, onCancel, C }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+  document.body
   )
 }
 
@@ -896,19 +897,20 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
     textTransform: 'uppercase', letterSpacing: '0em', marginBottom: 4,
   }
 
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999,
-      background: 'rgba(0,0,0,0.65)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '24px',
-    }}>
+  return createPortal(
       <div style={{
-        background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: 16, width: '100%', maxWidth: 1300,
-        maxHeight: '90vh', overflowY: 'auto',
-        boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+        position: 'fixed', inset: 0, zIndex: 99999,
+        background: 'rgba(0,0,0,0.70)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 24,
       }}>
+        <div style={{
+          background: C.card, border: `1.5px solid ${C.border}`,
+          borderRadius: 16, width: '100%', maxWidth: 1300,
+          maxHeight: '90vh', overflowY: 'auto',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+          boxSizing: 'border-box',
+        }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', overflow:'hidden',
           padding: '20px 28px', borderBottom: `1px solid ${C.border}`,
@@ -1190,7 +1192,8 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
 
         </div>
       </div>
-    </div>
+    </div>,
+  document.body
   )
 }
 
@@ -1289,6 +1292,8 @@ function ToursTable({ saisieId, token, C, dark }) {
   )
 }
 
+import { useWindowWidth } from '../components/DashboardShell.jsx'
+
 // ── Main HistoriquePage ───────────────────────────────────────
 export default function HistoriquePage({ token, auth, C, dark }) {
   const [saisies, setSaisies]     = useState([])
@@ -1302,6 +1307,8 @@ export default function HistoriquePage({ token, auth, C, dark }) {
   const [editingSaisie, setEditingSaisie] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [showExport, setShowExport] = useState(false)
+  const width = useWindowWidth()
+  const isMobile = width < 640
 
   // Filtres
   const [fDate,      setFDate]      = useState('')
@@ -1483,7 +1490,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
       <div style={{ animation: 'az-fade-in 0.3s ease both' }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+        <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', marginBottom: 28, gap: isMobile ? 12 : 0  }}>
           <div>
               <h1 style={{ color: C.text, fontSize: 22, fontWeight: 900, marginBottom: 4, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <History size={22} color={C.green} strokeWidth={2} />
