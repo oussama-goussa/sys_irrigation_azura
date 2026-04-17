@@ -988,19 +988,15 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
 
           {/* Groupes en ligne avec séparateurs */}
           <div style={
-            isMobile
-              ? { display: 'flex', flexDirection: 'column', gap: 16 }
-              : isTablet
-              ? { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }
+            isTablet || isMobile
+              ? { display: 'flex', flexDirection: 'column', gap: 0 }
               : { display: 'flex', flexDirection: 'row', alignItems: 'end', gap: 0, width: '100%' }
           }>
 
             {/* Substrat */}
             <div style={
-              isMobile
-                ? { background: dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', borderRadius: 10, padding: '12px 14px' }
-                : isTablet
-                ? {}
+              isTablet || isMobile
+                ? { paddingBottom: 16, marginBottom: 16, borderBottom: `1px solid ${C.border}` }
                 : { flex: 2, paddingRight: 18 }
             }>
               <div style={{
@@ -1024,10 +1020,8 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
 
             {/* Pesée */}
             <div style={
-              isMobile
-                ? { background: dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', borderRadius: 10, padding: '12px 14px' }
-                : isTablet
-                ? {}
+              isTablet || isMobile
+                ? { paddingBottom: 16, marginBottom: 16, borderBottom: `1px solid ${C.border}` }
                 : { flex: 4, paddingRight: 18, borderLeft: `1px solid ${C.border}`, paddingLeft: 18 }
             }>
               <div style={{
@@ -1037,7 +1031,7 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
               }}>Pesée</div>
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: isMobile ? '1fr 1fr' : isTablet ? '1fr 1fr 1fr 1fr' : '1fr 1fr 1fr 1fr',
+                gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
                 gap: 14,
               }}>
                 <div>
@@ -1065,10 +1059,8 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
 
             {/* EC Bassin */}
             <div style={
-              isMobile
-                ? { background: dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', borderRadius: 10, padding: '12px 14px' }
-                : isTablet
-                ? { gridColumn: '1 / -1', borderTop: `1px solid ${C.border}`, paddingTop: 14 }
+              isTablet || isMobile
+                ? {}
                 : { flex: 1, borderLeft: `1px solid ${C.border}`, paddingLeft: 18 }
             }>
               <div style={{
@@ -1076,7 +1068,7 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
                 textTransform: 'uppercase', letterSpacing: '0.08em',
                 marginBottom: 7, opacity: 0.65,
               }}>Bassin</div>
-              <div style={{ maxWidth: isTablet ? 200 : undefined }}>
+              <div style={{ maxWidth: isTablet ? 220 : undefined }}>
                 <label style={labelStyle}>EC Bassin</label>
                 <input type="number" value={bassinEC} onChange={e => setBassinEC(e.target.value)}
                   placeholder="0.00" step="0.01"
