@@ -592,6 +592,7 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose, isMo
           background: C.card,
           border: `1.5px solid ${C.border}`,
           borderRadius: 18,
+          margin: isMobile ? 16 : 0, 
           width: "100%",
           maxWidth: isMobile ? "100%" : isTablet ? 560 : 820,
           boxShadow: "0 24px 80px rgba(0,0,0,0.5)",
