@@ -692,6 +692,9 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
   const [saving, setSaving]       = useState(false)
   const [error, setError]         = useState('')
   const tableBottomRef = useRef(null)
+  const width = useWindowWidth()
+  const isMobile = width < 640
+  const isTablet = width >= 640 && width < 900
 
   // Recalcul tours — recalcule pctDrain et moyPctDrain à chaque changement
   const recalculTours = (list, goutteurs) => {
@@ -902,7 +905,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
         position: 'fixed', inset: 0, zIndex: 99999,
         background: 'rgba(0,0,0,0.70)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 24,
+        padding: isMobile ? 8 : 24,
       }}>
         <div style={{
           background: C.card, border: `1.5px solid ${C.border}`,
@@ -913,7 +916,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
         }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', overflow:'hidden',
-          padding: '20px 28px', borderBottom: `1px solid ${C.border}`,
+          padding: isMobile ? '14px 16px' : '20px 28px', borderBottom: `1px solid ${C.border}`,
           position: 'sticky', top: 0, background: C.card, zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <SquarePen size={18} color={C.green} strokeWidth={2} />
@@ -927,11 +930,11 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
           </button>
         </div>
 
-        <div style={{ padding: '24px 28px' }}>
+        <div style={{ padding: isMobile ? '14px 14px' : '24px 28px' }}>
 
           {/* Bilan calculé en temps réel */}
           {tours.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: 12, marginBottom: 18 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1.5fr 1fr 1fr 1fr', gap: isMobile ? 8 : 12, marginBottom: 18 }}>
               {[
                 {
                   label: 'Irrigation', color: C.green, Icon: ClipboardList,
@@ -966,7 +969,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                 <div key={card.label} style={{
                   background: dark ? '#111a14' : '#ffffff',
                   border: `1px solid ${dark ? '#1c2e22' : '#d0e8d8'}`,
-                  borderRadius: 12, padding: '14px 18px',
+                  borderRadius: 12, padding: isMobile ? '10px 12px' : '14px 18px',
                   display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 90,
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -978,7 +981,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                     {card.items.map(it => (
                       <div key={it.sub}>
                         <div style={{ fontSize: 10, color: dark ? C.textDim : '#5a7a66', marginBottom: 2, whiteSpace: 'nowrap' }}>{it.sub}</div>
-                        <div style={{ fontSize: 20, fontWeight: 630, color: card.color }}>{it.value}</div>
+                        <div style={{ fontSize: isMobile ? 15 : 20, fontWeight: 630, color: card.color }}>{it.value}</div>
                       </div>
                     ))}
                   </div>
@@ -988,8 +991,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
           )}
 
           {/* Sélecteurs */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 14, marginBottom: 18 }}>
-            <div>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : isTablet ? '1fr 1fr 1fr' : '1fr 1fr 1fr 1fr 1fr', gap: 12, marginBottom: 18 }}>            <div>
               <label style={labelStyle}>Ferme</label>
               <SSelect value={ferme} onChange={v => { setFerme(v); setStation('') }}
                 options={fermeOptions} placeholder="Sélectionner…" C={C} />
@@ -1019,8 +1021,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
             border: `1px solid ${C.border}`, borderRadius: 12, padding: '16px 20px', marginBottom: 18 }}>
             <div style={{ fontSize: 12, fontWeight: 800, color: C.textMuted, textTransform: 'uppercase',
               letterSpacing: '0em', marginBottom: 14 }}>Constantes &amp; Substrat</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-              {[
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)', gap: 12 }}>              {[
                 { label: 'Nbr Bras', val: nbrBras, set: setNbrBras },
                 { label: 'Nbr Goutteurs', val: nbrGoutteurs, set: setNbrGoutteurs },
                 { label: 'Poids matin (Kg)', val: poidsMatin, set: setPoidsMatin },
