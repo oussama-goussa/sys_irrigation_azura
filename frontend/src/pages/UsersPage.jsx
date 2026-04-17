@@ -501,7 +501,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
       <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'flex-start', marginBottom: 28, gap: isMobile ? 12 : 0 }}>
         <div>
           <h1 style={{ fontSize: isMobile ? 18 : 22, color: C.text, fontWeight: 900, marginBottom: 4, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Users size={22} color={C.green} strokeWidth={2} />
+            <Users size={isMobile ? 18 : 22} color={C.green} strokeWidth={2} />
             Gestion des utilisateurs
           </h1>
           <p style={{ color: C.textDim, fontSize: 11 }}>Contrôle d'accès basé sur les rôles</p>
