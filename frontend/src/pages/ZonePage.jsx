@@ -6,6 +6,8 @@
 // ============================================================
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useWindowWidth } from '../components/DashboardShell.jsx'
+
 import {
   ArrowLeft, RefreshCw, Activity, Droplets, Thermometer,
   Wind, Sun, Gauge, TrendingUp, TrendingDown, Minus,
@@ -562,6 +564,9 @@ function FertCard({ num, label, open, min, act, max, flow, C }) {
 // ── Main Page ─────────────────────────────────────────────────
 export default function ZonePage({ token, device: deviceInfo, onBack, C, dark }) {
   const deviceId = deviceInfo.id
+  const width    = useWindowWidth()
+  const isMobile = width < 640
+  const isTablet = width >= 640 && width < 900
 
   const [live,      setLive]      = useState(null)
   const [history,   setHistory]   = useState(null)
@@ -747,7 +752,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
   return (
     <div>
       {/* ── Header ──────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
             <button onClick={onBack} style={{
@@ -810,7 +815,8 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
           color: C.textMuted, fontSize: 12, fontWeight: 630,
           cursor: 'pointer', fontFamily: 'inherit',
         }}>
-          <RefreshCw size={12} strokeWidth={2} style={{ animation: refreshing ? 'az-spin 0.7s linear infinite' : 'none' }} /> Actualiser
+          <RefreshCw size={12} strokeWidth={2} style={{ animation: refreshing ? 'az-spin 0.7s linear infinite' : 'none' }} /> 
+          {!isMobile && ' Actualiser'}
         </button>
       </div>
 
@@ -825,13 +831,16 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
         <div style={{ color: C.red, fontSize: 12 }}>{errorL}</div>
       ) : (
         <>
-          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 14 }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr 1fr' : isTablet ? 'repeat(4,1fr)' : 'repeat(4,1fr)',
+            gap: isMobile ? 10 : 14,
+            marginBottom: 14,
+          }}>
             <GaugeCard label="EC"          value={fmt(sensor.ec_actual, 2)}   unit="mS/cm" min={0}   max={8}   color="#00c9a7" C={C} />
             <GaugeCard label="pH"          value={fmt(sensor.ph_actual, 2)}   unit=""      min={4}   max={8}   color="#4d9de0" C={C} />
             <GaugeCard label="Température" value={fmt(sensor.avg_temp, 1)}    unit="°C"    min={10}  max={40}  color="#f52e23" C={C} />
             <GaugeCard label="Humidité"    value={fmt(sensor.humidity, 1)}    unit="%"     min={0}   max={100} color="#b197fc" C={C} />
-          </div>
-          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
             <GaugeCard label="Radiation"   value={fmt(sensor.radiation, 1)}   unit="W/m²"  min={0}   max={2000} color="#f5e642" C={C} />
             <GaugeCard label="Débit"       value={fmt(sensor.flow, 0)}        unit="L/h"   min={0}   max={1000}  color="#34d96f" C={C} />
             <GaugeCard label="Cumul Rad."  value={fmt(sensor.radiation_sum,1)} unit="J/cm²" min={0}  max={3000} color="#f5a623" C={C} />
@@ -855,7 +864,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
           <>
             {/* Pompes + Vannes */}
             <div style={{ marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 24 }}>
+              <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: isMobile ? 16 : 24 }}>
                 
                 {/* Pompes */}
                 <div style={{ flex: 1 }}>
@@ -964,7 +973,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
               </div>
 
               {/* Métriques en 3 groupes */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr 1fr' : '1fr 1fr 1fr', gap: 16 }}>
 
                 {/* Groupe 1 — Cycle */}
                 <div style={{ background: C.surface, borderRadius: 10, padding: '14px 16px', border: `1px solid ${C.border}` }}>
@@ -1047,7 +1056,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
         <span style={{ color:C.text, fontSize:14, fontWeight:800 }}>Graphiques</span>
       </div>
 
-      <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20 }}>
+      <div style={{ display:'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 8 : 12, marginBottom:20 }}>
         <DateRangePicker
           dateFrom={chartDateFrom}
           dateTo={chartDateTo}
@@ -1088,7 +1097,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
       {/* ── 4 Graphiques ─────────────────────────────────────── */}
       {(
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 28 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 28 }}>
 
           {/* Graphique 1 — EC & pH */}
           <ChartCard
@@ -1197,7 +1206,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
       </div>
 
       {/* Date filtre + Export CSV sur même ligne */}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+      <div style={{ display:'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', justifyContent:'space-between', marginBottom:8, gap: isMobile ? 8 : 0 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <DateRangePicker
             dateFrom={dateFrom}
@@ -1249,8 +1258,8 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
         <div style={{ color: C.red, fontSize: 12 }}>{errorH}</div>
       ) : (
         <div style={{ background: C.card, border: `1.5px solid ${C.border}`, borderRadius: 14, overflow: 'hidden' }}>
-          <div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit' }}>
+          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ width: '100%', minWidth: isMobile ? 600 : 'auto', borderCollapse: 'collapse', fontFamily: 'inherit' }}>
               <thead>
                 <tr style={{ background: dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
                   {[
@@ -1354,7 +1363,11 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
           {/* Pagination */}
           <div style={{
             padding: '12px 16px', borderTop: `1px solid ${C.border}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: isMobile ? 'stretch' : 'center',
+            justifyContent: 'space-between',
+            gap: isMobile ? 8 : 0,
           }}>
             <div style={{ color: C.textDim, fontSize: 12 }}>
               {history?.total ?? 0} lectures · page {history?.page ?? 1}/{history?.pages ?? 1}
