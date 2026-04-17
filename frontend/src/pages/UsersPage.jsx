@@ -889,13 +889,14 @@ export default function UsersPage({ token, userRole, C, dark }) {
                                   const rect = e.currentTarget.getBoundingClientRect()
                                   const dropHeight = 180
                                   const spaceBelow = window.innerHeight - rect.bottom
-                                  const spaceAbove = rect.top
-                                  const showAbove = spaceBelow < dropHeight && spaceAbove > spaceBelow
+
                                   setRoleDropPos({
-                                    top: showAbove ? rect.top - dropHeight : rect.bottom + 4,
+                                    top: spaceBelow >= dropHeight
+                                      ? rect.bottom + 4
+                                      : rect.top - dropHeight - 4,
                                     left: rect.left,
                                   })
-                                  setRoleDropUser(u.username)  // ← c'était manquant
+                                  setRoleDropUser(u.username)
                                 }
                               }}
                             >
