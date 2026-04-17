@@ -912,7 +912,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
           borderRadius: 16, width: '100%', maxWidth: 1300,
           maxHeight: '90vh', overflowY: 'auto',
           boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
-          boxSizing: 'border-box',
+          boxSizing: 'border-box', margin: isMobile ? 16 : 0, 
         }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', overflow:'hidden',
