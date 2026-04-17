@@ -882,10 +882,15 @@ export default function UsersPage({ token, userRole, C, dark }) {
                             value={u.role}
                             autoFocus
                             onChange={e => {
+                              e.stopPropagation()
                               handleRoleChange(u.username, e.target.value)
                               setEditingRole(null)
                             }}
-                            onBlur={() => setEditingRole(null)}
+                            onBlur={e => {
+                              // délai pour laisser le onChange se déclencher d'abord
+                              setTimeout(() => setEditingRole(null), 150)
+                            }}
+                            onClick={e => e.stopPropagation()}
                             style={{
                               background: C.inputBg,
                               color: C.text,
@@ -901,7 +906,15 @@ export default function UsersPage({ token, userRole, C, dark }) {
                             }}
                           >
                             {ROLES.map(r => (
-                              <option key={r} value={r}>
+                              <option
+                                key={r}
+                                value={r}
+                                style={{
+                                  background: C.inputBg,
+                                  color: C.text,
+                                  fontFamily: 'inherit',
+                                }}
+                              >
                                 {r.charAt(0).toUpperCase() + r.slice(1)}
                               </option>
                             ))}
