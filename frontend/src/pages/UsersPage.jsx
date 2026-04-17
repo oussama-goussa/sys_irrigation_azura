@@ -319,26 +319,35 @@ function AuditPanel({ token, filterUser, C, dark, onClose, isMobile }) {
                 const cfg = ACTION_LABELS[log.action] || { label: log.action, color: C.textMuted }
                 return (
                   <div key={log.id} style={{
-                    display: 'flex', alignItems: 'center', gap: 12,
                     padding: '10px 14px', borderRadius: 8,
                     background: C.surface, border: `1px solid ${C.border}`,
                   }}>
-                    <span style={{
-                      background: `${cfg.color}18`,
-                      color: cfg.color,
-                      border: `1px solid ${cfg.color}35`,
-                      borderRadius: 5, padding: '2px 8px',
-                      fontSize: 10, fontWeight: 630, letterSpacing: '0.05em',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {cfg.label}
-                    </span>
-                    <span style={{ color: C.text, fontSize: 12, fontWeight: 630, minWidth: 80 }}>{log.username}</span>
-                    <span style={{ color: C.textMuted, fontSize: 12, flex: 1 }}>{log.detail || '—'}</span>
-                    <span style={{ color: C.textDim, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
-                      <Clock size={10} strokeWidth={2} />
-                      {new Date(log.created_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                    {/* Ligne 1 : badge + username + date */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={{
+                        background: `${cfg.color}18`,
+                        color: cfg.color,
+                        border: `1px solid ${cfg.color}35`,
+                        borderRadius: 5, padding: '2px 8px',
+                        fontSize: 10, fontWeight: 700, letterSpacing: '0.05em',
+                        whiteSpace: 'nowrap', flexShrink: 0,
+                      }}>
+                        {cfg.label}
+                      </span>
+                      <span style={{ color: C.text, fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+                        {log.username}
+                      </span>
+                      <span style={{ color: C.textDim, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto', whiteSpace: 'nowrap' }}>
+                        <Clock size={10} strokeWidth={2} />
+                        {new Date(log.created_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    {/* Ligne 2 : détail (seulement si non vide) */}
+                    {log.detail && log.detail !== '—' && (
+                      <div style={{ color: C.textMuted, fontSize: 11, marginTop: 4, paddingLeft: 2 }}>
+                        {log.detail}
+                      </div>
+                    )}
                   </div>
                 )
               })}
