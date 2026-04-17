@@ -880,6 +880,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
                         {editingRole === u.username ? (
                           <div style={{ position: 'relative', minWidth: 130 }}>
                             <div
+                              // APRÈS — ajout de setRoleDropUser(u.username) manquant
                               onClick={e => {
                                 e.stopPropagation()
                                 if (roleDropUser === u.username) {
@@ -889,21 +890,13 @@ export default function UsersPage({ token, userRole, C, dark }) {
                                   const dropHeight = 180
                                   const spaceBelow = window.innerHeight - rect.bottom
                                   const spaceAbove = rect.top
-
                                   const showAbove = spaceBelow < dropHeight && spaceAbove > spaceBelow
-
                                   setRoleDropPos({
                                     top: showAbove ? rect.top - dropHeight : rect.bottom + 4,
                                     left: rect.left,
                                   })
+                                  setRoleDropUser(u.username)  // ← c'était manquant
                                 }
-                              }}
-                              style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                padding: '0 8px', height: 32,
-                                border: `1.5px solid ${C.green}`,
-                                borderRadius: 7, background: C.inputBg, cursor: 'pointer',
-                                transition: 'border-color 0.15s', gap: 6,
                               }}
                             >
                               <Badge role={u.role} dark={dark} />
