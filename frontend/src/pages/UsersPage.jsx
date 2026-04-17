@@ -882,7 +882,13 @@ export default function UsersPage({ token, userRole, C, dark }) {
                             <div
                               onClick={e => {
                                 e.stopPropagation()
-                                setRoleDropUser(roleDropUser === u.username ? null : u.username)
+                                if (roleDropUser === u.username) {
+                                  setRoleDropUser(null)
+                                } else {
+                                  const rect = e.currentTarget.getBoundingClientRect()
+                                  setRoleDropPos({ top: rect.bottom + 4, left: rect.left })
+                                  setRoleDropUser(u.username)
+                                }
                               }}
                               style={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -901,18 +907,17 @@ export default function UsersPage({ token, userRole, C, dark }) {
                               </span>
                             </div>
 
-                            {roleDropUser === u.username && (
+                            {roleDropUser === u.username && createPortal(
                               <div
                                 onClick={e => e.stopPropagation()}
                                 style={{
-                                  position: 'absolute',
-                                  top: '100%',
-                                  left: 0,
-                                  marginTop: 4,
+                                  position: 'fixed',
+                                  top: roleDropPos?.top ?? 0,
+                                  left: roleDropPos?.left ?? 0,
                                   background: C.card,
                                   border: `1.5px solid ${C.border}`,
                                   borderRadius: 8,
-                                  zIndex: 9999,
+                                  zIndex: 99999,
                                   boxShadow: `0 4px 20px ${C.shadow}`,
                                   minWidth: 140,
                                   overflow: 'hidden',
@@ -939,8 +944,10 @@ export default function UsersPage({ token, userRole, C, dark }) {
                                     <Badge role={r} dark={dark} />
                                   </div>
                                 ))}
-                              </div>
+                              </div>,
+                              document.body
                             )}
+
                           </div>
                         ) : (
 
