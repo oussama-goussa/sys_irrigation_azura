@@ -14,7 +14,7 @@ from typing import Optional
 import csv, io
 from io import BytesIO
 import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from core.utils import filter_by_farm
 
 from loguru import logger
@@ -539,6 +539,8 @@ def export_history_excel(
     header_font  = Font(name="Calibri", size=11, bold=True, color="FFFFFFFF")
     data_font    = Font(name="Calibri", size=11, bold=True)
     center       = Alignment(horizontal="center", vertical="center")
+    _s   = Side(border_style="thin", color="FF000000")
+    _b   = Border(top=_s, bottom=_s, left=_s, right=_s)
 
     # Header row
     ws.row_dimensions[1].height = 18.0
@@ -550,6 +552,7 @@ def export_history_excel(
         c.font = header_font
         c.fill = header_fill
         c.alignment = center
+        c.border = _b
 
     # Data rows
     for row_idx, r in enumerate(rows, start=2):
@@ -568,6 +571,7 @@ def export_history_excel(
             c = ws.cell(row=row_idx, column=col_idx, value=val)
             c.font = data_font
             c.alignment = center
+            c.border = _b
             if col_idx == 1 and val:
                 c.number_format = "DD/MM/YYYY HH:MM:SS"
 
