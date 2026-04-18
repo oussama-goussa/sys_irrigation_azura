@@ -1531,13 +1531,13 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                 {/* Headers */}
                 <tr>
                   <TH w={60} center>Voire</TH>
-                  <TH w={150} center>Date</TH>
-                  <TH w={75} center>Ferme</TH>
+                  <TH w={145} center>Date</TH>
+                  <TH w={80} center>Ferme</TH>
                   <TH w={75} center>Station</TH>
                   <TH w={75} center>Serre</TH>
                   <TH w={75} center>Vanne</TH>
-                  <TH w={75} center>Bras</TH>
-                  <TH w={75} center>Gout.</TH>
+                  <TH w={70} center>Bras</TH>
+                  <TH w={70} center>Gout.</TH>
                   <TH w={75} center>Pds Mat.</TH>
                   <TH w={75} center>H. Mat.</TH>
                   <TH w={75} center>Pds Soir</TH>
