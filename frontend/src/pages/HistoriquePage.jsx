@@ -1505,9 +1505,9 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                 {/* Headers */}
                 <tr>
                   <TH w={60} center>Voire</TH>
-                  <TH w={145} center>Date</TH>
-                  <TH w={130} center>Ferme</TH>
-                  <TH w={100} center>Station</TH>
+                  <TH w={140} center>Date</TH>
+                  <TH w={120} center>Ferme</TH>
+                  <TH w={120} center>Station</TH>
                   <TH w={80} center>Serre</TH>
                   <TH w={60} center>Vanne</TH>
                   <TH w={60} center>Bras</TH>
