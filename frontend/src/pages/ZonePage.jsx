@@ -6,14 +6,18 @@
 // ============================================================
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
+
 import { useWindowWidth } from '../components/DashboardShell.jsx'
+import { RangeCalendar } from '../components/ExportModal.jsx'
 
 import {
   ArrowLeft, RefreshCw, Activity, Droplets, Thermometer,
   Wind, Sun, Gauge, TrendingUp, TrendingDown, Minus,
   ChevronLeft, ChevronRight, Download, Clock, Calendar,
-  BarChart2, WifiOff,
+  BarChart2, WifiOff, MoveRight,
 } from 'lucide-react'
+
 import { Spinner } from '../components/ui.jsx'
 import { getDeviceLatest, getDeviceHistory, exportDeviceCSV, getDeviceTours } from '../api/client.js'
 
@@ -29,6 +33,12 @@ function fmtTs(ts) {
     day: '2-digit', month: '2-digit',
     hour: '2-digit', minute: '2-digit', second: '2-digit',
   })
+}
+
+function fmtDisplay(d) {
+  if (!d) return ''
+  const [y, m, day] = d.split('-')
+  return `${day}/${m}/${y}`
 }
 
 function today() {
@@ -599,6 +609,18 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
   const [loadingTours, setLoadingTours] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
+  // ── Calendrier graphiques ──
+  const [showChartCal,    setShowChartCal]    = useState(false)
+  const [chartCalPos,     setChartCalPos]     = useState({ top: 0, bottom: 'auto', left: 0 })
+  const chartCalTriggerRef = useRef(null)
+  const chartCalPortalRef  = useRef(null)
+
+  // ── Calendrier historique table ──
+  const [showHistCal,     setShowHistCal]     = useState(false)
+  const [histCalPos,      setHistCalPos]      = useState({ top: 0, bottom: 'auto', left: 0 })
+  const histCalTriggerRef  = useRef(null)
+  const histCalPortalRef   = useRef(null)
+
   // ── load live ──
   const loadLive = useCallback(async () => {
       setRefreshing(true)
@@ -684,6 +706,32 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
   useEffect(() => {
   loadChartData()
+
+  // Click-outside pour fermer le calendrier graphiques
+  useEffect(() => {
+    if (!showChartCal) return
+    const close = (e) => {
+      if (
+        chartCalTriggerRef.current && !chartCalTriggerRef.current.contains(e.target) &&
+        chartCalPortalRef.current && !chartCalPortalRef.current.contains(e.target)
+      ) setShowChartCal(false)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [showChartCal])
+
+  useEffect(() => {
+    if (!showHistCal) return
+    const close = (e) => {
+      if (
+        histCalTriggerRef.current && !histCalTriggerRef.current.contains(e.target) &&
+        histCalPortalRef.current  && !histCalPortalRef.current.contains(e.target)
+      ) setShowHistCal(false)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [showHistCal])
+
 }, [chartDateFrom, chartDateTo, deviceId])
 
   // ── Period shortcut ──
@@ -1057,26 +1105,84 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
       </div>
 
       <div style={{ display:'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 8 : 12, marginBottom:20 }}>
-        <DateRangePicker
-          dateFrom={chartDateFrom}
-          dateTo={chartDateTo}
-          onChangeDateFrom={v => setChartDateFrom(v)}
-          onChangeDateTo={v => setChartDateTo(v)}
-          C={C} dark={dark}
-        />
+
+        {/* Trigger calendrier */}
+        <div style={{ position: 'relative' }}>
+          <div
+            ref={chartCalTriggerRef}
+            onClick={() => {
+              const r = chartCalTriggerRef.current.getBoundingClientRect()
+              const spaceBelow = window.innerHeight - r.bottom
+              if (spaceBelow < 340)
+                setChartCalPos({ bottom: window.innerHeight - r.top + 6, top: 'auto', left: r.left })
+              else
+                setChartCalPos({ top: r.bottom + 6, bottom: 'auto', left: r.left })
+              setShowChartCal(v => !v)
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '7px 14px', borderRadius: 8, minHeight: 34,
+              cursor: 'pointer',
+              border: `1.5px solid ${showChartCal ? C.green : C.border}`,
+              background: C.inputBg, transition: 'border-color 0.15s',
+              fontFamily: 'inherit',
+            }}
+          >
+            <Calendar size={14} color={showChartCal || chartDateFrom !== today() ? C.green : C.textDim} strokeWidth={2} />
+            <span style={{ fontSize: 12, fontWeight: 630, color: C.text }}>
+              {fmtDisplay(chartDateFrom)}
+            </span>
+            <MoveRight size={13} strokeWidth={2} color={C.textDim} />
+            <span style={{ fontSize: 12, fontWeight: 630, color: chartDateTo ? C.green : C.textDim }}>
+              {chartDateTo ? fmtDisplay(chartDateTo) : '—'}
+            </span>
+            {chartDateFrom && chartDateTo && (
+              <span style={{ fontSize: 11, color: C.textDim, marginLeft: 4 }}>
+                {Math.round((new Date(chartDateTo) - new Date(chartDateFrom)) / 86400000) + 1} j
+              </span>
+            )}
+          </div>
+
+          {showChartCal && createPortal(
+            <div
+              ref={chartCalPortalRef}
+              style={{
+                position: 'fixed',
+                top: chartCalPos.top !== 'auto' ? chartCalPos.top : 'auto',
+                bottom: chartCalPos.bottom !== 'auto' ? chartCalPos.bottom : 'auto',
+                left: chartCalPos.left,
+                zIndex: 99999,
+                border: `1.5px solid ${C.border}`,
+                borderRadius: 12,
+                padding: '16px 20px',
+                background: dark ? C.surface : '#fafcfb',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+                width: isMobile ? 280 : 560,
+              }}
+            >
+              <RangeCalendar
+                dateFrom={chartDateFrom}
+                dateTo={chartDateTo}
+                onChangeFrom={v => setChartDateFrom(v)}
+                onChangeTo={v => { setChartDateTo(v); if (v) setShowChartCal(false) }}
+                C={C}
+                onClose={() => setShowChartCal(false)}
+                singleMonth={isMobile}
+              />
+            </div>,
+            document.body
+          )}
+        </div>
+
         {(chartDateFrom !== today() || chartDateTo !== today()) && (
           <button
             onClick={() => { setChartDateFrom(today()); setChartDateTo(today()) }}
             style={{
-              padding: '6px 10px',
-              borderRadius: 7,
+              padding: '6px 10px', borderRadius: 7,
               border: `1.5px solid ${C.border}`,
-              background: C.inputBg,
-              color: C.text,
-              fontSize: 12,
-              fontFamily: 'inherit',
-              cursor: 'pointer',
-              outline: 'none',
+              background: C.inputBg, color: C.text,
+              fontSize: 12, fontFamily: 'inherit',
+              cursor: 'pointer', outline: 'none',
             }}
           >
             Aujourd'hui
@@ -1207,21 +1313,81 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
       {/* Date filtre + Export CSV sur même ligne */}
       <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', justifyContent:'space-between', marginBottom:8, gap: isMobile ? 8 : 0 }}>
+
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <DateRangePicker
-            dateFrom={dateFrom}
-            dateTo={dateTo}
-            onChangeDateFrom={v => setDateFrom(v)}
-            onChangeDateTo={v => setDateTo(v)}
-            C={C}
-            dark={dark}
-          />
+
+          <div style={{ position: 'relative' }}>
+            <div
+              ref={histCalTriggerRef}
+              onClick={() => {
+                const r = histCalTriggerRef.current.getBoundingClientRect()
+                const spaceBelow = window.innerHeight - r.bottom
+                if (spaceBelow < 340)
+                  setHistCalPos({ bottom: window.innerHeight - r.top + 6, top: 'auto', left: r.left })
+                else
+                  setHistCalPos({ top: r.bottom + 6, bottom: 'auto', left: r.left })
+                setShowHistCal(v => !v)
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '7px 14px', borderRadius: 8, minHeight: 34,
+                cursor: 'pointer',
+                border: `1.5px solid ${showHistCal ? C.green : C.border}`,
+                background: C.inputBg, transition: 'border-color 0.15s',
+                fontFamily: 'inherit',
+              }}
+            >
+              <Calendar size={14} color={showHistCal || dateFrom !== today() ? C.green : C.textDim} strokeWidth={2} />
+              <span style={{ fontSize: 12, fontWeight: 630, color: C.text }}>
+                {fmtDisplay(dateFrom)}
+              </span>
+              <MoveRight size={13} strokeWidth={2} color={C.textDim} />
+              <span style={{ fontSize: 12, fontWeight: 630, color: dateTo ? C.green : C.textDim }}>
+                {dateTo ? fmtDisplay(dateTo) : '—'}
+              </span>
+              {dateFrom && dateTo && (
+                <span style={{ fontSize: 11, color: C.textDim, marginLeft: 4 }}>
+                  {Math.round((new Date(dateTo) - new Date(dateFrom)) / 86400000) + 1} j
+                </span>
+              )}
+            </div>
+
+            {showHistCal && createPortal(
+              <div
+                ref={histCalPortalRef}
+                style={{
+                  position: 'fixed',
+                  top: histCalPos.top !== 'auto' ? histCalPos.top : 'auto',
+                  bottom: histCalPos.bottom !== 'auto' ? histCalPos.bottom : 'auto',
+                  left: histCalPos.left,
+                  zIndex: 99999,
+                  border: `1.5px solid ${C.border}`,
+                  borderRadius: 12,
+                  padding: '16px 20px',
+                  background: dark ? C.surface : '#fafcfb',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+                  width: isMobile ? 280 : 560,
+                }}
+              >
+                <RangeCalendar
+                  dateFrom={dateFrom}
+                  dateTo={dateTo}
+                  onChangeFrom={v => setDateFrom(v)}
+                  onChangeTo={v => { setDateTo(v); if (v) setShowHistCal(false) }}
+                  C={C}
+                  onClose={() => setShowHistCal(false)}
+                  singleMonth={isMobile}
+                />
+              </div>,
+              document.body
+            )}
+          </div>
+
           {(dateFrom !== today() || dateTo !== today()) && (
             <button
               onClick={() => { setDateFrom(today()); setDateTo(today()) }}
               style={{
                 padding: '6px 10px',
-                marginLeft: '5px',
                 borderRadius: 7,
                 border: `1.5px solid ${C.border}`,
                 background: C.inputBg,
@@ -1236,6 +1402,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             </button>
           )}
         </div>
+
         <button onClick={handleExport} disabled={exporting} style={{
           display:'flex', alignItems:'center', gap:6,
           padding:'8px 18px', background: C.toggleBg,

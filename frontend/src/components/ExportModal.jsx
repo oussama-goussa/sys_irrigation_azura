@@ -4,6 +4,7 @@
 // ============================================================
 
 import React, { useState, useEffect, useRef } from "react";
+
 import { createPortal } from "react-dom";
 import {
   X,
@@ -36,7 +37,7 @@ const MONTHS_FR = [
 const DAYS_FR = ["Lu", "Ma", "Me", "Je", "Ve", "Sa", "Di"];
 
 // ── Range Calendar ────────────────────────────────────────────
-function RangeCalendar({
+export function RangeCalendar({
   dateFrom,
   dateTo,
   onChangeFrom,
