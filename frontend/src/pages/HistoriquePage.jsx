@@ -258,12 +258,7 @@ function FilterSelect({ value, onChange, options, C }) {
         dropRef.current && !dropRef.current.contains(e.target)
       ) setOpen(false)
     }
-    const onScroll = () => {
-      if (triggerRef.current) {
-        const r = triggerRef.current.getBoundingClientRect()
-        setPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 130) })
-      }
-    }
+    const onScroll = () => setOpen(false)   // ← ferme sur scroll
     document.addEventListener('mousedown', close)
     window.addEventListener('scroll', onScroll, true)
     return () => {
@@ -275,7 +270,14 @@ function FilterSelect({ value, onChange, options, C }) {
   const handleOpen = () => {
     if (triggerRef.current) {
       const r = triggerRef.current.getBoundingClientRect()
-      setPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 130) })
+      // ouvre en haut si pas assez de place en bas
+      const spaceBelow = window.innerHeight - r.bottom
+      const dropH = 220
+      if (spaceBelow < dropH) {
+        setPos({ bottom: window.innerHeight - r.top + 2, top: 'auto', left: r.left, width: Math.max(r.width, 130) })
+      } else {
+        setPos({ top: r.bottom + 2, bottom: 'auto', left: r.left, width: Math.max(r.width, 130) })
+      }
     }
     setOpen(v => !v)
   }
@@ -286,7 +288,8 @@ function FilterSelect({ value, onChange, options, C }) {
   const dropdown = open && createPortal(
     <div ref={dropRef} style={{
       position: 'fixed',
-      top: pos.top,
+      top: pos.top !== 'auto' ? pos.top : 'auto',
+      bottom: pos.bottom !== 'auto' ? pos.bottom : 'auto',
       left: pos.left,
       width: pos.width,
       background: C.card,
@@ -1536,7 +1539,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
         {/* Table */}
         <div style={{ ...cardStyle, overflow: 'visible' }}>
           <div style={{ overflowX: 'auto', overflowY: 'visible', WebkitOverflowScrolling: 'touch', borderRadius: 14 }}>
-            <table style={{ width: '100%', minWidth: 1100, borderCollapse: 'collapse', fontFamily: 'inherit' }}>
+            <table style={{ width: '100%', minWidth: 1100, borderCollapse: 'collapse', fontFamily: 'inherit', overflow: 'visible' }}>
               <thead>
                 {/* Headers */}
                 <tr>
@@ -1557,20 +1560,20 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                   <TH w={90} center>Actions</TH>
                 </tr>
                 {/* Filtres */}
-                <tr style={{ background: C.card, borderBottom: `1.5px solid ${C.border}` }}>
+                <tr style={{ background: C.card, borderBottom: `1.5px solid ${C.border}`, overflow: 'visible', position: 'relative' }}>
                   <th style={{ padding: '4px 6px', borderBottom: `1px solid ${C.border}` }} />
                   <th style={{ padding: '5px 6px', borderBottom: 'none', overflow: 'visible', position: 'relative' }}>
                     <CalendarPicker value={fDate} onChange={setFDate} C={C} small />
                   </th>
-                  <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
+                  <th style={{ padding: '5px 6px', borderBottom: 'none', overflow: 'visible', position: 'relative' }}>
                     <FilterSelect value={fFerme} onChange={v => { setFFerme(v); setFStation('') }}
                       options={fermeOptions} C={C} />
                   </th>
-                  <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
+                  <th style={{ padding: '5px 6px', borderBottom: 'none', overflow: 'visible', position: 'relative' }}>
                     <FilterSelect value={fStation} onChange={setFStation}
                       options={stationFilterOptions} C={C} />
                   </th>
-                  <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
+                  <th style={{ padding: '5px 6px', borderBottom: 'none', overflow: 'visible', position: 'relative' }}>
                     <FilterSelect value={fSerre} onChange={setFSerre}
                       options={serreFilterOptions} C={C} />
                   </th>
