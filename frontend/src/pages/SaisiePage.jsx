@@ -823,7 +823,7 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
       </div>
 
       {/* ── Bilan ligne ─────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr 1fr' : '1.8fr 1.3fr 1fr 1fr', gap: 14, marginBottom: isMobile ? 16 : 28, marginTop: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr 1fr' : '1.6fr 1.1fr 1fr 1fr', gap: 14, marginBottom: isMobile ? 16 : 28, marginTop: 20 }}>
         {[
           {
             label: 'Irrigation',
