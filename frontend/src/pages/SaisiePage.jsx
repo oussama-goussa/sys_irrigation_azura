@@ -865,8 +865,8 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
         ].map(card => (
           <div key={card.label} style={{
             background: dark ? '#111a14' : '#ffffff',
-            border: `1px solid ${C.border}`,
-            borderRadius: 16, padding: '20px 24px',
+            border: `1px solid ${dark ? '#1c2e22' : '#d0e8d8'}`,
+            borderRadius: 16, padding: isMobile ? '18px 20px' : '24px 28px',
             position: 'relative', overflow: 'hidden',
             display: 'flex', flexDirection: 'column', justifyContent: 'space-between', // ← ajout
             minHeight: 130, // ← hauteur augmentée
@@ -875,11 +875,11 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 0 }}>
               <div style={{
                 fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
-                letterSpacing: '0em', color: dark ? C.textDim : '#5a7a66',
+                letterSpacing: '0.12em', color: dark ? C.textDim : '#5a7a66',
               }}>
                 {card.label}
               </div>
-              <card.Icon size={16} strokeWidth={1.6} color={card.color} style={{ opacity: 0.65 }} />
+              <card.Icon size={18} strokeWidth={1.6} color={card.color} style={{ opacity: 0.65 }} />
             </div>
 
             {/* Values — collés en bas */}
@@ -889,7 +889,7 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
                   <div style={{ fontSize: 11, color: dark ? C.textDim : '#5a7a66', marginBottom: 4, whiteSpace: 'nowrap' }}>
                     {it.sub}
                   </div>
-                  <div style={{ fontSize: 22, fontWeight: 630, letterSpacing: '-0.02em', color: card.color }}>
+                  <div style={{ fontSize: 28, fontWeight: 630, letterSpacing: '-0.03em', color: card.color }}>
                     {it.value}
                   </div>
                 </div>

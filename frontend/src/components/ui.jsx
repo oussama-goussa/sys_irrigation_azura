@@ -186,24 +186,22 @@ export function Spinner({ C, size = 28 }) {
 }
 
 // ── Stat Card ─────────────────────────────────────────────────
-export function StatCard({ label, value, icon: Icon, color, C }) {
+export function StatCard({ label, value, icon: Icon, color, C, dark = false }) {
   return (
     <div style={{
-      background: C.card,
-      border: `1.5px solid ${C.border}`,
-      borderRadius: 12,
-      padding: '16px 20px',
+      background: dark ? '#111a14' : '#ffffff',
+      border: `1px solid ${dark ? '#1c2e22' : '#d0e8d8'}`,
+      borderRadius: 16,
+      padding: '24px 28px',
       display: 'flex',
       flexDirection: 'column',
-      gap: 10,
+      position: 'relative', overflow: 'hidden',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ color: C.textMuted, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</span>
-        <div style={{ width: 30, height: 30, borderRadius: 8, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Icon size={SZ.md} color={color} strokeWidth={2} />
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <span style={{ color: dark ? C.textDim : '#5a7a66', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.12em' }}>{label}</span>
+        <Icon size={18} strokeWidth={1.6} color={color} style={{ opacity: 0.65 }} />
       </div>
-      <div style={{ color: color, fontSize: 28, fontWeight: 900, fontFamily: C.mono, lineHeight: 1 }}>
+      <div style={{ color: color, fontSize: 42, fontWeight: 630, letterSpacing: '-0.03em', lineHeight: 1 }}>
         {value}
       </div>
     </div>

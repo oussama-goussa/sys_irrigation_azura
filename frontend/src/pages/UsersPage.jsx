@@ -536,10 +536,10 @@ export default function UsersPage({ token, userRole, C, dark }) {
 
       {/* Stats */}
       <div style={{ display: 'grid', gap: 14, gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', marginBottom: 24, width: '100%', boxSizing: 'border-box' }}>
-        <StatCard label="Total"    value={stats.total}    icon={Users}       color={C.green}  C={C} />
-        <StatCard label="Actifs"   value={stats.actifs}   icon={UserCheck}   color={C.green}  C={C} />
-        <StatCard label="Inactifs" value={stats.inactifs} icon={UserX}       color={C.red}    C={C} />
-        <StatCard label="Admins"   value={stats.admins}   icon={ShieldCheck} color={C.purple} C={C} />
+        <StatCard label="Total"    value={stats.total}    icon={Users}       color={C.green}  C={C} dark={dark} />
+        <StatCard label="Actifs"   value={stats.actifs}   icon={UserCheck}   color={C.green}  C={C} dark={dark} />
+        <StatCard label="Inactifs" value={stats.inactifs} icon={UserX}       color={C.red}    C={C} dark={dark} />
+        <StatCard label="Admins"   value={stats.admins}   icon={ShieldCheck} color={C.purple} C={C} dark={dark} />
       </div>
 
       {/* Create form */}
