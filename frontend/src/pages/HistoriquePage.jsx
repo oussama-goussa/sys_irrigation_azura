@@ -258,8 +258,18 @@ function FilterSelect({ value, onChange, options, C }) {
         dropRef.current && !dropRef.current.contains(e.target)
       ) setOpen(false)
     }
+    const onScroll = () => {
+      if (triggerRef.current) {
+        const r = triggerRef.current.getBoundingClientRect()
+        setPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 130) })
+      }
+    }
     document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
+    window.addEventListener('scroll', onScroll, true)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      window.removeEventListener('scroll', onScroll, true)
+    }
   }, [open])
 
   const handleOpen = () => {
