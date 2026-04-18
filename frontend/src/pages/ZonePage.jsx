@@ -706,6 +706,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
   useEffect(() => {
   loadChartData()
+  }, [chartDateFrom, chartDateTo, deviceId])
 
   // Click-outside pour fermer le calendrier graphiques
   useEffect(() => {
@@ -731,8 +732,6 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
   }, [showHistCal])
-
-}, [chartDateFrom, chartDateTo, deviceId])
 
   // ── Period shortcut ──
   const applyPeriod = (p) => {
