@@ -748,7 +748,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
     try {
       await exportDeviceCSV(
         token, deviceId, dateFrom, dateTo,
-        `azura_${deviceInfo.farm_name}_house${deviceInfo.house_number}_${dateFrom}_${dateTo}.csv`
+        `${deviceInfo.farm_name}_Station${deviceInfo.house_number}_${dateFrom}_${dateTo}.xlsx`
       )
     } finally {
       setExporting(false)
@@ -1411,7 +1411,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
           opacity: exporting ? 0.6 : 1, fontFamily:'inherit',
         }}>
           <Download size={12} strokeWidth={2} />
-          {exporting ? 'Export…' : 'Export CSV'}
+          {exporting ? 'Export…' : 'Export Excel'}
         </button>
       </div>
 

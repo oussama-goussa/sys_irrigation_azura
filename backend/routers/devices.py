@@ -10,8 +10,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 from datetime import datetime, date, timedelta
 from typing import Optional
+
 import csv, io
+from io import BytesIO
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
 from core.utils import filter_by_farm
+
 from loguru import logger
 
 from core.database import get_db
@@ -492,14 +497,13 @@ def get_history(
 
 # ── GET /api/devices/{id}/export — Export CSV ─────────────────
 @router.get("/{device_id}/export")
-def export_history_csv(
+def export_history_excel(
     device_id : int,
     date_from : Optional[str] = Query(None),
     date_to   : Optional[str] = Query(None),
     db        : Session = Depends(get_db),
     user               = Depends(require_operateur)
 ):
-    """Export CSV de l'historique d'une serre sur une période."""
     device = db.query(Device).filter(Device.id == device_id).first()
     if not device:
         raise HTTPException(status_code=404, detail="Device non trouvé")
@@ -523,23 +527,60 @@ def export_history_csv(
         .all()
     )
 
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["timestamp", "ec_actual", "ph_actual", "avg_temp", "humidity",
-                     "radiation", "flow", "vpd", "wind_speed", "daily_rain", "ec_ph_status"])
-    for r in rows:
-        writer.writerow([
-            r.timestamp, r.ec_actual, r.ph_actual, r.avg_temp, r.humidity,
-            r.radiation, r.flow, r.vpd, r.wind_speed, r.daily_rain, r.ec_ph_status
-        ])
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Suivi Irrigation"
 
-    filename = f"azura_{device.farm_name}_house{device.house_number}_{date_from}_{date_to}.csv"
+    # Column widths — exact match to template
+    for col, w in zip("ABCDEFGHI", [20.0, 10.33, 9.66, 9.0, 10.66, 16.0, 13.0, 10.77, 12.88]):
+        ws.column_dimensions[col].width = w
+
+    header_fill  = PatternFill("solid", fgColor="FF404040")
+    header_font  = Font(name="Calibri", size=11, bold=True, color="FFFFFFFF")
+    data_font    = Font(name="Calibri", size=11, bold=True)
+    center       = Alignment(horizontal="center", vertical="center")
+
+    # Header row
+    ws.row_dimensions[1].height = 18.0
+    for col_idx, label in enumerate(
+        ["Timestamp", "Ferme", "Station", "EC", "pH", "Température", "Humidité", "Rad", "Débit"],
+        start=1
+    ):
+        c = ws.cell(row=1, column=col_idx, value=label)
+        c.font = header_font
+        c.fill = header_fill
+        c.alignment = center
+
+    # Data rows
+    for row_idx, r in enumerate(rows, start=2):
+        ws.row_dimensions[row_idx].height = 15.0
+        for col_idx, val in enumerate([
+            r.timestamp,
+            device.farm_name,
+            device.house_number,
+            r.ec_actual,
+            r.ph_actual,
+            r.avg_temp,
+            r.humidity,
+            r.radiation,
+            r.flow,
+        ], start=1):
+            c = ws.cell(row=row_idx, column=col_idx, value=val)
+            c.font = data_font
+            c.alignment = center
+            if col_idx == 1 and val:
+                c.number_format = "DD/MM/YYYY HH:MM:SS"
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"{device.farm_name}_Station{device.house_number}_{date_from}_{date_to}.xlsx"
     return StreamingResponse(
-        io.StringIO(output.getvalue()),
-        media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
-
 
 # ── GET /api/devices/{id}/alerts — Alertes actives ───────────
 @router.get("/{device_id}/alerts")
