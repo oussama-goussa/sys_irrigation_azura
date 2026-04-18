@@ -249,36 +249,36 @@ function FilterSelect({ value, onChange, options, C }) {
   const [pos, setPos] = useState({ top: 0, left: 0, width: 0 })
   const triggerRef = useRef(null)
   const dropRef = useRef(null)
+  const rafRef = useRef(null)
+
+  const updatePos = () => {
+    if (triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect()
+      setPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 130) })
+    }
+  }
 
   useEffect(() => {
     if (!open) return
+    // Mise à jour continue de la position
+    const loop = () => { updatePos(); rafRef.current = requestAnimationFrame(loop) }
+    rafRef.current = requestAnimationFrame(loop)
+
     const close = (e) => {
       if (
         triggerRef.current && !triggerRef.current.contains(e.target) &&
         dropRef.current && !dropRef.current.contains(e.target)
       ) setOpen(false)
     }
-    const onScroll = () => setOpen(false)   // ← ferme sur scroll
     document.addEventListener('mousedown', close)
-    window.addEventListener('scroll', onScroll, true)
     return () => {
+      cancelAnimationFrame(rafRef.current)
       document.removeEventListener('mousedown', close)
-      window.removeEventListener('scroll', onScroll, true)
     }
   }, [open])
 
   const handleOpen = () => {
-    if (triggerRef.current) {
-      const r = triggerRef.current.getBoundingClientRect()
-      // ouvre en haut si pas assez de place en bas
-      const spaceBelow = window.innerHeight - r.bottom
-      const dropH = 220
-      if (spaceBelow < dropH) {
-        setPos({ bottom: window.innerHeight - r.top + 2, top: 'auto', left: r.left, width: Math.max(r.width, 130) })
-      } else {
-        setPos({ top: r.bottom + 2, bottom: 'auto', left: r.left, width: Math.max(r.width, 130) })
-      }
-    }
+    updatePos()
     setOpen(v => !v)
   }
 
@@ -288,8 +288,7 @@ function FilterSelect({ value, onChange, options, C }) {
   const dropdown = open && createPortal(
     <div ref={dropRef} style={{
       position: 'fixed',
-      top: pos.top !== 'auto' ? pos.top : 'auto',
-      bottom: pos.bottom !== 'auto' ? pos.bottom : 'auto',
+      top: pos.top,
       left: pos.left,
       width: pos.width,
       background: C.card,
