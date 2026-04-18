@@ -294,7 +294,7 @@ function FilterSelect({ value, onChange, options, C }) {
             const sel = val === value
             return (
               <div key={val} onClick={() => { onChange(val); setOpen(false) }}
-                style={{ padding: '8px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 630,
+                style={{ padding: '8px 12px', fontSize: 11, cursor: 'pointer', fontWeight: 600,
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   color: sel ? C.green : C.textMuted,
                   background: sel ? `${C.green}12` : 'transparent' }}
@@ -302,7 +302,7 @@ function FilterSelect({ value, onChange, options, C }) {
                 onMouseLeave={e => e.currentTarget.style.background = sel ? `${C.green}12` : 'transparent'}
               >
                 <span>{lbl}</span>
-                {sel && <Check size={10} strokeWidth={2.5} color={C.green}/>}
+                {sel && <Check size={9} strokeWidth={2.5} color={C.green}/>}
               </div>
             )
           })}
