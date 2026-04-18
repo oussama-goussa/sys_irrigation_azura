@@ -1034,7 +1034,7 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose, isMo
                 color: canExport && !exporting ? "#fff" : C.textDim,
                 border: "none",
                 fontSize: 12,
-                fontWeight: 630,
+                fontWeight: 630, marginTop: isMobile ? 10 : 0,
                 minHeight: 32,
                 fontFamily: "inherit",
                 cursor: canExport && !exporting ? "pointer" : "not-allowed",
