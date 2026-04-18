@@ -243,32 +243,29 @@ function SSelect({ value, onChange, options, placeholder, C, width = '100%', dis
   )
 }
 
-// ── FilterSelect — portal (évite overflow:hidden de la table) ──
+// ── FilterSelect — portal + DOM direct (zéro lag au scroll) ────
 function FilterSelect({ value, onChange, options, C }) {
   const [open, setOpen] = useState(false)
-  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 })
   const triggerRef = useRef(null)
   const dropRef = useRef(null)
   const rafRef = useRef(null)
 
-  const updatePos = () => {
-    if (triggerRef.current) {
-      const r = triggerRef.current.getBoundingClientRect()
-      setPos({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 130) })
-    }
+  // Écrit la position directement sur le nœud DOM — pas de setState, pas de re-render → zéro lag
+  const syncPos = () => {
+    if (!triggerRef.current || !dropRef.current) return
+    const r = triggerRef.current.getBoundingClientRect()
+    dropRef.current.style.top    = `${r.bottom + 2}px`
+    dropRef.current.style.left   = `${r.left}px`
+    dropRef.current.style.width  = `${Math.max(r.width, 130)}px`
   }
 
   useEffect(() => {
     if (!open) return
-    // Mise à jour continue de la position
-    const loop = () => { updatePos(); rafRef.current = requestAnimationFrame(loop) }
+    const loop = () => { syncPos(); rafRef.current = requestAnimationFrame(loop) }
     rafRef.current = requestAnimationFrame(loop)
-
     const close = (e) => {
-      if (
-        triggerRef.current && !triggerRef.current.contains(e.target) &&
-        dropRef.current && !dropRef.current.contains(e.target)
-      ) setOpen(false)
+      if (triggerRef.current && !triggerRef.current.contains(e.target) &&
+          dropRef.current   && !dropRef.current.contains(e.target)) setOpen(false)
     }
     document.addEventListener('mousedown', close)
     return () => {
@@ -277,60 +274,12 @@ function FilterSelect({ value, onChange, options, C }) {
     }
   }, [open])
 
-  const handleOpen = () => {
-    updatePos()
-    setOpen(v => !v)
-  }
-
   const selected = options.find(o => (o.value ?? o) === value)
   const label = selected ? (selected.label ?? selected) : null
 
-  const dropdown = open && createPortal(
-    <div ref={dropRef} style={{
-      position: 'fixed',
-      top: pos.top,
-      left: pos.left,
-      width: pos.width,
-      background: C.card,
-      border: `1.5px solid ${C.border}`,
-      borderRadius: 8,
-      zIndex: 99999,
-      boxShadow: '0 6px 24px rgba(0,0,0,0.18)',
-      maxHeight: 200,
-      overflowY: 'auto',
-    }}>
-      <div onClick={() => { onChange(''); setOpen(false) }}
-        style={{ padding: '8px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 630,
-          color: !value ? C.green : C.textMuted,
-          background: !value ? `${C.green}12` : 'transparent' }}
-        onMouseEnter={e => e.currentTarget.style.background = !value ? `${C.green}18` : C.tableHover}
-        onMouseLeave={e => e.currentTarget.style.background = !value ? `${C.green}12` : 'transparent'}
-      >Tous</div>
-      {options.map(o => {
-        const val = o.value ?? o
-        const lbl = o.label ?? o
-        const sel = val === value
-        return (
-          <div key={val} onClick={() => { onChange(val); setOpen(false) }}
-            style={{ padding: '8px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 630,
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              color: sel ? C.green : C.textMuted,
-              background: sel ? `${C.green}12` : 'transparent' }}
-            onMouseEnter={e => e.currentTarget.style.background = sel ? `${C.green}18` : C.tableHover}
-            onMouseLeave={e => e.currentTarget.style.background = sel ? `${C.green}12` : 'transparent'}
-          >
-            <span>{lbl}</span>
-            {sel && <Check size={10} strokeWidth={2.5} color={C.green}/>}
-          </div>
-        )
-      })}
-    </div>,
-    document.body
-  )
-
   return (
     <div ref={triggerRef} style={{ position: 'relative' }}>
-      <div onClick={handleOpen} style={{
+      <div onClick={() => setOpen(v => !v)} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         height: 28, padding: '0 7px',
         border: `1.5px solid ${open ? C.green : value ? C.green + '55' : C.border}`,
@@ -345,7 +294,41 @@ function FilterSelect({ value, onChange, options, C }) {
           {open ? <ChevronUp size={10} strokeWidth={2}/> : <ChevronDown size={10} strokeWidth={2}/>}
         </span>
       </div>
-      {dropdown}
+      {open && createPortal(
+        <div ref={dropRef} style={{
+          position: 'fixed', top: 0, left: 0, width: 130,
+          background: C.card, border: `1.5px solid ${C.border}`,
+          borderRadius: 8, zIndex: 99999, boxShadow: '0 6px 24px rgba(0,0,0,0.18)',
+          maxHeight: 200, overflowY: 'auto',
+        }}>
+          <div onClick={() => { onChange(''); setOpen(false) }}
+            style={{ padding: '8px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 630,
+              color: !value ? C.green : C.textMuted,
+              background: !value ? `${C.green}12` : 'transparent' }}
+            onMouseEnter={e => e.currentTarget.style.background = !value ? `${C.green}18` : C.tableHover}
+            onMouseLeave={e => e.currentTarget.style.background = !value ? `${C.green}12` : 'transparent'}
+          >Tous</div>
+          {options.map(o => {
+            const val = o.value ?? o
+            const lbl = o.label ?? o
+            const sel = val === value
+            return (
+              <div key={val} onClick={() => { onChange(val); setOpen(false) }}
+                style={{ padding: '8px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 630,
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  color: sel ? C.green : C.textMuted,
+                  background: sel ? `${C.green}12` : 'transparent' }}
+                onMouseEnter={e => e.currentTarget.style.background = sel ? `${C.green}18` : C.tableHover}
+                onMouseLeave={e => e.currentTarget.style.background = sel ? `${C.green}12` : 'transparent'}
+              >
+                <span>{lbl}</span>
+                {sel && <Check size={10} strokeWidth={2.5} color={C.green}/>}
+              </div>
+            )
+          })}
+        </div>,
+        document.body
+      )}
     </div>
   )
 }
