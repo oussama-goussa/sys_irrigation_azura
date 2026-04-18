@@ -294,7 +294,7 @@ function FilterSelect({ value, onChange, options, C }) {
             const sel = val === value
             return (
               <div key={val} onClick={() => { onChange(val); setOpen(false) }}
-                style={{ padding: '8px 20px', fontSize: 11, cursor: 'pointer', fontWeight: 600,
+                style={{ padding: '8px 12px', fontSize: 11, cursor: 'pointer', fontWeight: 600,
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   color: sel ? C.green : C.textMuted,
                   background: sel ? `${C.green}12` : 'transparent' }}
@@ -1506,12 +1506,12 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                 <tr>
                   <TH w={60} center>Voire</TH>
                   <TH w={145} center>Date</TH>
-                  <TH w={100} center>Ferme</TH>
-                  <TH w={75} center>Station</TH>
-                  <TH w={75} center>Serre</TH>
-                  <TH w={70} center>Vanne</TH>
-                  <TH w={70} center>Bras</TH>
-                  <TH w={70} center>Gout.</TH>
+                  <TH w={130} center>Ferme</TH>
+                  <TH w={100} center>Station</TH>
+                  <TH w={80} center>Serre</TH>
+                  <TH w={60} center>Vanne</TH>
+                  <TH w={60} center>Bras</TH>
+                  <TH w={60} center>Gout.</TH>
                   <TH w={75} center>Pds Mat.</TH>
                   <TH w={75} center>H. Mat.</TH>
                   <TH w={75} center>Pds Soir</TH>
