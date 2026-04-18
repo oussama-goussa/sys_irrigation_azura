@@ -320,13 +320,19 @@ function TimeInput({ value, onChange, C, small = false }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
   const triggerRef = useRef(null)
+  const portalRef = useRef(null)
   const [pos, setPos] = useState({ top: 0, left: 0 })
   const [h, m] = value ? value.split(':') : ['00', '00']
   const [hRaw, setHRaw] = useState(null)
   const [mRaw, setMRaw] = useState(null)
 
   useEffect(() => {
-    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    const close = (e) => {
+      if (
+        ref.current && !ref.current.contains(e.target) &&
+        portalRef.current && !portalRef.current.contains(e.target)
+      ) setOpen(false)
+    }
     const onScroll = () => setOpen(false)
     document.addEventListener('mousedown', close)
     window.addEventListener('scroll', onScroll, true)
@@ -357,19 +363,6 @@ function TimeInput({ value, onChange, C, small = false }) {
     else onChange(`${h || '00'}:${String((mv - 1 + 60) % 60).padStart(2, '0')}`)
   }
 
-  const colStyle = { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }
-  const arrowStyle = {
-    background: 'none', border: 'none', cursor: 'pointer',
-    color: C.textMuted, display: 'flex', alignItems: 'center',
-    padding: '4px 8px', borderRadius: 5, transition: 'background 0.1s',
-  }
-  const numStyle = {
-    fontSize: 22, fontWeight: 630, color: C.text,
-    width: 48, textAlign: 'center', 
-    background: 'none', border: 'none', outline: 'none',
-    fontFamily: 'inherit', padding: 0,
-  }
-
   return (
     <div ref={ref} style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
       {/* Trigger */}
@@ -391,15 +384,15 @@ function TimeInput({ value, onChange, C, small = false }) {
         <span>{m || '00'}</span>
       </div>
 
-      {/* Dropdown picker */}
-      {open && (
-        <div style={{
-          position: 'fixed',           // ← clé du fix
+      {/* Dropdown picker — portal vers document.body */}
+      {open && createPortal(
+        <div ref={portalRef} style={{
+          position: 'fixed',
           top: pos.top,
           left: pos.left,
           transform: 'translateX(-50%)',
           background: C.card, border: `1.5px solid ${C.border}`,
-          borderRadius: 10, zIndex: 9999,   // ← au-dessus de tout
+          borderRadius: 10, zIndex: 99999,
           boxShadow: `0 4px 24px ${C.shadow}`,
           padding: '10px 16px',
           display: 'flex', alignItems: 'center', gap: 4,
@@ -408,25 +401,24 @@ function TimeInput({ value, onChange, C, small = false }) {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
             <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}
               onClick={() => inc('h')}><ChevronUp size={16} strokeWidth={2.5}/></button>
-          {/* HH */}
-          <input type="text" inputMode="numeric" maxLength={2}
-            value={hRaw ?? h ?? '00'}
-            onChange={e => {
-              const raw = e.target.value.replace(/\D/g, '').slice(0, 2)
-              setHRaw(raw)
-              if (raw.length === 2) {
-                const v = Math.min(23, parseInt(raw) || 0)
+            <input type="text" inputMode="numeric" maxLength={2}
+              value={hRaw ?? h ?? '00'}
+              onChange={e => {
+                const raw = e.target.value.replace(/\D/g, '').slice(0, 2)
+                setHRaw(raw)
+                if (raw.length === 2) {
+                  const v = Math.min(23, parseInt(raw) || 0)
+                  onChange(`${String(v).padStart(2, '0')}:${m || '00'}`)
+                  setHRaw(null)
+                }
+              }}
+              onBlur={() => {
+                const v = Math.min(23, parseInt(hRaw ?? h) || 0)
                 onChange(`${String(v).padStart(2, '0')}:${m || '00'}`)
                 setHRaw(null)
-              }
-            }}
-            onBlur={() => {
-              const v = Math.min(23, parseInt(hRaw ?? h) || 0)
-              onChange(`${String(v).padStart(2, '0')}:${m || '00'}`)
-              setHRaw(null)
-            }}
-            style={{ fontSize: 22, fontWeight: 700, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
-          />
+              }}
+              style={{ fontSize: 22, fontWeight: 700, color: C.text, width: 48, textAlign: 'center', background: 'none', border: 'none', outline: 'none', fontFamily: 'inherit', padding: 0 }}
+            />
             <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}
               onClick={() => dec('h')}><ChevronDown size={16} strokeWidth={2.5}/></button>
           </div>
@@ -437,7 +429,6 @@ function TimeInput({ value, onChange, C, small = false }) {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
             <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}
               onClick={() => inc('m')}><ChevronUp size={16} strokeWidth={2.5}/></button>
-            {/* MM */}
             <input type="text" inputMode="numeric" maxLength={2}
               value={mRaw ?? m ?? '00'}
               onChange={e => {
@@ -459,7 +450,8 @@ function TimeInput({ value, onChange, C, small = false }) {
             <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '4px 8px', borderRadius: 5 }}
               onClick={() => dec('m')}><ChevronDown size={16} strokeWidth={2.5}/></button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
