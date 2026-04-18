@@ -864,7 +864,7 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
             minHeight: 130, // ← hauteur augmentée
           }}>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <div style={{
                 fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
                 letterSpacing: '0.12em', color: dark ? C.textDim : '#5a7a66',
@@ -892,7 +892,6 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
       </div>
       
       {/* ── Ferme / Station / Serre / Vanne / Date ─────────── */}
-      {/* ── Formulaire principal ─────────────────────────────── */}
       <div style={{
         background: C.card,
         border: `1.5px solid ${C.border}`,
