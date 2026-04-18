@@ -1532,10 +1532,10 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                 <tr>
                   <TH w={60} center>Voire</TH>
                   <TH w={145} center>Date</TH>
-                  <TH w={80} center>Ferme</TH>
+                  <TH w={100} center>Ferme</TH>
                   <TH w={75} center>Station</TH>
                   <TH w={75} center>Serre</TH>
-                  <TH w={75} center>Vanne</TH>
+                  <TH w={70} center>Vanne</TH>
                   <TH w={70} center>Bras</TH>
                   <TH w={70} center>Gout.</TH>
                   <TH w={75} center>Pds Mat.</TH>
