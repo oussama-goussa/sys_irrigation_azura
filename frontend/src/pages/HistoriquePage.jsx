@@ -1498,6 +1498,128 @@ export default function HistoriquePage({ token, auth, C, dark }) {
         </div>
 
         {/* Table */}
+        {isMobile || isTablet ? (
+          /* ── Vue cartes mobile/tablet ── */
+          <div>
+            {/* Filtres rapides mobile */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: 140 }}>
+                <CalendarPicker value={fDate} onChange={setFDate} C={C} small />
+              </div>
+              <div style={{ flex: 1, minWidth: 120 }}>
+                <FilterSelect value={fFerme} onChange={v => { setFFerme(v); setFStation('') }} options={fermeOptions} C={C} />
+              </div>
+              <div style={{ flex: 1, minWidth: 100 }}>
+                <FilterSelect value={fStation} onChange={setFStation} options={stationFilterOptions} C={C} />
+              </div>
+              <div style={{ flex: 1, minWidth: 100 }}>
+                <FilterSelect value={fSerre} onChange={setFSerre} options={serreFilterOptions} C={C} />
+              </div>
+              {hasFilters && (
+                <button onClick={resetFilters} style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '5px 10px', borderRadius: 6,
+                  background: `${C.red}10`, border: `1.5px solid ${C.red}35`,
+                  color: C.red, fontSize: 12, fontWeight: 630, fontFamily: 'inherit', cursor: 'pointer',
+                }}>
+                  <X size={11} strokeWidth={2.5} /> Reset
+                </button>
+              )}
+            </div>
+
+            {loading ? (
+              <div style={{ padding: '48px 0', textAlign: 'center', color: C.textDim, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <RefreshCw size={16} color={C.green} style={{ animation: 'az-pulse 1.2s ease-in-out infinite' }} /> Chargement…
+              </div>
+            ) : filtered.length === 0 ? (
+              <div style={{ padding: '48px 0', textAlign: 'center', color: C.textDim, fontSize: 12 }}>Aucune saisie trouvée</div>
+            ) : filtered.map(s => {
+              const expanded = expandedIds.has(s.id)
+              return (
+                <React.Fragment key={s.id}>
+                  <div style={{
+                    background: C.card, border: `1.5px solid ${C.border}`,
+                    borderRadius: 12, marginBottom: 10, overflow: 'hidden',
+                  }}>
+                    {/* Header carte */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: `1px solid ${C.border}` }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 700, fontSize: 13, color: C.text }}>{s.date}</span>
+                        <span style={{ background: dark ? 'rgba(52,217,111,0.08)' : 'rgba(24,120,63,0.07)', color: C.green, border: `1px solid ${C.green}25`, borderRadius: 5, padding: '2px 8px', fontSize: 11, fontWeight: 630 }}>{s.serre || '—'}</span>
+                        <span style={{ background: dark ? 'rgba(77,157,224,0.12)' : 'rgba(77,157,224,0.10)', color: '#4d9de0', border: '1px solid rgba(77,157,224,0.25)', borderRadius: 5, padding: '2px 8px', fontSize: 11, fontWeight: 630 }}>{s.station || '—'}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {s.pct_ressuyage != null && (
+                          <span style={{ background: `${C.green}15`, color: C.green, border: `1px solid ${C.green}35`, borderRadius: 20, padding: '2px 8px', fontSize: 11, fontWeight: 630 }}>
+                            {fmtNum(s.pct_ressuyage, 1)}%
+                          </span>
+                        )}
+                        <button onClick={() => toggleExpand(s.id)} style={{ background: expanded ? `${C.green}15` : 'transparent', border: `1.5px solid ${expanded ? C.green + '50' : C.border}`, borderRadius: 6, padding: '4px 6px', cursor: 'pointer', color: expanded ? C.green : C.textMuted, display: 'flex', alignItems: 'center', transition: 'all 0.15s' }}>
+                          {expanded ? <ChevronUp size={12} strokeWidth={2.5}/> : <ChevronDown size={12} strokeWidth={2.5}/>}
+                        </button>
+                      </div>
+                    </div>
+                    {/* Body carte */}
+                    <div style={{ padding: '10px 14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 16px' }}>
+                      {[
+                        { label: 'Ferme',    value: s.farm_name,       color: C.green },
+                        { label: 'Vanne',    value: s.vanne || '—' },
+                        { label: 'Bras',     value: s.nbr_bras ?? '—' },
+                        { label: 'Gout.',    value: s.nbr_goutteurs ?? '—' },
+                        { label: 'Pds Mat.', value: s.poids_matin ?? '—' },
+                        { label: 'H. Mat.',  value: s.heure_matin || '—' },
+                        { label: 'Pds Soir', value: s.poids_soir ?? '—' },
+                        { label: 'H. Soir',  value: s.heure_soir || '—' },
+                        { label: 'Bassin EC',value: s.bassin_ec ?? '—' },
+                      ].map(({ label, value, color }) => (
+                        <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: 11, color: C.textDim, fontWeight: 630 }}>{label}</span>
+                          <span style={{ fontSize: 12, fontWeight: 630, color: color || C.text }}>{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Actions carte */}
+                    <div style={{ display: 'flex', gap: 8, padding: '8px 14px', borderTop: `1px solid ${C.border}` }}>
+                      <button onClick={() => setEditingSaisie(s)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '7px', borderRadius: 7, border: `1.5px solid ${C.border}`, background: 'transparent', color: C.textMuted, cursor: 'pointer', fontSize: 12, fontWeight: 630, fontFamily: 'inherit' }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = C.green; e.currentTarget.style.color = C.green }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted }}>
+                        <SquarePen size={13} strokeWidth={2} /> Modifier
+                      </button>
+                      <button onClick={() => setConfirmDelete(s)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '7px', borderRadius: 7, border: `1.5px solid ${C.border}`, background: 'transparent', color: C.textMuted, cursor: 'pointer', fontSize: 12, fontWeight: 630, fontFamily: 'inherit' }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = C.red; e.currentTarget.style.color = C.red }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted }}>
+                        <Trash2 size={13} strokeWidth={2} /> Supprimer
+                      </button>
+                    </div>
+                    {expanded && (
+                      <div style={{ borderTop: `1px solid ${C.border}` }}>
+                        <ToursTable saisieId={s.id} token={token} C={C} dark={dark} />
+                      </div>
+                    )}
+                  </div>
+                </React.Fragment>
+              )
+            })}
+
+            {/* Footer pagination mobile */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <SSelect value={perPage} onChange={v => setPerPage(Number(v))} options={[{ value: 10, label: '10' }, { value: 20, label: '20' }, { value: 50, label: '50' }]} C={C} width={68} />
+                <span style={{ fontSize: 12, color: C.textDim }}>/ page · <span style={{ fontWeight: 700, color: C.text }}>{total}</span> saisies</span>
+              </div>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button onClick={() => load(page - 1)} disabled={page <= 1} style={{ padding: '6px 10px', borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent', color: C.textMuted, cursor: page <= 1 ? 'not-allowed' : 'pointer', opacity: page <= 1 ? 0.3 : 1, fontFamily: 'inherit', fontSize: 12, display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <ChevronLeft size={12} strokeWidth={2} /> Préc
+                </button>
+                <span style={{ padding: '6px 10px', fontSize: 12, color: C.text, fontWeight: 700 }}>{page}/{pages}</span>
+                <button onClick={() => load(page + 1)} disabled={page >= pages} style={{ padding: '6px 10px', borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent', color: C.textMuted, cursor: page >= pages ? 'not-allowed' : 'pointer', opacity: page >= pages ? 0.3 : 1, fontFamily: 'inherit', fontSize: 12, display: 'flex', alignItems: 'center', gap: 3 }}>
+                  Suiv <ChevronRight size={12} strokeWidth={2} />
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+        /* ── Vue table desktop ── */
         <div style={{ ...cardStyle, overflow: 'visible' }}>
           <div style={{ overflowX: 'auto', overflow: 'visible', WebkitOverflowScrolling: 'touch', borderRadius: 14 }}>
             <table style={{ width: '100%', minWidth: 1100, borderCollapse: 'collapse', fontFamily: 'inherit', overflow: 'visible' }}>
@@ -1527,16 +1649,13 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                     <CalendarPicker value={fDate} onChange={setFDate} C={C} small />
                   </th>
                   <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
-                    <FilterSelect value={fFerme} onChange={v => { setFFerme(v); setFStation('') }}
-                      options={fermeOptions} C={C} />
+                    <FilterSelect value={fFerme} onChange={v => { setFFerme(v); setFStation('') }} options={fermeOptions} C={C} />
                   </th>
                   <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
-                    <FilterSelect value={fStation} onChange={setFStation}
-                      options={stationFilterOptions} C={C} />
+                    <FilterSelect value={fStation} onChange={setFStation} options={stationFilterOptions} C={C} />
                   </th>
                   <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
-                    <FilterSelect value={fSerre} onChange={setFSerre}
-                      options={serreFilterOptions} C={C} />
+                    <FilterSelect value={fSerre} onChange={setFSerre} options={serreFilterOptions} C={C} />
                   </th>
                   <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
                     <FilterInput value={fVanne} onChange={setFVanne} placeholder="" C={C} />
@@ -1563,40 +1682,23 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                     <FilterInput value={fBassin} onChange={setFBassin} placeholder="" C={C} />
                   </th>
                   <th colSpan={2} style={{ padding: '5px 8px', borderBottom: 'none', textAlign: 'center' }}>
-                    <button onClick={resetFilters}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 5,
-                        padding: '5px 10px', borderRadius: 6, cursor: hasFilters ? 'pointer' : 'default',
-                        background: hasFilters ? `${C.red}10` : C.toggleBg,
-                        border: `1.5px solid ${hasFilters ? C.red + '35' : C.border}`,
-                        color: hasFilters ? C.red : C.textDim, height:'30px',
-                        fontSize: 12, fontWeight: 630, fontFamily: 'inherit',
-                        whiteSpace: 'nowrap', opacity: hasFilters ? 1 : 0.4,
-                        transition: 'all 0.15s', margin: '0 auto',
-                        pointerEvents: hasFilters ? 'auto' : 'none',
-                      }}
+                    <button onClick={resetFilters} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 6, cursor: hasFilters ? 'pointer' : 'default', background: hasFilters ? `${C.red}10` : C.toggleBg, border: `1.5px solid ${hasFilters ? C.red + '35' : C.border}`, color: hasFilters ? C.red : C.textDim, height: '30px', fontSize: 12, fontWeight: 630, fontFamily: 'inherit', whiteSpace: 'nowrap', opacity: hasFilters ? 1 : 0.4, transition: 'all 0.15s', margin: '0 auto', pointerEvents: hasFilters ? 'auto' : 'none' }}
                       onMouseEnter={e => { if (hasFilters) { e.currentTarget.style.background = `${C.red}20`; e.currentTarget.style.borderColor = `${C.red}60` }}}
-                      onMouseLeave={e => { e.currentTarget.style.background = `${C.red}10`; e.currentTarget.style.borderColor = `${C.red}35` }}
-                    >
+                      onMouseLeave={e => { e.currentTarget.style.background = `${C.red}10`; e.currentTarget.style.borderColor = `${C.red}35` }}>
                       <X size={11} strokeWidth={2.5} /> Réinitialiser
                     </button>
                   </th>
-
-            
                 </tr>
               </thead>
               <tbody style={{ overflow: 'visible' }}>
                 {loading ? (
                   <tr><td colSpan={15} style={{ padding: '48px 0', textAlign: 'center', color: C.textDim, fontSize: 12 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                    <RefreshCw size={16} color={C.green} style={{ animation: 'az-pulse 1.2s ease-in-out infinite' }} />
-                    Chargement…
+                      <RefreshCw size={16} color={C.green} style={{ animation: 'az-pulse 1.2s ease-in-out infinite' }} /> Chargement…
                     </div>
                   </td></tr>
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={15} style={{ padding: '48px 0', textAlign: 'center', color: C.textDim, fontSize: 12 }}>
-                    Aucune saisie trouvée
-                  </td></tr>
+                  <tr><td colSpan={15} style={{ padding: '48px 0', textAlign: 'center', color: C.textDim, fontSize: 12 }}>Aucune saisie trouvée</td></tr>
                 ) : filtered.map((s) => {
                   const expanded = expandedIds.has(s.id)
                   return (
@@ -1604,31 +1706,18 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                       <tr style={{ borderBottom: `1px solid ${C.border}`, transition: 'background 0.15s' }}
                         onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-
                         <td style={{ textAlign: 'center' }}>
-                        <button onClick={() => toggleExpand(s.id)} style={{
-                            background: expanded ? `${C.green}15` : 'transparent',
-                            border: `1.5px solid ${expanded ? C.green + '50' : C.border}`,
-                            borderRadius: 6, padding: '6px 6px', cursor: 'pointer',
-                            color: expanded ? C.green : C.textMuted,
-                            display: 'flex', alignItems: 'center',
-                            margin: '0 auto',                        // ← ajouter
-                            transition: 'all 0.15s',
-                        }}>
+                          <button onClick={() => toggleExpand(s.id)} style={{ background: expanded ? `${C.green}15` : 'transparent', border: `1.5px solid ${expanded ? C.green + '50' : C.border}`, borderRadius: 6, padding: '6px 6px', cursor: 'pointer', color: expanded ? C.green : C.textMuted, display: 'flex', alignItems: 'center', margin: '0 auto', transition: 'all 0.15s' }}>
                             {expanded ? <ChevronUp size={12} strokeWidth={2.5}/> : <ChevronDown size={12} strokeWidth={2.5}/>}
-                        </button>
+                          </button>
                         </td>
-                        <td style={{ padding: '12px 10px', fontWeight: 630, color: C.text, fontSize: 12, textAlign: 'center', whiteSpace: 'nowrap', letterSpacing: '0em' }}>{s.date}</td>
+                        <td style={{ padding: '12px 10px', fontWeight: 630, color: C.text, fontSize: 12, textAlign: 'center', whiteSpace: 'nowrap' }}>{s.date}</td>
                         <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.green, fontWeight: 630 }}>{s.farm_name}</td>
                         <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center' }}>
-                          <span style={{ background: dark ? 'rgba(77,157,224,0.12)' : 'rgba(77,157,224,0.10)', color: '#4d9de0', border: '1px solid rgba(77,157,224,0.25)', borderRadius: 5, padding: '2px 8px', fontSize: 12, fontWeight: 630 }}>
-                            {s.station || '—'}
-                          </span>
+                          <span style={{ background: dark ? 'rgba(77,157,224,0.12)' : 'rgba(77,157,224,0.10)', color: '#4d9de0', border: '1px solid rgba(77,157,224,0.25)', borderRadius: 5, padding: '2px 8px', fontSize: 12, fontWeight: 630 }}>{s.station || '—'}</span>
                         </td>
                         <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center' }}>
-                          <span style={{ background: dark ? 'rgba(52,217,111,0.08)' : 'rgba(24,120,63,0.07)', color: C.green, border: `1px solid ${C.green}25`, borderRadius: 5, padding: '2px 8px', fontSize: 12, fontWeight: 630 }}>
-                            {s.serre || '—'}
-                          </span>
+                          <span style={{ background: dark ? 'rgba(52,217,111,0.08)' : 'rgba(24,120,63,0.07)', color: C.green, border: `1px solid ${C.green}25`, borderRadius: 5, padding: '2px 8px', fontSize: 12, fontWeight: 630 }}>{s.serre || '—'}</span>
                         </td>
                         <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 630 }}>{s.vanne || '—'}</td>
                         <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 630 }}>{s.nbr_bras ?? '—'}</td>
@@ -1640,35 +1729,19 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                         <td style={{ padding: '12px 10px', fontSize: 12, textAlign: 'center', color: C.text, fontWeight: 630 }}>{s.bassin_ec ?? '—'}</td>
                         <td style={{ padding: '10px 8px', textAlign: 'center' }}>
                           {s.pct_ressuyage != null ? (
-                            <span style={{
-                              display: 'inline-block',
-                              background: `${C.green}15`, color: C.green,
-                              border: `1px solid ${C.green}35`, borderRadius: 20,
-                              padding: '3px 10px', fontSize: 12, fontWeight: 630,
-                              letterSpacing: '0em',
-                            }}>
+                            <span style={{ display: 'inline-block', background: `${C.green}15`, color: C.green, border: `1px solid ${C.green}35`, borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 630 }}>
                               {fmtNum(s.pct_ressuyage, 1)}%
                             </span>
                           ) : <span style={{ color: C.textDim, fontSize: 12 }}>—</span>}
                         </td>
                         <td style={{ padding: '10px 8px' }}>
                           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                            <button onClick={(e) => { e.stopPropagation(); setEditingSaisie(s) }}
-                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                width: 28, height: 28, borderRadius: 6,
-                                border: `1.5px solid ${C.border}`, background: 'transparent',
-                                color: C.textMuted, cursor: 'pointer',
-                                transition: 'all 0.13s', whiteSpace: 'nowrap' }}
+                            <button onClick={(e) => { e.stopPropagation(); setEditingSaisie(s) }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent', color: C.textMuted, cursor: 'pointer', transition: 'all 0.13s' }}
                               onMouseEnter={e => { e.currentTarget.style.borderColor = C.green; e.currentTarget.style.color = C.green; e.currentTarget.style.background = `${C.green}08` }}
                               onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted; e.currentTarget.style.background = 'transparent' }}>
                               <SquarePen size={12} strokeWidth={2} />
                             </button>
-                            <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(s) }}
-                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                width: 28, height: 28, borderRadius: 6,
-                                border: `1.5px solid ${C.border}`, background: 'transparent',
-                                color: C.textMuted, cursor: 'pointer',
-                                transition: 'all 0.13s' }}
+                            <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(s) }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent', color: C.textMuted, cursor: 'pointer', transition: 'all 0.13s' }}
                               onMouseEnter={e => { e.currentTarget.style.borderColor = C.red; e.currentTarget.style.color = C.red; e.currentTarget.style.background = `${C.red}08` }}
                               onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted; e.currentTarget.style.background = 'transparent' }}>
                               <Trash2 size={12} strokeWidth={2} />
@@ -1687,98 +1760,48 @@ export default function HistoriquePage({ token, auth, C, dark }) {
           </div>
 
           {/* Footer */}
-          <div style={{
-            padding: '10px 16px', borderTop: `1px solid ${C.border}`,
-            display: 'flex', alignItems: isMobile ? 'stretch' : 'center', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: isMobile ? 8 : 12,
-          }}>
-
-            {/* Gauche : perPage custom + total */}
+          <div style={{ padding: '10px 16px', borderTop: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <SSelect
-                value={perPage}
-                onChange={v => setPerPage(Number(v))}
-                options={[
-                  { value: 10, label: '10' },
-                  { value: 20, label: '20' },
-                  { value: 50, label: '50' },
-                ]}
-                C={C}
-                width={68}
-              />
+              <SSelect value={perPage} onChange={v => setPerPage(Number(v))} options={[{ value: 10, label: '10' }, { value: 20, label: '20' }, { value: 50, label: '50' }]} C={C} width={68} />
               <span style={{ fontSize: 12, color: C.textDim, fontWeight: 600 }}>/ page</span>
               <span style={{ width: 1, height: 14, background: C.border, display: 'inline-block', margin: '0 4px' }} />
               <span style={{ fontSize: 12, color: C.textDim }}>
-                <span style={{ fontWeight: 700, color: C.text }}>{total}</span>{' '}
-                saisie{total > 1 ? 's' : ''}
-                {hasFilters && (
-                  <span style={{ color: C.amber, fontWeight: 630 }}> · filtré</span>
-                )}
+                <span style={{ fontWeight: 700, color: C.text }}>{total}</span>{' '}saisie{total > 1 ? 's' : ''}
+                {hasFilters && <span style={{ color: C.amber, fontWeight: 630 }}> · filtré</span>}
               </span>
             </div>
-
-            {/* Droite : pagination */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: isMobile ? 'center' : 'flex-end' }}>
-              {/* ⟨⟨ First */}
-              <button onClick={() => load(pages)} disabled={page >= pages}
-                style={{ display: 'flex', alignItems: 'center', padding: '5px 7px',
-                  borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent',
-                  color: C.textMuted, cursor: page <= 1 ? 'not-allowed' : 'pointer',
-                  opacity: page <= 1 ? 0.3 : 1, fontFamily: 'inherit' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <button onClick={() => load(1)} disabled={page <= 1} style={{ display: 'flex', alignItems: 'center', padding: '5px 7px', borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent', color: C.textMuted, cursor: page <= 1 ? 'not-allowed' : 'pointer', opacity: page <= 1 ? 0.3 : 1, fontFamily: 'inherit' }}>
                 <ChevronLeft size={10} strokeWidth={2.5}/><ChevronLeft size={10} strokeWidth={2.5}/>
               </button>
-              {/* ⟨ Préc */}
-              <button onClick={() => load(page - 1)} disabled={page <= 1}
-                style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '5px 10px',
-                  borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent',
-                  color: C.textMuted, fontSize: 12, fontWeight: 630,
-                  cursor: page <= 1 ? 'not-allowed' : 'pointer',
-                  opacity: page <= 1 ? 0.3 : 1, fontFamily: 'inherit' }}>
+              <button onClick={() => load(page - 1)} disabled={page <= 1} style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '5px 10px', borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent', color: C.textMuted, fontSize: 12, fontWeight: 630, cursor: page <= 1 ? 'not-allowed' : 'pointer', opacity: page <= 1 ? 0.3 : 1, fontFamily: 'inherit' }}>
                 <ChevronLeft size={12} strokeWidth={2} /> Préc
               </button>
-
-              {/* Numéros */}
               <div style={{ display: 'flex', gap: 4 }}>
                 {Array.from({ length: Math.min(pages, 5) }, (_, i) => {
                   let p
-                  if (pages <= 5)        p = i + 1
-                  else if (page <= 3)    p = i + 1
+                  if (pages <= 5) p = i + 1
+                  else if (page <= 3) p = i + 1
                   else if (page >= pages - 2) p = pages - 4 + i
-                  else                   p = page - 2 + i
+                  else p = page - 2 + i
                   return (
-                    <button key={p} onClick={() => load(p)}
-                      style={{ width: 32, height: 32, borderRadius: 7,
-                        border: `1.5px solid ${page === p ? C.green : C.border}`,
-                        background: page === p ? C.green : 'transparent',
-                        color: page === p ? '#fff' : C.textMuted,
-                        fontSize: 12, fontWeight: page === p ? 800 : 630,
-                        fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s' }}>
+                    <button key={p} onClick={() => load(p)} style={{ width: 32, height: 32, borderRadius: 7, border: `1.5px solid ${page === p ? C.green : C.border}`, background: page === p ? C.green : 'transparent', color: page === p ? '#fff' : C.textMuted, fontSize: 12, fontWeight: page === p ? 800 : 630, fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s' }}>
                       {p}
                     </button>
                   )
                 })}
               </div>
-
-              {/* Suiv ⟩ */}
-              <button onClick={() => load(page + 1)} disabled={page >= pages}
-                style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '5px 10px',
-                  borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent',
-                  color: C.textMuted, fontSize: 12, fontWeight: 630,
-                  cursor: page >= pages ? 'not-allowed' : 'pointer',
-                  opacity: page >= pages ? 0.3 : 1, fontFamily: 'inherit' }}>
+              <button onClick={() => load(page + 1)} disabled={page >= pages} style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '5px 10px', borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent', color: C.textMuted, fontSize: 12, fontWeight: 630, cursor: page >= pages ? 'not-allowed' : 'pointer', opacity: page >= pages ? 0.3 : 1, fontFamily: 'inherit' }}>
                 Suiv <ChevronRight size={12} strokeWidth={2} />
               </button>
-              {/* Last ⟩⟩ */}
-              <button onClick={() => load(pages)} disabled={page >= pages}
-                style={{ display: 'flex', alignItems: 'center', padding: '5px 7px',
-                  borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent',
-                  color: C.textMuted, cursor: page >= pages ? 'not-allowed' : 'pointer',
-                  opacity: page >= pages ? 0.3 : 1, fontFamily: 'inherit' }}>
+              <button onClick={() => load(pages)} disabled={page >= pages} style={{ display: 'flex', alignItems: 'center', padding: '5px 7px', borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent', color: C.textMuted, cursor: page >= pages ? 'not-allowed' : 'pointer', opacity: page >= pages ? 0.3 : 1, fontFamily: 'inherit' }}>
                 <ChevronRight size={10} strokeWidth={2.5}/><ChevronRight size={10} strokeWidth={2.5}/>
               </button>
             </div>
-
           </div>
         </div>
+        )}
+
       </div>
     </>
   )
