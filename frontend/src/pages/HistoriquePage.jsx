@@ -243,42 +243,22 @@ function SSelect({ value, onChange, options, placeholder, C, width = '100%', dis
   )
 }
 
-// ── FilterSelect — portal + DOM direct (zéro lag au scroll) ────
+// ── FilterSelect ───
 function FilterSelect({ value, onChange, options, C }) {
   const [open, setOpen] = useState(false)
-  const triggerRef = useRef(null)
-  const dropRef = useRef(null)
-  const rafRef = useRef(null)
-
-  // Écrit la position directement sur le nœud DOM — pas de setState, pas de re-render → zéro lag
-  const syncPos = () => {
-    if (!triggerRef.current || !dropRef.current) return
-    const r = triggerRef.current.getBoundingClientRect()
-    dropRef.current.style.top    = `${r.bottom + 2}px`
-    dropRef.current.style.left   = `${r.left}px`
-    dropRef.current.style.width  = `${Math.max(r.width, 130)}px`
-  }
+  const ref = useRef(null)
 
   useEffect(() => {
-    if (!open) return
-    const loop = () => { syncPos(); rafRef.current = requestAnimationFrame(loop) }
-    rafRef.current = requestAnimationFrame(loop)
-    const close = (e) => {
-      if (triggerRef.current && !triggerRef.current.contains(e.target) &&
-          dropRef.current   && !dropRef.current.contains(e.target)) setOpen(false)
-    }
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
     document.addEventListener('mousedown', close)
-    return () => {
-      cancelAnimationFrame(rafRef.current)
-      document.removeEventListener('mousedown', close)
-    }
-  }, [open])
+    return () => document.removeEventListener('mousedown', close)
+  }, [])
 
   const selected = options.find(o => (o.value ?? o) === value)
   const label = selected ? (selected.label ?? selected) : null
 
   return (
-    <div ref={triggerRef} style={{ position: 'relative' }}>
+    <div ref={ref} style={{ position: 'relative' }}>
       <div onClick={() => setOpen(v => !v)} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         height: 28, padding: '0 7px',
@@ -294,11 +274,11 @@ function FilterSelect({ value, onChange, options, C }) {
           {open ? <ChevronUp size={10} strokeWidth={2}/> : <ChevronDown size={10} strokeWidth={2}/>}
         </span>
       </div>
-      {open && createPortal(
-        <div ref={dropRef} style={{
-          position: 'fixed', top: 0, left: 0, width: 130,
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 2px)', left: 0, minWidth: '100%',
           background: C.card, border: `1.5px solid ${C.border}`,
-          borderRadius: 8, zIndex: 99999, boxShadow: '0 6px 24px rgba(0,0,0,0.18)',
+          borderRadius: 8, zIndex: 9999, boxShadow: '0 6px 24px rgba(0,0,0,0.18)',
           maxHeight: 200, overflowY: 'auto',
         }}>
           <div onClick={() => { onChange(''); setOpen(false) }}
@@ -326,8 +306,7 @@ function FilterSelect({ value, onChange, options, C }) {
               </div>
             )
           })}
-        </div>,
-        document.body
+        </div>
       )}
     </div>
   )
@@ -1520,7 +1499,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
 
         {/* Table */}
         <div style={{ ...cardStyle, overflow: 'visible' }}>
-          <div style={{ overflowX: 'auto', overflowY: 'visible', WebkitOverflowScrolling: 'touch', borderRadius: 14 }}>
+          <div style={{ overflowX: 'auto', overflow: 'visible', WebkitOverflowScrolling: 'touch', borderRadius: 14 }}>
             <table style={{ width: '100%', minWidth: 1100, borderCollapse: 'collapse', fontFamily: 'inherit', overflow: 'visible' }}>
               <thead>
                 {/* Headers */}
@@ -1547,15 +1526,15 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                   <th style={{ padding: '5px 6px', borderBottom: 'none', overflow: 'visible', position: 'relative' }}>
                     <CalendarPicker value={fDate} onChange={setFDate} C={C} small />
                   </th>
-                  <th style={{ padding: '5px 6px', borderBottom: 'none', overflow: 'visible', position: 'relative' }}>
+                  <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
                     <FilterSelect value={fFerme} onChange={v => { setFFerme(v); setFStation('') }}
                       options={fermeOptions} C={C} />
                   </th>
-                  <th style={{ padding: '5px 6px', borderBottom: 'none', overflow: 'visible', position: 'relative' }}>
+                  <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
                     <FilterSelect value={fStation} onChange={setFStation}
                       options={stationFilterOptions} C={C} />
                   </th>
-                  <th style={{ padding: '5px 6px', borderBottom: 'none', overflow: 'visible', position: 'relative' }}>
+                  <th style={{ padding: '5px 6px', borderBottom: 'none' }}>
                     <FilterSelect value={fSerre} onChange={setFSerre}
                       options={serreFilterOptions} C={C} />
                   </th>
