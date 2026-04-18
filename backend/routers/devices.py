@@ -532,7 +532,7 @@ def export_history_excel(
     ws.title = "Suivi Irrigation"
 
     # Column widths — exact match to template
-    for col, w in zip("ABCDEFGHI", [20.0, 10.33, 9.66, 9.0, 10.66, 16.0, 13.0, 10.77, 12.88]):
+    for col, w in zip("ABCDEFGHI", [20.0, 12, 9.66, 9.0, 10.66, 16.0, 13.0, 10.77, 12.88]):
         ws.column_dimensions[col].width = w
 
     header_fill  = PatternFill("solid", fgColor="FF404040")

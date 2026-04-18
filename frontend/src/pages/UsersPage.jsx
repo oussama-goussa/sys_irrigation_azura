@@ -523,7 +523,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
             {!isTablet && 'Actualiser'}
           </button>
           <Btn onClick={handleExport} variant="ghost" C={C} icon={Download} style={{ border: `1px solid ${dark ? '#1c2e22' : '#c0d8c8'}`, background: C.toggleBg }} disabled={exporting}>
-            {isTablet ? '' : (exporting ? 'Export…' : 'Export CSV')}
+            {isTablet ? '' : (exporting ? 'Export…' : 'Export Excel')}
           </Btn>
           <Btn onClick={() => { setShowLogs(true); setLogsUser(null) }} style={{ border: `1px solid ${dark ? '#1c2e22' : '#c0d8c8'}`, background: C.toggleBg }} variant="ghost" C={C} icon={History}>
             {isTablet ? '' : 'Historique'}

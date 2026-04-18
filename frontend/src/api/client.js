@@ -135,7 +135,7 @@ export async function exportCSV(token) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = 'azura_users.csv'
+  a.download = 'liste_utilisateurs.xlsx'
   a.click()
   URL.revokeObjectURL(url)
 }

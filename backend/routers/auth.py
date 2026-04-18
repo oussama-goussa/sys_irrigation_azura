@@ -24,7 +24,7 @@ from core.security import (
 from services.user_service import (
     get_user, get_all_users, create_user, update_user,
     update_user_role, toggle_user_actif, update_last_login,
-    get_audit_logs, export_users_csv, log_action
+    get_audit_logs, export_users_excel, log_action
 )
 
 router = APIRouter(prefix="/api/auth", tags=["Authentification"])
@@ -215,10 +215,11 @@ def export_csv(
     current_user: dict = Depends(require_admin),
     db          : Session = Depends(get_db)
 ):
-    csv_data = export_users_csv(db)
+    from io import BytesIO
+    data = export_users_excel(db)
     log_action(db, current_user["username"], "EXPORT_CSV", ip=req.client.host)
     return StreamingResponse(
-        io.StringIO(csv_data),
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=azura_users.csv"}
+        BytesIO(data),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=liste_utilisateurs.xlsx"}
     )

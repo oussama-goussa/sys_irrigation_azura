@@ -5,9 +5,13 @@
 import uuid
 import csv
 import io
+import openpyxl
+
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from loguru import logger
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from io import BytesIO
 
 from models.user_model import User, AuditLog
 from core.security import hash_password, Role
@@ -114,18 +118,57 @@ def get_audit_logs(db: Session, username: str = None, limit: int = 100) -> list:
 
 
 # ── Export CSV ────────────────────────────────────────────────
-def export_users_csv(db: Session) -> str:
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["username", "nom", "email", "role", "actif", "last_login", "created_at"])
-    for u in db.query(User).all():
-        writer.writerow([
-            u.username, u.nom, u.email or "", u.role,
+def export_users_excel(db: Session) -> bytes:
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "azura_users"
+
+    # Column widths — exact match to template
+    for col, w in zip("ABCDEFG", [20.1, 30.0, 32.0, 16.9, 10.3, 33.8, 34.9]):
+        ws.column_dimensions[col].width = w
+
+    _s  = Side(border_style="thin", color="FF000000")
+    _b  = Border(top=_s, bottom=_s, left=_s, right=_s)
+    center = Alignment(horizontal="center", vertical="center")
+
+    header_fill = PatternFill("solid", fgColor="FF275317")
+    header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFFFF")
+    data_font   = Font(name="Calibri", size=11, bold=True, color="FF000000")
+
+    # Header row
+    ws.row_dimensions[1].height = 18.0
+    for col_idx, label in enumerate(
+        ["Nom d'utilisateur", "Nom complet", "Adresse e-mail", "Rôle", "Actif", "Dernière connexion", "Date de création"],
+        start=1
+    ):
+        c = ws.cell(row=1, column=col_idx, value=label)
+        c.font = header_font
+        c.fill = header_fill
+        c.alignment = center
+        c.border = _b
+
+    # Data rows
+    for row_idx, u in enumerate(db.query(User).all(), start=2):
+        ws.row_dimensions[row_idx].height = 15.0
+        for col_idx, val in enumerate([
+            u.username,
+            u.nom,
+            u.email or "",
+            u.role,
             "oui" if u.actif else "non",
             str(u.last_login) if u.last_login else "",
             str(u.created_at),
-        ])
-    return output.getvalue()
+        ], start=1):
+            c = ws.cell(row=row_idx, column=col_idx, value=val)
+            c.font = data_font
+            c.alignment = center
+            c.border = _b
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output.read()
 
 
 # ── Init default users ────────────────────────────────────────
