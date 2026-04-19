@@ -15,7 +15,7 @@ import {
   ArrowLeft, RefreshCw, Activity, Droplets, Thermometer,
   Wind, Sun, Gauge, TrendingUp, TrendingDown, Minus,
   ChevronLeft, ChevronRight, Download, Clock, Calendar,
-  BarChart2, WifiOff, MoveRight,
+  BarChart2, WifiOff, MoveRight, AlertTriangle, Pause,
 } from 'lucide-react'
 
 import { Spinner } from '../components/ui.jsx'
@@ -121,7 +121,7 @@ function StatCard({ label, value, unit, status, thresh, icon: Icon, C }) {
   )
 }
 
-function GaugeCard({ label, value, unit, min, max, color, C }) {
+function GaugeCard({ label, value, unit, min, max, color, C, subLabel, subLabelColor }) {
   const numVal = parseFloat(value)
   const mounted = useRef(false)
   useEffect(() => { mounted.current = true }, [])
@@ -211,6 +211,18 @@ function GaugeCard({ label, value, unit, min, max, color, C }) {
         >
           {isValid ? `${value}${unit}` : `—`}
         </text>
+
+        {/* SubLabel context */}
+        {subLabel && (
+          <text x={cx} y={cy + 43}
+            textAnchor="middle"
+            fill={subLabelColor || C.textDim}
+            fontSize="7.5" fontFamily="inherit"
+            opacity="0.9"
+          >
+            {subLabel}
+          </text>
+        )}
 
         {/* Min — endpoint bas-gauche (135°) */}
         <text x={cx + (r + 12) * Math.cos(toRad(135))} 
@@ -877,6 +889,28 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
         </button>
       </div>
 
+      {/* ── Bannière alarme ──────────────────────────────────── */}
+      {!loadingL && ((sensor?.alarm ?? 0) > 0 || sensor?.siren) && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '10px 16px', marginBottom: 16,
+          background: (sensor?.alarm ?? 0) > 0 ? `${C.red}10` : `${C.amber}10`,
+          border: `1.5px solid ${(sensor?.alarm ?? 0) > 0 ? C.red + '40' : C.amber + '40'}`,
+          borderRadius: 12,
+          color: (sensor?.alarm ?? 0) > 0 ? C.red : C.amber,
+          fontSize: 12, fontWeight: 700,
+        }}>
+          <AlertTriangle size={14} strokeWidth={2.5} />
+          {(sensor?.alarm ?? 0) > 0
+            ? `Code alarme ${sensor.alarm} · Sirène ${sensor?.siren ? 'active' : 'inactive'}`
+            : `Sirène active`
+          }
+          <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 400, color: C.textMuted }}>
+            Vérifier le contrôleur Netafim
+          </span>
+        </div>
+      )}
+
       {/* ── StatCards temps réel ─────────────────────────────── */}
       <SectionTitle title="Données temps réel" C={C} />
       <div style={{ color: C.textDim, fontSize: 11, marginBottom: 14, marginTop: -10 }}>
@@ -894,14 +928,21 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             gap: isMobile ? 10 : 14,
             marginBottom: 14,
           }}>
-            <GaugeCard label="EC"          value={fmt(sensor.ec_actual, 2)}   unit="mS/cm" min={0}   max={8}   color="#00c9a7" C={C} />
-            <GaugeCard label="pH"          value={fmt(sensor.ph_actual, 2)}   unit=""      min={4}   max={8}   color="#4d9de0" C={C} />
-            <GaugeCard label="Température" value={fmt(sensor.avg_temp, 1)}    unit="°C"    min={10}  max={40}  color="#f52e23" C={C} />
-            <GaugeCard label="Humidité"    value={fmt(sensor.humidity, 1)}    unit="%"     min={0}   max={100} color="#b197fc" C={C} />
-            <GaugeCard label="Radiation"   value={fmt(sensor.radiation, 1)}   unit="W/m²"  min={0}   max={2000} color="#f5e642" C={C} />
-            <GaugeCard label="Débit"       value={fmt(sensor.flow, 0)}        unit="L/h"   min={0}   max={1000}  color="#34d96f" C={C} />
+            <GaugeCard label="EC"          value={fmt(sensor.ec_actual, 2)}    unit="mS/cm" min={0}  max={8}    color="#00c9a7" C={C}
+              subLabel={sensor.flow === 0 ? 'eau résiduelle' : 'en irrigation'}
+              subLabelColor={sensor.flow === 0 ? C.amber : C.green} />
+            <GaugeCard label="pH"          value={fmt(sensor.ph_actual, 2)}    unit=""      min={4}  max={8}    color="#4d9de0" C={C}
+              subLabel={sensor.flow === 0 ? 'eau résiduelle' : 'en irrigation'}
+              subLabelColor={sensor.flow === 0 ? C.amber : C.green} />
+            <GaugeCard label="Température" value={fmt(sensor.avg_temp, 1)}     unit="°C"    min={10} max={40}   color="#f52e23" C={C} />
+            <GaugeCard label="Humidité"    value={fmt(sensor.humidity, 1)}     unit="%"     min={0}  max={100}  color="#b197fc" C={C} />
+            <GaugeCard label="Radiation"   value={fmt(sensor.radiation, 1)}    unit="W/m²"  min={0}  max={2000} color="#f5e642" C={C} />
+            <GaugeCard label="Débit"       value={fmt(sensor.flow, 0)}         unit="L/h"   min={0}  max={1000} color="#34d96f" C={C} />
             <GaugeCard label="Cumul Rad."  value={fmt(sensor.radiation_sum,1)} unit="J/cm²" min={0}  max={3000} color="#f5a623" C={C} />
-            <GaugeCard label="Vent"        value={fmt(sensor.wind_speed, 1)}  unit="m/s"   min={0}   max={15}   color="#4d9de0" C={C} />
+            <GaugeCard label="Alarme"      value={fmt(sensor.alarm ?? 0, 0)}   unit=""      min={0}  max={10}
+              color={(sensor.alarm ?? 0) > 0 ? C.red : C.green} C={C}
+              subLabel={(sensor.alarm ?? 0) > 0 ? `sirène ${sensor.siren ? 'active' : 'off'}` : 'normal'}
+              subLabelColor={(sensor.alarm ?? 0) > 0 ? C.red : C.green} />
           </div>
         </>
       )}
@@ -910,77 +951,140 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
       <SectionTitle title="État irrigation en temps réel" C={C} />
       {!loadingL && live?.cycle && Object.keys(live.cycle).length > 0 ? (() => {
         const cycle = live.cycle
-        const dosingTypes = [
-          cycle.dosing_pump_type1, cycle.dosing_pump_type2,
-          cycle.dosing_pump_type3, cycle.dosing_pump_type4,
-          cycle.dosing_pump_type5, cycle.dosing_pump_type6,
-          cycle.dosing_pump_type7, cycle.dosing_pump_type8,
-        ]
-        const fertLabels = ['', '', '', '', '', '', '', '']
+        const isIrrigating = sensor?.ec_ph_status === 'Irrigation'
+        const isWait = sensor?.ec_ph_status === 'Wait'
+
+        // ── Helper : filtre les valeurs vides/zéro ──
+        const filterRow = (val) => {
+          if (val === null || val === undefined) return false
+          const s = String(val)
+          return s !== '0' && s !== '00:00:00' && s !== '00:00' && s !== ''
+        }
+
+        // ── ÉTAT REPOS (Pause / Wait) ─────────────────────────
+        if (!isIrrigating) {
+          return (
+            <div style={{
+              background: C.card, border: `1.5px solid ${C.border}`,
+              borderRadius: 14, padding: isMobile ? '16px 18px' : '22px 28px',
+              display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap',
+              marginBottom: 16,
+            }}>
+              {/* Icône statut */}
+              <div style={{
+                width: 52, height: 52, borderRadius: 13, flexShrink: 0,
+                background: isWait ? `${C.amber}12` : `${C.textDim}08`,
+                border: `1.5px solid ${isWait ? C.amber + '45' : C.border}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Pause size={22} color={isWait ? C.amber : C.textDim} strokeWidth={2} />
+              </div>
+
+              {/* Texte statut */}
+              <div style={{ flex: 1, minWidth: 140 }}>
+                <div style={{
+                  fontSize: 15, fontWeight: 800,
+                  color: isWait ? C.amber : C.textMuted,
+                  marginBottom: 5,
+                }}>
+                  {isWait ? 'Attente RadS' : 'Système en pause'}
+                </div>
+                <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.6 }}>
+                  {cycle.next_seq_time && cycle.next_seq_time !== '00:00'
+                    ? `Prochain démarrage : ${cycle.next_seq_time}`
+                    : 'Aucun programme planifié'}
+                  {cycle.next_sequence > 0 ? ` · Séquence ${cycle.next_sequence}` : ''}
+                </div>
+              </div>
+
+              {/* Métriques utiles même en repos */}
+              <div style={{
+                display: 'flex', gap: isMobile ? 16 : 32,
+                flexWrap: 'wrap', marginLeft: 'auto',
+              }}>
+                {[
+                  { label: 'Cycle actif',  value: cycle.cycle_act  > 0 ? cycle.cycle_act  : '—' },
+                  { label: 'Séquence',     value: cycle.sequence   > 0 ? cycle.sequence   : '—' },
+                  { label: 'Cumul Rad.',   value: sensor?.radiation_sum ? `${fmt(sensor.radiation_sum, 0)} J` : '—' },
+                  ...(cycle.pause ? [{ label: 'Pause', value: 'Active', col: C.amber }] : []),
+                ].map(m => (
+                  <div key={m.label} style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 10, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5, whiteSpace: 'nowrap' }}>
+                      {m.label}
+                    </div>
+                    <div style={{ fontSize: 17, fontWeight: 800, color: m.col || C.text }}>
+                      {m.value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        }
+
+        // ── ÉTAT ACTIF (Irrigation) ───────────────────────────
+        const activePumps  = [1,2,3,4,5,6].filter(i => parseInt(cycle[`pump${i}`]) > 0)
+        const activeValves = [1,2,3,4].filter(i => parseInt(cycle[`valve${i}`]) > 0)
+        const fertHasData  = live?.fertigation && Object.entries(live.fertigation)
+          .filter(([k]) => k.startsWith('fert_act'))
+          .some(([, v]) => v !== null && v !== undefined)
+
         return (
           <>
-            {/* Pompes + Vannes */}
+            {/* Pompes + Vannes actives */}
             <div style={{ marginBottom: 16 }}>
-              <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: isMobile ? 16 : 24 }}>
-                
-                {/* Pompes */}
-                <div style={{ flex: 1 }}>
-                  <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Pompes</div>
-                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                    {[1,2,3,4,5,6].map(i => (
-                      <PumpIndicator key={i} label={`Pompe ${i}`} value={cycle[`pump${i}`]} C={C} />
-                    ))}
+              <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 16 : 24 }}>
+                {activePumps.length > 0 && (
+                  <div style={{ flex: 1 }}>
+                    <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Pompes actives</div>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      {activePumps.map(i => <PumpIndicator key={i} label={`Pompe ${i}`} value={cycle[`pump${i}`]} C={C} />)}
+                    </div>
                   </div>
-                </div>
-
-                {/* Vannes zones */}
-                <div style={{ flex: 1 }}>
-                  <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Vannes</div>
-                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                    {[1,2,3,4].map(i => {
-                      const val = parseInt(cycle[`valve${i}`])
-                      const label = !isNaN(val) && val !== 0 ? `Vanne ${val}` : `Vanne ${i}`
-                      return (
-                        <ValveIndicator key={i} label={label} value={cycle[`valve${i}`]} C={C} />
-                      )
-                    })}
+                )}
+                {activeValves.length > 0 && (
+                  <div style={{ flex: 1 }}>
+                    <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Vannes actives</div>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      {activeValves.map(i => (
+                        <ValveIndicator key={i} label={`Vanne ${cycle[`valve${i}`]}`} value={cycle[`valve${i}`]} C={C} />
+                      ))}
+                    </div>
                   </div>
-                </div>
-
+                )}
               </div>
             </div>
 
-            {/* Fertigation */}
-            {live?.fertigation && (
+            {/* Fertigation — seulement si données réelles */}
+            {fertHasData && (
               <div style={{ marginBottom: 16 }}>
                 <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
                   Fertigation — Canaux actifs
                 </div>
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  {[1,2,3,4,5,6,7,8].map(i => (
-                    <FertCard
-                      key={i}
-                      num={i}
-                      label={fertLabels[i-1]}
-                      open={live.fertigation[`fert_open${i}`]}
-                      min={live.fertigation[`fert_min${i}`]}
-                      act={live.fertigation[`fert_act${i}`]}
-                      max={live.fertigation[`fert_max${i}`]}
-                      flow={live.fertigation[`fert_flow${i}`]}
-                      C={C}
-                    />
-                  ))}
+                  {[1,2,3,4,5,6,7,8]
+                    .filter(i => live.fertigation[`fert_act${i}`] !== null && live.fertigation[`fert_act${i}`] !== undefined)
+                    .map(i => (
+                      <FertCard key={i} num={i} label=""
+                        open={live.fertigation[`fert_open${i}`]}
+                        min={live.fertigation[`fert_min${i}`]}
+                        act={live.fertigation[`fert_act${i}`]}
+                        max={live.fertigation[`fert_max${i}`]}
+                        flow={live.fertigation[`fert_flow${i}`]}
+                        C={C}
+                      />
+                    ))
+                  }
                 </div>
               </div>
             )}
 
-            {/* Programme */}
+            {/* Programme — uniquement valeurs significatives */}
             <div style={{
               background: C.card, border: `1.5px solid ${C.border}`,
               borderRadius: 14, padding: '20px 24px', marginBottom: 16,
             }}>
-
-              {/* Status bar */}
+              {/* Status bar — uniquement modes actifs */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
                 <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Programme en cours
@@ -993,66 +1097,45 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                     { label: 'Misting',     val: cycle.misting_active },
                     { label: 'Cooling',     val: cycle.cooling_active },
                     { label: 'Flushing',    val: cycle.flushing_active },
-                  ].map(({ label, val }) => {
-                    const on = val === 'On' || val === 'on' || val === true || val === '1' || (typeof val === 'string' && val.toLowerCase() === 'on')
-                    return (
-                      <div key={label} style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        padding: '6px 14px', borderRadius: 20,
-                        background: on ? (C.green + '15') : C.toggleBg,
-                        border: `1.5px solid ${on ? C.green + '40' : C.border}`,
-                        fontSize: 11, fontWeight: 630,
-                        color: on ? C.green : C.textDim,
-                      }}>
-                        <div style={{ position: 'relative', width: 8, height: 8, flexShrink: 0 }}>
-                          {on && (
-                            <div style={{
-                              position: 'absolute', top: '50%', left: '50%',
-                              transform: 'translate(-50%, -50%)',
-                              width: 8, height: 8, borderRadius: '50%',
-                              background: C.green, opacity: 0.4,
-                              animation: 'ripple 1.5s ease-out infinite',
-                            }} />
-                          )}
-                          <div style={{
-                            position: 'absolute', top: '50%', left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            width: 6, height: 6, borderRadius: '50%',
-                            background: on ? C.green : C.textDim,
-                            boxShadow: on ? `0 0 5px ${C.green}` : 'none',
-                          }} />
-                        </div>
-                        {label}
+                  ].filter(({ val }) => val === 'On' || val === 'on' || val === true || val === '1')
+                    .map(({ label }) => (
+                    <div key={label} style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '6px 14px', borderRadius: 20,
+                      background: C.green + '15', border: `1.5px solid ${C.green}40`,
+                      fontSize: 11, fontWeight: 630, color: C.green,
+                    }}>
+                      <div style={{ position: 'relative', width: 8, height: 8, flexShrink: 0 }}>
+                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 8, height: 8, borderRadius: '50%', background: C.green, opacity: 0.4, animation: 'ripple 1.5s ease-out infinite' }} />
+                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 6, height: 6, borderRadius: '50%', background: C.green, boxShadow: `0 0 5px ${C.green}` }} />
                       </div>
-                    )
-                  })}
+                      {label}
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Métriques en 3 groupes */}
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr 1fr' : '1fr 1fr 1fr', gap: 16 }}>
 
-                {/* Groupe 1 — Cycle */}
+                {/* Groupe Cycle */}
                 <div style={{ background: C.surface, borderRadius: 10, padding: '14px 16px', border: `1px solid ${C.border}` }}>
                   <div style={{ color: C.textDim, fontSize: 10, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Cycle</div>
                   {[
-                    ['Prog',      cycle.cycle_prog],
-                    ['Actuel',    cycle.cycle_act],
-                    ['Séq. act',  cycle.sequence],
-                    ['Proch. séq',cycle.next_sequence],
-                    ['Proch. à',  cycle.next_seq_time],
-                    ['Restant',   cycle.remaining_time],
-                  ].map(([label, val]) => (
+                    ['Prog',       cycle.cycle_prog],
+                    ['Actuel',     cycle.cycle_act],
+                    ['Séq. act',   cycle.sequence],
+                    ['Proch. séq', cycle.next_sequence],
+                    ['Proch. à',   cycle.next_seq_time],
+                    ['Restant',    cycle.remaining_time],
+                  ].filter(([, val]) => filterRow(val)).map(([label, val]) => (
                     <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: `1px solid ${C.border}`, fontSize: 12 }}>
                       <span style={{ color: C.textMuted }}>{label}</span>
-                      <span style={{ color: C.text, fontWeight: 630, fontVariantNumeric: 'tabular-nums' }}>
-                        {val !== null && val !== undefined ? String(val) : '—'}
-                      </span>
+                      <span style={{ color: C.text, fontWeight: 630 }}>{String(val)}</span>
                     </div>
                   ))}
                 </div>
 
-                {/* Groupe 2 — Eau */}
+                {/* Groupe Eau */}
                 <div style={{ background: C.surface, borderRadius: 10, padding: '14px 16px', border: `1px solid ${C.border}` }}>
                   <div style={{ color: C.textDim, fontSize: 10, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Eau</div>
                   {[
@@ -1062,43 +1145,37 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                     ['T. prog',   cycle.water_prg_time],
                     ['T. actuel', cycle.water_act_time],
                     ['Restante',  cycle.water_left],
-                  ].map(([label, val]) => (
+                  ].filter(([, val]) => filterRow(val)).map(([label, val]) => (
                     <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: `1px solid ${C.border}`, fontSize: 12 }}>
                       <span style={{ color: C.textMuted }}>{label}</span>
-                      <span style={{ color: C.text, fontWeight: 630, fontVariantNumeric: 'tabular-nums' }}>
-                        {val !== null && val !== undefined ? String(val) : '—'}
-                      </span>
+                      <span style={{ color: C.text, fontWeight: 630 }}>{String(val)}</span>
                     </div>
                   ))}
                 </div>
 
-                {/* Groupe 3 — Fertigation */}
+                {/* Groupe Statut */}
                 <div style={{ background: C.surface, borderRadius: 10, padding: '14px 16px', border: `1px solid ${C.border}` }}>
-                  <div style={{ color: C.textDim, fontSize: 10, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Fertigation</div>
+                  <div style={{ color: C.textDim, fontSize: 10, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Statut</div>
                   {[
-                    ['Valve prog', cycle.valve_prog],
-                    ['Fert prog',  cycle.fert_prog],
-                    ['EC/pH',      sensor.ec_ph_status],
-                    ['Pause',      cycle.pause],
-                    ['Manuel',     cycle.manual_prog],
-                    ['Vannes irr', cycle.valves_in_irrig],
-                  ].map(([label, val]) => (
+                    ['Valve prog',  cycle.valve_prog],
+                    ['Fert prog',   cycle.fert_prog],
+                    ['EC/pH',       sensor.ec_ph_status],
+                    ['Vannes irr',  cycle.valves_in_irrig],
+                  ].filter(([, val]) => filterRow(val)).map(([label, val]) => (
                     <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: `1px solid ${C.border}`, fontSize: 12 }}>
                       <span style={{ color: C.textMuted }}>{label}</span>
                       <span style={{
                         color: label === 'EC/pH' && val === 'Irrigation' ? C.green
-                            : label === 'EC/pH' && val === 'Wait' ? C.amber
-                            : C.text,
+                             : label === 'EC/pH' && val === 'Wait' ? C.amber
+                             : C.text,
                         fontWeight: 630,
-                      }}>
-                        {val !== null && val !== undefined ? String(val) : '—'}
-                      </span>
+                      }}>{String(val)}</span>
                     </div>
                   ))}
                 </div>
 
               </div>
-            </div>            
+            </div>
           </>
         )
       })() : !loadingL ? (
