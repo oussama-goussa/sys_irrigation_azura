@@ -987,7 +987,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                   color: isWait ? C.amber : C.textMuted,
                   marginBottom: 5,
                 }}>
-                  {isWait ? 'Attente RadS' : 'Système en pause'}
+                  {isWait ? 'Système en attente' : 'Système en pause'}
                 </div>
                 <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.6 }}>
                   {cycle.next_seq_time && cycle.next_seq_time !== '00:00'
