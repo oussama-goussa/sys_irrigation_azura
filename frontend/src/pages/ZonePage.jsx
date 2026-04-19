@@ -717,8 +717,13 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
         chartCalPortalRef.current && !chartCalPortalRef.current.contains(e.target)
       ) setShowChartCal(false)
     }
+    const onScroll = () => setShowChartCal(false)
     document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
+    window.addEventListener('scroll', onScroll, true)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      window.removeEventListener('scroll', onScroll, true)
+    }
   }, [showChartCal])
 
   useEffect(() => {
@@ -729,8 +734,13 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
         histCalPortalRef.current  && !histCalPortalRef.current.contains(e.target)
       ) setShowHistCal(false)
     }
+    const onScroll = () => setShowHistCal(false)
     document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
+    window.addEventListener('scroll', onScroll, true)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      window.removeEventListener('scroll', onScroll, true)
+    }
   }, [showHistCal])
 
   // ── Period shortcut ──
