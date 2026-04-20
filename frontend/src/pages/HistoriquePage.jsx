@@ -247,19 +247,40 @@ function SSelect({ value, onChange, options, placeholder, C, width = '100%', dis
 function FilterSelect({ value, onChange, options, C }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const triggerRef = useRef(null)
+  const portalRef = useRef(null)
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 })
 
   useEffect(() => {
-    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    const close = (e) => {
+      if (
+        ref.current && !ref.current.contains(e.target) &&
+        portalRef.current && !portalRef.current.contains(e.target)
+      ) setOpen(false)
+    }
+    const onScroll = () => setOpen(false)
     document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
+    window.addEventListener('scroll', onScroll, true)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      window.removeEventListener('scroll', onScroll, true)
+    }
   }, [])
+
+  const handleOpen = () => {
+    if (triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect()
+      setPos({ top: r.bottom + 2, left: r.left, width: r.width })
+    }
+    setOpen(v => !v)
+  }
 
   const selected = options.find(o => (o.value ?? o) === value)
   const label = selected ? (selected.label ?? selected) : null
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <div onClick={() => setOpen(v => !v)} style={{
+      <div ref={triggerRef} onClick={handleOpen} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         height: 28, padding: '0 7px',
         border: `1.5px solid ${open ? C.green : value ? C.green + '55' : C.border}`,
@@ -274,11 +295,12 @@ function FilterSelect({ value, onChange, options, C }) {
           {open ? <ChevronUp size={10} strokeWidth={2}/> : <ChevronDown size={10} strokeWidth={2}/>}
         </span>
       </div>
-      {open && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 2px)', left: 0, minWidth: '100%',
+
+      {open && createPortal(
+        <div ref={portalRef} style={{
+          position: 'fixed', top: pos.top, left: pos.left, minWidth: pos.width,
           background: C.card, border: `1.5px solid ${C.border}`,
-          borderRadius: 8, zIndex: 9999, boxShadow: '0 6px 24px rgba(0,0,0,0.18)',
+          borderRadius: 8, zIndex: 99999, boxShadow: '0 6px 24px rgba(0,0,0,0.18)',
           maxHeight: 200, overflowY: 'auto',
         }}>
           <div onClick={() => { onChange(''); setOpen(false) }}
@@ -306,7 +328,8 @@ function FilterSelect({ value, onChange, options, C }) {
               </div>
             )
           })}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
