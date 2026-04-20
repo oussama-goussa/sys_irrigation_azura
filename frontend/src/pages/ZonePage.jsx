@@ -604,13 +604,12 @@ function FertCard({ num, open, min, act, max, flow, C }) {
           F{num}
         </div>
         <div style={{
-          fontSize: 9, fontWeight: 800,
-          color: on ? C.green : C.textDim,
-          background: on ? 'rgba(52,217,111,0.12)' : C.toggleBg,
-          border: `1px solid ${on ? C.green + '30' : C.border}`,
-          borderRadius: 4, padding: '1px 6px',
+          width: 24, height: 24, borderRadius: 6,
+          background: on ? 'rgba(52,217,111,0.13)' : C.toggleBg,
+          border: `1px solid ${on ? C.green + '40' : C.border}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          {on ? 'ON' : 'OFF'}
+          <StatusDot on={on} C={C} size={8} />
         </div>
       </div>
 
