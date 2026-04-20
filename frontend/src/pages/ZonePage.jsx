@@ -1194,10 +1194,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                         {/* Header F1-F8 + dot */}
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <span style={{ fontSize: 10, fontWeight: 800, color: on ? C.green : C.textDim }}>F{i}</span>
-                          <div style={{ position: 'relative', width: 8, height: 8 }}>
-                            {on && <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 8, height: 8, borderRadius: '50%', background: C.green, opacity: 0.35, animation: 'ripple 1.5s ease-out infinite' }} />}
-                            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 6, height: 6, borderRadius: '50%', background: on ? C.green : C.textDim, boxShadow: on ? `0 0 4px ${C.green}` : 'none' }} />
-                          </div>
+                          <StatusDot on={on} C={C} size={8} />
                         </div>
                         {/* Valeur */}
                         <div style={{ fontSize: 16, fontWeight: 900, color: on ? C.green : C.textDim, lineHeight: 1 }}>
