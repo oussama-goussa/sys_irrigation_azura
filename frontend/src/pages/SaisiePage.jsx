@@ -897,7 +897,6 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
         border: `1.5px solid ${C.border}`,
         borderRadius: 16,
         marginBottom: 28,
-        overflow: 'hidden',
       }}>
 
         {/* ── Identification ── */}
