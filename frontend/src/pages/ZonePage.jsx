@@ -604,12 +604,13 @@ function FertCard({ num, open, min, act, max, flow, C }) {
           F{num}
         </div>
         <div style={{
-          width: 24, height: 24, borderRadius: 6,
-          background: on ? 'rgba(52,217,111,0.13)' : C.toggleBg,
-          border: `1px solid ${on ? C.green + '40' : C.border}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 9, fontWeight: 800,
+          color: on ? C.green : C.textDim,
+          background: on ? 'rgba(52,217,111,0.12)' : C.toggleBg,
+          border: `1px solid ${on ? C.green + '30' : C.border}`,
+          borderRadius: 4, padding: '1px 6px',
         }}>
-          <StatusDot on={on} C={C} size={8} />
+          {on ? 'ON' : 'OFF'}
         </div>
       </div>
 
@@ -1193,7 +1194,10 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                         {/* Header F1-F8 + dot */}
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <span style={{ fontSize: 10, fontWeight: 800, color: on ? C.green : C.textDim }}>F{i}</span>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: on ? C.green : C.textDim, boxShadow: on ? `0 0 4px ${C.green}` : 'none' }} />
+                          <div style={{ position: 'relative', width: 8, height: 8 }}>
+                            {on && <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 8, height: 8, borderRadius: '50%', background: C.green, opacity: 0.35, animation: 'ripple 1.5s ease-out infinite' }} />}
+                            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 6, height: 6, borderRadius: '50%', background: on ? C.green : C.textDim, boxShadow: on ? `0 0 4px ${C.green}` : 'none' }} />
+                          </div>
                         </div>
                         {/* Valeur */}
                         <div style={{ fontSize: 16, fontWeight: 900, color: on ? C.green : C.textDim, lineHeight: 1 }}>
