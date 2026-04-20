@@ -1263,10 +1263,12 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                     ['Proch. séq', cycle.next_sequence],
                     ['Proch. à',   cycle.next_seq_time],
                     ['Restant',    cycle.remaining_time],
-                  ].filter(([, val]) => filterRow(val)).map(([label, val]) => (
+                  ].map(([label, val]) => (
                     <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: `1px solid ${C.border}`, fontSize: 12 }}>
                       <span style={{ color: C.textMuted }}>{label}</span>
-                      <span style={{ color: C.text, fontWeight: 630 }}>{String(val)}</span>
+                      <span style={{ color: C.text, fontWeight: 630 }}>
+                        {val !== null && val !== undefined && String(val) !== '' ? String(val) : '—'}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -1277,14 +1279,16 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                   {[
                     ['Mode',      cycle.water_mode],
                     ['Qté prog',  cycle.water_prg_qty],
-                    ['Qté act',   cycle.water_act_qty],
+                    ['Qté act',   cycle.water_act_qty != null ? Number(cycle.water_act_qty).toFixed(2) : null],
                     ['T. prog',   cycle.water_prg_time],
                     ['T. actuel', cycle.water_act_time],
                     ['Restante',  cycle.water_left],
-                  ].filter(([, val]) => filterRow(val)).map(([label, val]) => (
+                  ].map(([label, val]) => (
                     <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: `1px solid ${C.border}`, fontSize: 12 }}>
                       <span style={{ color: C.textMuted }}>{label}</span>
-                      <span style={{ color: C.text, fontWeight: 630 }}>{String(val)}</span>
+                      <span style={{ color: C.text, fontWeight: 630 }}>
+                        {val !== null && val !== undefined && String(val) !== '' ? String(val) : '—'}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -1296,16 +1300,22 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                     ['Valve prog',  cycle.valve_prog],
                     ['Fert prog',   cycle.fert_prog],
                     ['EC/pH',       sensor.ec_ph_status],
+                    ['Pause',       cycle.pause > 0 ? 'Active' : 'Non'],
+                    ['Manuel',      cycle.manual_prog > 0 ? 'Actif' : 'Non'],
                     ['Vannes irr',  cycle.valves_in_irrig],
-                  ].filter(([, val]) => filterRow(val)).map(([label, val]) => (
+                  ].map(([label, val]) => (
                     <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: `1px solid ${C.border}`, fontSize: 12 }}>
                       <span style={{ color: C.textMuted }}>{label}</span>
                       <span style={{
-                        color: label === 'EC/pH' && val === 'Irrigation' ? C.green
-                             : label === 'EC/pH' && val === 'Wait' ? C.amber
+                        color: label === 'EC/pH'   && val === 'Irrigation' ? C.green
+                             : label === 'EC/pH'   && val === 'Wait'       ? C.amber
+                             : label === 'Pause'   && val === 'Active'     ? C.amber
+                             : label === 'Manuel'  && val === 'Actif'      ? C.blue
                              : C.text,
-                        fontWeight: 630,
-                      }}>{String(val)}</span>
+                        fontWeight: 630, fontVariantNumeric: 'tabular-nums',
+                      }}>
+                        {val !== null && val !== undefined && String(val) !== '' ? String(val) : '—'}
+                      </span>
                     </div>
                   ))}
                 </div>
