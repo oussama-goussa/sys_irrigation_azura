@@ -480,36 +480,67 @@ function SectionTitle({ title, C }) {
   )
 }
 
+// ── StatusDot ─────────────────────────────────────────────────
+function StatusDot({ on, C, size = 8 }) {
+  return (
+    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+      {on && (
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%',
+          transform: 'translate(-50%,-50%)',
+          width: size, height: size, borderRadius: '50%',
+          background: C.green, opacity: 0.35,
+          animation: 'ripple 1.5s ease-out infinite',
+        }} />
+      )}
+      <div style={{
+        position: 'absolute', top: '50%', left: '50%',
+        transform: 'translate(-50%,-50%)',
+        width: size - 2, height: size - 2, borderRadius: '50%',
+        background: on ? C.green : C.textDim,
+        boxShadow: on ? `0 0 5px ${C.green}` : 'none',
+        transition: 'background 0.2s',
+      }} />
+    </div>
+  )
+}
+
 function PumpIndicator({ label, value, C }) {
   const on = parseInt(value) === 1
   return (
     <div style={{
-      background: C.card,
-      border: `1.5px solid ${C.border}`,
-      borderLeft: `3px solid ${on ? C.green : C.border}`,
-      borderRadius: 10, padding: '12px 14px', minWidth: 80, textAlign: 'center',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+      padding: '14px 10px 12px',
+      background: on ? 'rgba(52,217,111,0.07)' : C.surface,
+      border: `1.5px solid ${on ? C.green + '50' : C.border}`,
+      borderRadius: 11,
+      minWidth: 76, flex: '1 1 0',
+      transition: 'all 0.2s',
     }}>
-
-      <div style={{ position: 'relative', width: 10, height: 10, margin: '0 auto 8px' }}>
-        {on && (
-          <div style={{
-            position: 'absolute', top: '50%', left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 10, height: 10, borderRadius: '50%',
-            background: C.green, opacity: 0.4,
-            animation: 'ripple 1.5s ease-out infinite',
-          }} />
-        )}
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 8, height: 8, borderRadius: '50%',
-          background: on ? C.green : C.textDim,
-          boxShadow: on ? `0 0 5px ${C.green}` : 'none',
-        }} />
+      {/* Icône pompe */}
+      <div style={{
+        width: 32, height: 32, borderRadius: 8,
+        background: on ? 'rgba(52,217,111,0.13)' : C.toggleBg,
+        border: `1px solid ${on ? C.green + '40' : C.border}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        position: 'relative',
+      }}>
+        <StatusDot on={on} C={C} size={10} />
       </div>
-      <div style={{ color: C.textDim, fontSize: 10, fontWeight: 630, marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-      <div style={{ color: on ? C.green : C.textDim, fontSize: 11, fontWeight: 800 }}>{on ? 'ON' : 'OFF'}</div>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 9, fontWeight: 700, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>
+          {label}
+        </div>
+        <div style={{
+          fontSize: 11, fontWeight: 900,
+          color: on ? C.green : C.textDim,
+          background: on ? 'rgba(52,217,111,0.10)' : C.toggleBg,
+          border: `1px solid ${on ? C.green + '30' : C.border}`,
+          borderRadius: 5, padding: '2px 8px',
+        }}>
+          {on ? 'ON' : 'OFF'}
+        </div>
+      </div>
     </div>
   )
 }
@@ -519,65 +550,92 @@ function ValveIndicator({ label, value, C }) {
   const on = !isNaN(numVal) && numVal !== 0
   return (
     <div style={{
-      background: C.card,
-      border: `1.5px solid ${C.border}`,
-      borderLeft: `3px solid ${on ? C.green : C.border}`,
-      borderRadius: 10, padding: '12px 14px', minWidth: 80, textAlign: 'center',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+      padding: '14px 10px 12px',
+      background: on ? 'rgba(52,217,111,0.07)' : C.surface,
+      border: `1.5px solid ${on ? C.green + '50' : C.border}`,
+      borderRadius: 11,
+      minWidth: 76, flex: '1 1 0',
+      transition: 'all 0.2s',
     }}>
-      <div style={{ position: 'relative', width: 10, height: 10, margin: '0 auto 8px' }}>
-        {on && (
-          <div style={{
-            position: 'absolute', top: '50%', left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 10, height: 10, borderRadius: '50%',
-            background: C.green, opacity: 0.4,
-            animation: 'ripple 1.5s ease-out infinite',
-          }} />
-        )}
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 8, height: 8, borderRadius: '50%',
-          background: on ? C.green : C.textDim,
-          boxShadow: on ? `0 0 5px ${C.green}` : 'none',
-        }} />
+      <div style={{
+        width: 32, height: 32, borderRadius: 8,
+        background: on ? 'rgba(52,217,111,0.13)' : C.toggleBg,
+        border: `1px solid ${on ? C.green + '40' : C.border}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <StatusDot on={on} C={C} size={10} />
       </div>
-      <div style={{ color: C.textDim, fontSize: 10, fontWeight: 630, marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-      <div style={{ color: on ? C.green : C.textDim, fontSize: 11, fontWeight: 800 }}>
-        {on ? 'ON' : 'OFF'}
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 9, fontWeight: 700, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>
+          {label}
+        </div>
+        <div style={{
+          fontSize: 11, fontWeight: 900,
+          color: on ? C.green : C.textDim,
+          background: on ? 'rgba(52,217,111,0.10)' : C.toggleBg,
+          border: `1px solid ${on ? C.green + '30' : C.border}`,
+          borderRadius: 5, padding: '2px 8px',
+        }}>
+          {on ? 'ON' : 'OFF'}
+        </div>
       </div>
     </div>
   )
 }
 
-function FertCard({ num, label, open, min, act, max, flow, C }) {
-  const isActive = open !== null && open !== undefined
-  const pct = max > 0 ? (act / max) * 100 : 0
+function FertCard({ num, open, min, act, max, flow, C }) {
+  const on = act !== null && act !== undefined && Number(act) > 0
+  const pct = (max > 0 && act !== null) ? Math.min((Number(act) / Number(max)) * 100, 100) : 0
+
   return (
     <div style={{
-      background: C.card,
-      border: `1.5px solid ${C.border}`,
-      borderLeft: `3px solid ${isActive ? C.green : C.border}`,
-      borderRadius: 10, padding: '14px 16px',
-      minWidth: 110, flex: 1,
+      flex: '1 1 0', minWidth: 80,
+      padding: '12px 14px',
+      background: on ? 'rgba(52,217,111,0.06)' : C.surface,
+      border: `1.5px solid ${on ? C.green + '40' : C.border}`,
+      borderTop: `3px solid ${on ? C.green : C.border}`,
+      borderRadius: 10,
+      transition: 'all 0.2s',
     }}>
-      <div style={{ color: C.textDim, fontSize: 10, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
-        F{num}
-      </div>
-      <div style={{ color: isActive ? C.green : C.textDim, fontSize: 22, fontWeight: 900, lineHeight: 1, marginBottom: 4 }}>
-        {isActive ? act ?? '—' : '—'}
-      </div>
-      <div style={{ color: C.textDim, fontSize: 10, marginBottom: 8 }}>% ouv.</div>
-      {/* Progress bar */}
-      <div style={{ background: C.border, borderRadius: 4, height: 4, marginBottom: 8 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: on ? C.green : C.textDim, letterSpacing: '0.04em' }}>
+          F{num}
+        </div>
         <div style={{
-          width: `${isActive ? Math.min(pct, 100) : 0}%`, height: '100%',
-          background: isActive ? C.green : C.textDim, borderRadius: 4,
-          transition: 'width 0.3s',
+          fontSize: 9, fontWeight: 800,
+          color: on ? C.green : C.textDim,
+          background: on ? 'rgba(52,217,111,0.12)' : C.toggleBg,
+          border: `1px solid ${on ? C.green + '30' : C.border}`,
+          borderRadius: 4, padding: '1px 6px',
+        }}>
+          {on ? 'ON' : 'OFF'}
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{ background: C.border, borderRadius: 3, height: 4, marginBottom: 8 }}>
+        <div style={{
+          width: `${on ? pct : 0}%`, height: '100%',
+          background: on ? C.green : C.textDim,
+          borderRadius: 3, transition: 'width 0.5s cubic-bezier(0.22,1,0.36,1)',
         }} />
       </div>
-      <div style={{ color: C.textDim, fontSize: 10 }}>
-        {isActive && flow !== null && flow !== undefined ? `${flow} mL` : '—'}
+
+      {/* Valeur ouverture */}
+      <div style={{ fontSize: 20, fontWeight: 900, color: on ? C.green : C.textDim, lineHeight: 1, marginBottom: 2 }}>
+        {on ? `${Number(act).toFixed(0)}` : '—'}
+        {on && <span style={{ fontSize: 10, fontWeight: 400, color: C.textDim, marginLeft: 2 }}>%</span>}
+      </div>
+      <div style={{ fontSize: 9, color: C.textDim, marginBottom: 6 }}>ouverture</div>
+
+      {/* Flow */}
+      <div style={{ fontSize: 10, color: on ? C.textMuted : C.textDim, fontWeight: 630 }}>
+        {on && flow !== null && flow !== undefined
+          ? `${Number(flow).toFixed(1)} mL`
+          : <span style={{ opacity: 0.4 }}>— mL</span>
+        }
       </div>
     </div>
   )
@@ -929,10 +987,10 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             marginBottom: 14,
           }}>
             <GaugeCard label="EC"          value={fmt(sensor.ec_actual, 2)}    unit="mS/cm" min={0}  max={8}    color="#00c9a7" C={C}
-              subLabel={sensor.flow === 0 ? '' : 'en irrigation'}
+              subLabel={sensor.flow === 0 ? 'eau résiduelle' : 'en irrigation'}
               subLabelColor={sensor.flow === 0 ? C.amber : C.green} />
             <GaugeCard label="pH"          value={fmt(sensor.ph_actual, 2)}    unit=""      min={4}  max={8}    color="#4d9de0" C={C}
-              subLabel={sensor.flow === 0 ? '' : 'en irrigation'}
+              subLabel={sensor.flow === 0 ? 'eau résiduelle' : 'en irrigation'}
               subLabelColor={sensor.flow === 0 ? C.amber : C.green} />
             <GaugeCard label="Température" value={fmt(sensor.avg_temp, 1)}     unit="°C"    min={10} max={40}   color="#f52e23" C={C} />
             <GaugeCard label="Humidité"    value={fmt(sensor.humidity, 1)}     unit="%"     min={0}  max={100}  color="#b197fc" C={C} />
@@ -987,7 +1045,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                   color: isWait ? C.amber : C.textMuted,
                   marginBottom: 5,
                 }}>
-                  {isWait ? 'Système en attente' : 'Système en pause'}
+                  {isWait ? 'Attente RadS' : 'Système en pause'}
                 </div>
                 <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.6 }}>
                   {cycle.next_seq_time && cycle.next_seq_time !== '00:00'
@@ -1023,61 +1081,139 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
         }
 
         // ── ÉTAT ACTIF (Irrigation) ───────────────────────────
-        const activePumps  = [1,2,3,4,5,6].filter(i => parseInt(cycle[`pump${i}`]) > 0)
-        const activeValves = [1,2,3,4].filter(i => parseInt(cycle[`valve${i}`]) > 0)
-        const fertHasData  = live?.fertigation && Object.entries(live.fertigation)
+        const fertHasData = live?.fertigation && Object.entries(live.fertigation)
           .filter(([k]) => k.startsWith('fert_act'))
           .some(([, v]) => v !== null && v !== undefined)
 
         return (
           <>
-            {/* Pompes + Vannes actives */}
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 16 : 24 }}>
-                {activePumps.length > 0 && (
-                  <div style={{ flex: 1 }}>
-                    <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Pompes actives</div>
-                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                      {activePumps.map(i => <PumpIndicator key={i} label={`Pompe ${i}`} value={cycle[`pump${i}`]} C={C} />)}
-                    </div>
+            {/* ── Pompes + Vannes : TOUTES affichées, grisées si OFF ── */}
+            <div style={{
+              background: C.card, border: `1.5px solid ${C.border}`,
+              borderRadius: 14, padding: isMobile ? '14px 16px' : '18px 24px',
+              marginBottom: 14,
+            }}>
+              <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 18 : 0 }}>
+
+                {/* Pompes */}
+                <div style={{ flex: 1, paddingRight: isMobile ? 0 : 24, borderRight: isMobile ? 'none' : `1px solid ${C.border}` }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.10em', color: C.textDim, marginBottom: 12 }}>
+                    Pompes
                   </div>
-                )}
-                {activeValves.length > 0 && (
-                  <div style={{ flex: 1 }}>
-                    <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Vannes actives</div>
-                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                      {activeValves.map(i => (
-                        <ValveIndicator key={i} label={`Vanne ${cycle[`valve${i}`]}`} value={cycle[`valve${i}`]} C={C} />
-                      ))}
-                    </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8 }}>
+                    {[1,2,3,4,5,6].map(i => {
+                      const on = parseInt(cycle[`pump${i}`]) > 0
+                      return (
+                        <div key={i} style={{
+                          display: 'flex', flexDirection: 'column', alignItems: 'center',
+                          padding: '10px 6px', borderRadius: 10,
+                          background: on ? (dark ? 'rgba(52,217,111,0.10)' : 'rgba(52,217,111,0.07)') : (dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'),
+                          border: `1.5px solid ${on ? C.green + '40' : C.border}`,
+                          transition: 'all 0.2s',
+                          opacity: on ? 1 : 0.45,
+                        }}>
+                          {/* Dot */}
+                          <div style={{ position: 'relative', width: 10, height: 10, marginBottom: 7 }}>
+                            {on && <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 10, height: 10, borderRadius: '50%', background: C.green, opacity: 0.35, animation: 'ripple 1.5s ease-out infinite' }} />}
+                            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 7, height: 7, borderRadius: '50%', background: on ? C.green : C.textDim, boxShadow: on ? `0 0 4px ${C.green}` : 'none' }} />
+                          </div>
+                          <div style={{ fontSize: 9, fontWeight: 700, color: on ? C.green : C.textDim, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3 }}>
+                            P{i}
+                          </div>
+                          <div style={{ fontSize: 10, fontWeight: 800, color: on ? C.green : C.textDim }}>
+                            {on ? 'ON' : 'OFF'}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
-                )}
+                </div>
+
+                {/* Vannes */}
+                <div style={{ flex: 1, paddingLeft: isMobile ? 0 : 24 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.10em', color: C.textDim, marginBottom: 12 }}>
+                    Vannes zones
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                    {[1,2,3,4].map(i => {
+                      const raw = parseInt(cycle[`valve${i}`])
+                      const on = !isNaN(raw) && raw !== 0
+                      const label = on ? `V${raw}` : `V${i}`
+                      return (
+                        <div key={i} style={{
+                          display: 'flex', flexDirection: 'column', alignItems: 'center',
+                          padding: '10px 6px', borderRadius: 10,
+                          background: on ? (dark ? 'rgba(52,217,111,0.10)' : 'rgba(52,217,111,0.07)') : (dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'),
+                          border: `1.5px solid ${on ? C.green + '40' : C.border}`,
+                          transition: 'all 0.2s',
+                          opacity: on ? 1 : 0.45,
+                        }}>
+                          <div style={{ position: 'relative', width: 10, height: 10, marginBottom: 7 }}>
+                            {on && <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 10, height: 10, borderRadius: '50%', background: C.green, opacity: 0.35, animation: 'ripple 1.5s ease-out infinite' }} />}
+                            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 7, height: 7, borderRadius: '50%', background: on ? C.green : C.textDim, boxShadow: on ? `0 0 4px ${C.green}` : 'none' }} />
+                          </div>
+                          <div style={{ fontSize: 9, fontWeight: 700, color: on ? C.green : C.textDim, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3 }}>
+                            {label}
+                          </div>
+                          <div style={{ fontSize: 10, fontWeight: 800, color: on ? C.green : C.textDim }}>
+                            {on ? 'ON' : 'OFF'}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
               </div>
             </div>
 
-            {/* Fertigation — seulement si données réelles */}
-            {fertHasData && (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 630, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
-                  Fertigation — Canaux actifs
-                </div>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  {[1,2,3,4,5,6,7,8]
-                    .filter(i => live.fertigation[`fert_act${i}`] !== null && live.fertigation[`fert_act${i}`] !== undefined)
-                    .map(i => (
-                      <FertCard key={i} num={i} label=""
-                        open={live.fertigation[`fert_open${i}`]}
-                        min={live.fertigation[`fert_min${i}`]}
-                        act={live.fertigation[`fert_act${i}`]}
-                        max={live.fertigation[`fert_max${i}`]}
-                        flow={live.fertigation[`fert_flow${i}`]}
-                        C={C}
-                      />
-                    ))
-                  }
+            {/* ── Fertigation — grille compacte toutes les canaux ── */}
+            <div style={{
+              background: C.card, border: `1.5px solid ${C.border}`,
+              borderRadius: 14, padding: isMobile ? '14px 16px' : '18px 24px',
+              marginBottom: 14,
+            }}>
+              <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.10em', color: C.textDim, marginBottom: 14 }}>
+                Fertigation — 8 canaux
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(4,1fr)' : 'repeat(8,1fr)', gap: 8 }}>
+                  {[1,2,3,4,5,6,7,8].map(i => {
+                    const act = live.fertigation[`fert_act${i}`]
+                    const max = live.fertigation[`fert_max${i}`]
+                    const flow = live.fertigation[`fert_flow${i}`]
+                    const on = act !== null && act !== undefined && Number(act) > 0
+                    const pct = on && max > 0 ? Math.min((act / max) * 100, 100) : 0
+                    return (
+                      <div key={i} style={{
+                        borderRadius: 10, padding: '10px 8px',
+                        background: on ? (dark ? 'rgba(52,217,111,0.08)' : 'rgba(52,217,111,0.05)') : (dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'),
+                        border: `1.5px solid ${on ? C.green + '35' : C.border}`,
+                        opacity: on ? 1 : 0.4,
+                        display: 'flex', flexDirection: 'column', gap: 4,
+                      }}>
+                        {/* Header F1-F8 + dot */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ fontSize: 10, fontWeight: 800, color: on ? C.green : C.textDim }}>F{i}</span>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: on ? C.green : C.textDim, boxShadow: on ? `0 0 4px ${C.green}` : 'none' }} />
+                        </div>
+                        {/* Valeur */}
+                        <div style={{ fontSize: 16, fontWeight: 900, color: on ? C.green : C.textDim, lineHeight: 1 }}>
+                          {on ? act : '—'}
+                        </div>
+                        <div style={{ fontSize: 9, color: C.textDim }}>% ouv.</div>
+                        {/* Barre progression */}
+                        <div style={{ height: 3, borderRadius: 2, background: on ? C.border : C.border, overflow: 'hidden' }}>
+                          <div style={{ width: `${pct}%`, height: '100%', background: C.green, borderRadius: 2, transition: 'width 0.4s' }} />
+                        </div>
+                        {/* Flow */}
+                        <div style={{ fontSize: 9, color: C.textDim, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {on && flow !== null ? `${flow} mL` : '—'}
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
-            )}
 
             {/* Programme — uniquement valeurs significatives */}
             <div style={{
