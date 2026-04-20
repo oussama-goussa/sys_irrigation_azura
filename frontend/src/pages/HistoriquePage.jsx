@@ -258,7 +258,11 @@ function FilterSelect({ value, onChange, options, C }) {
         portalRef.current && !portalRef.current.contains(e.target)
       ) setOpen(false)
     }
-    const onScroll = () => setOpen(false)
+    const onScroll = (e) => {
+      // Don't close if scrolling inside the dropdown itself
+      if (portalRef.current && portalRef.current.contains(e.target)) return
+      setOpen(false)
+    }
     document.addEventListener('mousedown', close)
     window.addEventListener('scroll', onScroll, true)
     return () => {
