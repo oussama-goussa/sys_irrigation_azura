@@ -900,7 +900,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             {deviceInfo.farm_name} — Station {deviceInfo.house_number}
           </h1>
 
-          <div style={{ color: C.textDim, fontSize: 12, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ color: C.textDim, fontSize: 11, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <span>Netafim · {deviceInfo.controller_type || '—'} · v{deviceInfo.controller_version || '—'}</span>
             <span style={{ color: C.border }}>·</span>
             <span style={{ fontFamily: 'inherit', fontSize: 11 }}>{deviceInfo.device_id || '—'}</span>
