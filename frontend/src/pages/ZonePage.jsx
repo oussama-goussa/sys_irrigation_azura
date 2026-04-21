@@ -987,10 +987,10 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             marginBottom: 14,
           }}>
             <GaugeCard label="EC"          value={fmt(sensor.ec_actual, 2)}    unit="mS/cm" min={0}  max={8}    color="#00c9a7" C={C}
-              subLabel={sensor.flow === 0 ? 'eau résiduelle' : 'en irrigation'}
+              subLabel={sensor.flow === 0 ? '' : 'en irrigation'}
               subLabelColor={sensor.flow === 0 ? C.amber : C.green} />
             <GaugeCard label="pH"          value={fmt(sensor.ph_actual, 2)}    unit=""      min={4}  max={8}    color="#4d9de0" C={C}
-              subLabel={sensor.flow === 0 ? 'eau résiduelle' : 'en irrigation'}
+              subLabel={sensor.flow === 0 ? '' : 'en irrigation'}
               subLabelColor={sensor.flow === 0 ? C.amber : C.green} />
             <GaugeCard label="Température" value={fmt(sensor.avg_temp, 1)}     unit="°C"    min={10} max={40}   color="#f52e23" C={C} />
             <GaugeCard label="Humidité"    value={fmt(sensor.humidity, 1)}     unit="%"     min={0}  max={100}  color="#b197fc" C={C} />
@@ -1045,7 +1045,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                   color: isWait ? C.amber : C.textMuted,
                   marginBottom: 5,
                 }}>
-                  {isWait ? 'Attente RadS' : 'Système en pause'}
+                  {isWait ? 'Système en attente' : 'Système en pause'}
                 </div>
                 <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.6 }}>
                   {cycle.next_seq_time && cycle.next_seq_time !== '00:00'
