@@ -986,10 +986,10 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             gap: isMobile ? 10 : 14,
             marginBottom: 14,
           }}>
-            <GaugeCard label="EC"          value={fmt(sensor.ec_actual, 2)}    unit="mS/cm" min={0}  max={8}    color="#00c9a7" C={C}
+            <GaugeCard label="EC Apport"          value={fmt(sensor.ec_actual, 2)}    unit="mS/cm" min={0}  max={8}    color="#00c9a7" C={C}
               subLabel={sensor.flow === 0 ? '' : 'en irrigation'}
               subLabelColor={sensor.flow === 0 ? C.amber : C.green} />
-            <GaugeCard label="pH"          value={fmt(sensor.ph_actual, 2)}    unit=""      min={4}  max={8}    color="#4d9de0" C={C}
+            <GaugeCard label="pH Apport"          value={fmt(sensor.ph_actual, 2)}    unit=""      min={4}  max={8}    color="#4d9de0" C={C}
               subLabel={sensor.flow === 0 ? '' : 'en irrigation'}
               subLabelColor={sensor.flow === 0 ? C.amber : C.green} />
             <GaugeCard label="Température" value={fmt(sensor.avg_temp, 1)}     unit="°C"    min={10} max={40}   color="#f52e23" C={C} />
@@ -1437,22 +1437,22 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
       {(
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 28 }}>
 
-          {/* Graphique 1 — EC & pH */}
+          {/* Graphique 1 — EC & pH Apport */}
           <ChartCard
-            title="EC & pH"
+            title="EC & pH Apport"
             C={C}
             dark={dark}
             onSelectRange={(from, to) => { setChartZoomFrom(from); setChartZoomTo(to); isZoomedRef.current = true }}
             series={[
               {
-                label: 'EC actuel (mS/cm)',
+                label: 'EC Apport actuel (mS/cm)',
                 color: '#34d96f',
                 unit: 'mS/cm',
                 decimals: 2,
                 data: buildSeries('ec_actual'),
               },
               {
-                label: 'pH actuel',
+                label: 'pH Apport actuel',
                 color: '#4d9de0',
                 unit: '',
                 decimals: 2,
@@ -1663,8 +1663,8 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                 <tr style={{ background: dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
                   {[
                     { label: 'Timestamp',   col: 'timestamp' },
-                    { label: 'EC (mS/cm)', col: 'ec_actual' },
-                    { label: 'pH',          col: 'ph_actual' },
+                    { label: 'EC Apport (mS/cm)', col: 'ec_actual' },
+                    { label: 'pH Apport',          col: 'ph_actual' },
                     { label: 'Temp (°C)',   col: 'avg_temp' },
                     { label: 'Hum (%)',     col: 'humidity' },
                     { label: 'Rad (W/m²)', col: 'radiation' },
