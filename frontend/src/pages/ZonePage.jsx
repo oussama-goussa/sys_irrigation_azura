@@ -1416,7 +1416,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                       fontSize: 12,
                       fontWeight: 630,
                       textTransform: 'uppercase',
-                      letterSpacing: '0.07em',
+                      letterSpacing: '0.04em',
                       borderBottom: `1.5px solid ${C.border}`,
                       whiteSpace: 'nowrap',
                     }}>Tours</th>
@@ -1429,7 +1429,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                       fontSize: 12,
                       fontWeight: 630,
                       textTransform: 'uppercase',
-                      letterSpacing: '0.07em',
+                      letterSpacing: '0.04em',
                       borderBottom: `1.5px solid ${C.border}`,
                       whiteSpace: 'nowrap',
                     }}>House</th>
@@ -1484,7 +1484,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                         fontSize: 12,
                         fontWeight: 630,
                         textTransform: 'uppercase',
-                        letterSpacing: '0.07em',
+                        letterSpacing: '0.04em',
                         whiteSpace: 'nowrap',
                       }}>{row.label}</td>
 
