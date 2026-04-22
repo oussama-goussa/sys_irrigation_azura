@@ -225,39 +225,19 @@ def calculer_tours_journee(
     for idx, t in enumerate(tours):
         expected_duree = t['prg_time_min'] * 2
 
+        # Remplacez dans la boucle result :
         if idx + 1 < len(tours):
-            delta = (tours[idx + 1]['debut'] - t['fin']).total_seconds() / 60
-            repos_brut = round(delta)
-
-            if t['duree_min'] < expected_duree:
-                manque = expected_duree - t['duree_min']
-                if repos_brut >= manque:
-                    t = dict(t)
-                    t['duree_min'] = expected_duree
-                    t['fin'] = t['debut'] + timedelta(minutes=expected_duree)
-                    repos = max(0, repos_brut - manque)
-                else:
-                    t = dict(t)
-                    t['duree_min'] = t['duree_min'] + repos_brut
-                    t['fin'] = t['debut'] + timedelta(minutes=t['duree_min'])
-                    repos = 0
-                raison = 'Enchaînement direct' if repos == 0 else 'Repos'  # ← AJOUTÉ
-                is_complete = True                                           # ← AJOUTÉ
-            else:
-                repos = max(0, repos_brut)
-                next_ps = tours[idx + 1]['prev_status']
-                if repos == 0:
-                    raison = 'Enchaînement direct'
-                elif next_ps == 'Wait' and repos > 30:
-                    raison = 'Attente RadS'
-                elif next_ps == 'Wait':
-                    raison = 'Repos prog.'
-                else:
-                    raison = 'Repos'
-                is_complete = True
+            # Logique identique à SaisiePage : debut[i+1] - (debut[i] + duree[i])
+            debut_i = t['debut']
+            duree_i = t['duree_min']
+            debut_next = tours[idx + 1]['debut']
+            
+            repos = round((debut_next - debut_i).total_seconds() / 60) - duree_i
+            if repos < 0:
+                repos = 0
+            is_complete = True
         else:
-            repos      = None
-            raison     = '—'
+            repos = None
             is_complete = journee_terminee
 
         result.append({
