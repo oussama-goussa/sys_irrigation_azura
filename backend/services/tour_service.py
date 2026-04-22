@@ -223,21 +223,18 @@ def calculer_tours_journee(
 
     result = []
     for idx, t in enumerate(tours):
-        expected_duree = t['prg_time_min'] * 2
-
-        # Remplacez dans la boucle result :
-        if idx + 1 < len(tours):
-            # Logique identique à SaisiePage : debut[i+1] - (debut[i] + duree[i])
-            debut_i = t['debut']
-            duree_i = t['duree_min']
-            debut_next = tours[idx + 1]['debut']
-            
-            repos = round((debut_next - debut_i).total_seconds() / 60) - duree_i
+        if idx > 0:
+            debut_prev = tours[idx - 1]['debut']
+            duree_prev = tours[idx - 1]['duree_min']
+            repos = round((t['debut'] - debut_prev).total_seconds() / 60) - duree_prev
             if repos < 0:
                 repos = 0
+        else:
+            repos = None  # Premier tour : pas de repos avant
+
+        if idx + 1 < len(tours):
             is_complete = True
         else:
-            repos = None
             is_complete = journee_terminee
 
         result.append({
