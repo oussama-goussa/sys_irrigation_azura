@@ -673,9 +673,9 @@ def get_tours(
                 "prg_time_min"   : t.prg_time_min,
                 "repos_apres_min": t.repos_apres_min,
                 "is_complete"    : t.is_complete,
-                "v_apport"       : t.v_apport,  
-                "ec_apport"      : t.ec_apport,   
-                "ph_apport"      : t.ph_apport,                   
+                "v_apport"       : t.v_apport,
+                "ec_apport"      : t.ec_apport,
+                "ph_apport"      : t.ph_apport,
             })
         else:
             slots.append({
@@ -686,9 +686,9 @@ def get_tours(
                 "prg_time_min"   : None,
                 "repos_apres_min": None,
                 "is_complete"    : False,
-                "v_apport"       : None,    
-                "ec_apport"      : None,   
-                "ph_apport"      : None, 
+                "v_apport"       : None,
+                "ec_apport"      : None,
+                "ph_apport"      : None,
             })
 
     return {
@@ -699,4 +699,3 @@ def get_tours(
         "tours"      : slots,
         "total_tours": len(tours),
     }
-

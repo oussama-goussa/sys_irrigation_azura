@@ -1463,9 +1463,9 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                     { label: 'Durée Prog (min)', key: 'prg_time_min' },
                     { label: 'Durée Complète (min)', key: 'duree_min' },
                     { label: 'Temps repos (min)', key: 'repos_apres_min' },
-                    { label: 'V. Apport (cc)', key: '_v_apport' },
-                    { label: 'EC Apport', key: '_ec_apport' },
-                    { label: 'pH Apport', key: '_ph_apport' },
+                    { label: 'V. Apport (cc)', key: 'v_apport' },
+                    { label: 'EC Apport', key: 'ec_apport' },
+                    { label: 'pH Apport', key: 'ph_apport' },
                   ].map((row) => (
                     <tr
                       key={row.key}
@@ -1499,7 +1499,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
                       {/* VALEURS TOURS */}
                       {mergedTours.map((t, i) => {
-                        const val = t?.[row.key];
+                        const val = t?.[row.key]
                         return (
                           <td key={i} style={{
                             padding: '10px 10px',
