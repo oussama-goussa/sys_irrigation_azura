@@ -306,6 +306,9 @@ class IrrigationTour(Base):
     prg_time_min     = Column(Integer, nullable=False)
     repos_apres_min  = Column(Integer, nullable=True)
     is_complete      = Column(Boolean, default=False)
+    v_apport         = Column(Float, nullable=True)
+    ec_apport        = Column(Float, nullable=True)
+    ph_apport        = Column(Float, nullable=True)
     created_at       = Column(DateTime(timezone=True), server_default=func.now())
     updated_at       = Column(DateTime(timezone=True), onupdate=func.now())
 

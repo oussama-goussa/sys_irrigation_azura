@@ -1463,6 +1463,9 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                     { label: 'Durée Prog (min)', key: 'prg_time_min' },
                     { label: 'Durée Complète (min)', key: 'duree_min' },
                     { label: 'Temps repos (min)', key: 'repos_apres_min' },
+                    { label: 'V. Apport (cc)', key: '_v_apport' },
+                    { label: 'EC Apport', key: '_ec_apport' },
+                    { label: 'pH Apport', key: '_ph_apport' },
                   ].map((row) => (
                     <tr
                       key={row.key}

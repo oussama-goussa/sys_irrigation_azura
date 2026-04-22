@@ -167,6 +167,8 @@ def calculer_tours_journee(
                 'prev_status'     : prev_status if k == 0 else 'Irrigation',
                 'is_first_of_bloc': k == 0,
                 'is_last_of_day'  : False,
+                'ec_apport'       : first_sr.ec_prog,
+                'ph_apport'       : first_sr.ph_prog,
             })
 
     if not demitours_all:
@@ -193,6 +195,8 @@ def calculer_tours_journee(
                     'prg_time_min' : dt1['prg_time_min'],
                     'prev_status'  : dt1['prev_status'],
                     'is_last'      : dt2['is_last_of_day'],
+                    'ec_apport'    : dt1['ec_apport'],
+                    'ph_apport'    : dt1['ph_apport'],
                 })
                 i += 2
                 continue
@@ -204,6 +208,8 @@ def calculer_tours_journee(
             'prg_time_min' : dt1['prg_time_min'],
             'prev_status'  : dt1['prev_status'],
             'is_last'      : dt1['is_last_of_day'],
+            'ec_apport'    : dt1['ec_apport'],
+            'ph_apport'    : dt1['ph_apport'],
         })
         i += 1
 
@@ -262,6 +268,9 @@ def calculer_tours_journee(
             'prg_time_min'   : t['prg_time_min'],
             'repos_apres_min': repos,
             'is_complete'    : is_complete,
+            'v_apport'       : round((t['prg_time_min'] * 1000) / 60, 1),
+            'ec_apport'      : t.get('ec_apport'),
+            'ph_apport'      : t.get('ph_apport'),
         })
 
     return result
@@ -300,6 +309,9 @@ def upsert_tours(
                 existing.duree_min       = t['duree_min']
                 existing.repos_apres_min = t['repos_apres_min']
                 existing.is_complete     = t['is_complete']
+                existing.v_apport        = t.get('v_apport')
+                existing.ec_apport       = t.get('ec_apport')
+                existing.ph_apport       = t.get('ph_apport')
                 existing.updated_at      = datetime.utcnow()
         else:
             tour = IrrigationTour(
@@ -313,6 +325,9 @@ def upsert_tours(
                 prg_time_min     = t['prg_time_min'],
                 repos_apres_min  = t['repos_apres_min'],
                 is_complete      = t['is_complete'],
+                v_apport         = t.get('v_apport'),
+                ec_apport        = t.get('ec_apport'),
+                ph_apport        = t.get('ph_apport'),
             )
             db.add(tour)
 
