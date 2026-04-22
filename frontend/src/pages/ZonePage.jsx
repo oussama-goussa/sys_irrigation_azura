@@ -1433,6 +1433,200 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
         )}
       </div>
 
+      {/* ── Tours d'irrigation ──────────────────────────────────── */}
+      <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:32, marginBottom:14 }}>
+        <div style={{ width:3, height:18, background:C.green, borderRadius:2 }} />
+        <span style={{ color:C.text, fontSize:14, fontWeight:800 }}>Tours d'irrigation</span>
+      </div>
+
+      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
+        <Calendar size={14} strokeWidth={2} color={C.textMuted} />
+        <input type="date" value={tourDate}
+          onChange={e => setTourDate(e.target.value)}
+          max={today()}
+          style={{
+            padding: '6px 10px', borderRadius: 7,
+            border: `1.5px solid ${C.border}`,
+            background: C.inputBg, color: C.text,
+            fontSize: 12, fontFamily: 'inherit', outline: 'none',
+          }}
+        />
+        {tourDate !== today() && (
+          <button onClick={() => setTourDate(today())} style={{
+            padding: '6px 10px', borderRadius: 7,
+            border: `1.5px solid ${C.border}`,
+            background: C.inputBg, color: C.text,
+            fontSize: 12, fontFamily: 'inherit', cursor: 'pointer',
+          }}>Aujourd'hui</button>
+        )}
+        <span style={{ color: C.textDim, fontSize: 11 }}>
+          {tours ? `${tours.total_tours} tour${tours.total_tours > 1 ? 's' : ''} enregistrés` : ''}
+        </span>
+      </div>
+
+      {loadingTours ? null : (() => {
+
+        // ---------------------------
+        // CONFIGURATION
+        // ---------------------------
+        const validTours = (tours?.tours || []).filter(t => t !== null && t.debut !== null && t.debut !== undefined);
+        const MAX_TOURS = 10;
+
+        // Si 0 tours réels → 0 colonnes (message vide affiché)
+        // Si tours présents → max(nb tours réels, 10)
+        const totalCols = validTours.length === 0
+          ? 0
+          : Math.max(validTours.length, MAX_TOURS);
+
+        const mergedTours = Array.from({ length: totalCols }, (_, i) => validTours[i] || null);
+
+        // ---------------------------
+        // RENDER
+        // ---------------------------
+        return (
+          <div style={{
+            background: C.card,
+            border: `1.5px solid ${C.border}`,
+            borderRadius: 14,
+            overflow: 'hidden',
+            marginBottom: 28
+          }}>
+            {mergedTours.length === 0 ? (
+              <div style={{
+                padding: '40px',
+                textAlign: 'center',
+                color: C.textDim,
+                fontSize: 12,
+              }}>
+                Aucun tour d'irrigation enregistré pour cette date
+              </div>
+            ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit' }}>
+
+                {/* ---------------------------
+                    HEADER FIXE
+                --------------------------- */}
+                <thead>
+                  <tr style={{
+                    background: dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'
+                  }}>
+                    <th style={{
+                      padding: '11px 14px',
+                      textAlign: 'left',
+                      width: '16%',
+                      color: C.textDim,
+                      fontSize: 12,
+                      fontWeight: 630,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.07em',
+                      borderBottom: `1.5px solid ${C.border}`,
+                      whiteSpace: 'nowrap',
+                    }}>Tours</th>
+
+                    <th style={{
+                      padding: '11px 14px',
+                      textAlign: 'center',
+                      width: '5%',
+                      color: C.textDim,
+                      fontSize: 12,
+                      fontWeight: 630,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.07em',
+                      borderBottom: `1.5px solid ${C.border}`,
+                      whiteSpace: 'nowrap',
+                    }}>House</th>
+
+                    {mergedTours.map((t, i) => (
+                      <th key={i} style={{
+                        padding: '11px 10px',
+                        textAlign: 'center',
+                        fontSize: 12,
+                        fontWeight: 630,
+                        borderBottom: `1.5px solid ${C.border}`,
+                        whiteSpace: 'nowrap',
+                        color: t ? C.green : C.textDim,
+                        background: t?.debut
+                          ? (dark ? 'rgba(52,217,111,0.08)' : 'rgba(52,217,111,0.05)')
+                          : 'transparent',
+                      }}>
+                        {i + 1}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+
+                {/* ---------------------------
+                    BODY
+                --------------------------- */}
+                <tbody>
+                  {[
+                    { label: 'Heure (Début)', key: 'debut' },
+                    { label: 'Heure (Fin)', key: 'fin' },
+                    { label: 'Durée Prog (min)', key: 'prg_time_min' },
+                    { label: 'Durée Complète (min)', key: 'duree_min' },
+                    { label: 'Temps repos (min)', key: 'repos_apres_min' },
+                  ].map((row) => (
+                    <tr
+                      key={row.key}
+                      style={{
+                        borderBottom: `1px solid ${C.border}`,
+                        transition: 'background 0.12s'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+
+                      {/* LABEL */}
+                      <td style={{
+                        padding: '10px 14px',
+                        color: C.textDim,
+                        fontSize: 12,
+                        fontWeight: 630,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.07em',
+                        whiteSpace: 'nowrap',
+                      }}>{row.label}</td>
+
+                      {/* HOUSE */}
+                      <td style={{
+                        padding: '10px 14px',
+                        color: C.textMuted,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        textAlign: 'center',
+                      }}>{deviceInfo.house_number}</td>
+
+                      {/* VALEURS TOURS */}
+                      {mergedTours.map((t, i) => {
+                        const val = t?.[row.key];
+                        return (
+                          <td key={i} style={{
+                            padding: '10px 10px',
+                            textAlign: 'center',
+                            color: val != null ? C.text : C.textDim,
+                            fontSize: 12,
+                            fontWeight: val != null ? 630 : 400,
+                            fontVariantNumeric: 'tabular-nums',
+                            background: t?.debut
+                              ? (dark ? 'rgba(52,217,111,0.04)' : 'rgba(52,217,111,0.02)')
+                              : 'transparent',
+                          }}>
+                            {val != null ? String(val) : '-'}
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+
+              </table>
+            </div>
+            )}
+          </div>
+        )
+      })()}
+
       {/* ── 4 Graphiques ─────────────────────────────────────── */}
       {(
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 28 }}>
