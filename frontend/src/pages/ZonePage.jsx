@@ -1330,109 +1330,6 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
         </div>
       ) : null}
 
-      {/* ── Sélecteur de période ─────────────────────────────── */}
-      <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:14, marginTop:32 }}>
-        <div style={{ width:3, height:18, background:C.green, borderRadius:2 }} />
-        <span style={{ color:C.text, fontSize:14, fontWeight:800 }}>Graphiques</span>
-      </div>
-
-      <div style={{ display:'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 8 : 12, marginBottom:20 }}>
-
-        {/* Trigger calendrier */}
-        <div style={{ position: 'relative' }}>
-          <div
-            ref={chartCalTriggerRef}
-            onClick={() => {
-              const r = chartCalTriggerRef.current.getBoundingClientRect()
-              const spaceBelow = window.innerHeight - r.bottom
-              if (spaceBelow < 340)
-                setChartCalPos({ bottom: window.innerHeight - r.top + 6, top: 'auto', left: r.left })
-              else
-                setChartCalPos({ top: r.bottom + 6, bottom: 'auto', left: r.left })
-              setShowChartCal(v => !v)
-            }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '7px 14px', borderRadius: 8, minHeight: 34,
-              cursor: 'pointer',
-              border: `1.5px solid ${showChartCal ? C.green : C.border}`,
-              background: C.inputBg, transition: 'border-color 0.15s',
-              fontFamily: 'inherit',
-            }}
-          >
-            <Calendar size={14} color={showChartCal || chartDateFrom !== today() ? C.green : C.textDim} strokeWidth={2} />
-            <span style={{ fontSize: 12, fontWeight: 630, color: C.text }}>
-              {fmtDisplay(chartDateFrom)}
-            </span>
-            <MoveRight size={13} strokeWidth={2} color={C.textDim} />
-            <span style={{ fontSize: 12, fontWeight: 630, color: chartDateTo ? C.green : C.textDim }}>
-              {chartDateTo ? fmtDisplay(chartDateTo) : '—'}
-            </span>
-            {chartDateFrom && chartDateTo && (
-              <span style={{ fontSize: 11, color: C.textDim, marginLeft: 4 }}>
-                {Math.round((new Date(chartDateTo) - new Date(chartDateFrom)) / 86400000) + 1} j
-              </span>
-            )}
-          </div>
-
-          {showChartCal && createPortal(
-            <div
-              ref={chartCalPortalRef}
-              style={{
-                position: 'fixed',
-                top: chartCalPos.top !== 'auto' ? chartCalPos.top : 'auto',
-                bottom: chartCalPos.bottom !== 'auto' ? chartCalPos.bottom : 'auto',
-                left: chartCalPos.left,
-                zIndex: 99999,
-                border: `1.5px solid ${C.border}`,
-                borderRadius: 12,
-                padding: '16px 20px',
-                background: dark ? C.surface : '#fafcfb',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
-                width: isMobile ? 280 : 560,
-              }}
-            >
-              <RangeCalendar
-                dateFrom={chartDateFrom}
-                dateTo={chartDateTo}
-                onChangeFrom={v => setChartDateFrom(v)}
-                onChangeTo={v => { setChartDateTo(v); if (v) setShowChartCal(false) }}
-                C={C}
-                onClose={() => setShowChartCal(false)}
-                singleMonth={isMobile}
-              />
-            </div>,
-            document.body
-          )}
-        </div>
-
-        {(chartDateFrom !== today() || chartDateTo !== today()) && (
-          <button
-            onClick={() => { setChartDateFrom(today()); setChartDateTo(today()) }}
-            style={{
-              padding: '6px 10px', borderRadius: 7,
-              border: `1.5px solid ${C.border}`,
-              background: C.inputBg, color: C.text,
-              fontSize: 12, fontFamily: 'inherit',
-              cursor: 'pointer', outline: 'none',
-            }}
-          >
-            Aujourd'hui
-          </button>
-        )}
-        {(chartZoomFrom || chartZoomTo) && (
-          <button onClick={() => { setChartZoomFrom(null); setChartZoomTo(null); isZoomedRef.current = false }} style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '5px 14px', background: 'transparent',
-            border: `1.5px solid ${C.green}`, borderRadius: 7,
-            color: C.green, fontSize: 12, fontWeight: 630,
-            cursor: 'pointer', fontFamily: 'inherit',
-          }}>
-            <RefreshCw size={12} strokeWidth={2} /> Reset zoom
-          </button>
-        )}
-      </div>
-
       {/* ── Tours d'irrigation ──────────────────────────────────── */}
       <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:32, marginBottom:14 }}>
         <div style={{ width:3, height:18, background:C.green, borderRadius:2 }} />
@@ -1626,6 +1523,109 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
           </div>
         )
       })()}
+
+      {/* ── Sélecteur de période ─────────────────────────────── */}
+      <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:14, marginTop:32 }}>
+        <div style={{ width:3, height:18, background:C.green, borderRadius:2 }} />
+        <span style={{ color:C.text, fontSize:14, fontWeight:800 }}>Graphiques</span>
+      </div>
+
+      <div style={{ display:'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 8 : 12, marginBottom:20 }}>
+
+        {/* Trigger calendrier */}
+        <div style={{ position: 'relative' }}>
+          <div
+            ref={chartCalTriggerRef}
+            onClick={() => {
+              const r = chartCalTriggerRef.current.getBoundingClientRect()
+              const spaceBelow = window.innerHeight - r.bottom
+              if (spaceBelow < 340)
+                setChartCalPos({ bottom: window.innerHeight - r.top + 6, top: 'auto', left: r.left })
+              else
+                setChartCalPos({ top: r.bottom + 6, bottom: 'auto', left: r.left })
+              setShowChartCal(v => !v)
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '7px 14px', borderRadius: 8, minHeight: 34,
+              cursor: 'pointer',
+              border: `1.5px solid ${showChartCal ? C.green : C.border}`,
+              background: C.inputBg, transition: 'border-color 0.15s',
+              fontFamily: 'inherit',
+            }}
+          >
+            <Calendar size={14} color={showChartCal || chartDateFrom !== today() ? C.green : C.textDim} strokeWidth={2} />
+            <span style={{ fontSize: 12, fontWeight: 630, color: C.text }}>
+              {fmtDisplay(chartDateFrom)}
+            </span>
+            <MoveRight size={13} strokeWidth={2} color={C.textDim} />
+            <span style={{ fontSize: 12, fontWeight: 630, color: chartDateTo ? C.green : C.textDim }}>
+              {chartDateTo ? fmtDisplay(chartDateTo) : '—'}
+            </span>
+            {chartDateFrom && chartDateTo && (
+              <span style={{ fontSize: 11, color: C.textDim, marginLeft: 4 }}>
+                {Math.round((new Date(chartDateTo) - new Date(chartDateFrom)) / 86400000) + 1} j
+              </span>
+            )}
+          </div>
+
+          {showChartCal && createPortal(
+            <div
+              ref={chartCalPortalRef}
+              style={{
+                position: 'fixed',
+                top: chartCalPos.top !== 'auto' ? chartCalPos.top : 'auto',
+                bottom: chartCalPos.bottom !== 'auto' ? chartCalPos.bottom : 'auto',
+                left: chartCalPos.left,
+                zIndex: 99999,
+                border: `1.5px solid ${C.border}`,
+                borderRadius: 12,
+                padding: '16px 20px',
+                background: dark ? C.surface : '#fafcfb',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+                width: isMobile ? 280 : 560,
+              }}
+            >
+              <RangeCalendar
+                dateFrom={chartDateFrom}
+                dateTo={chartDateTo}
+                onChangeFrom={v => setChartDateFrom(v)}
+                onChangeTo={v => { setChartDateTo(v); if (v) setShowChartCal(false) }}
+                C={C}
+                onClose={() => setShowChartCal(false)}
+                singleMonth={isMobile}
+              />
+            </div>,
+            document.body
+          )}
+        </div>
+
+        {(chartDateFrom !== today() || chartDateTo !== today()) && (
+          <button
+            onClick={() => { setChartDateFrom(today()); setChartDateTo(today()) }}
+            style={{
+              padding: '6px 10px', borderRadius: 7,
+              border: `1.5px solid ${C.border}`,
+              background: C.inputBg, color: C.text,
+              fontSize: 12, fontFamily: 'inherit',
+              cursor: 'pointer', outline: 'none',
+            }}
+          >
+            Aujourd'hui
+          </button>
+        )}
+        {(chartZoomFrom || chartZoomTo) && (
+          <button onClick={() => { setChartZoomFrom(null); setChartZoomTo(null); isZoomedRef.current = false }} style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '5px 14px', background: 'transparent',
+            border: `1.5px solid ${C.green}`, borderRadius: 7,
+            color: C.green, fontSize: 12, fontWeight: 630,
+            cursor: 'pointer', fontFamily: 'inherit',
+          }}>
+            <RefreshCw size={12} strokeWidth={2} /> Reset zoom
+          </button>
+        )}
+      </div>
 
       {/* ── 4 Graphiques ─────────────────────────────────────── */}
       {(
