@@ -1367,7 +1367,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
         // CONFIGURATION
         // ---------------------------
         const validTours = (tours?.tours || []).filter(t => t !== null && t.debut !== null && t.debut !== undefined);
-        const MAX_TOURS = 15;
+        const MAX_TOURS = 10;
 
         // Si 0 tours réels → 0 colonnes (message vide affiché)
         // Si tours présents → max(nb tours réels, 10)
