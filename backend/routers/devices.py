@@ -662,7 +662,7 @@ def get_tours(
     slots = []
     tours_dict = {t.tour_num: t for t in tours}
 
-    for i in range(1, 17):
+    for i in range(1, 30):
         t = tours_dict.get(i)
         if t:
             slots.append({
