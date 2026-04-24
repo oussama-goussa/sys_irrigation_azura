@@ -29,9 +29,8 @@ def time_to_seconds(t) -> int:
 def split_bloc_en_demitours(rows: list) -> list:
     """
     Découpe un bloc d'irrigation continu en demi-tours.
-    Un reset de water_act_time signale le début d'un nouveau demi-tour.
-    rows : liste de tuples (SensorReading, IrrigationCycle)
-    Retourne une liste de listes de tuples.
+    - Reset de water_act_time → nouveau demi-tour
+    - Changement de cycle_act → nouveau tour complet (nouveau bloc)
     """
     if not rows:
         return []
@@ -39,22 +38,34 @@ def split_bloc_en_demitours(rows: list) -> list:
     demitours = []
     current   = [rows[0]]
     prev_sec  = time_to_seconds(rows[0][1].water_act_time)
+    prev_cycle_act = rows[0][1].cycle_act
 
     for row in rows[1:]:
         curr_sec = time_to_seconds(row[1].water_act_time)
+        curr_cycle_act = row[1].cycle_act
+
+        # Changement de cycle_act → nouveau tour complet
+        if curr_cycle_act != prev_cycle_act and prev_cycle_act is not None:
+            demitours.append(current)
+            current = [row]
+            prev_sec = curr_sec
+            prev_cycle_act = curr_cycle_act
+            continue
+
+        # Reset water_act_time → nouveau demi-tour
         if curr_sec < prev_sec:
-            # Reset détecté → nouveau demi-tour
             demitours.append(current)
             current = [row]
         else:
             current.append(row)
+        
         prev_sec = curr_sec
+        prev_cycle_act = curr_cycle_act
 
     if current:
         demitours.append(current)
 
     return demitours
-
 
 # ── Calcul des tours pour un device et une date ───────────────
 
@@ -144,28 +155,28 @@ def calculer_tours_journee(
             first_sr, first_ic = chunk[0]
             last_sr,  last_ic  = chunk[-1]
 
-            act_sec   = time_to_seconds(first_ic.water_act_time)
+            act_sec     = time_to_seconds(first_ic.water_act_time)
             debut_exact = first_sr.timestamp - timedelta(seconds=act_sec)
 
             left_sec   = time_to_seconds(last_ic.water_left)
             fin_exacte  = last_sr.timestamp + timedelta(seconds=left_sec)
 
             duree_min  = round((fin_exacte - debut_exact).total_seconds() / 60)
-            debit_vals = [sr.flow for sr, ic in chunk if sr.flow and sr.flow > 0]
-            debit_moy  = round(sum(debit_vals) / len(debit_vals), 1) if debit_vals else 0.0
             prg_sec    = time_to_seconds(first_ic.water_prg_time)
             prg_min    = max(1, round(prg_sec / 60))
             qte_prog   = int(first_ic.water_prg_qty) if first_ic.water_prg_qty else 0
+
+            # is_first_of_bloc = True si premier demi-tour OU nouveau cycle_act
+            is_first = (k == 0)
 
             demitours_all.append({
                 'debut'           : debut_exact,
                 'fin'             : fin_exacte,
                 'duree'           : duree_min,
-                'debit_moy'       : debit_moy,
                 'prg_time_min'    : prg_min,
                 'qte_prog'        : qte_prog,
                 'prev_status'     : prev_status if k == 0 else 'Irrigation',
-                'is_first_of_bloc': k == 0,
+                'is_first_of_bloc': is_first,
                 'is_last_of_day'  : False,
                 'ec_apport'       : first_sr.ec_prog,
                 'ph_apport'       : first_sr.ph_prog,
@@ -223,14 +234,18 @@ def calculer_tours_journee(
 
     result = []
     for idx, t in enumerate(tours):
+        # Durée complète = prg_time_min * 2 (2 demi-tours Netafim)
+        duree_complete = t['prg_time_min'] * 2
+
+        # Repos AVANT ce tour (comme SaisiePage)
         if idx > 0:
             debut_prev = tours[idx - 1]['debut']
-            duree_prev = tours[idx - 1]['duree_min']
+            duree_prev = tours[idx - 1]['prg_time_min'] * 2
             repos = round((t['debut'] - debut_prev).total_seconds() / 60) - duree_prev
             if repos < 0:
                 repos = 0
         else:
-            repos = None  # Premier tour : pas de repos avant
+            repos = None
 
         if idx + 1 < len(tours):
             is_complete = True
@@ -240,8 +255,8 @@ def calculer_tours_journee(
         result.append({
             'tour_num'       : idx + 1,
             'debut'          : t['debut'],
-            'fin'            : t['fin'],
-            'duree_min'      : t['duree_min'],
+            'fin'            : t['debut'] + timedelta(minutes=duree_complete),
+            'duree_min'      : duree_complete,
             'prg_time_min'   : t['prg_time_min'],
             'repos_apres_min': repos,
             'is_complete'    : is_complete,
@@ -284,6 +299,7 @@ def upsert_tours(
             if not existing.is_complete:
                 existing.fin             = t['fin']
                 existing.duree_min       = t['duree_min']
+                existing.prg_time_min    = t['prg_time_min']
                 existing.repos_apres_min = t['repos_apres_min']
                 existing.is_complete     = t['is_complete']
                 existing.v_apport        = t.get('v_apport')
