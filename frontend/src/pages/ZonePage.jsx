@@ -982,7 +982,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
         <>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr 1fr' : isTablet ? 'repeat(4,1fr)' : 'repeat(4,1fr)',
+            gridTemplateColumns: isMobile ? '1fr 1fr' : isTablet ? 'repeat(5,1fr)' : 'repeat(5,1fr)',
             gap: isMobile ? 10 : 14,
             marginBottom: 14,
           }}>
