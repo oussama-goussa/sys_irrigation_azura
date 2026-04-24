@@ -161,18 +161,23 @@ def calculer_tours_journee(
             left_sec   = time_to_seconds(last_ic.water_left)
             fin_exacte  = last_sr.timestamp + timedelta(seconds=left_sec)
 
-            duree_min  = round((fin_exacte - debut_exact).total_seconds() / 60)
             prg_sec    = time_to_seconds(first_ic.water_prg_time)
             prg_min    = max(1, round(prg_sec / 60))
             qte_prog   = int(first_ic.water_prg_qty) if first_ic.water_prg_qty else 0
 
-            # is_first_of_bloc = True si premier demi-tour OU nouveau cycle_act
-            is_first = (k == 0)
+            # is_first_of_bloc = True si premier chunk du bloc OU cycle_act différent du chunk précédent
+            if k == 0:
+                is_first = True
+                prev_chunk_cycle = first_ic.cycle_act
+            else:
+                prev_chunk_first_ic = chunks[k-1][0][1]
+                is_first = (first_ic.cycle_act != prev_chunk_first_ic.cycle_act)
+                prev_chunk_cycle = first_ic.cycle_act
 
             demitours_all.append({
                 'debut'           : debut_exact,
                 'fin'             : fin_exacte,
-                'duree'           : duree_min,
+                'duree'           : round((fin_exacte - debut_exact).total_seconds() / 60),
                 'prg_time_min'    : prg_min,
                 'qte_prog'        : qte_prog,
                 'prev_status'     : prev_status if k == 0 else 'Irrigation',
