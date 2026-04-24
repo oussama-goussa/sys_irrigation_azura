@@ -997,10 +997,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             <GaugeCard label="Radiation"   value={fmt(sensor.radiation, 1)}    unit="W/m²"  min={0}  max={2000} color="#f5e642" C={C} />
             <GaugeCard label="Débit"       value={fmt(sensor.flow, 0)}         unit="L/h"   min={0}  max={1000} color="#34d96f" C={C} />
             <GaugeCard label="Cumul Rad."  value={fmt(sensor.radiation_sum,1)} unit="J/cm²" min={0}  max={3000} color="#f5a623" C={C} />
-            <GaugeCard label="Alarme"      value={fmt(sensor.alarm ?? 0, 0)}   unit=""      min={0}  max={10}
-              color={(sensor.alarm ?? 0) > 0 ? C.red : C.green} C={C}
-              subLabel={(sensor.alarm ?? 0) > 0 ? `sirène ${sensor.siren ? 'active' : 'off'}` : 'normal'}
-              subLabelColor={(sensor.alarm ?? 0) > 0 ? C.red : C.green} />
+            <GaugeCard label="Humidité Ext"    value={fmt(sensor.outside_humidity, 1)}   unit="%"  min={0}  max={100} color="#b197fc" C={C} />
           </div>
         </>
       )}
