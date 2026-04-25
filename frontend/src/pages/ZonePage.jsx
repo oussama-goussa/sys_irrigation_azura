@@ -998,6 +998,8 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             <GaugeCard label="Débit"       value={fmt(sensor.flow, 0)}         unit="L/h"   min={0}  max={1000} color="#34d96f" C={C} />
             <GaugeCard label="Cumul Rad."  value={fmt(sensor.radiation_sum,1)} unit="J/cm²" min={0}  max={3000} color="#f5a623" C={C} />
             <GaugeCard label="Vent"    value={fmt(sensor.wind_speed, 1)}   unit="m/s"  min={0}  max={30} color="#576c58" C={C} />
+            <GaugeCard label="Temp. ext."  value={fmt(sensor.outside_temp, 1)}    unit="°C"  min={0}  max={50}  color="#f05252" C={C} />
+            <GaugeCard label="Hum. ext."   value={fmt(sensor.outside_humidity, 1)} unit="%"   min={0}  max={100} color="#4d9de0" C={C} />
           </div>
         </>
       )}
