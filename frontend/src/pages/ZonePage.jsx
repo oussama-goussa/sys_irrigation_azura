@@ -978,11 +978,12 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
       {errorL ? (
         <div style={{ color: C.red, fontSize: 12 }}>{errorL}</div>
-      ) : (
-        <>
+      ) : (() => {
+        const hasOutside = sensor.outside_temp != null || sensor.outside_humidity != null
+        return (
           <div style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr 1fr' : isTablet ? 'repeat(5,1fr)' : 'repeat(5,1fr)',
+            gridTemplateColumns: isMobile ? '1fr 1fr' : isTablet ? 'repeat(4,1fr)' : hasOutside ? 'repeat(5,1fr)' : 'repeat(4,1fr)',
             gap: isMobile ? 10 : 14,
             marginBottom: 14,
           }}>
@@ -997,12 +998,16 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             <GaugeCard label="Radiation"   value={fmt(sensor.radiation, 1)}    unit="W/m²"  min={0}  max={2000} color="#f5e642" C={C} />
             <GaugeCard label="Débit"       value={fmt(sensor.flow, 0)}         unit="L/h"   min={0}  max={1000} color="#34d96f" C={C} />
             <GaugeCard label="Cumul Rad."  value={fmt(sensor.radiation_sum,1)} unit="J/cm²" min={0}  max={3000} color="#f5a623" C={C} />
-            <GaugeCard label="Température Extérieure"  value={fmt(sensor.outside_temp, 1)}    unit="°C"  min={0}  max={50}  color="#f05252" C={C} />
-            <GaugeCard label="Humidité Extérieure"   value={fmt(sensor.outside_humidity, 1)} unit="%"   min={0}  max={100} color="#4d9de0" C={C} />            
+            {hasOutside && (
+              <GaugeCard label="Température Extérieure" value={fmt(sensor.outside_temp, 1)}    unit="°C" min={0} max={50}  color="#f05252" C={C} />
+            )}
+            {hasOutside && (
+              <GaugeCard label="Humidité Extérieure"    value={fmt(sensor.outside_humidity, 1)} unit="%" min={0} max={100} color="#4d9de0" C={C} />
+            )}
             <GaugeCard label="Vent"    value={fmt(sensor.wind_speed, 1)}   unit="m/s"  min={0}  max={30} color="#576c58" C={C} />
           </div>
-        </>
-      )}
+          )
+      })()}
 
       {/* ── État irrigation ─────────────────────────────────── */}
       <SectionTitle title="État irrigation en temps réel" C={C} />
