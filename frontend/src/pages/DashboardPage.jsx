@@ -125,10 +125,10 @@ function HouseCard({ house, onSelectDevice, C, dark, accentColor, isMobile }) {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
           {[
-            { label: 'EC', value: ec, unit: 'mS/cm', color: '#34d96f' },
-            { label: 'pH', value: ph, unit: '', color: '#4d9de0' },
-            { label: 'Temp', value: temp, unit: '°C', color: '#f5a623' },
-            { label: 'Hum', value: hum, unit: '%', color: '#b197fc' },
+            { label: 'EC Apport', value: ec, unit: 'mS/cm', color: '#34d96f' },
+            { label: 'pH Apport', value: ph, unit: '', color: '#4d9de0' },
+            { label: 'Temp Serre', value: temp, unit: '°C', color: '#f5a623' },
+            { label: 'Hum Serre', value: hum, unit: '%', color: '#b197fc' },
           ].map(m => (
             <div key={m.label} style={{
               background: dark ? '#0d1610' : '#f0f8f3',
