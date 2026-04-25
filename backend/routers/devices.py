@@ -331,6 +331,7 @@ def get_latest(
             "daily_rain"    : sr.daily_rain,
             "ec_ph_status"  : sr.ec_ph_status,
             "outside_temp"  : sr.outside_temp,
+            "outside_humidity": sr.outside_humidity,
         }
 
     def cycle_dict(c):
