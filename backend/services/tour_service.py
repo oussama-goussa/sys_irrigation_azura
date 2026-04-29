@@ -120,6 +120,11 @@ def calculer_tours_journee(
     if current_bloc:
         blocs.append(current_bloc)
 
+    blocs = [
+        bloc for bloc in blocs
+        if any((sr.flow or 0) > 0 for sr, ic in bloc)
+    ]
+
     if not blocs:
         return []
 
