@@ -156,7 +156,12 @@ def calculer_tours_journee(
             # is_first_of_bloc = True si premier chunk du bloc OU cycle_act différent du chunk précédent
             is_first = (k == 0)
 
-            nb_rows = len(chunk)
+            # Détecter si on a rejoint ce demi-tour en cours de route :
+            # water_act_time > 0 dès le premier enregistrement du chunk
+            # => on n'a pas vu le début réel, durée réelle sous-estimée.
+            first_act_sec = time_to_seconds(first_ic.water_act_time)
+            is_truncated  = (k == 0 and b_idx == 0 and first_act_sec > 60)
+
             duree_reelle_sec = (last_sr.timestamp - first_sr.timestamp).total_seconds() + (5 * 60)  # +5min (intervalle polling)
 
             demitours_all.append({
@@ -169,6 +174,7 @@ def calculer_tours_journee(
                 'prev_status'     : prev_status if k == 0 else 'Irrigation',
                 'is_first_of_bloc': is_first,
                 'is_last_of_day'  : False,
+                'is_truncated'    : is_truncated,
                 'ec_apport'       : first_sr.ec_prog,
                 'ph_apport'       : first_sr.ph_prog,
             })
@@ -191,29 +197,31 @@ def calculer_tours_journee(
 
             if gap_sec < 180 and meme_bloc:
                 tours.append({
-                    'debut'        : dt1['debut'],
-                    'fin'          : dt2['fin'],
-                    'duree_min'    : round((dt2['fin'] - dt1['debut']).total_seconds() / 60),
+                    'debut'           : dt1['debut'],
+                    'fin'             : dt2['fin'],
+                    'duree_min'       : round((dt2['fin'] - dt1['debut']).total_seconds() / 60),
                     'duree_reelle_min': dt1['duree_reelle_min'] + dt2['duree_reelle_min'],
-                    'prg_time_min' : dt1['prg_time_min'],
-                    'prev_status'  : dt1['prev_status'],
-                    'is_last'      : dt2['is_last_of_day'],
-                    'ec_apport'    : dt1['ec_apport'],
-                    'ph_apport'    : dt1['ph_apport'],
+                    'prg_time_min'    : dt1['prg_time_min'],
+                    'prev_status'     : dt1['prev_status'],
+                    'is_last'         : dt2['is_last_of_day'],
+                    'is_truncated'    : dt1.get('is_truncated', False),
+                    'ec_apport'       : dt1['ec_apport'],
+                    'ph_apport'       : dt1['ph_apport'],
                 })
                 i += 2
                 continue
 
         tours.append({
-            'debut'        : dt1['debut'],
-            'fin'          : dt1['fin'],
-            'duree_min'    : dt1['duree'],
+            'debut'           : dt1['debut'],
+            'fin'             : dt1['fin'],
+            'duree_min'       : dt1['duree'],
             'duree_reelle_min': dt1['duree_reelle_min'],
-            'prg_time_min' : dt1['prg_time_min'],
-            'prev_status'  : dt1['prev_status'],
-            'is_last'      : dt1['is_last_of_day'],
-            'ec_apport'    : dt1['ec_apport'],
-            'ph_apport'    : dt1['ph_apport'],
+            'prg_time_min'    : dt1['prg_time_min'],
+            'prev_status'     : dt1['prev_status'],
+            'is_last'         : dt1['is_last_of_day'],
+            'is_truncated'    : dt1.get('is_truncated', False),
+            'ec_apport'       : dt1['ec_apport'],
+            'ph_apport'       : dt1['ph_apport'],
         })
         i += 1
 
@@ -233,7 +241,8 @@ def calculer_tours_journee(
         duree_reelle = t.get('duree_reelle_min', duree_complete)
         seuil = duree_complete * 0.75
 
-        if duree_reelle < seuil:
+        # Ne jamais filtrer un tour tronqué (collecte démarrée en cours de tour)
+        if not t.get('is_truncated', False) and duree_reelle < seuil:
             logger.info(
                 f"Tour ignoré (réel={duree_reelle:.1f}min < seuil={seuil:.1f}min) "
                 f"début={t['debut']}"
