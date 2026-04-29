@@ -53,12 +53,19 @@ def split_bloc_en_demitours(rows: list) -> list:
             continue
 
         # Reset water_act_time → nouveau demi-tour
-        if curr_sec < prev_sec:
+        if curr_sec < prev_sec and curr_sec > 0:
             demitours.append(current)
             current = [row]
+        elif curr_sec == 0 and prev_sec > 60:
+            prg_sec_curr = time_to_seconds(row[1].water_prg_time)
+            if prg_sec_curr > 0:
+                demitours.append(current)
+                current = [row]
+            else:
+                current.append(row)
         else:
             current.append(row)
-        
+
         prev_sec = curr_sec
         prev_cycle_act = curr_cycle_act
 
@@ -108,7 +115,7 @@ def calculer_tours_journee(
     prev_is_irr  = False
 
     for sr, ic in rows:
-        is_irr = sr.ec_ph_status == 'Irrigation'
+        is_irr = sr.ec_ph_status == 'Irrigation' and (sr.flow is not None and sr.flow > 0)
         if is_irr:
             current_bloc.append((sr, ic))
         else:
@@ -162,7 +169,12 @@ def calculer_tours_journee(
             fin_exacte  = last_sr.timestamp + timedelta(seconds=left_sec)
 
             prg_sec    = time_to_seconds(first_ic.water_prg_time)
-            prg_min    = max(1, round(prg_sec / 60))
+            prg_min    = round(prg_sec / 60)
+
+            if prg_min < 5:
+                continue
+            
+            prg_min    = max(1, prg_min)
             qte_prog   = int(first_ic.water_prg_qty) if first_ic.water_prg_qty else 0
 
             # is_first_of_bloc = True si premier chunk du bloc OU cycle_act différent du chunk précédent
@@ -302,6 +314,9 @@ def upsert_tours(
         if existing:
             # Mettre à jour seulement si pas encore complet
             if not existing.is_complete:
+                # Ne pas mettre à jour si la nouvelle durée est anormalement courte
+                if t['duree_min'] and t['duree_min'] < 5:
+                    continue
                 existing.fin             = t['fin']
                 existing.duree_min       = t['duree_min']
                 existing.prg_time_min    = t['prg_time_min']
