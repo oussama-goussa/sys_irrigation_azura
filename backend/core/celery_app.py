@@ -66,16 +66,16 @@ app.conf.beat_schedule = {
     },
 
     # Tours — historique au démarrage
-    "calcul-historique-tours": {
-        "task"    : "core.celery_app.task_historique_tours",
-        "schedule": crontab(hour=0, minute=5),  # chaque nuit à 00h05
-    },
+    #"calcul-historique-tours": {
+    #    "task"    : "core.celery_app.task_historique_tours",
+    #    "schedule": crontab(hour=0, minute=5),  # chaque nuit à 00h05
+    #},
 
     # Tours — jour en cours toutes les 5 min
-    "calcul-tours-jour-en-cours": {
-        "task"    : "core.celery_app.task_tours_jour_en_cours",
-        "schedule": crontab(minute="*/5"),
-    },
+    #calcul-tours-jour-en-cours": {
+    #    "task"    : "core.celery_app.task_tours_jour_en_cours",
+    #    "schedule": crontab(minute="*/5"),
+    #},
 }
 
 

@@ -120,11 +120,6 @@ def calculer_tours_journee(
     if current_bloc:
         blocs.append(current_bloc)
 
-    blocs = [
-        bloc for bloc in blocs
-        if any((sr.flow or 0) > 0 for sr, ic in bloc)
-    ]
-
     if not blocs:
         return []
 
@@ -179,10 +174,14 @@ def calculer_tours_journee(
                 is_first = (first_ic.cycle_act != prev_chunk_first_ic.cycle_act)
                 prev_chunk_cycle = first_ic.cycle_act
 
+            nb_rows = len(chunk)
+            duree_reelle_sec = (last_sr.timestamp - first_sr.timestamp).total_seconds() + (5 * 60)  # +5min (intervalle polling)
+
             demitours_all.append({
                 'debut'           : debut_exact,
                 'fin'             : fin_exacte,
                 'duree'           : round((fin_exacte - debut_exact).total_seconds() / 60),
+                'duree_reelle_min': (last_sr.timestamp - first_sr.timestamp).total_seconds() / 60 + 5,
                 'prg_time_min'    : prg_min,
                 'qte_prog'        : qte_prog,
                 'prev_status'     : prev_status if k == 0 else 'Irrigation',
@@ -213,6 +212,7 @@ def calculer_tours_journee(
                     'debut'        : dt1['debut'],
                     'fin'          : dt2['fin'],
                     'duree_min'    : round((dt2['fin'] - dt1['debut']).total_seconds() / 60),
+                    'duree_reelle_min': dt1['duree_reelle_min'] + dt2['duree_reelle_min'],
                     'prg_time_min' : dt1['prg_time_min'],
                     'prev_status'  : dt1['prev_status'],
                     'is_last'      : dt2['is_last_of_day'],
@@ -226,6 +226,7 @@ def calculer_tours_journee(
             'debut'        : dt1['debut'],
             'fin'          : dt1['fin'],
             'duree_min'    : dt1['duree'],
+            'duree_reelle_min': dt1['duree_reelle_min'],
             'prg_time_min' : dt1['prg_time_min'],
             'prev_status'  : dt1['prev_status'],
             'is_last'      : dt1['is_last_of_day'],
@@ -243,15 +244,21 @@ def calculer_tours_journee(
         journee_terminee = last_status == 'Pause'
 
     result = []
+    num_tour = 1
     for idx, t in enumerate(tours):
-        # Durée complète = prg_time_min * 2 (2 demi-tours Netafim)
         duree_complete = t['prg_time_min'] * 2
+        duree_reelle = t.get('duree_reelle_min', duree_complete)
+        seuil = duree_complete * 0.75
 
-        # Repos AVANT ce tour (comme SaisiePage)
-        if idx > 0:
-            debut_prev = tours[idx - 1]['debut']
-            duree_prev = tours[idx - 1]['prg_time_min'] * 2
-            repos = round((t['debut'] - debut_prev).total_seconds() / 60) - duree_prev
+        if duree_reelle < seuil:
+            logger.info(
+                f"Tour ignoré (réel={duree_reelle:.1f}min < seuil={seuil:.1f}min) "
+                f"début={t['debut']}"
+            )
+            continue
+
+        if num_tour > 1:
+            repos = round((t['debut'] - tours[idx - 1]['debut']).total_seconds() / 60) - (tours[idx - 1]['prg_time_min'] * 2)
             if repos < 0:
                 repos = 0
         else:
@@ -263,7 +270,7 @@ def calculer_tours_journee(
             is_complete = journee_terminee
 
         result.append({
-            'tour_num'       : idx + 1,
+            'tour_num'       : num_tour,
             'debut'          : t['debut'],
             'fin'            : t['debut'] + timedelta(minutes=duree_complete),
             'duree_min'      : duree_complete,
@@ -274,6 +281,7 @@ def calculer_tours_journee(
             'ec_apport'      : t.get('ec_apport'),
             'ph_apport'      : t.get('ph_apport'),
         })
+        num_tour += 1
 
     return result
 
