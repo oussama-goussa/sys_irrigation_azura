@@ -29,8 +29,8 @@ def time_to_seconds(t) -> int:
 def split_bloc_en_demitours(rows: list) -> list:
     """
     Découpe un bloc d'irrigation continu en demi-tours.
-    - Reset de water_act_time → nouveau demi-tour
-    - Changement de cycle_act → nouveau tour complet (nouveau bloc)
+    Seul critère : reset de water_act_time (retour à 0).
+    Le changement de cycle_act est NORMAL dans un même tour Netafim.
     """
     if not rows:
         return []
@@ -38,29 +38,17 @@ def split_bloc_en_demitours(rows: list) -> list:
     demitours = []
     current   = [rows[0]]
     prev_sec  = time_to_seconds(rows[0][1].water_act_time)
-    prev_cycle_act = rows[0][1].cycle_act
 
     for row in rows[1:]:
         curr_sec = time_to_seconds(row[1].water_act_time)
-        curr_cycle_act = row[1].cycle_act
 
-        # Changement de cycle_act → nouveau tour complet
-        if curr_cycle_act != prev_cycle_act and prev_cycle_act is not None:
-            demitours.append(current)
-            current = [row]
-            prev_sec = curr_sec
-            prev_cycle_act = curr_cycle_act
-            continue
-
-        # Reset water_act_time → nouveau demi-tour
         if curr_sec < prev_sec:
             demitours.append(current)
             current = [row]
         else:
             current.append(row)
-        
+
         prev_sec = curr_sec
-        prev_cycle_act = curr_cycle_act
 
     if current:
         demitours.append(current)
@@ -166,13 +154,7 @@ def calculer_tours_journee(
             qte_prog   = int(first_ic.water_prg_qty) if first_ic.water_prg_qty else 0
 
             # is_first_of_bloc = True si premier chunk du bloc OU cycle_act différent du chunk précédent
-            if k == 0:
-                is_first = True
-                prev_chunk_cycle = first_ic.cycle_act
-            else:
-                prev_chunk_first_ic = chunks[k-1][0][1]
-                is_first = (first_ic.cycle_act != prev_chunk_first_ic.cycle_act)
-                prev_chunk_cycle = first_ic.cycle_act
+            is_first = (k == 0)
 
             nb_rows = len(chunk)
             duree_reelle_sec = (last_sr.timestamp - first_sr.timestamp).total_seconds() + (5 * 60)  # +5min (intervalle polling)
@@ -245,6 +227,7 @@ def calculer_tours_journee(
 
     result = []
     num_tour = 1
+    last_accepted = None
     for idx, t in enumerate(tours):
         duree_complete = t['prg_time_min'] * 2
         duree_reelle = t.get('duree_reelle_min', duree_complete)
@@ -257,8 +240,8 @@ def calculer_tours_journee(
             )
             continue
 
-        if num_tour > 1:
-            repos = round((t['debut'] - tours[idx - 1]['debut']).total_seconds() / 60) - (tours[idx - 1]['prg_time_min'] * 2)
+        if last_accepted is not None:
+            repos = round((t['debut'] - last_accepted['debut']).total_seconds() / 60) - (last_accepted['prg_time_min'] * 2)
             if repos < 0:
                 repos = 0
         else:
@@ -281,6 +264,7 @@ def calculer_tours_journee(
             'ec_apport'      : t.get('ec_apport'),
             'ph_apport'      : t.get('ph_apport'),
         })
+        last_accepted = t
         num_tour += 1
 
     return result
