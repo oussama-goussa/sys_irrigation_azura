@@ -155,10 +155,17 @@ def calculer_tours_journee(
             first_sr, first_ic = chunk[0]
             last_sr,  last_ic  = chunk[-1]
 
-            # ── Ignorer les chunks sans débit réel ──
+            # ── Ignorer les chunks incomplets (débit nul ou durée insuffisante) ──
             flows = [sr.flow for sr, ic in chunk if sr.flow is not None]
             flow_moyen = sum(flows) / len(flows) if flows else 0
             if flow_moyen == 0:
+                continue
+
+            # Durée réelle du chunk = water_act_time de la dernière lecture
+            duree_reelle_sec = time_to_seconds(last_ic.water_act_time)
+            prg_sec_check    = time_to_seconds(first_ic.water_prg_time)
+            # Ignorer si le chunk n'a pas atteint 50% de la durée programmée
+            if prg_sec_check > 0 and duree_reelle_sec < (prg_sec_check * 0.5):
                 continue
 
             act_sec     = time_to_seconds(first_ic.water_act_time)
