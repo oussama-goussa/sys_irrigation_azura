@@ -155,6 +155,12 @@ def calculer_tours_journee(
             first_sr, first_ic = chunk[0]
             last_sr,  last_ic  = chunk[-1]
 
+            # ── Ignorer les chunks sans débit réel ──
+            flows = [sr.flow for sr, ic in chunk if sr.flow is not None]
+            flow_moyen = sum(flows) / len(flows) if flows else 0
+            if flow_moyen == 0:
+                continue
+
             act_sec     = time_to_seconds(first_ic.water_act_time)
             debut_exact = first_sr.timestamp - timedelta(seconds=act_sec)
 
