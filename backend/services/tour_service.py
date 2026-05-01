@@ -169,7 +169,9 @@ def calculer_tours_journee(
                 continue
             # Ignorer un chunk isolé (1 seule lecture) — demi-tour incomplet
             if len(chunk) < 2:
-                continue
+                act_sec_check = time_to_seconds(first_ic.water_act_time)
+                if act_sec_check < (prg_sec_check * 0.5):
+                    continue
 
             act_sec     = time_to_seconds(first_ic.water_act_time)
             debut_exact = first_sr.timestamp - timedelta(seconds=act_sec)
