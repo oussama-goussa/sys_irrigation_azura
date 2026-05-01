@@ -235,25 +235,6 @@ def calculer_tours_journee(
                 i += 2
                 continue
 
-            cross_bloc_pair = (
-                not meme_bloc
-                and dt1['prg_time_min'] == dt2['prg_time_min']
-                and 0 < gap_sec < 1500   # deux demi-tours séparés par Wait < 25 min
-            )
-            if (gap_sec < 180 and meme_bloc) or cross_bloc_pair:
-                duree = (dt1['duree_min'] + dt2['duree_min']) if cross_bloc_pair \
-                        else round((dt2['fin'] - dt1['debut']).total_seconds() / 60)
-                tours.append({
-                    'debut'        : dt1['debut'],
-                    'fin'          : dt2['fin'],
-                    'duree_min'    : duree,
-                    'prg_time_min' : dt1['prg_time_min'],
-                    'prev_status'  : dt1['prev_status'],
-                    'is_last'      : dt2['is_last_of_day'],
-                })
-                i += 2
-                continue
-
         tours.append({
             'debut'        : dt1['debut'],
             'fin'          : dt1['fin'],
