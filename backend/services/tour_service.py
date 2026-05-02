@@ -162,16 +162,11 @@ def calculer_tours_journee(
                 continue
 
             # Durée réelle du chunk = water_act_time de la dernière lecture
-            duree_reelle_sec = time_to_seconds(last_ic.water_act_time)
+            duree_reelle_sec = max(time_to_seconds(ic.water_act_time) for _, ic in chunk)
             prg_sec_check    = time_to_seconds(first_ic.water_prg_time)
             # Ignorer si le chunk n'a pas atteint 50% de la durée programmée
-            if prg_sec_check > 0 and duree_reelle_sec < (prg_sec_check * 0.5):
+            if prg_sec_check > 0 and duree_reelle_sec < (prg_sec_check * 0.3):
                 continue
-            # Ignorer un chunk isolé (1 seule lecture) — demi-tour incomplet
-            if len(chunk) < 2:
-                act_sec_check = time_to_seconds(first_ic.water_act_time)
-                if act_sec_check < (prg_sec_check * 0.5):
-                    continue
 
             act_sec     = time_to_seconds(first_ic.water_act_time)
             debut_exact = first_sr.timestamp - timedelta(seconds=act_sec)
