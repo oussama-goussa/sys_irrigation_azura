@@ -47,8 +47,8 @@ export function RangeCalendar({
   singleMonth = false,
 }) {
   const today = new Date();
-  const [leftYear, setLeftYear] = useState(today.getFullYear());
-  const [leftMonth, setLeftMonth] = useState(today.getMonth());
+  const [leftYear,  setLeftYear]  = useState(() => dateFrom ? new Date(dateFrom + 'T00:00:00').getFullYear()  : today.getFullYear());
+  const [leftMonth, setLeftMonth] = useState(() => dateFrom ? new Date(dateFrom + 'T00:00:00').getMonth()     : today.getMonth());
   const [hovering, setHovering] = useState(null);
   const [modeLeft, setModeLeft] = useState("days");
   const [modeRight, setModeRight] = useState("days");
