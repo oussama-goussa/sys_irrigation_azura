@@ -253,14 +253,21 @@ def calculer_tours_journee(
     result = []
     tour_num = 1
     for idx, t in enumerate(tours):
-        # Durée complète = prg_time_min * 2 (2 demi-tours Netafim)
         duree_complete = t['prg_time_min'] * 2
 
-        # Ignorer les demi-tours orphelins (duree réelle < 70% de la durée complète)
-        if t['duree_min'] < duree_complete * 0.7:
+        # Vérifier que le débit total couvre au moins 80% de la durée complète
+        fin_theorique = t['debut'] + timedelta(minutes=duree_complete)
+        rows_with_flow = db.query(SensorReading).filter(
+            SensorReading.device_id == device.id,
+            SensorReading.timestamp >= t['debut'],
+            SensorReading.timestamp <= fin_theorique,
+            SensorReading.flow > 0,
+        ).count()
+        # Chaque snapshot = ~5min → rows_with_flow * 5 = minutes avec débit
+        minutes_avec_debit = rows_with_flow * 5
+        if minutes_avec_debit < duree_complete * 0.8:
             continue
 
-        # Repos AVANT ce tour (comme SaisiePage)
         if idx > 0:
             debut_prev = tours[idx - 1]['debut']
             duree_prev = tours[idx - 1]['prg_time_min'] * 2
