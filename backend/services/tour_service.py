@@ -108,7 +108,7 @@ def calculer_tours_journee(
     prev_is_irr  = False
 
     for sr, ic in rows:
-        is_irr = sr.ec_ph_status == 'Irrigation'
+        is_irr = sr.ec_ph_status == 'Irrigation' and ic.sequence != 16
         if is_irr:
             current_bloc.append((sr, ic))
         else:
