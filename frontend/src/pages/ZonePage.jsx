@@ -685,6 +685,12 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
   const chartCalTriggerRef = useRef(null)
   const chartCalPortalRef  = useRef(null)
 
+  // ── Calendrier tours ──
+  const [showTourCal,     setShowTourCal]     = useState(false)
+  const [tourCalPos,      setTourCalPos]      = useState({ top: 0, bottom: 'auto', left: 0 })
+  const tourCalTriggerRef  = useRef(null)
+  const tourCalPortalRef   = useRef(null)
+
   // ── Calendrier historique table ──
   const [showHistCal,     setShowHistCal]     = useState(false)
   const [histCalPos,      setHistCalPos]      = useState({ top: 0, bottom: 'auto', left: 0 })
@@ -812,6 +818,23 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
       window.removeEventListener('scroll', onScroll, true)
     }
   }, [showHistCal])
+
+  useEffect(() => {
+    if (!showTourCal) return
+    const close = (e) => {
+      if (
+        tourCalTriggerRef.current && !tourCalTriggerRef.current.contains(e.target) &&
+        tourCalPortalRef.current  && !tourCalPortalRef.current.contains(e.target)
+      ) setShowTourCal(false)
+    }
+    const onScroll = () => setShowTourCal(false)
+    document.addEventListener('mousedown', close)
+    window.addEventListener('scroll', onScroll, true)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      window.removeEventListener('scroll', onScroll, true)
+    }
+  }, [showTourCal])  
 
   // ── Period shortcut ──
   const applyPeriod = (p) => {
@@ -1341,29 +1364,79 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
       </div>
 
       <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
-        <Calendar size={14} strokeWidth={2} color={C.textMuted} />
-        <input type="date" value={tourDate}
-          onChange={e => setTourDate(e.target.value)}
-          max={today()}
-          style={{
-            padding: '6px 10px', borderRadius: 7,
-            border: `1.5px solid ${C.border}`,
-            background: C.inputBg, color: C.text,
-            fontSize: 12, fontFamily: 'inherit', outline: 'none',
-          }}
-        />
+
+        {/* Trigger calendrier — même style que Graphiques */}
+        <div style={{ position: 'relative' }}>
+          <div
+            ref={tourCalTriggerRef}
+            onClick={() => {
+              const r = tourCalTriggerRef.current.getBoundingClientRect()
+              const spaceBelow = window.innerHeight - r.bottom
+              if (spaceBelow < 340)
+                setTourCalPos({ bottom: window.innerHeight - r.top + 6, top: 'auto', left: r.left })
+              else
+                setTourCalPos({ top: r.bottom + 6, bottom: 'auto', left: r.left })
+              setShowTourCal(v => !v)
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '7px 14px', borderRadius: 8, minHeight: 34,
+              cursor: 'pointer',
+              border: `1.5px solid ${showTourCal ? C.green : C.border}`,
+              background: C.inputBg, transition: 'border-color 0.15s',
+              fontFamily: 'inherit',
+            }}
+          >
+            <Calendar size={14} color={showTourCal || tourDate !== today() ? C.green : C.textDim} strokeWidth={2} />
+            <span style={{ fontSize: 12, fontWeight: 630, color: C.text }}>
+              {fmtDisplay(tourDate)}
+            </span>
+          </div>
+
+          {showTourCal && createPortal(
+            <div
+              ref={tourCalPortalRef}
+              style={{
+                position: 'fixed',
+                top: tourCalPos.top !== 'auto' ? tourCalPos.top : 'auto',
+                bottom: tourCalPos.bottom !== 'auto' ? tourCalPos.bottom : 'auto',
+                left: tourCalPos.left,
+                zIndex: 99999,
+                border: `1.5px solid ${C.border}`,
+                borderRadius: 12,
+                padding: '16px 20px',
+                background: dark ? C.surface : '#fafcfb',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+                width: isMobile ? 280 : 320,
+              }}
+            >
+              <RangeCalendar
+                dateFrom={tourDate}
+                dateTo={tourDate}
+                onChangeFrom={v => { setTourDate(v); setShowTourCal(false) }}
+                onChangeTo={v => { if (v) { setTourDate(v); setShowTourCal(false) } }}
+                C={C}
+                onClose={() => setShowTourCal(false)}
+                singleMonth={true}
+              />
+            </div>,
+            document.body
+          )}
+        </div>
+
         {tourDate !== today() && (
           <button onClick={() => setTourDate(today())} style={{
             padding: '6px 10px', borderRadius: 7,
             border: `1.5px solid ${C.border}`,
             background: C.inputBg, color: C.text,
-            fontSize: 12, fontFamily: 'inherit', cursor: 'pointer',
+            fontSize: 12, fontFamily: 'inherit', cursor: 'pointer', outline: 'none',
           }}>Aujourd'hui</button>
         )}
+
         <span style={{ color: C.textDim, fontSize: 11 }}>
           {tours ? `${tours.total_tours} tour${tours.total_tours > 1 ? 's' : ''} enregistrés` : ''}
         </span>
-      </div>
+      </div>      
 
       {loadingTours ? null : (() => {
 
