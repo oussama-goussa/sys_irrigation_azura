@@ -186,6 +186,13 @@ def calculer_tours_journee(
                 prev_chunk_first_ic = chunks[k-1][0][1]
                 is_first = (first_ic.cycle_act != prev_chunk_first_ic.cycle_act)
                 prev_chunk_cycle = first_ic.cycle_act
+            
+            # Ignorer les chunks avec prg_time incohérent par rapport au chunk précédent du même bloc
+            if k > 0:
+                prev_prg = time_to_seconds(chunks[k-1][-1][1].water_prg_time) // 60
+                curr_prg = prg_min
+                if not is_first and prev_prg != curr_prg and curr_prg < prev_prg:
+                    continue
 
             demitours_all.append({
                 'debut'           : debut_exact,
