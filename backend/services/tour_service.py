@@ -251,9 +251,14 @@ def calculer_tours_journee(
         journee_terminee = last_status == 'Pause'
 
     result = []
+    tour_num = 1
     for idx, t in enumerate(tours):
         # Durée complète = prg_time_min * 2 (2 demi-tours Netafim)
         duree_complete = t['prg_time_min'] * 2
+
+        # Ignorer les demi-tours orphelins (duree réelle < 70% de la durée complète)
+        if t['duree_min'] < duree_complete * 0.7:
+            continue
 
         # Repos AVANT ce tour (comme SaisiePage)
         if idx > 0:
@@ -271,7 +276,7 @@ def calculer_tours_journee(
             is_complete = journee_terminee
 
         result.append({
-            'tour_num'       : idx + 1,
+            'tour_num'       : tour_num,
             'debut'          : t['debut'],
             'fin'            : t['debut'] + timedelta(minutes=duree_complete),
             'duree_min'      : duree_complete,
@@ -282,9 +287,9 @@ def calculer_tours_journee(
             'ec_apport'      : t.get('ec_apport'),
             'ph_apport'      : t.get('ph_apport'),
         })
+        tour_num += 1
 
     return result
-
 
 # ── Upsert tours en base ──────────────────────────────────────
 
