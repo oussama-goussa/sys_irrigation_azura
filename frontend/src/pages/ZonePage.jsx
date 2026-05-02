@@ -470,6 +470,98 @@ function DateRangePicker({ dateFrom, dateTo, onChangeDateFrom, onChangeDateTo, C
   )
 }
 
+// ── TourCalendar — single date picker pour Tours ─────────────
+const MONTHS_FR_T = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
+const DAYS_FR_T   = ['Lu','Ma','Me','Je','Ve','Sa','Di']
+
+function TourCalendar({ value, onChange, C }) {
+  const todayStr = new Date().toISOString().split('T')[0]
+  const [viewDate, setView] = useState(() => value ? new Date(value + 'T00:00:00') : new Date())
+  const year  = viewDate.getFullYear()
+  const month = viewDate.getMonth()
+
+  let startDow = new Date(year, month, 1).getDay() - 1
+  if (startDow < 0) startDow = 6
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const daysInPrev  = new Date(year, month, 0).getDate()
+  const cells = []
+  for (let i = 0; i < startDow; i++) cells.push({ day: daysInPrev - startDow + 1 + i, curr: false })
+  for (let i = 1; i <= daysInMonth; i++) cells.push({ day: i, curr: true })
+  while (cells.length % 7 !== 0) cells.push({ day: cells.length - startDow - daysInMonth + 1, curr: false })
+
+  const btnNav = { background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: '3px 6px', borderRadius: 5, display: 'flex', alignItems: 'center' }
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+        <button onClick={() => setView(new Date(year, month - 1, 1))} style={btnNav}>
+          <ChevronLeft size={14} strokeWidth={2.5}/>
+        </button>
+        <span style={{ fontSize:12, fontWeight:800, color:C.text }}>
+          {MONTHS_FR_T[month]}  {year}
+        </span>
+        <button onClick={() => setView(new Date(year, month + 1, 1))} style={btnNav}>
+          <ChevronRight size={14} strokeWidth={2.5}/>
+        </button>
+      </div>
+
+      {/* Day headers */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(7, 1fr)', marginBottom:4 }}>
+        {DAYS_FR_T.map(d => (
+          <div key={d} style={{ textAlign:'center', fontSize:9, fontWeight:700, color:C.textDim, padding:'2px 0', textTransform:'uppercase', letterSpacing:'0.06em' }}>{d}</div>
+        ))}
+      </div>
+
+      {/* Days grid */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(7, 1fr)', gap:'2px 0' }}>
+        {cells.map((cell, i) => {
+          const cellStr    = cell.curr ? `${year}-${String(month+1).padStart(2,'0')}-${String(cell.day).padStart(2,'0')}` : null
+          const isSelected = cellStr === value
+          const isToday    = cellStr === todayStr
+          return (
+            <div key={i}
+              onClick={() => cell.curr && onChange(cellStr)}
+              style={{
+                textAlign:'center', fontSize:11, padding:'5px 0', borderRadius:6,
+                cursor: cell.curr ? 'pointer' : 'default',
+                fontWeight: isSelected ? 800 : isToday ? 700 : 400,
+                color: isSelected ? '#fff' : isToday ? C.green : cell.curr ? C.text : C.textDim,
+                background: isSelected ? C.green : 'transparent',
+                opacity: cell.curr ? 1 : 0.3,
+                transition: 'all 0.1s', position: 'relative',
+              }}
+              onMouseEnter={e => { if (cell.curr && !isSelected) e.currentTarget.style.background = `${C.green}18` }}
+              onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
+            >
+              {isToday && !isSelected && (
+                <span style={{ position:'absolute', bottom:1, left:'50%', transform:'translateX(-50%)', width:3, height:3, borderRadius:'50%', background:C.green }}/>
+              )}
+              {cell.day}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Footer — uniquement Aujourd'hui + Effacer */}
+      <div style={{ marginTop:10, paddingTop:8, borderTop:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between' }}>
+        <button
+          onClick={() => onChange('')}
+          style={{ background:'none', border:'none', cursor:'pointer', color:C.textDim, fontSize:10, fontWeight:700, fontFamily:'inherit', padding:'3px 6px', textTransform:'uppercase', letterSpacing:'0.06em' }}
+        >
+          Effacer
+        </button>
+        <button
+          onClick={() => onChange(todayStr)}
+          style={{ background:`${C.green}15`, border:`1px solid ${C.green}40`, borderRadius:6, cursor:'pointer', color:C.green, fontSize:10, fontWeight:800, fontFamily:'inherit', padding:'3px 10px', textTransform:'uppercase', letterSpacing:'0.06em' }}
+        >
+          Aujourd'hui
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Section title ─────────────────────────────────────────────
 function SectionTitle({ title, C }) {
   return (
@@ -1404,24 +1496,21 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                 zIndex: 99999,
                 border: `1.5px solid ${C.border}`,
                 borderRadius: 12,
-                padding: '16px 20px',
+                padding: '12px 12px 10px',
                 background: dark ? C.surface : '#fafcfb',
                 boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
-                width: isMobile ? 280 : 320,
+                width: 248,
+                fontFamily: 'inherit',
               }}
             >
-              <RangeCalendar
-                dateFrom={tourDate}
-                dateTo={tourDate}
-                onChangeFrom={v => { setTourDate(v); setShowTourCal(false) }}
-                onChangeTo={v => { if (v) { setTourDate(v); setShowTourCal(false) } }}
+              <TourCalendar
+                value={tourDate}
+                onChange={v => { if (v) { setTourDate(v); setShowTourCal(false) } }}
                 C={C}
-                onClose={() => setShowTourCal(false)}
-                singleMonth={true}
               />
             </div>,
             document.body
-          )}
+          )}          
         </div>
 
         {tourDate !== today() && (
