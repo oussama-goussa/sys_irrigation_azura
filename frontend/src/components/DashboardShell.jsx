@@ -322,13 +322,22 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
   const isMobile = width < BP_MOBILE
   const isTablet = width >= BP_MOBILE && width < BP_TABLET
 
-  const [page,           setPage]           = useState('dashboard')
+  const [page, setPage] = useState(() => {
+    const saved = sessionStorage.getItem('azura_page') || 'dashboard'
+    return saved === 'zone' ? 'dashboard' : saved  // zone sans device → dashboard
+  })
+  
   const [selectedDevice, setSelectedDevice] = useState(null)
   const [farms,          setFarms]          = useState([])
   const [loadingFarms,   setLoadingFarms]   = useState(true)
   const [mobileOpen,     setMobileOpen]     = useState(false)
 
   useEffect(() => { if (!isMobile) setMobileOpen(false) }, [isMobile])
+
+  useEffect(() => {
+    sessionStorage.setItem('azura_page', page)
+  }, [page])
+
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
