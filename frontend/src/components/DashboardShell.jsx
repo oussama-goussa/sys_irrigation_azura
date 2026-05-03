@@ -323,11 +323,13 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
   const isTablet = width >= BP_MOBILE && width < BP_TABLET
 
   const [page, setPage] = useState(() => {
-    const saved = sessionStorage.getItem('azura_page') || 'dashboard'
-    return saved === 'zone' ? 'dashboard' : saved  // zone sans device → dashboard
+    return sessionStorage.getItem('azura_page') || 'dashboard'
   })
-  
-  const [selectedDevice, setSelectedDevice] = useState(null)
+
+  const [selectedDevice, setSelectedDevice] = useState(() => {
+    const saved = sessionStorage.getItem('azura_device')
+    return saved ? JSON.parse(saved) : null
+  })
   const [farms,          setFarms]          = useState([])
   const [loadingFarms,   setLoadingFarms]   = useState(true)
   const [mobileOpen,     setMobileOpen]     = useState(false)
@@ -336,7 +338,9 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
 
   useEffect(() => {
     sessionStorage.setItem('azura_page', page)
-  }, [page])
+    if (selectedDevice) sessionStorage.setItem('azura_device', JSON.stringify(selectedDevice))
+    else sessionStorage.removeItem('azura_device')
+  }, [page, selectedDevice])
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? 'hidden' : ''
