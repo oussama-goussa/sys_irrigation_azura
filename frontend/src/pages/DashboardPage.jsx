@@ -19,11 +19,20 @@ function computeAverages(farms) {
   return { ec: avg('ec'), ph: avg('ph'), temp: avg('temp'), hum: avg('hum'), rad: avg('rad'), flow: avg('flow') }
 }
 
-function lastSeenLabel(min) {
+function lastSeenLabel(min, lastSyncRaw) {
   if (min === null || min === undefined) return 'Jamais'
   if (min < 2) return "à l'instant"
-  if (min < 60) return `il y a ${min} min`
-  return `il y a ${Math.floor(min / 60)}h`
+  if (min < 1440) {
+    if (min < 60) return `il y a ${min} min`
+    return `il y a ${Math.floor(min / 60)}h`
+  }
+  // > 24h → afficher la date de dernière sync
+  if (lastSyncRaw) {
+    const d = new Date(lastSyncRaw)
+    const dd = pad(d.getDate()), mm = pad(d.getMonth() + 1), yyyy = d.getFullYear()
+    return `${dd}/${mm}/${yyyy}`
+  }
+  return 'Plus de 24h'
 }
 
 function Sparkline({ color }) {
@@ -120,7 +129,7 @@ function HouseCard({ house, onSelectDevice, C, dark, accentColor, isMobile }) {
           color: dark ? '#3a5a44' : '#8aaa96', fontSize: 12,
         }}>
           <WifiOff size={15} strokeWidth={1.8} color={dark ? '#3a5a44' : '#aac4b4'} />
-          <span>Aucune donnée depuis {lastSeenLabel(house.last_seen_min ?? house.minutes_since_last ?? null)}</span>
+          <span>Aucune donnée depuis {lastSeenLabel(house.last_seen_min ?? house.minutes_since_last ?? null, house.last_sync ?? house.updated_at ?? house.last_timestamp ?? null)}</span>
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
