@@ -102,25 +102,31 @@ def calculer_tours_journee(
         logger.debug(f"Aucune donnée pour {device.farm_name} H{device.house_number} {target_date}")
         return []
 
-    # Détecter les blocs d'irrigation
-    # On tolère les courtes interruptions (Pause/Wait ≤ 5 min) au sein d'un même cycle
+    # Détecter les blocs d'irrigation.
+    # Un bloc = une séquence d'irrigation du même cycle (cycle_act constant).
+    # On tolère les interruptions Pause/Wait à l'intérieur d'un même cycle_act
+    # (ex : bref Pause entre 2 demi-tours Netafim) jusqu'à 15 min.
     blocs = []
     current_bloc = []
-    gap_rows = []   # lignes non-irrigation accumulées entre deux périodes d'irrigation
+    gap_rows = []   # lignes non-irrigation accumulées
 
     for sr, ic in rows:
-        is_irr = sr.ec_ph_status == 'Irrigation' and not (ic.sequence == 16 and ic.water_prg_qty <= 3) and not (ic.sequence == 16 and sr.ec_prog is None and sr.ph_prog is None)
+        is_irr = (
+            sr.ec_ph_status == 'Irrigation'
+            and not (ic.sequence == 16 and ic.water_prg_qty <= 3)
+            and not (ic.sequence == 16 and sr.ec_prog is None and sr.ph_prog is None)
+        )
         if is_irr:
             if gap_rows and current_bloc:
-                # Gap depuis la fin du dernier bloc irr
-                gap_start = current_bloc[-1][0].timestamp
-                gap_end   = sr.timestamp
-                gap_sec   = (gap_end - gap_start).total_seconds()
-                if gap_sec <= 300:
-                    # Courte interruption : rester dans le même bloc
+                last_irr_ic   = current_bloc[-1][1]
+                # Même cycle_act → interruption interne, on reste dans le même bloc
+                same_cycle = (ic.cycle_act == last_irr_ic.cycle_act and ic.cycle_act not in (None, 0))
+                # Ou gap temporel court (≤ 15 min) — filet de sécurité
+                gap_sec = (sr.timestamp - current_bloc[-1][0].timestamp).total_seconds()
+                short_gap = gap_sec <= 900
+                if same_cycle or short_gap:
                     current_bloc.extend(gap_rows)
                 else:
-                    # Longue interruption : clore le bloc précédent
                     blocs.append(current_bloc)
                     current_bloc = []
             gap_rows = []
