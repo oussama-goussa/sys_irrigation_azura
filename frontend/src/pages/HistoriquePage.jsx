@@ -175,11 +175,20 @@ function TimeInput({ value, onChange, C, small = false }) {
 function SSelect({ value, onChange, options, placeholder, C, width = '100%', disabled = false, dropUp = false }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const dropdownRef = useRef(null)
 
   useEffect(() => {
     const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    const onScroll = (e) => {
+      if (dropdownRef.current && dropdownRef.current.contains(e.target)) return
+      setOpen(false)
+    }
     document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
+    window.addEventListener('scroll', onScroll, true)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      window.removeEventListener('scroll', onScroll, true)
+    }
   }, [])
 
   const selected = options.find(o => (o.value ?? o) === value)
@@ -204,7 +213,7 @@ function SSelect({ value, onChange, options, placeholder, C, width = '100%', dis
         </span>
       </div>
       {open && (
-        <div style={{
+        <div ref={dropdownRef} style={{
           position: 'absolute', ...(dropUp ? { bottom: 'calc(100% + 4px)' } : { top: 'calc(100% + 4px)' }), left: 0, right: 0,
           background: C.card, border: `1.5px solid ${C.border}`,
           borderRadius: 8, zIndex: 500, boxShadow: `0 4px 20px rgba(0,0,0,0.12)`,
@@ -919,7 +928,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', overflow:'hidden',
           padding: isMobile ? '14px 16px' : '20px 28px', borderBottom: `1px solid ${C.border}`,
-          position: 'relative', top: 0, background: C.card, zIndex: 10 }}>
+          position: 'sticky', top: 0, background: C.card, zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <SquarePen size={18} color={C.green} strokeWidth={2} />
             <div style={{ color: C.text, fontWeight: 800, fontSize: 15 }}>
