@@ -1745,14 +1745,6 @@ export default function HistoriquePage({ token, auth, C, dark }) {
 
             {/* Droite : pagination */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: isMobile ? 'center' : 'flex-end' }}>
-              {/* ⟨⟨ First */}
-              <button onClick={() => load(pages)} disabled={page >= pages}
-                style={{ display: 'flex', alignItems: 'center', padding: '5px 7px',
-                  borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent',
-                  color: C.textMuted, cursor: page <= 1 ? 'not-allowed' : 'pointer',
-                  opacity: page <= 1 ? 0.3 : 1, fontFamily: 'inherit' }}>
-                <ChevronLeft size={10} strokeWidth={2.5}/><ChevronLeft size={10} strokeWidth={2.5}/>
-              </button>
               {/* ⟨ Préc */}
               <button onClick={() => load(page - 1)} disabled={page <= 1}
                 style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '5px 10px',
@@ -1793,14 +1785,6 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                   cursor: page >= pages ? 'not-allowed' : 'pointer',
                   opacity: page >= pages ? 0.3 : 1, fontFamily: 'inherit' }}>
                 Suiv <ChevronRight size={12} strokeWidth={2} />
-              </button>
-              {/* Last ⟩⟩ */}
-              <button onClick={() => load(pages)} disabled={page >= pages}
-                style={{ display: 'flex', alignItems: 'center', padding: '5px 7px',
-                  borderRadius: 6, border: `1.5px solid ${C.border}`, background: 'transparent',
-                  color: C.textMuted, cursor: page >= pages ? 'not-allowed' : 'pointer',
-                  opacity: page >= pages ? 0.3 : 1, fontFamily: 'inherit' }}>
-                <ChevronRight size={10} strokeWidth={2.5}/><ChevronRight size={10} strokeWidth={2.5}/>
               </button>
             </div>
 
