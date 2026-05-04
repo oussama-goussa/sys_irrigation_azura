@@ -1005,7 +1005,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
             <div>
               <label style={labelStyle}>Serre</label>
               <SSelect value={serre} onChange={setSerre}
-                options={serreOptions} placeholder="S01" C={C} />
+                options={serreOptions} placeholder="Sélectionner…" C={C} />
             </div>
             <div>
               <label style={labelStyle}>Vanne</label>
@@ -1723,7 +1723,6 @@ export default function HistoriquePage({ token, auth, C, dark }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <SSelect
                 value={perPage}
-                style={{fontWeight: 600}}
                 onChange={v => setPerPage(Number(v))}
                 options={[
                   { value: 10, label: '10' },
