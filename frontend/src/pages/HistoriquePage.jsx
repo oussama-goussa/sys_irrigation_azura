@@ -1723,6 +1723,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <SSelect
                 value={perPage}
+                style={{fontWeight: 600}}
                 onChange={v => setPerPage(Number(v))}
                 options={[
                   { value: 10, label: '10' },
