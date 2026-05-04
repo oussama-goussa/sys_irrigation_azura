@@ -919,7 +919,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', overflow:'hidden',
           padding: isMobile ? '14px 16px' : '20px 28px', borderBottom: `1px solid ${C.border}`,
-          position: 'sticky', top: 0, background: C.card, zIndex: 10 }}>
+          position: 'relative', top: 0, background: C.card, zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <SquarePen size={18} color={C.green} strokeWidth={2} />
             <div style={{ color: C.text, fontWeight: 800, fontSize: 15 }}>
