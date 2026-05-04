@@ -205,7 +205,7 @@ function SSelect({ value, onChange, options, placeholder, C, width = '100%', dis
       </div>
       {open && (
         <div style={{
-          position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+          position: 'absolute', bottom: 'calc(100% + 4px)', left: 0, right: 0,
           background: C.card, border: `1.5px solid ${C.border}`,
           borderRadius: 8, zIndex: 500, boxShadow: `0 4px 20px rgba(0,0,0,0.12)`,
           maxHeight: 200, overflowY: 'auto',
@@ -228,6 +228,7 @@ function SSelect({ value, onChange, options, placeholder, C, width = '100%', dis
                 style={{ padding: '9px 14px', fontSize: 12, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   color: sel ? C.green : C.textMuted,
+                  fontWeight: 600,
                   background: sel ? `${C.green}12` : 'transparent', transition: 'background 0.1s' }}
                 onMouseEnter={e => e.currentTarget.style.background = sel ? `${C.green}18` : C.tableHover}
                 onMouseLeave={e => e.currentTarget.style.background = sel ? `${C.green}12` : 'transparent'}
