@@ -103,12 +103,12 @@ def calculer_tours_journee(
         return []
 
     # Détecter les blocs d'irrigation.
-    # Un bloc = une séquence d'irrigation du même cycle (cycle_act constant).
-    # On tolère les interruptions Pause/Wait à l'intérieur d'un même cycle_act
-    # (ex : bref Pause entre 2 demi-tours Netafim) jusqu'à 15 min.
+    # Un bloc = burst continu d'irrigation avec au plus UNE interruption courte
+    # (≤ 6 min = 1 seul cycle de lecture à 5 min) entre 2 demi-tours Netafim.
+    # Les vraies pauses inter-tours durent 20+ min → elles clôturent le bloc.
     blocs = []
     current_bloc = []
-    gap_rows = []   # lignes non-irrigation accumulées
+    gap_rows = []
 
     for sr, ic in rows:
         is_irr = (
@@ -118,13 +118,8 @@ def calculer_tours_journee(
         )
         if is_irr:
             if gap_rows and current_bloc:
-                last_irr_ic   = current_bloc[-1][1]
-                # Même cycle_act → interruption interne, on reste dans le même bloc
-                same_cycle = (ic.cycle_act == last_irr_ic.cycle_act and ic.cycle_act not in (None, 0))
-                # Ou gap temporel court (≤ 15 min) — filet de sécurité
                 gap_sec = (sr.timestamp - current_bloc[-1][0].timestamp).total_seconds()
-                short_gap = gap_sec <= 900
-                if same_cycle or short_gap:
+                if gap_sec <= 660:   # ≤ 11 min : interruption interne (Pause entre 2 demi-tours)
                     current_bloc.extend(gap_rows)
                 else:
                     blocs.append(current_bloc)
