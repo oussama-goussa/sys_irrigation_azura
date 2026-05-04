@@ -118,8 +118,13 @@ def calculer_tours_journee(
         )
         if is_irr:
             if gap_rows and current_bloc:
-                gap_sec = (sr.timestamp - current_bloc[-1][0].timestamp).total_seconds()
-                if gap_sec <= 660:   # ≤ 11 min : interruption interne (Pause entre 2 demi-tours)
+                gap_sec   = (sr.timestamp - current_bloc[-1][0].timestamp).total_seconds()
+                # Seuil dynamique = 150% de la durée d'un demi-tour programmé.
+                # S'adapte automatiquement si l'agronome change water_prg_time
+                # (ex: 10 min → seuil 900s, 20 min → seuil 1800s).
+                prg_sec   = time_to_seconds(current_bloc[-1][1].water_prg_time)
+                threshold = max(prg_sec * 1.5, 360)  # minimum 6 min si prg_time absent
+                if gap_sec <= threshold:
                     current_bloc.extend(gap_rows)
                 else:
                     blocs.append(current_bloc)
