@@ -240,11 +240,29 @@ export async function saveSaisie(token, payload) {
 }
 
 /** Liste des saisies avec filtres optionnels */
-export async function getSaisies(token, { farmName, dateFrom, dateTo, page = 1, perPage = 20 } = {}) {
+export async function getSaisies(token, {
+  farmName, dateFrom, dateTo,
+  station, serre, vanne,
+  nbr_bras, nbr_goutteurs,
+  poids_matin, heure_matin,
+  poids_soir, heure_soir,
+  bassin_ec,
+  page = 1, perPage = 20
+} = {}) {
   const params = new URLSearchParams({ page, per_page: perPage })
-  if (farmName) params.append('farm_name', farmName)
-  if (dateFrom) params.append('date_from', dateFrom)
-  if (dateTo)   params.append('date_to', dateTo)
+  if (farmName)      params.append('farm_name',      farmName)
+  if (dateFrom)      params.append('date_from',      dateFrom)
+  if (dateTo)        params.append('date_to',        dateTo)
+  if (station)       params.append('station',        station)
+  if (serre)         params.append('serre',          serre)
+  if (vanne)         params.append('vanne',          vanne)
+  if (nbr_bras)      params.append('nbr_bras',       nbr_bras)
+  if (nbr_goutteurs) params.append('nbr_goutteurs',  nbr_goutteurs)
+  if (poids_matin)   params.append('poids_matin',    poids_matin)
+  if (heure_matin)   params.append('heure_matin',    heure_matin)
+  if (poids_soir)    params.append('poids_soir',     poids_soir)
+  if (heure_soir)    params.append('heure_soir',     heure_soir)
+  if (bassin_ec)     params.append('bassin_ec',      bassin_ec)
   const res = await fetchWithRefresh(`${BASE}/api/saisie?${params}`, {
     headers: { Authorization: `Bearer ${token}` },
   })

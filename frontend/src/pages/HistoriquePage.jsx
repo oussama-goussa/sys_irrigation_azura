@@ -1377,7 +1377,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
   // Elle reçoit allowedFarms en paramètre direct
   
   const load = async (p = 1) => {
-    const currentAllowedFarms = allowedFarmsRef.current
+    const currentAllowedFarms = auth?.role === 'admin' ? null : (auth?.farm_names ?? undefined)
     if (currentAllowedFarms === undefined) { setLoading(false); return }
 
     setLoading(true)
