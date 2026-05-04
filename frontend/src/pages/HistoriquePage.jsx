@@ -1389,9 +1389,17 @@ export default function HistoriquePage({ token, auth, C, dark }) {
       }
 
       const params = { page: p, perPage }
-      if (fDate) { params.dateFrom = fDate; params.dateTo = fDate }
-
-      // Filtre ferme : explicite > ferme unique autorisée
+      if (fDate)      { params.dateFrom = fDate; params.dateTo = fDate }
+      if (fStation)   params.station    = fStation
+      if (fSerre)     params.serre      = fSerre
+      if (fVanne)     params.vanne      = fVanne
+      if (fNbrBras)   params.nbr_bras   = fNbrBras
+      if (fNbrGoutt)  params.nbr_goutteurs = fNbrGoutt
+      if (fPoidsMat)  params.poids_matin   = fPoidsMat
+      if (fHeureMat)  params.heure_matin   = fHeureMat
+      if (fPoidsSoir) params.poids_soir    = fPoidsSoir
+      if (fHeureSoir) params.heure_soir    = fHeureSoir
+      if (fBassin)    params.bassin_ec     = fBassin
       if (fFerme) {
         params.farmName = fFerme
       } else if (currentAllowedFarms !== null && currentAllowedFarms.length === 1) {
@@ -1418,7 +1426,9 @@ export default function HistoriquePage({ token, auth, C, dark }) {
   useEffect(() => {
     const af = allowedFarmsRef.current
     if (af !== undefined) load(1, af)
-  }, [allowedFarms, fFerme, fDate, auth, perPage])
+  }, [allowedFarms, fFerme, fDate, auth, perPage,
+      fStation, fSerre, fVanne, fNbrBras, fNbrGoutt,
+      fPoidsMat, fHeureMat, fPoidsSoir, fHeureSoir, fBassin])
 
   const filtered = saisies.filter(s =>
     (!fStation   || String(s.station   || '').toLowerCase().includes(fStation.toLowerCase())) &&

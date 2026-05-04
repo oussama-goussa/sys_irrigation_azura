@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional, List
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, String
 from datetime import date as date_type
 from loguru import logger
 from services.user_service import get_user
@@ -162,13 +162,23 @@ def create_saisie(
 # ── GET /api/saisie — Liste des saisies ──────────────────────
 @router.get("")
 def list_saisies(
-    farm_name   : Optional[str] = Query(None),
-    date_from   : Optional[str] = Query(None),
-    date_to     : Optional[str] = Query(None),
-    page        : int           = Query(1, ge=1),
-    per_page    : int           = Query(20, ge=1, le=100),
-    db          : Session       = Depends(get_db),
-    user        : dict          = Depends(require_any),
+    farm_name    : Optional[str] = Query(None),
+    date_from    : Optional[str] = Query(None),
+    date_to      : Optional[str]   = Query(None),
+    station      : Optional[str]   = Query(None),
+    serre        : Optional[str]   = Query(None),
+    vanne        : Optional[str]   = Query(None),
+    nbr_bras     : Optional[str]   = Query(None),
+    nbr_goutteurs: Optional[str]   = Query(None),
+    poids_matin  : Optional[str]   = Query(None),
+    heure_matin  : Optional[str]   = Query(None),
+    poids_soir   : Optional[str]   = Query(None),
+    heure_soir   : Optional[str]   = Query(None),
+    bassin_ec    : Optional[str]   = Query(None),
+    page         : int             = Query(1, ge=1),
+    per_page     : int           = Query(20, ge=1, le=100),
+    db           : Session       = Depends(get_db),
+    user         : dict          = Depends(require_any),
 ):
     q = db.query(SaisieJournaliere).order_by(desc(SaisieJournaliere.date), desc(SaisieJournaliere.created_at))
 
@@ -196,8 +206,29 @@ def list_saisies(
         q = q.filter(SaisieJournaliere.date >= date_type.fromisoformat(date_from))
     if date_to:
         q = q.filter(SaisieJournaliere.date <= date_type.fromisoformat(date_to))
+    if station:
+        q = q.filter(SaisieJournaliere.station.ilike(f"%{station}%"))
+    if serre:
+        q = q.filter(SaisieJournaliere.serre.ilike(f"%{serre}%"))
+    if vanne:
+        q = q.filter(SaisieJournaliere.vanne.ilike(f"%{vanne}%"))
+    if nbr_bras:
+        q = q.filter(SaisieJournaliere.nbr_bras == int(nbr_bras))
+    if nbr_goutteurs:
+        q = q.filter(SaisieJournaliere.nbr_goutteurs == int(nbr_goutteurs))
+    if poids_matin:
+        q = q.filter(SaisieJournaliere.poids_matin.cast(String).ilike(f"%{poids_matin}%"))
+    if heure_matin:
+        q = q.filter(SaisieJournaliere.heure_matin.ilike(f"%{heure_matin}%"))
+    if poids_soir:
+        q = q.filter(SaisieJournaliere.poids_soir.cast(String).ilike(f"%{poids_soir}%"))
+    if heure_soir:
+        q = q.filter(SaisieJournaliere.heure_soir.ilike(f"%{heure_soir}%"))
+    if bassin_ec:
+        q = q.filter(SaisieJournaliere.bassin_ec.cast(String).ilike(f"%{bassin_ec}%"))
 
     total = q.count()
+
     items = q.offset((page - 1) * per_page).limit(per_page).all()
 
     return {
