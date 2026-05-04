@@ -172,7 +172,7 @@ function TimeInput({ value, onChange, C, small = false }) {
 }
 
 // ── SSelect — identique CustomSelect SaisiePage ──────────────
-function SSelect({ value, onChange, options, placeholder, C, width = '100%', disabled = false }) {
+function SSelect({ value, onChange, options, placeholder, C, width = '100%', disabled = false, dropUp = false }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -205,7 +205,7 @@ function SSelect({ value, onChange, options, placeholder, C, width = '100%', dis
       </div>
       {open && (
         <div style={{
-          position: 'absolute', bottom: 'calc(100% + 4px)', left: 0, right: 0,
+          position: 'absolute', ...(dropUp ? { bottom: 'calc(100% + 4px)' } : { top: 'calc(100% + 4px)' }), left: 0, right: 0,
           background: C.card, border: `1.5px solid ${C.border}`,
           borderRadius: 8, zIndex: 500, boxShadow: `0 4px 20px rgba(0,0,0,0.12)`,
           maxHeight: 200, overflowY: 'auto',
@@ -1732,6 +1732,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                 ]}
                 C={C}
                 width={68}
+                dropUp
               />
               <span style={{ fontSize: 12, color: C.textDim, fontWeight: 600 }}>/ page</span>
               <span style={{ width: 1, height: 14, background: C.border, display: 'inline-block', margin: '0 4px' }} />

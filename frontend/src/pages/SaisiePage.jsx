@@ -929,7 +929,7 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
               <label style={labelStyle}>Serre</label>
               <CustomSelect
                 value={serre} onChange={setSerre}
-                options={serreOptions} placeholder="S01"
+                options={serreOptions} placeholder="Sélectionner…"
                 C={C} disabled={!station}
               />
             </div>
