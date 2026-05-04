@@ -102,20 +102,41 @@ def calculer_tours_journee(
         logger.debug(f"Aucune donnée pour {device.farm_name} H{device.house_number} {target_date}")
         return []
 
-    # Détecter les blocs d'irrigation
+    # Détecter les blocs d'irrigation.
+    # Un bloc = burst continu d'irrigation avec au plus UNE interruption courte
+    # (≤ 6 min = 1 seul cycle de lecture à 5 min) entre 2 demi-tours Netafim.
+    # Les vraies pauses inter-tours durent 20+ min → elles clôturent le bloc.
     blocs = []
     current_bloc = []
-    prev_is_irr  = False
+    gap_rows = []
 
     for sr, ic in rows:
-        is_irr = sr.ec_ph_status == 'Irrigation' and not (ic.sequence == 16 and ic.water_prg_qty <= 3) and not (ic.sequence == 16 and sr.ec_prog is None and sr.ph_prog is None)
+
+        is_irr = (
+            sr.ec_ph_status == 'Irrigation'
+            and not (
+                ic.sequence == 16
+                and (ic.water_prg_qty <= 3 or (sr.ec_prog == 0 and sr.ph_prog == 0))
+            )
+        )
         if is_irr:
+            if gap_rows and current_bloc:
+                gap_sec   = (sr.timestamp - current_bloc[-1][0].timestamp).total_seconds()
+                # Seuil dynamique = 150% de la durée d'un demi-tour programmé.
+                # S'adapte automatiquement si l'agronome change water_prg_time
+                # (ex: 10 min → seuil 900s, 20 min → seuil 1800s).
+                prg_sec   = time_to_seconds(current_bloc[-1][1].water_prg_time)
+                threshold = max(prg_sec * 1.5, 360)  # minimum 6 min si prg_time absent
+                if gap_sec <= threshold:
+                    current_bloc.extend(gap_rows)
+                else:
+                    blocs.append(current_bloc)
+                    current_bloc = []
+            gap_rows = []
             current_bloc.append((sr, ic))
         else:
             if current_bloc:
-                blocs.append(current_bloc)
-                current_bloc = []
-        prev_is_irr = is_irr
+                gap_rows.append((sr, ic))
 
     if current_bloc:
         blocs.append(current_bloc)
@@ -132,7 +153,7 @@ def calculer_tours_journee(
         prev_row = (
             db.query(SensorReading)
             .filter(
-                SensorReading.device_id < device.id,
+                SensorReading.device_id == device.id,
                 SensorReading.timestamp < first_ts,
             )
             .order_by(SensorReading.timestamp.desc())
@@ -223,7 +244,7 @@ def calculer_tours_journee(
             gap_sec = (dt2['debut'] - dt1['fin']).total_seconds()
             meme_bloc = not dt2['is_first_of_bloc']
 
-            if gap_sec < 180 and meme_bloc:
+            if gap_sec < 600 and meme_bloc:
                 tours.append({
                     'debut'        : dt1['debut'],
                     'fin'          : dt2['fin'],
@@ -276,11 +297,10 @@ def calculer_tours_journee(
         if not has_flow:
             continue
 
-        # Repos AVANT ce tour (comme SaisiePage)
-        if idx > 0:
-            debut_prev = tours[idx - 1]['debut']
-            duree_prev = tours[idx - 1]['prg_time_min'] * 2
-            repos = round((t['debut'] - debut_prev).total_seconds() / 60) - duree_prev
+        # Repos AVANT ce tour — basé sur result (tours déjà validés)
+        if result:
+            prev_t = result[-1]
+            repos = round((t['debut'] - prev_t['debut']).total_seconds() / 60) - prev_t['duree_min']
             if repos < 0:
                 repos = 0
         else:
