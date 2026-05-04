@@ -1430,18 +1430,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
       fStation, fSerre, fVanne, fNbrBras, fNbrGoutt,
       fPoidsMat, fHeureMat, fPoidsSoir, fHeureSoir, fBassin])
 
-  const filtered = saisies.filter(s =>
-    (!fStation   || String(s.station   || '').toLowerCase().includes(fStation.toLowerCase())) &&
-    (!fSerre     || String(s.serre     || '').toLowerCase().includes(fSerre.toLowerCase())) &&
-    (!fVanne     || String(s.vanne     || '').toLowerCase().includes(fVanne.toLowerCase())) &&
-    (!fNbrBras   || String(s.nbr_bras  || '').includes(fNbrBras)) &&
-    (!fNbrGoutt  || String(s.nbr_goutteurs || '').includes(fNbrGoutt)) &&
-    (!fPoidsMat  || String(s.poids_matin   || '').includes(fPoidsMat)) &&
-    (!fHeureMat  || String(s.heure_matin   || '').includes(fHeureMat)) &&
-    (!fPoidsSoir || String(s.poids_soir    || '').includes(fPoidsSoir)) &&
-    (!fHeureSoir || String(s.heure_soir    || '').includes(fHeureSoir)) &&
-    (!fBassin    || String(s.bassin_ec     || '').includes(fBassin))
-  )
+  const filtered = saisies
 
   const toggleExpand = (id) => {
     setExpandedIds(prev => {
