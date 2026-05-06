@@ -1863,9 +1863,9 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                 data: buildSeries('radiation'),
               },
               {
-                label: 'Cumul journalier (J/m²)',
+                label: 'Cumul journalier (J/cm²)',
                 color: '#f5a623',
-                unit: 'J/m²',
+                unit: 'J/cm²',
                 decimals: 1,
                 data: buildSeries('radiation_sum'),
               },
