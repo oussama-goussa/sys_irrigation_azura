@@ -1154,7 +1154,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
               Station hors ligne
             </div>
             <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.6 }}>
-              Aucune donnée reçue depuis plus de 15 minutes · Vérifier la connexion du contrôleur Netafim
+              Aucune donnée reçue depuis plus de 15 minutes
             </div>
           </div>
           <div style={{
@@ -1164,7 +1164,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
               { label: 'EC Apport',   value: '0 mS/cm' },
               { label: 'pH Apport',   value: '0' },
               { label: 'Débit',       value: '0 L/h' },
-              { label: 'Irrigation',  value: 'Inactive' },
+              { label: 'Irrigation',  value: 'Inconnu' },
             ].map(m => (
               <div key={m.label} style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 10, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5, whiteSpace: 'nowrap' }}>
