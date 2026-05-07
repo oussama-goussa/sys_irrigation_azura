@@ -35,6 +35,23 @@ function fmtTs(ts) {
   })
 }
 
+const pad = n => (n < 10 ? '0' + n : n)
+
+function lastSeenLabel(min, lastSyncRaw) {
+  if (min === null || min === undefined) return 'jamais'
+  if (min < 1440) {
+    if (min < 60) return `plus de ${min} minutes`
+    return `plus de ${Math.floor(min / 60)}h`
+  }
+  // > 24h → afficher la date
+  if (lastSyncRaw) {
+    const d = new Date(lastSyncRaw)
+    const dd = pad(d.getDate()), mm = pad(d.getMonth() + 1), yyyy = d.getFullYear()
+    return `${dd}/${mm}/${yyyy}`
+  }
+  return 'plus de 24h'
+}
+
 function fmtDisplay(d) {
   if (!d) return ''
   const [y, m, day] = d.split('-')
@@ -1154,7 +1171,10 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
               Station hors ligne
             </div>
             <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.6 }}>
-              Aucune donnée reçue depuis plus de 15 minutes
+              Aucune donnée reçue depuis {lastSeenLabel(
+                live?.minutes_since_last ?? live?.last_seen_min ?? null,
+                live?.last_sync ?? live?.updated_at ?? live?.last_timestamp ?? null
+              )}
             </div>
           </div>
           <div style={{
