@@ -160,9 +160,9 @@ function HouseCard({ house, onSelectDevice, C, dark, accentColor, isMobile }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         paddingTop: 14, borderTop: `1px solid ${dark ? '#162418' : '#e0ece4'}`,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: irrigating ? '#34d96f' : C.textDim }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: irrigating ? '#34d96f' : C.textDim }} />
-          {irrigating ? 'Irrigation active' : 'Arrêtée'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: !isOnline ? C.textDim : irrigating ? '#34d96f' : C.textDim }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: !isOnline ? C.textDim : irrigating ? '#34d96f' : C.textDim, opacity: !isOnline ? 0.35 : 1 }} />
+          {!isOnline ? 'Inconnu (hors ligne)' : irrigating ? 'Irrigation active' : 'Arrêtée'}
         </div>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 6,
