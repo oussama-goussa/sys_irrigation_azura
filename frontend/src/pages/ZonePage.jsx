@@ -35,21 +35,14 @@ function fmtTs(ts) {
   })
 }
 
-const pad = n => (n < 10 ? '0' + n : n)
-
-function lastSeenLabel(min, lastSyncRaw) {
-  if (min === null || min === undefined) return 'jamais'
-  if (min < 1440) {
-    if (min < 60) return `plus de ${min} minutes`
-    return `plus de ${Math.floor(min / 60)}h`
-  }
-  // > 24h → afficher la date
-  if (lastSyncRaw) {
-    const d = new Date(lastSyncRaw)
-    const dd = pad(d.getDate()), mm = pad(d.getMonth() + 1), yyyy = d.getFullYear()
-    return `${dd}/${mm}/${yyyy}`
-  }
-  return 'plus de 24h'
+function lastSeenLabel(min) {
+  if (min === null || min === undefined) return 'Jamais'
+  if (min < 2) return "à l'instant"
+  if (min < 60) return `il y a ${min} min`
+  if (min < 1440) return `il y a ${Math.floor(min / 60)}h`
+  // Plus de 24h → afficher la date
+  const d = new Date(Date.now() - min * 60000)
+  return `depuis le ${d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}`
 }
 
 function fmtDisplay(d) {
@@ -1171,10 +1164,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
               Station hors ligne
             </div>
             <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.6 }}>
-              Aucune donnée reçue depuis {lastSeenLabel(
-                live?.minutes_since_last ?? live?.last_seen_min ?? null,
-                live?.last_sync ?? live?.updated_at ?? live?.last_timestamp ?? null
-              )}
+              Aucune donnée reçue {lastSeenLabel(live?.last_seen_min)}
             </div>
           </div>
           <div style={{

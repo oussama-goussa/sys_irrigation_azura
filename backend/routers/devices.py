@@ -408,6 +408,7 @@ def get_latest(
             "hum"  : delta(last_sr, prev_sr, "humidity"),
         },
         "thresholds": thresholds,
+        "last_seen_min": int(delta_min) if last_sr else None,
         "cycle"     : cycle_dict(last_cycle),
         "fertigation": fert_dict(last_fert),
     }
