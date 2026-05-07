@@ -38,8 +38,8 @@ function fmtTs(ts) {
 function lastSeenLabel(min) {
   if (min === null || min === undefined) return 'Jamais'
   if (min < 2) return "à l'instant"
-  if (min < 60) return `il y a ${min} min`
-  if (min < 1440) return `il y a ${Math.floor(min / 60)}h`
+  if (min < 60) return `depuis il y a ${min} min`
+  if (min < 1440) return `depuis il y a ${Math.floor(min / 60)}h`
   // Plus de 24h → afficher la date
   const d = new Date(Date.now() - min * 60000)
   return `depuis le ${d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}`
