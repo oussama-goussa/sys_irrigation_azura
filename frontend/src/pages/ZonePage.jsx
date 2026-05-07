@@ -1680,7 +1680,9 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                               ? (dark ? 'rgba(52,217,111,0.04)' : 'rgba(52,217,111,0.02)')
                               : 'transparent',
                           }}>
-                            {val != null ? String(val) : '-'}
+                            {val != null
+                              ? (row.key === 'cumul_radiation' ? Number(val).toFixed(2) : String(val))
+                              : '-'}
                           </td>
                         )
                       })}
