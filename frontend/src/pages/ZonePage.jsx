@@ -1102,31 +1102,80 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             gap: isMobile ? 10 : 14,
             marginBottom: 14,
           }}>
-            <GaugeCard label="EC Apport"          value={fmt(sensor.ec_actual, 2)}    unit="mS/cm" min={0}  max={8}    color="#00c9a7" C={C}
-              subLabel={sensor.flow === 0 ? '' : 'en irrigation'}
-              subLabelColor={sensor.flow === 0 ? C.amber : C.green} />
-            <GaugeCard label="pH Apport"          value={fmt(sensor.ph_actual, 2)}    unit=""      min={4}  max={8}    color="#4d9de0" C={C}
-              subLabel={sensor.flow === 0 ? '' : 'en irrigation'}
-              subLabelColor={sensor.flow === 0 ? C.amber : C.green} />
-            <GaugeCard label="Température Serre" value={fmt(sensor.avg_temp, 1)}     unit="°C"    min={10} max={40}   color="#f52e23" C={C} />
-            <GaugeCard label="Humidité Serre"    value={fmt(sensor.humidity, 1)}     unit="%"     min={0}  max={100}  color="#b197fc" C={C} />
-            <GaugeCard label="Radiation"   value={fmt(sensor.radiation, 1)}    unit="W/m²"  min={0}  max={2000} color="#f5e642" C={C} />
-            <GaugeCard label="Débit"       value={fmt(sensor.flow, 0)}         unit="L/h"   min={0}  max={1000} color="#34d96f" C={C} />
-            <GaugeCard label="Cumul Rad."  value={fmt(sensor.radiation_sum,1)} unit="J/cm²" min={0}  max={3000} color="#f5a623" C={C} />
+            <GaugeCard label="EC Apport"          value={online === false ? '0' : fmt(sensor.ec_actual, 2)}    unit="mS/cm" min={0}  max={8}    color="#00c9a7" C={C}
+              subLabel={online === false ? 'Hors ligne' : sensor.flow === 0 ? '' : 'en irrigation'}
+              subLabelColor={online === false ? C.red : sensor.flow === 0 ? C.amber : C.green} />
+            <GaugeCard label="pH Apport"          value={online === false ? '0' : fmt(sensor.ph_actual, 2)}    unit=""      min={4}  max={8}    color="#4d9de0" C={C}
+              subLabel={online === false ? 'Hors ligne' : sensor.flow === 0 ? '' : 'en irrigation'}
+              subLabelColor={online === false ? C.red : sensor.flow === 0 ? C.amber : C.green} />
+            <GaugeCard label="Température Serre" value={online === false ? '0' : fmt(sensor.avg_temp, 1)}     unit="°C"    min={10} max={40}   color="#f52e23" C={C}
+              subLabel={online === false ? 'Hors ligne' : undefined} subLabelColor={C.red} />
+            <GaugeCard label="Humidité Serre"    value={online === false ? '0' : fmt(sensor.humidity, 1)}     unit="%"     min={0}  max={100}  color="#b197fc" C={C}
+              subLabel={online === false ? 'Hors ligne' : undefined} subLabelColor={C.red} />
+            <GaugeCard label="Radiation"   value={online === false ? '0' : fmt(sensor.radiation, 1)}    unit="W/m²"  min={0}  max={2000} color="#f5e642" C={C}
+              subLabel={online === false ? 'Hors ligne' : undefined} subLabelColor={C.red} />
+            <GaugeCard label="Débit"       value={online === false ? '0' : fmt(sensor.flow, 0)}         unit="L/h"   min={0}  max={1000} color="#34d96f" C={C}
+              subLabel={online === false ? 'Hors ligne' : undefined} subLabelColor={C.red} />
+            <GaugeCard label="Cumul Rad."  value={online === false ? '0' : fmt(sensor.radiation_sum,1)} unit="J/cm²" min={0}  max={3000} color="#f5a623" C={C}
+              subLabel={online === false ? 'Hors ligne' : undefined} subLabelColor={C.red} />
             {hasOutside && (
-              <GaugeCard label="Température Ext." value={fmt(sensor.outside_temp, 1)}    unit="°C" min={0} max={50}  color="#f05252" C={C} />
+              <GaugeCard label="Température Ext." value={online === false ? '0' : fmt(sensor.outside_temp, 1)}    unit="°C" min={0} max={50}  color="#f05252" C={C}
+                subLabel={online === false ? 'Hors ligne' : undefined} subLabelColor={C.red} />
             )}
             {hasOutside && (
-              <GaugeCard label="Humidité Ext."    value={fmt(sensor.outside_humidity, 1)} unit="%" min={0} max={100} color="#4d9de0" C={C} />
+              <GaugeCard label="Humidité Ext."    value={online === false ? '0' : fmt(sensor.outside_humidity, 1)} unit="%" min={0} max={100} color="#4d9de0" C={C}
+                subLabel={online === false ? 'Hors ligne' : undefined} subLabelColor={C.red} />
             )}
-            <GaugeCard label="Vent"    value={fmt(sensor.wind_speed, 1)}   unit="m/s"  min={0}  max={30} color="#576c58" C={C} />
+            <GaugeCard label="Vent"    value={online === false ? '0' : fmt(sensor.wind_speed, 1)}   unit="m/s"  min={0}  max={30} color="#576c58" C={C}
+              subLabel={online === false ? 'Hors ligne' : undefined} subLabelColor={C.red} />
           </div>
           )
       })()}
 
       {/* ── État irrigation ─────────────────────────────────── */}
       <SectionTitle title="État irrigation en temps réel" C={C} />
-      {!loadingL && live?.cycle && Object.keys(live.cycle).length > 0 ? (() => {
+      {!loadingL && online === false ? (
+        <div style={{
+          background: C.card, border: `1.5px solid ${C.red}30`,
+          borderRadius: 14, padding: isMobile ? '16px 18px' : '22px 28px',
+          display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap',
+          marginBottom: 16,
+        }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: 13, flexShrink: 0,
+            background: `${C.red}12`,
+            border: `1.5px solid ${C.red}40`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <WifiOff size={22} color={C.red} strokeWidth={2} />
+          </div>
+          <div style={{ flex: 1, minWidth: 140 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: C.red, marginBottom: 5 }}>
+              Station hors ligne
+            </div>
+            <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.6 }}>
+              Aucune donnée reçue depuis plus de 15 minutes · Vérifier la connexion du contrôleur Netafim
+            </div>
+          </div>
+          <div style={{
+            display: 'flex', gap: isMobile ? 16 : 32, flexWrap: 'wrap', marginLeft: 'auto',
+          }}>
+            {[
+              { label: 'EC Apport',   value: '0 mS/cm' },
+              { label: 'pH Apport',   value: '0' },
+              { label: 'Débit',       value: '0 L/h' },
+              { label: 'Irrigation',  value: 'Inactive' },
+            ].map(m => (
+              <div key={m.label} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 10, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5, whiteSpace: 'nowrap' }}>
+                  {m.label}
+                </div>
+                <div style={{ fontSize: 17, fontWeight: 800, color: C.textDim }}>{m.value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : !loadingL && live?.cycle && Object.keys(live.cycle).length > 0 ? (() => {
         const cycle = live.cycle
         const isIrrigating = sensor?.ec_ph_status === 'Irrigation'
         const isWait = sensor?.ec_ph_status === 'Wait'
