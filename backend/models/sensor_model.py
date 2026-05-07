@@ -309,6 +309,8 @@ class IrrigationTour(Base):
     v_apport         = Column(Float, nullable=True)
     ec_apport        = Column(Float, nullable=True)
     ph_apport        = Column(Float, nullable=True)
+    radiation_sum    = Column(Float, nullable=True)
+    cumul_radiation  = Column(Float, nullable=True)
     created_at       = Column(DateTime(timezone=True), server_default=func.now())
     updated_at       = Column(DateTime(timezone=True), onupdate=func.now())
 

@@ -1624,6 +1624,8 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                 --------------------------- */}
                 <tbody>
                   {[
+                    { label: 'Radiation (J/cm²)',       key: 'radiation_sum' },
+                    { label: 'Cumul Radiation (J/cm²)', key: 'cumul_radiation' }, 
                     { label: 'Heure (Début)', key: 'debut' },
                     { label: 'Heure (Fin)', key: 'fin' },
                     { label: 'Durée Prog (min)', key: 'prg_time_min' },

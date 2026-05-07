@@ -226,6 +226,7 @@ def calculer_tours_journee(
                 'is_last_of_day'  : False,
                 'ec_apport'       : first_sr.ec_prog,
                 'ph_apport'       : first_sr.ph_prog,
+                'radiation_sum'   : first_sr.radiation_sum,
             })
 
     if not demitours_all:
@@ -254,6 +255,7 @@ def calculer_tours_journee(
                     'is_last'      : dt2['is_last_of_day'],
                     'ec_apport'    : dt1['ec_apport'],
                     'ph_apport'    : dt1['ph_apport'],
+                    'radiation_sum': dt1['radiation_sum'],
                 })
                 i += 2
                 continue
@@ -267,6 +269,7 @@ def calculer_tours_journee(
             'is_last'      : dt1['is_last_of_day'],
             'ec_apport'    : dt1['ec_apport'],
             'ph_apport'    : dt1['ph_apport'],
+            'radiation_sum': dt1['radiation_sum'],
         })
         i += 1
 
@@ -280,6 +283,7 @@ def calculer_tours_journee(
 
     result = []
     tour_num = 1
+    cumul_prev = 0
     for idx, t in enumerate(tours):
         # Durée complète = prg_time_min * 2 (2 demi-tours Netafim)
         duree_complete = t['prg_time_min'] * 2
@@ -311,6 +315,14 @@ def calculer_tours_journee(
         else:
             is_complete = journee_terminee
 
+        # ── Calcul cumul_radiation ──
+        rad_val = t.get('radiation_sum')
+        if rad_val is not None:
+            cumul = max(0, rad_val - cumul_prev)
+            cumul_prev += cumul
+        else:
+            cumul = None
+
         result.append({
             'tour_num'       : tour_num,
             'debut'          : t['debut'],
@@ -322,6 +334,8 @@ def calculer_tours_journee(
             'v_apport'       : round((t['prg_time_min'] * 1000) / 60, 1),
             'ec_apport'      : t.get('ec_apport'),
             'ph_apport'      : t.get('ph_apport'),
+            'radiation_sum'  : t.get('radiation_sum'), 
+            'cumul_radiation' : cumul,
         })
         tour_num += 1
 
@@ -364,6 +378,8 @@ def upsert_tours(
                 existing.v_apport        = t.get('v_apport')
                 existing.ec_apport       = t.get('ec_apport')
                 existing.ph_apport       = t.get('ph_apport')
+                existing.radiation_sum   = t.get('radiation_sum')
+                existing.cumul_radiation = t.get('cumul_radiation') 
                 existing.updated_at      = datetime.utcnow()
         else:
             tour = IrrigationTour(
@@ -380,6 +396,8 @@ def upsert_tours(
                 v_apport         = t.get('v_apport'),
                 ec_apport        = t.get('ec_apport'),
                 ph_apport        = t.get('ph_apport'),
+                radiation_sum    = t.get('radiation_sum'),
+                cumul_radiation  = t.get('cumul_radiation'),
             )
             db.add(tour)
 

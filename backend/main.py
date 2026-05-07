@@ -43,6 +43,14 @@ def run_migrations():
                 ALTER TABLE users
                 ADD COLUMN IF NOT EXISTS email VARCHAR
             """))
+            conn.execute(text("""
+                ALTER TABLE irrigation_tours
+                ADD COLUMN IF NOT EXISTS radiation_sum FLOAT
+            """))
+            conn.execute(text("""
+                ALTER TABLE irrigation_tours
+                ADD COLUMN IF NOT EXISTS cumul_radiation FLOAT
+            """))
             conn.commit()
         logger.success("Migrations appliquées ✅")
     except Exception as e:

@@ -677,6 +677,8 @@ def get_tours(
                 "v_apport"       : t.v_apport,
                 "ec_apport"      : t.ec_apport,
                 "ph_apport"      : t.ph_apport,
+                "radiation_sum"  : t.radiation_sum,
+                "cumul_radiation": t.cumul_radiation, 
             })
         else:
             slots.append({
@@ -690,6 +692,8 @@ def get_tours(
                 "v_apport"       : None,
                 "ec_apport"      : None,
                 "ph_apport"      : None,
+                "radiation_sum"  : None,
+                "cumul_radiation": None,
             })
 
     return {
