@@ -236,7 +236,7 @@ function SidebarContent({
           }}>Système</div>
         )}
 
-        {navBtn('saisie', ClipboardList, 'Saisie journalière')}
+        {auth.role !== 'auditeur' && navBtn('saisie', ClipboardList, 'Saisie journalière')}
         {navBtn('historique', History, 'Historique')}
         {auth.role === 'admin' && navBtn('users', Users, 'Utilisateurs')}
       </nav>
@@ -492,7 +492,7 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
               C={C} dark={dark} {...responsiveProps}
             />
           )}
-          {page === 'saisie' && (
+          {page === 'saisie' && auth.role !== 'auditeur' && (
             <SaisiePage
               token={auth.access_token} auth={auth}
               C={C} dark={dark} {...responsiveProps}

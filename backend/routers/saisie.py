@@ -17,6 +17,8 @@ from core.database import get_db
 from core.security import get_current_user, require_operateur, require_any
 from models.saisie_model import SaisieJournaliere, SaisieTour
 
+from services.user_service import log_action
+
 router = APIRouter(prefix="/api/saisie", tags=["Saisie journalière"])
 
 
@@ -147,6 +149,15 @@ def create_saisie(
 
     db.commit()
     db.refresh(saisie)
+
+    log_action(db, user["username"], "CREATE_SAISIE",
+            detail=f"Saisie {saisie.id} — {body.ferme} {body.date} — {len(body.tours)} tours")
+
+    log_action(db, user["username"], "DELETE_SAISIE",
+            detail=f"Saisie {saisie.id} — {saisie.farm_name} {saisie.date}")
+
+    log_action(db, user["username"], "UPDATE_SAISIE",
+            detail=f"Saisie {saisie.id} — {body.ferme} {body.date} — {len(body.tours)} tours")
 
     logger.success(
         f"Saisie enregistrée : {body.ferme} {body.date} "

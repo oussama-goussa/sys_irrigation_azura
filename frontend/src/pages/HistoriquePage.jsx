@@ -1689,26 +1689,30 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                         </td>
                         <td style={{ padding: '10px 8px' }}>
                           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                            <button onClick={(e) => { e.stopPropagation(); setEditingSaisie(s) }}
-                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                width: 28, height: 28, borderRadius: 6,
-                                border: `1.5px solid ${C.border}`, background: 'transparent',
-                                color: C.textMuted, cursor: 'pointer',
-                                transition: 'all 0.13s', whiteSpace: 'nowrap' }}
-                              onMouseEnter={e => { e.currentTarget.style.borderColor = C.green; e.currentTarget.style.color = C.green; e.currentTarget.style.background = `${C.green}08` }}
-                              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted; e.currentTarget.style.background = 'transparent' }}>
-                              <SquarePen size={12} strokeWidth={2} />
-                            </button>
-                            <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(s) }}
-                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                width: 28, height: 28, borderRadius: 6,
-                                border: `1.5px solid ${C.border}`, background: 'transparent',
-                                color: C.textMuted, cursor: 'pointer',
-                                transition: 'all 0.13s' }}
-                              onMouseEnter={e => { e.currentTarget.style.borderColor = C.red; e.currentTarget.style.color = C.red; e.currentTarget.style.background = `${C.red}08` }}
-                              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted; e.currentTarget.style.background = 'transparent' }}>
-                              <Trash2 size={12} strokeWidth={2} />
-                            </button>
+                            {auth?.role !== 'auditeur' && (
+                              <button onClick={(e) => { e.stopPropagation(); setEditingSaisie(s) }}
+                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  width: 28, height: 28, borderRadius: 6,
+                                  border: `1.5px solid ${C.border}`, background: 'transparent',
+                                  color: C.textMuted, cursor: 'pointer',
+                                  transition: 'all 0.13s', whiteSpace: 'nowrap' }}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = C.green; e.currentTarget.style.color = C.green; e.currentTarget.style.background = `${C.green}08` }}
+                                onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted; e.currentTarget.style.background = 'transparent' }}>
+                                <SquarePen size={12} strokeWidth={2} />
+                              </button>
+                            )}
+                            {auth?.role !== 'auditeur' && (
+                              <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(s) }}
+                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  width: 28, height: 28, borderRadius: 6,
+                                  border: `1.5px solid ${C.border}`, background: 'transparent',
+                                  color: C.textMuted, cursor: 'pointer',
+                                  transition: 'all 0.13s' }}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = C.red; e.currentTarget.style.color = C.red; e.currentTarget.style.background = `${C.red}08` }}
+                                onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted; e.currentTarget.style.background = 'transparent' }}>
+                                <Trash2 size={12} strokeWidth={2} />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

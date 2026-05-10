@@ -25,6 +25,9 @@ const ACTION_LABELS = {
   CHANGE_ROLE   : { label: 'Changement rôle',   color: '#b197fc' },
   TOGGLE_USER   : { label: 'Activation/Désact', color: '#f5a623' },
   EXPORT_CSV    : { label: 'Export CSV',        color: '#4d9de0' },
+  CREATE_SAISIE : { label: 'Création saisie',     color: '#34d96f' },
+  UPDATE_SAISIE : { label: 'Modification saisie',  color: '#f5a623' },
+  DELETE_SAISIE : { label: 'Suppression saisie',   color: '#f05252' },
 }
 
 // ── Confirm modal ─────────────────────────────────────────────
