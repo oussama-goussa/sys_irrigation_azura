@@ -8,7 +8,7 @@ import {
   History, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
   SquarePen, Trash2, X, AlertTriangle, Download, RefreshCw,
   Plus, Save, AlertCircle, Check, Droplets, FlaskConical,
-  BarChart2, ClipboardList,
+  BarChart2, ClipboardList, Eye,
 } from 'lucide-react'
 import { getSaisies, getSaisie, updateSaisie, deleteSaisie, getDevices, getMe } from '../api/client.js'
 import ExportModal from '../components/ExportModal.jsx'
@@ -686,7 +686,7 @@ function ConfirmModal({ saisie, onConfirm, onCancel, C }) {
 }
 
 // ── Edit Modal ────────────────────────────────────────────────
-function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
+function EditModal({ saisie, token, farms, onSaved, onClose, C, dark, readOnly = false }) {
   const [ferme, setFerme]         = useState(saisie.farm_name || '')
   const [station, setStation]     = useState(saisie.station || '')
   const [serre, setSerre]         = useState(saisie.serre || '')
@@ -930,9 +930,9 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
           padding: isMobile ? '14px 16px' : '20px 28px', borderBottom: `1px solid ${C.border}`,
           position: 'sticky', top: 0, background: C.card, zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <SquarePen size={18} color={C.green} strokeWidth={2} />
+            {readOnly ? <Eye size={18} color={C.blue} strokeWidth={2} /> : <SquarePen size={18} color={C.green} strokeWidth={2} />}
             <div style={{ color: C.text, fontWeight: 800, fontSize: 15 }}>
-              Modifier saisie — {saisie.date} · {saisie.farm_name}
+              {readOnly ? 'Statistiques' : 'Modifier saisie'} — {saisie.date} · {saisie.farm_name}
             </div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none',
@@ -1004,26 +1004,26 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
           {/* Sélecteurs */}
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : isTablet ? '1fr 1fr 1fr' : '1fr 1fr 1fr 1fr 1fr', gap: 12, marginBottom: 18 }}>            <div>
               <label style={labelStyle}>Ferme</label>
-              <SSelect value={ferme} onChange={v => { setFerme(v); setStation('') }}
-                options={fermeOptions} placeholder="Sélectionner…" C={C} />
+              <SSelect value={ferme} onChange={v => { !readOnly && setFerme(v); setStation('') }} 
+                options={fermeOptions} placeholder="Sélectionner…" C={C} disabled={readOnly} />
             </div>
             <div>
               <label style={labelStyle}>Bloc (Station)</label>
-              <SSelect value={station} onChange={setStation}
-                options={stationOptions} placeholder="Sélectionner…" C={C} />
+              <SSelect value={station} onChange={v => {!readOnly && setStation(v)} }
+                options={stationOptions} placeholder="Sélectionner…" C={C} disabled={readOnly} />
             </div>
             <div>
               <label style={labelStyle}>Serre</label>
-              <SSelect value={serre} onChange={setSerre}
-                options={serreOptions} placeholder="Sélectionner…" C={C} />
+              <SSelect value={serre} onChange={v => {!readOnly && setSerre(v)} }
+                options={serreOptions} placeholder="Sélectionner…" C={C} disabled={readOnly} />
             </div>
             <div>
               <label style={labelStyle}>Vanne</label>
-              <input value={vanne} onChange={e => setVanne(e.target.value)} style={inputStyle} placeholder="ex: 1" />
+              <input value={vanne} onChange={e => !readOnly && setVanne(e.target.value)} style={{ ...inputStyle, opacity: readOnly ? 0.7 : 1 }} readOnly={readOnly} placeholder="ex: 1" />
             </div>
             <div>
               <label style={labelStyle}>Date</label>
-              <CalendarPicker value={date} onChange={setDate} C={C} />
+              <CalendarPicker value={date} onChange={v => !readOnly && setDate(v)} C={C} />
             </div>
           </div>
 
@@ -1041,17 +1041,21 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
               ].map(f => (
                 <div key={f.label}>
                   <label style={labelStyle}>{f.label}</label>
-                  <input type="number" value={f.val} onChange={e => f.set(e.target.value)}
-                    step="any" style={inputStyle} />
+                  <input type="number" value={f.val}
+                    onChange={e => !readOnly && f.set(e.target.value)}
+                    readOnly={readOnly}
+                    step="any"
+                    style={{ ...inputStyle, opacity: readOnly ? 0.7 : 1,
+                      cursor: readOnly ? 'default' : 'text' }} />
                 </div>
               ))}
               <div>
                 <label style={labelStyle}>Heure matin</label>
-                <TimeInput value={heureMatin} onChange={setHeureMatin} C={C} />
+                <TimeInput value={heureMatin} onChange={v => !readOnly && setHeureMatin(v)} C={C} />
               </div>
               <div>
                 <label style={labelStyle}>Heure soir</label>
-                <TimeInput value={heureSoir} onChange={setHeureSoir} C={C} />
+                <TimeInput value={heureSoir} onChange={v => !readOnly && setHeureSoir(v)} C={C} />
               </div>
               <div>
                 <label style={labelStyle}>% Ressuyage</label>
@@ -1074,12 +1078,14 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
               padding: '12px 16px', borderBottom: `1px solid ${C.border}` }}>
               <div style={{ fontSize: 12, fontWeight: 630, color: C.textMuted, textTransform: 'uppercase',
                 letterSpacing: '0em' }}>Tours d'irrigation</div>
-              <button onClick={addTour} style={{ display: 'flex', alignItems: 'center', gap: 6,
-                padding: '6px 14px', background: `${C.green}10`, border: `1.5px solid ${C.green}40`,
-                borderRadius: 7, color: C.green, fontSize: 12, fontWeight: 630,
-                fontFamily: 'inherit', cursor: 'pointer' }}>
-                <Plus size={12} strokeWidth={2.5} /> Nouveau tour
-              </button>
+              {!readOnly && (
+                <button onClick={addTour} style={{ display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '6px 14px', background: `${C.green}10`, border: `1.5px solid ${C.green}40`,
+                  borderRadius: 7, color: C.green, fontSize: 12, fontWeight: 630,
+                  fontFamily: 'inherit', cursor: 'pointer' }}>
+                  <Plus size={12} strokeWidth={2.5} /> Nouveau tour
+                </button>
+              )}
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit' }}>
@@ -1115,7 +1121,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                           fontSize: 12, fontWeight: 900, color: C.green }}>{t.num}</div>
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
-                        <TInput value={t.rad} onChange={v => updateTour(t.id, 'rad', v)} C={C} />
+                        <TInput value={t.rad} onChange={v => !readOnly && updateTour(t.id, 'rad', v)} disabled={readOnly} C={C} />
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
                         <div style={{ fontSize: 12, fontWeight: 630, color: C.blue }}>
@@ -1123,7 +1129,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                         </div>
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
-                        <TimeInput value={t.heure} onChange={v => updateTour(t.id, 'heure', v)} C={C} />
+                        <TimeInput value={t.heure} onChange={v => !readOnly && updateTour(t.id, 'heure', v)} C={C} />
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
                         <div style={{ fontSize: 12, fontWeight: 630, color: t.tempsRepos !== null ? C.textMuted : C.textDim }}>
@@ -1131,25 +1137,25 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                         </div>
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
-                        <TInput value={t.duree} onChange={v => updateTour(t.id, 'duree', v)} C={C} />
+                        <TInput value={t.duree} onChange={v => !readOnly && updateTour(t.id, 'duree', v)} disabled={readOnly} C={C} />
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
-                        <TInput value={t.vApport} onChange={v => updateTour(t.id, 'vApport', v)} C={C} />
+                        <TInput value={t.vApport} onChange={v => !readOnly && updateTour(t.id, 'vApport', v)} disabled={readOnly} C={C} />
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
-                        <TInput value={t.ecApport} onChange={v => updateTour(t.id, 'ecApport', v)} C={C} />
+                        <TInput value={t.ecApport} onChange={v => !readOnly && updateTour(t.id, 'ecApport', v)} disabled={readOnly} C={C} />
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
-                        <TInput value={t.phApport} onChange={v => updateTour(t.id, 'phApport', v)} C={C} />
+                        <TInput value={t.phApport} onChange={v => !readOnly && updateTour(t.id, 'phApport', v)} disabled={readOnly} C={C} />
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
-                        <TInput value={t.vDrain} onChange={v => updateTour(t.id, 'vDrain', v)} C={C} />
+                        <TInput value={t.vDrain} onChange={v => !readOnly && updateTour(t.id, 'vDrain', v)} disabled={readOnly} C={C} />
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
-                        <TInput value={t.ecDrain} onChange={v => updateTour(t.id, 'ecDrain', v)} C={C} />
+                        <TInput value={t.ecDrain} onChange={v => !readOnly && updateTour(t.id, 'ecDrain', v)} disabled={readOnly} C={C} />
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
-                        <TInput value={t.phDrain} onChange={v => updateTour(t.id, 'phDrain', v)} C={C} />
+                        <TInput value={t.phDrain} onChange={v => !readOnly && updateTour(t.id, 'phDrain', v)} disabled={readOnly} C={C} />
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
                         <div style={{ fontSize: 12, fontWeight: 630, color: t.pctDrain != null ? C.amber : C.textDim }}>
@@ -1162,13 +1168,15 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
                         </div>
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
-                        <button onClick={() => deleteTourRow(t.id)}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer',
-                            color: C.textDim, padding: 3, borderRadius: 4 }}
-                          onMouseEnter={e => e.currentTarget.style.color = C.red}
-                          onMouseLeave={e => e.currentTarget.style.color = C.textDim}>
-                          <Trash2 size={12} strokeWidth={2} />
-                        </button>
+                        {!readOnly && (
+                          <button onClick={() => deleteTourRow(t.id)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer',
+                              color: C.textDim, padding: 3, borderRadius: 4 }}
+                            onMouseEnter={e => e.currentTarget.style.color = C.red}
+                            onMouseLeave={e => e.currentTarget.style.color = C.textDim}>
+                            <Trash2 size={12} strokeWidth={2} />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -1187,21 +1195,30 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark }) {
           )}
 
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-            <button onClick={onClose} style={{ padding: '9px 20px', borderRadius: 8,
-              border: `1.5px solid ${C.border}`, background: 'transparent',
-              color: C.textMuted, fontSize: 12, fontWeight: 630, fontFamily: 'inherit', cursor: 'pointer' }}>
-              Annuler
-            </button>
-            <button onClick={handleSave} disabled={saving}
-              style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 20px',
-                background: saving ? C.toggleBg : C.green, color: saving ? C.textDim : '#fff',
-                border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 630,
-                fontFamily: 'inherit', cursor: saving ? 'not-allowed' : 'pointer' }}>
-              <Save size={12} strokeWidth={2.5} />
-              {saving ? 'Enregistrement…' : 'Enregistrer'}
-            </button>
+            {readOnly ? (
+              <button onClick={onClose} style={{ padding: '9px 24px', borderRadius: 8,
+                border: `1.5px solid ${C.border}`, background: C.toggleBg,
+                color: C.text, fontSize: 12, fontWeight: 630, fontFamily: 'inherit', cursor: 'pointer' }}>
+                Fermer
+              </button>
+            ) : (
+              <>
+                <button onClick={onClose} style={{ padding: '9px 20px', borderRadius: 8,
+                  border: `1.5px solid ${C.border}`, background: 'transparent',
+                  color: C.textMuted, fontSize: 12, fontWeight: 630, fontFamily: 'inherit', cursor: 'pointer' }}>
+                  Annuler
+                </button>
+                <button onClick={handleSave} disabled={saving}
+                  style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 20px',
+                    background: saving ? C.toggleBg : C.green, color: saving ? C.textDim : '#fff',
+                    border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 630,
+                    fontFamily: 'inherit', cursor: saving ? 'not-allowed' : 'pointer' }}>
+                  <Save size={12} strokeWidth={2.5} />
+                  {saving ? 'Enregistrement…' : 'Enregistrer'}
+                </button>
+              </>
+            )}
           </div>
-
         </div>
       </div>
     </div>,
@@ -1496,7 +1513,10 @@ export default function HistoriquePage({ token, auth, C, dark }) {
       )}
       {editingSaisie && (
         <EditModal saisie={editingSaisie} token={token} farms={farms}
-          onSaved={() => load(page)} onClose={() => setEditingSaisie(null)} C={C} dark={dark} />
+          onSaved={() => load(page)} onClose={() => setEditingSaisie(null)} 
+          C={C} dark={dark}
+          readOnly={auth?.role === 'auditeur'}
+        />
       )}
 
       <div style={{ animation: 'az-fade-in 0.3s ease both' }}>
@@ -1691,14 +1711,27 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                             {auth?.role !== 'auditeur' && (
                               <button onClick={(e) => { e.stopPropagation(); setEditingSaisie(s) }}
+                                title={auth?.role === 'auditeur' ? 'Voir statistiques' : 'Modifier'}
                                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
                                   width: 28, height: 28, borderRadius: 6,
-                                  border: `1.5px solid ${C.border}`, background: 'transparent',
-                                  color: C.textMuted, cursor: 'pointer',
-                                  transition: 'all 0.13s', whiteSpace: 'nowrap' }}
-                                onMouseEnter={e => { e.currentTarget.style.borderColor = C.green; e.currentTarget.style.color = C.green; e.currentTarget.style.background = `${C.green}08` }}
-                                onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted; e.currentTarget.style.background = 'transparent' }}>
-                                <SquarePen size={12} strokeWidth={2} />
+                                  border: `1.5px solid ${auth?.role === 'auditeur' ? C.blue + '60' : C.border}`,
+                                  background: 'transparent',
+                                  color: auth?.role === 'auditeur' ? C.blue : C.textMuted,
+                                  cursor: 'pointer', transition: 'all 0.13s' }}
+                                onMouseEnter={e => {
+                                  e.currentTarget.style.borderColor = auth?.role === 'auditeur' ? C.blue : C.green
+                                  e.currentTarget.style.color = auth?.role === 'auditeur' ? C.blue : C.green
+                                  e.currentTarget.style.background = auth?.role === 'auditeur' ? `${C.blue}08` : `${C.green}08`
+                                }}
+                                onMouseLeave={e => {
+                                  e.currentTarget.style.borderColor = auth?.role === 'auditeur' ? C.blue + '60' : C.border
+                                  e.currentTarget.style.color = auth?.role === 'auditeur' ? C.blue : C.textMuted
+                                  e.currentTarget.style.background = 'transparent'
+                                }}>
+                                {auth?.role === 'auditeur'
+                                  ? <Eye size={12} strokeWidth={2} />
+                                  : <SquarePen size={12} strokeWidth={2} />
+                                }
                               </button>
                             )}
                             {auth?.role !== 'auditeur' && (
