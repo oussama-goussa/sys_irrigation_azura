@@ -1709,31 +1709,29 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                         </td>
                         <td style={{ padding: '10px 8px' }}>
                           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                            {auth?.role !== 'auditeur' && (
-                              <button onClick={(e) => { e.stopPropagation(); setEditingSaisie(s) }}
-                                title={auth?.role === 'auditeur' ? 'Voir statistiques' : 'Modifier'}
-                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  width: 28, height: 28, borderRadius: 6,
-                                  border: `1.5px solid ${auth?.role === 'auditeur' ? C.blue + '60' : C.border}`,
-                                  background: 'transparent',
-                                  color: auth?.role === 'auditeur' ? C.blue : C.textMuted,
-                                  cursor: 'pointer', transition: 'all 0.13s' }}
-                                onMouseEnter={e => {
-                                  e.currentTarget.style.borderColor = auth?.role === 'auditeur' ? C.blue : C.green
-                                  e.currentTarget.style.color = auth?.role === 'auditeur' ? C.blue : C.green
-                                  e.currentTarget.style.background = auth?.role === 'auditeur' ? `${C.blue}08` : `${C.green}08`
-                                }}
-                                onMouseLeave={e => {
-                                  e.currentTarget.style.borderColor = auth?.role === 'auditeur' ? C.blue + '60' : C.border
-                                  e.currentTarget.style.color = auth?.role === 'auditeur' ? C.blue : C.textMuted
-                                  e.currentTarget.style.background = 'transparent'
-                                }}>
-                                {auth?.role === 'auditeur'
-                                  ? <Eye size={12} strokeWidth={2} />
-                                  : <SquarePen size={12} strokeWidth={2} />
-                                }
-                              </button>
-                            )}
+                            <button onClick={(e) => { e.stopPropagation(); setEditingSaisie(s) }}
+                              title={auth?.role === 'auditeur' ? 'Voir statistiques' : 'Modifier'}
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                width: 28, height: 28, borderRadius: 6,
+                                border: `1.5px solid ${auth?.role === 'auditeur' ? C.blue + '60' : C.border}`,
+                                background: 'transparent',
+                                color: auth?.role === 'auditeur' ? C.blue : C.textMuted,
+                                cursor: 'pointer', transition: 'all 0.13s' }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.borderColor = auth?.role === 'auditeur' ? C.blue : C.green
+                                e.currentTarget.style.color = auth?.role === 'auditeur' ? C.blue : C.green
+                                e.currentTarget.style.background = auth?.role === 'auditeur' ? `${C.blue}08` : `${C.green}08`
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.borderColor = auth?.role === 'auditeur' ? C.blue + '60' : C.border
+                                e.currentTarget.style.color = auth?.role === 'auditeur' ? C.blue : C.textMuted
+                                e.currentTarget.style.background = 'transparent'
+                              }}>
+                              {auth?.role === 'auditeur'
+                                ? <Eye size={12} strokeWidth={2} />
+                                : <SquarePen size={12} strokeWidth={2} />
+                              }
+                            </button>
                             {auth?.role !== 'auditeur' && (
                               <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(s) }}
                                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
