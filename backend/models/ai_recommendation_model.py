@@ -45,7 +45,7 @@ class AIRecommandation(Base):
     etc_mm           = Column(Float, nullable=True)
     fraction_lessivage = Column(Float, nullable=True)
     volume_total_l_ha = Column(Float, nullable=True)
-    ec_cible_dSm     = Column(Float, nullable=True)
+    ec_cible_dsm     = Column(Float, nullable=True)
 
     # ── Plan de la journée ────────────────────────────────────
     nb_tours_prevu   = Column(Integer, nullable=True)
@@ -97,7 +97,7 @@ class AIRecommandation(Base):
             "etc_mm"            : self.etc_mm,
             "fraction_lessivage": self.fraction_lessivage,
             "volume_total_l_ha" : self.volume_total_l_ha,
-            "ec_cible_dSm"      : self.ec_cible_dSm,
+            "ec_cible_dSm"      : self.ec_cible_dsm,
             "nb_tours_prevu"    : self.nb_tours_prevu,
             "heure_debut"       : self.heure_debut,
             "duree_t12_min"     : self.duree_t12_min,

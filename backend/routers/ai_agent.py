@@ -463,7 +463,7 @@ def _sauvegarder_recommandation(db: Session, result: dict) -> AIRecommandation:
         etc_mm             = result.get("etc_mm"),
         fraction_lessivage = result.get("fraction_lessivage"),
         volume_total_l_ha  = result.get("volume_total_l_ha"),
-        ec_cible_dSm       = result.get("ec_cible_dSm"),
+        ec_cible_dsm       = result.get("ec_cible_dSm"),
         nb_tours_prevu     = result.get("nb_tours_prevu"),
         heure_debut        = result.get("heure_debut"),
         duree_t12_min      = result.get("duree_t12_min"),

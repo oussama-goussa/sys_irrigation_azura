@@ -434,7 +434,7 @@ def generer_recommandation_matin(
         "hr_moy"             : hr_moy, "vpd_kpa": vpd, "pluie_mm": pluie,
         "et0_mm"             : et0, "etc_mm": etc,
         "fraction_lessivage" : fl, "volume_total_l_ha": volume_total,
-        "ec_cible_dSm"       : ec_cible_stade,
+        "ec_cible_dSm"      : ec_cible_stade,
         "nb_tours_prevu"     : plan["nb_tours"],
         "heure_debut"        : plan.get("heure_debut") or "07:30",
         "duree_t12_min"      : plan["duree_t12"],
