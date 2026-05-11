@@ -18,7 +18,7 @@ from datetime import date as date_type, datetime
 from loguru import logger
 
 from core.database import get_db
-from core.security import get_current_user, require_any, require_agronome
+from core.security import get_current_user, require_any, require_agronome, require_operateur
 from models.ai_recommendation_model import AIRecommandation, AIConfigDevice
 from models.sensor_model import Device, IrrigationTour
 from services.ai_service import (
@@ -123,7 +123,7 @@ def generer_recommandation_endpoint(
     device_id : int,
     body      : GenererRequest,
     db        : Session = Depends(get_db),
-    user      : dict    = Depends(require_agronome),
+    user      : dict    = Depends(require_operateur),
 ):
     """
     Génère (ou régénère) la recommandation du matin.
@@ -372,7 +372,7 @@ def update_config(
     device_id : int,
     body      : ConfigRequest,
     db        : Session = Depends(get_db),
-    user      : dict    = Depends(require_agronome),
+    user      : dict    = Depends(require_operateur),
 ):
     _get_device(db, device_id)
     cfg = _get_or_create_config(db, device_id)
