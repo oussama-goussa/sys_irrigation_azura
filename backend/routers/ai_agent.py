@@ -110,6 +110,8 @@ def get_recommandation(
             rec = _sauvegarder_recommandation(db, result)
         except Exception as e:
             logger.error(f"Auto-génération échouée device {device_id} : {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             raise HTTPException(500, f"Erreur génération recommandation : {str(e)}")
 
     return rec.to_dict()

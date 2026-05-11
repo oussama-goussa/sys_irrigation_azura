@@ -175,7 +175,7 @@ def get_meteo_open_meteo(mois: int) -> dict:
         tmin = d["temperature_2m_min"][0]
         rs_kwh = d["shortwave_radiation_sum"][0]
         # Serre = 27% de la radiation extérieure (facteur Azura)
-        rs_jcm2 = rs_kwh * 360 * 0.27 if rs_kwh else None
+        rs_jcm2 = float(rs_kwh) * 360 * 0.27 if rs_kwh is not None else METEO_FALLBACK[mois]["rs_jcm2"]
         return {
             "t_max": tmax, "t_min": tmin,
             "t_moy": round((tmax + tmin) / 2, 1),
@@ -345,7 +345,10 @@ def generer_recommandation_matin(
     ec_cible_stade = KC_TABLE[stade]["ec_cible"]
 
     # Météo
-    meteo = meteo_override or get_meteo_open_meteo(mois)
+    try:
+        meteo = meteo_override or get_meteo_open_meteo(mois)
+    except Exception:
+        meteo = {**METEO_FALLBACK[mois], "source": f"fallback_mois{mois}"}
     radiation = meteo.get("rs_jcm2") or METEO_FALLBACK[mois]["rs_jcm2"]
     t_max = meteo.get("t_max")
     t_min = meteo.get("t_min")
