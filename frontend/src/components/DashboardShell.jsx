@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   Users, Sun, Moon, LogOut, Leaf, ClipboardList, History,
   LayoutDashboard, ChevronDown, ChevronRight,
-  AlignLeft, X,
+  AlignLeft, X, Brain,
 } from 'lucide-react'
 import { getColors } from '../theme.js'
 import { Badge, Spinner, SZ } from './ui.jsx'
@@ -18,6 +18,7 @@ import SaisiePage     from '../pages/SaisiePage.jsx'
 import HistoriquePage from '../pages/HistoriquePage.jsx'
 import DashboardPage  from '../pages/DashboardPage.jsx'
 import ZonePage       from '../pages/ZonePage.jsx'
+import AgentIAPage from '../pages/AgentIAPage.jsx'
 
 // ── Breakpoints ───────────────────────────────────────────────
 const BP_MOBILE = 640
@@ -238,6 +239,7 @@ function SidebarContent({
 
         {auth.role !== 'auditeur' && navBtn('saisie', ClipboardList, 'Saisie journalière')}
         {navBtn('historique', History, 'Historique')}
+        {navBtn('ai', Brain, 'Agent IA')}
         {auth.role === 'admin' && navBtn('users', Users, 'Utilisateurs')}
       </nav>
 
@@ -510,6 +512,13 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
             <UsersPage
               token={auth.access_token} userRole={auth.role}
               C={C} dark={dark} {...responsiveProps}
+            />
+          )}
+          {page === 'ai' && (
+            <AgentIAPage
+              token={auth.access_token}
+              auth={auth}
+              C={C} dark={dark}
             />
           )}
         </div>

@@ -16,6 +16,8 @@ from routers.sensors import router as sensors_router
 from routers.devices import router as devices_router
 from routers.saisie       import router as saisie_router
 from routers.export_saisie import router as export_router
+from models.ai_recommendation_model import AIRecommandation, AIConfigDevice
+from routers.ai_agent import router as ai_router
 
 from models.sensor_model import (
     Device, SensorReading, IrrigationCycle,
@@ -50,6 +52,53 @@ def run_migrations():
             conn.execute(text("""
                 ALTER TABLE irrigation_tours
                 ADD COLUMN IF NOT EXISTS cumul_radiation FLOAT
+            """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS ai_config_devices (
+                    id               BIGSERIAL PRIMARY KEY,
+                    device_id        INTEGER NOT NULL REFERENCES devices(id) UNIQUE,
+                    date_plantation  DATE,
+                    ec_eau_brute     FLOAT  DEFAULT 0.8,
+                    methode_decision VARCHAR(20) DEFAULT 'hybride',
+                    actif            BOOLEAN DEFAULT TRUE,
+                    created_at       TIMESTAMPTZ DEFAULT NOW(),
+                    updated_at       TIMESTAMPTZ DEFAULT NOW()
+                )
+            """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS ai_recommandations (
+                    id                 BIGSERIAL PRIMARY KEY,
+                    device_id          INTEGER NOT NULL REFERENCES devices(id),
+                    date               DATE NOT NULL,
+                    radiation_jcm2     FLOAT,
+                    t_max FLOAT, t_min FLOAT, t_moy FLOAT,
+                    hr_moy FLOAT, vpd_kpa FLOAT,
+                    pluie_mm           FLOAT DEFAULT 0,
+                    scenario_meteo     VARCHAR(30),
+                    stade              VARCHAR(30),
+                    j_plantation       INTEGER,
+                    ec_bassin          FLOAT,
+                    pct_ressuyage      FLOAT,
+                    et0_mm FLOAT, etc_mm FLOAT,
+                    fraction_lessivage FLOAT,
+                    volume_total_l_ha  FLOAT,
+                    ec_cible_dSm       FLOAT,
+                    nb_tours_prevu     INTEGER,
+                    heure_debut        VARCHAR(5),
+                    duree_t12_min      INTEGER,
+                    duree_t3p_min      INTEGER,
+                    repos_initial_min  INTEGER,
+                    seuil_drainage_pct FLOAT,
+                    doses_npk          JSONB,
+                    correction_ph      JSONB,
+                    nb_tours_reel      INTEGER DEFAULT 0,
+                    statut             VARCHAR(20) DEFAULT 'en_cours',
+                    ajustements        JSONB DEFAULT '[]'::jsonb,
+                    methode_decision   VARCHAR(20) DEFAULT 'hybride',
+                    created_at         TIMESTAMPTZ DEFAULT NOW(),
+                    updated_at         TIMESTAMPTZ DEFAULT NOW(),
+                    CONSTRAINT uq_ai_rec UNIQUE (device_id, date)
+                )
             """))
             conn.commit()
         logger.success("Migrations appliquées ✅")
@@ -112,6 +161,7 @@ app.include_router(sensors_router)
 app.include_router(devices_router)
 app.include_router(saisie_router)
 app.include_router(export_router)
+app.include_router(ai_router)
 
 # ── Endpoints publics ─────────────────────────────────────────
 @app.get("/", tags=["General"])

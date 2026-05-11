@@ -76,6 +76,18 @@ app.conf.beat_schedule = {
         "task"    : "core.celery_app.task_tours_jour_en_cours",
         "schedule": crontab(minute="*/5"),
     },
+
+    # Recommandations IA générées chaque matin à 06h00
+    "generer-recommandations-matin": {
+        "task"    : "core.celery_app.task_generer_recommandations_matin",
+        "schedule": crontab(hour=6, minute=0),
+    },
+ 
+    # Ajustements inter-tours toutes les 5 min (combiné avec tours_jour_en_cours)
+    "ajustement-inter-tours": {
+        "task"    : "core.celery_app.task_ajustement_inter_tours",
+        "schedule": crontab(minute="*/5"),
+    },
 }
 
 
@@ -321,3 +333,163 @@ def task_tours_jour_en_cours():
     except Exception as e:
         logger.error(f"Erreur tours jour en cours : {e}")
         return {"statut": "erreur", "message": str(e)}
+
+# ── TÂCHE : Générer recommandations matin (toutes les houses) ─
+@app.task(name="core.celery_app.task_generer_recommandations_matin")
+def task_generer_recommandations_matin():
+    """
+    Génère les recommandations IA du matin pour tous les devices actifs.
+    Planifiée à 06h00 chaque matin.
+    """
+    try:
+        from core.database import SessionLocal
+        from models.sensor_model import Device
+        from models.ai_recommendation_model import AIRecommandation, AIConfigDevice
+        from services.ai_service import generer_recommandation_matin
+        from routers.ai_agent import _sauvegarder_recommandation
+        from datetime import date
+
+        db = SessionLocal()
+        try:
+            today = date.today().isoformat()
+            devices = db.query(Device).filter(Device.is_active == True).all()
+            configs = {
+                c.device_id: c
+                for c in db.query(AIConfigDevice).filter(AIConfigDevice.actif == True).all()
+            }
+
+            generated = 0
+            for device in devices:
+                # Vérifier si déjà générée
+                exists = db.query(AIRecommandation).filter(
+                    AIRecommandation.device_id == device.id,
+                    AIRecommandation.date      == today,
+                ).first()
+                if exists:
+                    continue
+
+                cfg = configs.get(device.id)
+                if cfg is None:
+                    # Créer config par défaut
+                    cfg = AIConfigDevice(device_id=device.id, ec_eau_brute=0.8,
+                                         methode_decision="hybride", actif=True)
+                    db.add(cfg)
+                    db.commit()
+
+                try:
+                    result = generer_recommandation_matin(
+                        device_id       = device.id,
+                        date_str        = today,
+                        ec_bassin       = cfg.ec_eau_brute or 0.8,
+                        date_plantation = str(cfg.date_plantation) if cfg.date_plantation else None,
+                        methode         = cfg.methode_decision or "hybride",
+                    )
+                    _sauvegarder_recommandation(db, result)
+                    generated += 1
+                    logger.success(f"Recommandation IA générée : {device.farm_name} H{device.house_number}")
+                except Exception as e:
+                    logger.error(f"Erreur device {device.id} : {e}")
+
+            logger.info(f"Recommandations générées : {generated}/{len(devices)}")
+            return {"statut": "ok", "generated": generated}
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"Erreur tâche recommandations matin : {e}")
+        return {"statut": "erreur", "message": str(e)}
+
+
+# ── TÂCHE : Ajustement automatique pendant repos inter-tour ───
+@app.task(name="core.celery_app.task_ajustement_inter_tours")
+def task_ajustement_inter_tours():
+    """
+    Déclenché toutes les 5 minutes pendant la journée.
+    Détecte les tours qui viennent de se terminer dans irrigation_tours
+    et génère automatiquement l'ajustement IA pour le prochain.
+    """
+    try:
+        from core.database import SessionLocal
+        from models.sensor_model import Device, IrrigationTour
+        from models.ai_recommendation_model import AIRecommandation
+        from services.ai_service import ajuster_apres_tour
+        from datetime import date, datetime, timedelta
+
+        db = SessionLocal()
+        try:
+            today = date.today()
+            # Tours complétés dans les 10 dernières minutes
+            cutoff = datetime.utcnow() - timedelta(minutes=10)
+
+            tours_recents = (
+                db.query(IrrigationTour)
+                .filter(
+                    IrrigationTour.date        == today,
+                    IrrigationTour.is_complete == True,
+                    IrrigationTour.fin         >= cutoff,
+                )
+                .all()
+            )
+
+            for tour in tours_recents:
+                rec = db.query(AIRecommandation).filter(
+                    AIRecommandation.device_id == tour.device_id,
+                    AIRecommandation.date      == today,
+                ).first()
+
+                if not rec or rec.statut == "arrete":
+                    continue
+
+                # Vérifier si cet ajustement a déjà été fait
+                ajustements = rec.ajustements or []
+                deja_fait = any(a["tour"] == tour.tour_num for a in ajustements)
+                if deja_fait:
+                    continue
+
+                # Récupérer l'état précédent
+                etat_precedent = ajustements[-1].get("nouveau_etat", {}) if ajustements else {}
+
+                recommandation_dict = rec.to_dict()
+                recommandation_dict["_etat"] = etat_precedent if etat_precedent else {
+                    "repos_courant_min": rec.repos_initial_min or 8,
+                    "duree_t3p_courant": rec.duree_t3p_min or 8,
+                    "surveillance"     : False,
+                    "depassement_reel" : False,
+                    "dernier_drainage" : 0.0,
+                }
+
+                # Pas de drainage pour l'instant (sera null) → mode dégradé
+                ajustement = ajuster_apres_tour(
+                    recommandation = recommandation_dict,
+                    drainage_reel  = None,   # pas de capteur encore
+                    num_tour       = tour.tour_num,
+                    tours_restants = max(1, (rec.nb_tours_prevu or 10) - tour.tour_num),
+                )
+
+                rec.ajustements  = ajustements + [ajustement]
+                rec.nb_tours_reel = tour.tour_num
+                if ajustement["stop"]:
+                    rec.statut = "arrete"
+
+                db.commit()
+                logger.info(
+                    f"Ajustement auto : device {tour.device_id} "
+                    f"tour {tour.tour_num} → {ajustement['action']}"
+                )
+
+            return {"statut": "ok"}
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"Erreur ajustement inter-tours : {e}")
+        return {"statut": "erreur", "message": str(e)}
+
+
+# ── Ajouter dans beat_schedule existant :
+# "generer-recommandations-matin": {
+#     "task"    : "core.celery_app.task_generer_recommandations_matin",
+#     "schedule": crontab(hour=6, minute=0),   # 06h00 chaque matin
+# },
+# "ajustement-inter-tours": {
+#     "task"    : "core.celery_app.task_ajustement_inter_tours",
+#     "schedule": crontab(minute="*/5"),        # toutes les 5 min (déjà comme tours_jour_en_cours)
+# },
