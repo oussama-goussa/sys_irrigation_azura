@@ -1153,7 +1153,13 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark, readOnly =
                         </div>
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
-                        <TimeInput value={t.heure} onChange={v => !readOnly && updateTour(t.id, 'heure', v)} C={C} />
+                        {readOnly ? (
+                          <div style={{ fontSize: 12, fontWeight: 630, color: C.text, textAlign: 'center' }}>
+                            {t.heure || '—'}
+                          </div>
+                        ) : (
+                          <TimeInput value={t.heure} onChange={v => updateTour(t.id, 'heure', v)} C={C} />
+                        )}
                       </td>
                       <td style={{ padding: '5px 4px', textAlign: 'center' }}>
                         <div style={{ fontSize: 12, fontWeight: 630, color: t.tempsRepos !== null ? C.textMuted : C.textDim }}>
