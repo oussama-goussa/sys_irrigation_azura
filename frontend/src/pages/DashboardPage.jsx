@@ -206,6 +206,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark, isMobile
     setError(null)
     try {
       const data = await getDashboard(token)
+      console.log('Dashboard data:', data)
       setFarms(data?.farms || [])
       if (data?.stats?.readings_24h !== undefined) setReadings24h(data.stats.readings_24h)
     } catch (e) {

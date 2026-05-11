@@ -200,9 +200,9 @@ function SSelect({ value, onChange, options, placeholder, C, width = '100%', dis
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 10px', height: 32, fontWeight: 630,
         border: `1.5px solid ${open ? C.green : C.border}`,
-        borderRadius: 8, background: disabled ? C.toggleBg : C.inputBg,
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        transition: 'border-color 0.15s', gap: 6, opacity: disabled ? 0.5 : 1,
+        borderRadius: 8, background: C.inputBg,
+        cursor: disabled ? 'default' : 'pointer',
+        transition: 'border-color 0.15s', gap: 6,
       }}>
         <span style={{ fontSize: 12, color: label ? C.text : C.textDim, fontWeight: 630,
           overflow: 'visible', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -1023,7 +1023,15 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark, readOnly =
             </div>
             <div>
               <label style={labelStyle}>Date</label>
-              <CalendarPicker value={date} onChange={v => !readOnly && setDate(v)} C={C} />
+              {readOnly ? (
+                <div style={{ padding: '7px 10px', borderRadius: 8, border: `1.5px solid ${C.border}`,
+                  background: C.inputBg, color: C.text, fontSize: 12, fontWeight: 700,
+                  minHeight: 32, display: 'flex', alignItems: 'center' }}>
+                  {date ? new Date(date + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
+                </div>
+              ) : (
+                <CalendarPicker value={date} onChange={setDate} C={C} />
+              )}
             </div>
           </div>
 
@@ -1051,7 +1059,15 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark, readOnly =
               ))}
               <div>
                 <label style={labelStyle}>Heure matin</label>
-                <TimeInput value={heureMatin} onChange={v => !readOnly && setHeureMatin(v)} C={C} />
+                {readOnly ? (
+                  <div style={{ padding: '7px 10px', borderRadius: 8, border: `1.5px solid ${C.border}`,
+                    background: C.inputBg, color: C.text, fontSize: 12, fontWeight: 700,
+                    minHeight: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {heureMatin || '—'}
+                  </div>
+                ) : (
+                  <TimeInput value={heureMatin} onChange={setHeureMatin} C={C} />
+                )}
               </div>
               <div>
                 <label style={labelStyle}>Heure soir</label>

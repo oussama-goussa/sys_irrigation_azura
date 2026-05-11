@@ -348,8 +348,16 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
   }, [mobileOpen])
 
   useEffect(() => {
+    setLoadingFarms(true)
     getDevices(auth.access_token)
-      .then(setFarms).catch(() => setFarms([]))
+      .then(data => {
+        console.log('[DashboardShell] farms:', data)
+        setFarms(Array.isArray(data) ? data : [])
+      })
+      .catch(err => {
+        console.error('[DashboardShell] getDevices error:', err)
+        setFarms([])
+      })
       .finally(() => setLoadingFarms(false))
   }, [auth.access_token])
 
