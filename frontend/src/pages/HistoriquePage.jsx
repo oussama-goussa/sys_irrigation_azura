@@ -1071,7 +1071,15 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark, readOnly =
               </div>
               <div>
                 <label style={labelStyle}>Heure soir</label>
-                <TimeInput value={heureSoir} onChange={v => !readOnly && setHeureSoir(v)} C={C} />
+                {readOnly ? (
+                  <div style={{ padding: '7px 10px', borderRadius: 8, border: `1.5px solid ${C.border}`,
+                    background: C.inputBg, color: C.text, fontSize: 12, fontWeight: 700,
+                    minHeight: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {heureSoir || '—'}
+                  </div>
+                ) : (
+                  <TimeInput value={heureSoir} onChange={setHeureSoir} C={C} />
+                )}
               </div>
               <div>
                 <label style={labelStyle}>% Ressuyage</label>

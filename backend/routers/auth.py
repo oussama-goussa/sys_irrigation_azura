@@ -101,7 +101,7 @@ def refresh(request: Request, body: RefreshRequest):
     payload = decode_token(body.refresh_token)
     if payload.get("type") != "refresh":
         raise HTTPException(status_code=401, detail="Token invalide")
-    new_access = create_access_token({"sub": payload["sub"], "role": payload["role"]})
+    new_access = create_access_token({"sub": payload["sub"], "role": payload["role"], "farm_names": payload.get("farm_names", [])})
     return {"access_token": new_access, "token_type": "bearer"}
 
 
