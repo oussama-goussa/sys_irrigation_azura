@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 
 import { Spinner } from '../components/ui.jsx'
-import { getDeviceLatest, getDeviceHistory, exportDeviceCSV, getDeviceTours } from '../api/client.js'
+import { getDeviceLatest, getDeviceHistory, exportDeviceCSV, getDeviceTours, getWeightHistory } from '../api/client.js'
 
 // ── helpers ───────────────────────────────────────────────────
 function fmt(v, dec = 2) {
@@ -767,6 +767,8 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
   const [chartDateTo,   setChartDateTo]   = useState(today())
   const [chartData,     setChartData]     = useState(null)
   const [loadingChart,  setLoadingChart]  = useState(true)
+  const [weightData,    setWeightData]    = useState(null)
+  const [loadingWeight, setLoadingWeight] = useState(false)
   const [chartZoomFrom, setChartZoomFrom] = useState(null)
   const [chartZoomTo,   setChartZoomTo]   = useState(null)
   const isZoomedRef = useRef(false)
@@ -848,6 +850,20 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
     }
   }, [token, deviceId, chartDateFrom, chartDateTo])
 
+  const loadWeightData = useCallback(async () => {
+    setLoadingWeight(true)
+    try {
+      const d = await getWeightHistory(token, deviceInfo.farm_name, {
+        dateFrom: chartDateFrom, dateTo: chartDateTo, page: 1, perPage: 5000,
+      })
+      setWeightData(d?.data || [])
+    } catch {
+      setWeightData([])
+    } finally {
+      setLoadingWeight(false)
+    }
+  }, [token, deviceInfo.farm_name, chartDateFrom, chartDateTo])
+
   const loadTours = useCallback(async (d = tourDate, showLoading = false) => {
       if (showLoading) setLoadingTours(true)   // ← seulement si explicitement demandé
       try {
@@ -883,7 +899,8 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
   }, [dateFrom, dateTo, deviceId])
 
   useEffect(() => {
-  loadChartData()
+    loadChartData()
+    loadWeightData()
   }, [chartDateFrom, chartDateTo, deviceId])
 
   // Click-outside pour fermer le calendrier graphiques
@@ -1958,6 +1975,36 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
               },
             ]}
           />
+
+          {/* Graphique 5 — Poids substrat (si données disponibles) */}
+          {weightData && weightData.length > 0 && (() => {
+            const series = [...weightData]
+              .reverse()
+              .filter(d => {
+                if (!chartZoomFrom && !chartZoomTo) return true
+                const ts = d.timestamp.replace('T', ' ')
+                if (chartZoomFrom && ts < chartZoomFrom + ' 00:00:00') return false
+                if (chartZoomTo   && ts > chartZoomTo   + ' 23:59:59') return false
+                return true
+              })
+              .map(d => ({ timestamp: d.timestamp, value: d.poids_kg }))
+
+            return (
+              <ChartCard
+                title={`Poids substrat — ${deviceInfo.farm_name}`}
+                C={C}
+                dark={dark}
+                onSelectRange={(from, to) => { setChartZoomFrom(from); setChartZoomTo(to); isZoomedRef.current = true }}
+                series={[{
+                  label   : 'Poids (kg)',
+                  color   : '#34d96f',
+                  unit    : 'kg',
+                  decimals: 2,
+                  data    : series,
+                }]}
+              />
+            )
+          })()}
         </div>
       )}
 
