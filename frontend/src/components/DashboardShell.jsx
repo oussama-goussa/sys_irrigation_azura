@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   Users, Sun, Moon, LogOut, Leaf, ClipboardList, History,
   LayoutDashboard, ChevronDown, ChevronRight,
-  AlignLeft, X, Brain,
+  AlignLeft, X, Brain, Bell,
 } from 'lucide-react'
 import { getColors } from '../theme.js'
 import { Badge, Spinner, SZ } from './ui.jsx'
@@ -19,6 +19,7 @@ import HistoriquePage from '../pages/HistoriquePage.jsx'
 import DashboardPage  from '../pages/DashboardPage.jsx'
 import ZonePage       from '../pages/ZonePage.jsx'
 import AgentIAPage from '../pages/AgentIAPage.jsx'
+import AlertsPage, { AlertWatcher, AlertBell } from '../pages/AlertsPage.jsx'
 
 // ── Breakpoints ───────────────────────────────────────────────
 const BP_MOBILE = 640
