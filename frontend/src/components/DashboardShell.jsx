@@ -240,6 +240,7 @@ function SidebarContent({
         {auth.role !== 'auditeur' && navBtn('saisie', ClipboardList, 'Saisie journalière')}
         {navBtn('historique', History, 'Historique')}
         {navBtn('ai', Brain, 'Agent IA')}
+        {navBtn('alerts', Bell, 'Alertes')}
         {auth.role === 'admin' && navBtn('users', Users, 'Utilisateurs')}
       </nav>
 
@@ -521,9 +522,15 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
               C={C} dark={dark}
             />
           )}
+          {page === 'alerts' && (
+            <AlertsPage
+              token={auth.access_token}
+              auth={auth}
+              C={C} dark={dark}
+            />
+          )}
         </div>
-
-
+        <AlertWatcher token={auth.access_token} />
       </main>
     </div>
   )

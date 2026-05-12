@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react'
 import LoginPage from './pages/LoginPage.jsx'
 import DashboardShell from './components/DashboardShell.jsx'
+import { ToastProvider } from './pages/AlertsPage.jsx'
 
 export default function App() {
   const [auth, setAuth] = useState(() => {
@@ -32,20 +33,20 @@ export default function App() {
 
   if (!auth) {
     return (
-      <LoginPage
-        onLogin={setAuth}
-        dark={dark}
-        toggleDark={() => setDark(d => !d)}
-      />
+      <ToastProvider dark={dark}>
+        <LoginPage onLogin={setAuth} dark={dark} toggleDark={() => setDark(d => !d)} />
+      </ToastProvider>
     )
   }
 
   return (
-    <DashboardShell
-      auth={auth}
-      dark={dark}
-      toggleDark={() => setDark(d => !d)}
-      onLogout={() => setAuth(null)}
-    />
+    <ToastProvider dark={dark}>
+      <DashboardShell
+        auth={auth}
+        dark={dark}
+        toggleDark={() => setDark(d => !d)}
+        onLogout={() => setAuth(null)}
+      />
+    </ToastProvider>
   )
 }

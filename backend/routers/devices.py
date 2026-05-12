@@ -705,3 +705,22 @@ def get_tours(
         "tours"      : slots,
         "total_tours": len(tours),
     }
+
+@router.patch("/{device_id}/alerts/{alert_id}/resolve")
+def resolve_alert(
+    device_id: int,
+    alert_id: int,
+    db: Session = Depends(get_db),
+    user = Depends(require_any)
+):
+    from datetime import datetime
+    alert = db.query(Alert).filter(
+        Alert.id == alert_id,
+        Alert.device_id == device_id
+    ).first()
+    if not alert:
+        raise HTTPException(404, "Alerte non trouvée")
+    alert.resolved_at = datetime.utcnow()
+    alert.resolved_by = user["username"]
+    db.commit()
+    return {"message": "Alerte résolue ✅"}
