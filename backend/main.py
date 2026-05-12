@@ -18,6 +18,7 @@ from routers.saisie       import router as saisie_router
 from routers.export_saisie import router as export_router
 from models.ai_recommendation_model import AIRecommandation, AIConfigDevice
 from routers.ai_agent import router as ai_router
+from routers.weight import router as weight_router
 
 from models.sensor_model import (
     Device, SensorReading, IrrigationCycle,
@@ -63,6 +64,17 @@ def run_migrations():
                     actif            BOOLEAN DEFAULT TRUE,
                     created_at       TIMESTAMPTZ DEFAULT NOW(),
                     updated_at       TIMESTAMPTZ DEFAULT NOW()
+                )
+            """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS weight_readings (
+                    id          BIGSERIAL PRIMARY KEY,
+                    farm_name   VARCHAR(50) NOT NULL,
+                    capteur_id  VARCHAR(50) NOT NULL,
+                    poids_kg    FLOAT,
+                    rssi        INTEGER,
+                    timestamp   TIMESTAMP NOT NULL,
+                    created_at  TIMESTAMP DEFAULT NOW()
                 )
             """))
             conn.execute(text("""
@@ -162,6 +174,7 @@ app.include_router(devices_router)
 app.include_router(saisie_router)
 app.include_router(export_router)
 app.include_router(ai_router)
+app.include_router(weight_router)
 
 # ── Endpoints publics ─────────────────────────────────────────
 @app.get("/", tags=["General"])

@@ -315,3 +315,23 @@ export async function updateSaisie(token, saisieId, payload) {
   }
   return res.json()
 }
+
+// Poids
+export async function getLatestWeight(token, farmName) {
+  const res = await fetchWithRefresh(`${BASE}/api/weight/${farmName}/latest`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error('Erreur chargement poids')
+  return res.json()
+}
+
+export async function getWeightHistory(token, farmName, { dateFrom, dateTo, page = 1, perPage = 50 } = {}) {
+  const params = new URLSearchParams({ page, per_page: perPage })
+  if (dateFrom) params.append('date_from', dateFrom)
+  if (dateTo)   params.append('date_to', dateTo)
+  const res = await fetchWithRefresh(`${BASE}/api/weight/${farmName}/history?${params}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error('Erreur historique poids')
+  return res.json()
+}

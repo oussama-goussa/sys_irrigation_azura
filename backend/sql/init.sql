@@ -394,3 +394,17 @@ GROUP BY d.farm_name, d.house_number, DATE(sr.timestamp);
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_daily_summary
 ON daily_summary (farm_name, house_number, day);
+
+
+CREATE TABLE IF NOT EXISTS weight_readings (
+    id          BIGSERIAL PRIMARY KEY,
+    farm_name   VARCHAR(50) NOT NULL,
+    capteur_id  VARCHAR(50) NOT NULL,
+    poids_kg    FLOAT,
+    rssi        INTEGER,
+    timestamp   TIMESTAMP NOT NULL,
+    created_at  TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_weight_farm_time
+ON weight_readings (farm_name, timestamp DESC);
