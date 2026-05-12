@@ -11,7 +11,7 @@ import {
   X, RefreshCw, Filter, ChevronDown, ChevronUp,
   Droplets, Thermometer, Activity, Wind, Gauge,
   Check, Eye, EyeOff, Wifi, WifiOff, Clock,
-  CircleSlash, Zap, FlaskConical,
+  CircleSlash, Zap, FlaskConical, Sun,  // ← ajouter Sun
 } from 'lucide-react'
 import { useWindowWidth } from '../components/DashboardShell.jsx'
 
@@ -97,8 +97,10 @@ const ALERT_CONFIG = {
   HUMIDITY:   { label: 'Humidité',      icon: Activity,     color: '#b197fc', unit: '%' },
   FLOW:       { label: 'Débit',         icon: Gauge,        color: '#ff48bf', unit: 'L/h' },
   WIND_SPEED: { label: 'Vent',          icon: Wind,         color: '#576c58', unit: 'm/s' },
-  ALARM:      { label: 'Alarme',        icon: AlertTriangle,color: '#f05252', unit: '' },
-  OFFLINE:    { label: 'Hors ligne',    icon: WifiOff,      color: '#f05252', unit: '' },
+  ALARM:      { label: 'Alarme Netafim',icon: AlertTriangle,color: '#f05252', unit: '' },
+  OFFLINE:    { label: 'Hors ligne',    icon: WifiOff,      color: '#f05252', unit: 'min' },  // ← déjà là
+  VPD:        { label: 'Stress hydrique (VPD)', icon: Wind, color: '#f5a623', unit: 'kPa' },  // ← AJOUTER
+  RADIATION:  { label: 'Radiation excessive',   icon: Sun,  color: '#f5e642', unit: 'W/m²' }, // ← AJOUTER
 }
 
 const SEVERITY_CONFIG = {

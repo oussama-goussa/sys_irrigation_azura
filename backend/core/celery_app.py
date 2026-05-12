@@ -88,6 +88,11 @@ app.conf.beat_schedule = {
         "task"    : "core.celery_app.task_ajustement_inter_tours",
         "schedule": crontab(minute="*/5"),
     },
+
+    "check-offline-stations": {
+        "task"    : "core.celery_app.task_check_offline_stations",
+        "schedule": crontab(minute="*/10"),
+    },
 }
 
 
@@ -493,3 +498,72 @@ def task_ajustement_inter_tours():
 #     "task"    : "core.celery_app.task_ajustement_inter_tours",
 #     "schedule": crontab(minute="*/5"),        # toutes les 5 min (déjà comme tours_jour_en_cours)
 # },
+
+
+# ── TÂCHE : Vérifier les stations hors ligne ──────────────────
+@app.task(name="core.celery_app.task_check_offline_stations")
+def task_check_offline_stations():
+    """
+    Toutes les 10 min : alerte si une station n'a pas envoyé de données
+    depuis plus de 20 minutes.
+    """
+    try:
+        from core.database import SessionLocal
+        from models.sensor_model import Device, SensorReading, Alert
+        from sqlalchemy import func
+        from datetime import datetime, timedelta
+
+        db = SessionLocal()
+        try:
+            cutoff_offline = datetime.utcnow() - timedelta(minutes=20)
+            cutoff_alert   = datetime.utcnow() - timedelta(minutes=30)
+            devices = db.query(Device).filter(Device.is_active == True).all()
+
+            for device in devices:
+                last = (
+                    db.query(SensorReading)
+                    .filter(SensorReading.device_id == device.id)
+                    .order_by(SensorReading.timestamp.desc())
+                    .first()
+                )
+                if not last or last.timestamp < cutoff_offline:
+                    # Vérifier pas d'alerte OFFLINE récente
+                    existing = db.query(Alert).filter(
+                        Alert.device_id  == device.id,
+                        Alert.alert_type == "OFFLINE",
+                        Alert.resolved_at == None,
+                        Alert.timestamp  >= cutoff_alert,
+                    ).first()
+                    if not existing:
+                        minutes_ago = int((datetime.utcnow() - last.timestamp).total_seconds() / 60) if last else None
+                        msg = (
+                            f"Station hors ligne depuis {minutes_ago} min — "
+                            f"{device.farm_name} Station {device.house_number}"
+                            if minutes_ago else
+                            f"Station jamais connectée — {device.farm_name} Station {device.house_number}"
+                        )
+                        alert = Alert(
+                            device_id      = device.id,
+                            timestamp      = datetime.utcnow(),
+                            alert_type     = "OFFLINE",
+                            value_detected = minutes_ago,
+                            severity       = "CRITICAL",
+                            message        = msg,
+                        )
+                        db.add(alert)
+                        logger.warning(f"⚠️ OFFLINE : {msg}")
+                else:
+                    # Station revenue en ligne → résoudre les alertes OFFLINE
+                    db.query(Alert).filter(
+                        Alert.device_id  == device.id,
+                        Alert.alert_type == "OFFLINE",
+                        Alert.resolved_at == None,
+                    ).update({"resolved_at": datetime.utcnow(), "resolved_by": "auto"})
+
+            db.commit()
+            return {"statut": "ok"}
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"Erreur check offline : {e}")
+        return {"statut": "erreur", "message": str(e)}
