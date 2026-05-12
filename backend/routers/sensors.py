@@ -323,10 +323,24 @@ def check_and_create_alerts(
         create_alert("RADIATION", sr.radiation, None, 1800, "WARNING",
             f"Radiation excessive : {sr.radiation} W/m² > 1800 (risque brûlures) — {farm_info}")
 
-    # ── 8. Alarme Netafim (code hardware) ─────────────────────
+    # ── 8. Alarme Netafim (code hardware) ─────────────────────────
+    ALARM_CODES = {
+        1:  "Court-circuit capteur température (Temp Sensor Shorted)",
+        2:  "Coupure câble capteur température (Temp Sensor Open)",
+        3:  "Défaut capteur EC (EC Sensor Fault)",
+        4:  "Défaut capteur pH (pH Sensor Fault)",
+        5:  "Alarme débit élevé (High Flow Alarm)",
+        6:  "Alarme débit faible (Low Flow Alarm)",
+        7:  "Défaut pompe de dosage (Dosing Pump Fault)",
+        8:  "Défaut filtre (Filter Fault)",
+        9:  "Alarme pression (Pressure Alarm)",
+        10: "Court-circuit sortie (Output Short Circuit)",
+    }
+
     if sr.alarm is not None and sr.alarm > 0:
+        alarm_desc = ALARM_CODES.get(int(sr.alarm), f"Alarme inconnue code {sr.alarm}")
         create_alert("ALARM", sr.alarm, None, None, "CRITICAL",
-            f"Alarme Netafim code {sr.alarm} — {farm_info}")
+            f"{alarm_desc} — {farm_info}")
 
 # ── ENDPOINT PRINCIPAL ────────────────────────────────────────
 @router.post("/ingest")

@@ -724,3 +724,85 @@ def resolve_alert(
     alert.resolved_by = user["username"]
     db.commit()
     return {"message": "Alerte résolue ✅"}
+
+# ── POST /api/devices/check-offline — Vérifier stations hors ligne ──
+@router.post("/check-offline")
+def check_offline_stations(
+    db   : Session = Depends(get_db),
+    user           = Depends(require_any),
+):
+    """
+    Vérifie toutes les stations et crée des alertes OFFLINE
+    si aucune donnée depuis plus de 20 minutes.
+    Appelé automatiquement par le frontend toutes les 5 min.
+    """
+    from datetime import timedelta
+
+    cutoff_offline = datetime.utcnow() - timedelta(minutes=20)
+    cutoff_alert   = datetime.utcnow() - timedelta(minutes=25)
+
+    devices = db.query(Device).filter(Device.is_active == True).all()
+    created = 0
+    resolved = 0
+
+    for device in devices:
+        last = (
+            db.query(SensorReading)
+            .filter(SensorReading.device_id == device.id)
+            .order_by(desc(SensorReading.timestamp))
+            .first()
+        )
+
+        is_offline = (last is None) or (last.timestamp < cutoff_offline)
+
+        if is_offline:
+            # Pas d'alerte OFFLINE non résolue récente ?
+            existing = db.query(Alert).filter(
+                Alert.device_id  == device.id,
+                Alert.alert_type == "OFFLINE",
+                Alert.resolved_at == None,
+                Alert.timestamp  >= cutoff_alert,
+            ).first()
+
+            if not existing:
+                if last:
+                    minutes_ago = int((datetime.utcnow() - last.timestamp).total_seconds() / 60)
+                    msg = (
+                        f"Station hors ligne depuis {minutes_ago} min — "
+                        f"{device.farm_name} Station {device.house_number}"
+                    )
+                else:
+                    minutes_ago = None
+                    msg = f"Station jamais connectée — {device.farm_name} Station {device.house_number}"
+
+                alert = Alert(
+                    device_id      = device.id,
+                    timestamp      = datetime.utcnow(),
+                    alert_type     = "OFFLINE",
+                    value_detected = float(minutes_ago) if minutes_ago else None,
+                    threshold_min  = None,
+                    threshold_max  = 20.0,
+                    severity       = "CRITICAL",
+                    message        = msg,
+                )
+                db.add(alert)
+                created += 1
+                logger.warning(f"⚠️ OFFLINE : {msg}")
+        else:
+            # Station revenue en ligne → résoudre alertes OFFLINE existantes
+            nb = db.query(Alert).filter(
+                Alert.device_id  == device.id,
+                Alert.alert_type == "OFFLINE",
+                Alert.resolved_at == None,
+            ).update({
+                "resolved_at": datetime.utcnow(),
+                "resolved_by": "auto-recover",
+            })
+            resolved += nb
+
+    db.commit()
+    return {
+        "checked" : len(devices),
+        "offline_alerts_created": created,
+        "auto_resolved": resolved,
+    }
