@@ -326,6 +326,8 @@ export async function getLatestWeight(token, farmName) {
 }
 
 export async function getWeightHistory(token, farmName, { dateFrom, dateTo, page = 1, perPage = 50 } = {}) {
+  // Limiter perPage entre 10 et 500 (respect des contraintes backend)
+  perPage = Math.min(500, Math.max(10, perPage));
   const params = new URLSearchParams({ page, per_page: perPage })
   if (dateFrom) params.append('date_from', dateFrom)
   if (dateTo)   params.append('date_to', dateTo)

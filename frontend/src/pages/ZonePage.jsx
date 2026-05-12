@@ -854,7 +854,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
     setLoadingWeight(true)
     try {
       const d = await getWeightHistory(token, deviceInfo.farm_name, {
-        dateFrom: chartDateFrom, dateTo: chartDateTo, page: 1, perPage: 5000,
+        dateFrom: chartDateFrom, dateTo: chartDateTo, page: 1, perPage: 500,
       })
       setWeightData(d?.data || [])
     } catch {
