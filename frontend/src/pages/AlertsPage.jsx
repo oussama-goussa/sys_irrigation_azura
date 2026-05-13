@@ -144,6 +144,16 @@ export function ToastProvider({ children, dark }) {
     )
 }
 
+function fmtOfflineValue(minutes) {
+    if (minutes == null) return '—'
+    const m = Math.round(minutes)
+    if (m < 60) return `${m} min`
+    if (m < 1440) return `${Math.floor(m / 60)}h ${m % 60 > 0 ? (m % 60) + 'min' : ''}`.trim()
+    const d = Math.floor(m / 1440)
+    const h = Math.floor((m % 1440) / 60)
+    return `${d}j ${h > 0 ? h + 'h' : ''}`.trim()
+}
+
 // ── Toast Container (footer right) ───────────────────────────
 function ToastContainer({ toasts, onRemove, C, dark }) {
     if (toasts.length === 0) return null
@@ -762,7 +772,15 @@ function AlertCard({ alert, expanded, onToggle, onResolve, C, dark, isMobile }) 
                         {[
                             { label: 'Type d\'alerte', value: alert.alert_type },
                             { label: 'Sévérité', value: sev.label, color: sev.color },
-                            { label: 'Valeur détectée', value: alert.value_detected != null ? `${Number(alert.value_detected).toFixed(2)} ${cfg.unit}` : '—', color: sev.color },
+                            { 
+                                label: 'Valeur détectée', 
+                                value: alert.value_detected != null 
+                                    ? alert.alert_type?.toUpperCase() === 'OFFLINE'
+                                        ? fmtOfflineValue(alert.value_detected)
+                                        : `${Number(alert.value_detected).toFixed(2)} ${cfg.unit}`
+                                    : '—', 
+                                color: sev.color 
+                            },
                             { label: 'Seuil min', value: alert.threshold_min != null ? `${alert.threshold_min} ${cfg.unit}` : '—' },
                             { label: 'Seuil max', value: alert.threshold_max != null ? `${alert.threshold_max} ${cfg.unit}` : '—' },
                             { label: 'Détectée le', value: fmtTs(alert.timestamp) },
