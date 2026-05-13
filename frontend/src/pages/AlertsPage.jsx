@@ -73,9 +73,17 @@ async function resolveAlert(token, alertId, deviceId) {
     } catch { return false }
 }
 
+// Force le parsing en UTC (les timestamps DB n'ont pas de Z)
+function parseUTC(ts) {
+    if (!ts) return null
+    // Si pas de timezone info → ajouter Z pour forcer UTC
+    const normalized = /[Z+\-]\d{2}:?\d{2}$/.test(ts) ? ts : ts + 'Z'
+    return new Date(normalized)
+}
+
 function fmtTs(ts) {
     if (!ts) return '—'
-    return new Date(ts).toLocaleString('fr-FR', {
+    return parseUTC(ts).toLocaleString('fr-FR', {
         day: '2-digit', month: '2-digit', year: 'numeric',
         hour: '2-digit', minute: '2-digit',
     })
@@ -83,7 +91,7 @@ function fmtTs(ts) {
 
 function timeSince(ts) {
     if (!ts) return '—'
-    const diff = Date.now() - new Date(ts).getTime()
+    const diff = Date.now() - parseUTC(ts).getTime()
     const m = Math.floor(diff / 60000)
     if (m < 1) return "à l'instant"
     if (m < 60) return `il y a ${m} min`
