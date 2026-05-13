@@ -5,36 +5,40 @@
 const BASE = ''
 
 // ── Auto refresh token ────────────────────────────────────────
+let refreshPromise = null
+
 async function fetchWithRefresh(url, options = {}) {
   let res = await fetch(url, options)
 
   if (res.status === 401) {
-    // Tenter refresh
     const auth = JSON.parse(sessionStorage.getItem('azura_auth') || '{}')
     if (!auth.refresh_token) {
       window.dispatchEvent(new Event('azura_logout'))
       throw new Error('Session expirée')
     }
 
-    const refreshRes = await fetch('/api/auth/refresh', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: auth.refresh_token }),
-    })
+    // Si un refresh est déjà en cours, attendre le même
+    if (!refreshPromise) {
+      refreshPromise = fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: auth.refresh_token }),
+      }).finally(() => { refreshPromise = null }) // libérer après
+    }
+
+    const refreshRes = await refreshPromise
 
     if (!refreshRes.ok) {
       window.dispatchEvent(new Event('azura_logout'))
       throw new Error('Session expirée')
     }
 
-    const { access_token } = await refreshRes.json()
+    const { access_token } = await refreshRes.clone().json()
 
-    // Sauvegarder nouveau token
     const newAuth = { ...auth, access_token }
     sessionStorage.setItem('azura_auth', JSON.stringify(newAuth))
     window.dispatchEvent(new CustomEvent('azura_token_refresh', { detail: { access_token } }))
 
-    // Retenter avec nouveau token
     options.headers = { ...options.headers, Authorization: `Bearer ${access_token}` }
     res = await fetch(url, options)
   }
