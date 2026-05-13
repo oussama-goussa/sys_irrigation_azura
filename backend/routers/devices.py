@@ -764,7 +764,22 @@ def check_offline_stations(
                 Alert.timestamp  >= cutoff_alert,
             ).first()
 
-            if not existing:
+            if existing:
+                if last:
+                    minutes_ago = int((datetime.utcnow() - last.timestamp).total_seconds() / 60)
+                    d, h, m = minutes_ago // 1440, (minutes_ago % 1440) // 60, minutes_ago % 60
+                    if d > 0:
+                        duration_str = f"{d}j {h}h" if h else f"{d}j"
+                    elif h > 0:
+                        duration_str = f"{h}h {m}min" if m else f"{h}h"
+                    else:
+                        duration_str = f"{minutes_ago} min"
+                    existing.message = (
+                        f"Station hors ligne depuis {duration_str} — "
+                        f"{device.farm_name} Station {device.house_number}"
+                    )
+                    existing.value_detected = float(minutes_ago)
+            else:
                 if last:
                     minutes_ago = int((datetime.utcnow() - last.timestamp).total_seconds() / 60)
                     d, h, m = minutes_ago // 1440, (minutes_ago % 1440) // 60, minutes_ago % 60
