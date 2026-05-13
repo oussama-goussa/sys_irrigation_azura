@@ -1948,7 +1948,45 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             ]}
           />
 
-          {/* Graphique 5 — Radiation solaire */}
+          {/* Graphique 5 — Température Ext. (si capteur présent) */}
+          {(sensor.outside_temp != null || sensor.outside_humidity != null) && (
+            <ChartCard
+              title="Température Extérieure"
+              C={C}
+              dark={dark}
+              onSelectRange={(from, to) => { setChartZoomFrom(from); setChartZoomTo(to); isZoomedRef.current = true }}
+              series={[
+                ...(sensor.outside_temp != null ? [{
+                  label   : 'Température Ext. (°C)',
+                  color   : '#f05252',
+                  unit    : '°C',
+                  decimals: 1,
+                  data    : buildSeries('outside_temp'),
+                }] : [])
+              ]}
+            />
+          )}
+
+          {/* Graphique 6 — Humidité Ext. (si capteur présent) */}
+          {(sensor.outside_temp != null || sensor.outside_humidity != null) && (
+            <ChartCard
+              title="Humidité Extérieure"
+              C={C}
+              dark={dark}
+              onSelectRange={(from, to) => { setChartZoomFrom(from); setChartZoomTo(to); isZoomedRef.current = true }}
+              series={[
+                ...(sensor.outside_humidity != null ? [{
+                  label   : 'Humidité Ext. (%)',
+                  color   : '#4d9de0',
+                  unit    : '%',
+                  decimals: 1,
+                  data    : buildSeries('outside_humidity'),
+                }] : []),
+              ]}
+            />
+          )}
+
+          {/* Graphique 7 — Radiation solaire */}
           <ChartCard
             title="Radiation solaire"
             C={C}
@@ -1965,7 +2003,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             ]}
           />
           
-          {/* Graphique 6 — Radiation solaire */}
+          {/* Graphique 8 — Radiation solaire */}
           <ChartCard
             title="Radiation solaire"
             C={C}
@@ -1982,7 +2020,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             ]}
           />
 
-          {/* Graphique 7 — Débit */}
+          {/* Graphique 9 — Débit */}
           <ChartCard
             title="Débit"
             C={C}
@@ -1999,7 +2037,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             ]}
           />
 
-          {/* Graphique 8 — Débit */}
+          {/* Graphique 10 — Débit */}
           <ChartCard
             title="Irrigation"
             C={C}
@@ -2016,7 +2054,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             ]}
           />
 
-          {/* Graphique 9 — Poids substrat (si données disponibles) */}
+          {/* Graphique 11 — Poids substrat (si données disponibles) */}
           {weightData && weightData.length > 0 && (() => {
             const series = [...weightData]
               .reverse()
