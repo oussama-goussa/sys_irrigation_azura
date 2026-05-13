@@ -15,45 +15,38 @@ import {
 } from 'lucide-react'
 import { useWindowWidth } from '../components/DashboardShell.jsx'
 
+import { getDeviceAlerts, getDashboard } from '../api/client.js'
+
 // ── Toast context — exporté pour usage global ─────────────────
 export const ToastContext = createContext(null)
 export function useToasts() { return useContext(ToastContext) }
 
 // ── Helpers ───────────────────────────────────────────────────
 async function fetchAlerts(token, deviceId = null, resolved = false, limit = 200) {
-    const BASE = ''
-    const auth = JSON.parse(sessionStorage.getItem('azura_auth') || '{}')
-    const tok = token || auth.access_token
-    if (!tok) return []
+    if (!token) {
+        const auth = JSON.parse(sessionStorage.getItem('azura_auth') || '{}')
+        token = auth.access_token
+    }
+    if (!token) return []
 
     try {
         if (deviceId) {
-            const res = await fetch(
-                `${BASE}/api/devices/${deviceId}/alerts?resolved=${resolved}&limit=${limit}`,
-                { headers: { Authorization: `Bearer ${tok}` } }
-            )
-            if (!res.ok) return []
-            return res.json()
+            return await getDeviceAlerts(token, deviceId, resolved)
         }
-        // Pas d'endpoint global → on récupère depuis le dashboard
-        const dashRes = await fetch(`${BASE}/api/devices/dashboard`, {
-            headers: { Authorization: `Bearer ${tok}` }
-        })
-        if (!dashRes.ok) return []
-        const dash = await dashRes.json()
+        // Global : dashboard puis chaque device
+        const dash = await getDashboard(token)
         const farms = dash.farms || []
         const allAlerts = []
         for (const farm of farms) {
             for (const house of (farm.houses || [])) {
-                const r = await fetch(
-                    `${BASE}/api/devices/${house.id}/alerts?resolved=${resolved}&limit=50`,
-                    { headers: { Authorization: `Bearer ${tok}` } }
-                )
-                if (r.ok) {
-                    const arr = await r.json()
-                    arr.forEach(a => { a._farm_name = farm.farm_name; a._house_number = house.house_number })
+                try {
+                    const arr = await getDeviceAlerts(token, house.id, resolved)
+                    arr.forEach(a => {
+                        a._farm_name = farm.farm_name
+                        a._house_number = house.house_number
+                    })
                     allAlerts.push(...arr)
-                }
+                } catch { /* device inaccessible, skip */ }
             }
         }
         return allAlerts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
