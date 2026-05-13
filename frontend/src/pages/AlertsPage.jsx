@@ -250,7 +250,11 @@ function ToastItem({ toast, onRemove, C, dark }) {
                 </div>
                 {toast.value_detected != null && (
                     <div style={{ fontSize: 11, color: dark ? '#6fa882' : '#3a6b4a' }}>
-                        Valeur : <strong style={{ color: sev.color }}>{toast.value_detected} {cfg.unit}</strong>
+                        Valeur : <strong>
+                            {toast.alert_type?.toUpperCase() === 'OFFLINE'
+                                ? fmtOfflineValue(toast.value_detected)   // → 6j 2h
+                                : `${toast.value_detected} ${cfg.unit}`}
+                        </strong>
                         {toast.threshold_min != null && ` (min: ${toast.threshold_min})`}
                         {toast.threshold_max != null && ` (max: ${toast.threshold_max})`}
                     </div>
@@ -716,7 +720,11 @@ function AlertCard({ alert, expanded, onToggle, onResolve, C, dark, isMobile }) 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                         {alert.value_detected != null && (
                             <span style={{ fontSize: 12, color: C.textMuted }}>
-                                Valeur : <strong style={{ color: sev.color }}>{Number(alert.value_detected).toFixed(2)} {cfg.unit}</strong>
+                                Valeur : <strong>
+                                    {alert.alert_type?.toUpperCase() === 'OFFLINE'
+                                        ? fmtOfflineValue(alert.value_detected)   // → 6j 2h
+                                        : `${Number(alert.value_detected).toFixed(2)} ${cfg.unit}`}
+                                </strong>
                                 {alert.threshold_min != null && (
                                     <span style={{ color: C.textDim }}> (min: {alert.threshold_min})</span>
                                 )}

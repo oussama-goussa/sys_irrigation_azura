@@ -278,7 +278,6 @@ class Alert(Base):
             "resolved_at"   : str(self.resolved_at) if self.resolved_at else None,
         }
 
-
 # ── TABLE 6 : alert_thresholds ───────────────────────────────
 class AlertThreshold(Base):
     __tablename__ = "alert_thresholds"
