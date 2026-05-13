@@ -19,6 +19,28 @@ export default function App() {
   }, [auth])
 
   useEffect(() => {
+    if (!auth?.refresh_token) return
+
+    const doRefresh = async () => {
+      try {
+        const res = await fetch('/api/auth/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: auth.refresh_token }),
+        })
+        if (!res.ok) return
+        const { access_token } = await res.json()
+        setAuth(a => ({ ...a, access_token }))
+      } catch (e) {
+        console.warn('Refresh silencieux échoué:', e)
+      }
+    }
+
+    const interval = setInterval(doRefresh, 13 * 60 * 1000) // toutes les 13 min
+    return () => clearInterval(interval)
+  }, [auth?.refresh_token])
+
+  useEffect(() => {
     const onLogout = () => setAuth(null)
     const onRefresh = (e) => setAuth(a => ({ ...a, access_token: e.detail.access_token }))
     window.addEventListener('azura_logout', onLogout)
