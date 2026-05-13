@@ -373,6 +373,19 @@ export default function AlertsPage({ token, auth, C, dark }) {
         if (!silent) setLoading(true)
         else setRefreshing(true)
         const data = await fetchAlerts(token, null, showResolved)
+        data.forEach(a => {
+            if (a.alert_type?.toUpperCase() === 'OFFLINE' && a.message) {
+                a.message = a.message.replace(/(\d+)\s*min/g, (_, n) => {
+                    const mins = parseInt(n)
+                    const d = Math.floor(mins / 1440)
+                    const h = Math.floor((mins % 1440) / 60)
+                    const m = mins % 60
+                    if (d > 0) return h ? `${d}j ${h}h` : `${d}j`
+                    if (h > 0) return m ? `${h}h ${m}min` : `${h}h`
+                    return `${mins} min`
+                })
+            }
+        })
         setAlerts(data)
         setLoading(false)
         setRefreshing(false)
