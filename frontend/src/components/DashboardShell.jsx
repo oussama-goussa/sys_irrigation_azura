@@ -335,7 +335,7 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
     return saved ? JSON.parse(saved) : null
   })
   const [farms,          setFarms]          = useState([])
-  const [loadingFarms,   setLoadingFarms]   = useState(true)
+  const [loadingFarms, setLoadingFarms]     = useState(farms.length === 0)
   const [mobileOpen,     setMobileOpen]     = useState(false)
 
   useEffect(() => { if (!isMobile) setMobileOpen(false) }, [isMobile])
@@ -351,7 +351,11 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
     return () => { document.body.style.overflow = '' }
   }, [mobileOpen])
 
+  const tokenRef = useRef(null)
+  
   useEffect(() => {
+    if (farms.length > 0 && tokenRef.current === auth.access_token) return
+    tokenRef.current = auth.access_token
     setLoadingFarms(true)
     getDevices(auth.access_token)
       .then(data => {
