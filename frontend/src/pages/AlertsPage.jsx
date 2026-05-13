@@ -49,7 +49,16 @@ async function fetchAlerts(token, deviceId = null, resolved = false, limit = 200
                 } catch { /* device inaccessible, skip */ }
             }
         }
-        return allAlerts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        return allAlerts
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            // Garder seulement la dernière alerte OFFLINE par device
+            .filter((alert, _, arr) => {
+                if (alert.alert_type?.toUpperCase() !== 'OFFLINE') return true
+                const firstOffline = arr.find(
+                    a => a.device_id === alert.device_id && a.alert_type?.toUpperCase() === 'OFFLINE'
+                )
+                return firstOffline.id === alert.id
+            })
     } catch { return [] }
 }
 
