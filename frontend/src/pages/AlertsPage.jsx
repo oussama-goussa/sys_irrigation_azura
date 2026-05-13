@@ -393,7 +393,7 @@ export default function AlertsPage({ token, auth, C, dark }) {
 
     useEffect(() => { load() }, [load])
 
-    // Auto-refresh + toast pour nouvelles alertes critiques
+    // Auto-refresh
     useEffect(() => {
         const iv = setInterval(async () => {
             const fresh = await fetchAlerts(token, null, false, 50)
@@ -401,7 +401,9 @@ export default function AlertsPage({ token, auth, C, dark }) {
                 const prevIds = new Set(prev.map(a => a.id))
                 const newOnes = fresh.filter(a => !prevIds.has(a.id))
                 if (newOnes.length > 0 && toasts?.addToast) {
-                    newOnes.slice(0, 3).forEach(a => toasts.addToast(a))
+                    setTimeout(() => {
+                        newOnes.slice(0, 3).forEach(a => toasts.addToast(a))
+                    }, 0)
                 }
                 return fresh
             })
