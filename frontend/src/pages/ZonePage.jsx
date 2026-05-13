@@ -1880,9 +1880,9 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
       {(
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 28 }}>
 
-          {/* Graphique 1 — EC & pH Apport */}
+          {/* Graphique 1 — EC Apport */}
           <ChartCard
-            title="EC & pH Apport"
+            title="EC Apport"
             C={C}
             dark={dark}
             onSelectRange={(from, to) => { setChartZoomFrom(from); setChartZoomTo(to); isZoomedRef.current = true }}
@@ -1893,42 +1893,62 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                 unit: 'mS/cm',
                 decimals: 2,
                 data: buildSeries('ec_actual'),
-              },
+              }
+            ]}
+          />
+
+          {/* Graphique 2 — pH Apport */}
+          <ChartCard
+            title="pH Apport"
+            C={C}
+            dark={dark}
+            onSelectRange={(from, to) => { setChartZoomFrom(from); setChartZoomTo(to); isZoomedRef.current = true }}
+            series={[
               {
                 label: 'pH Apport actuel',
                 color: '#4d9de0',
                 unit: '',
                 decimals: 2,
                 data: buildSeries('ph_actual'),
-              },
+              }
             ]}
           />
 
-          {/* Graphique 2 — Température & Humidité Serre */}
+          {/* Graphique 3 — Température Serre */}
           <ChartCard
-            title="Température & Humidité Serre"
+            title="Température Serre"
             C={C}
             dark={dark}
             onSelectRange={(from, to) => { setChartZoomFrom(from); setChartZoomTo(to); isZoomedRef.current = true }}
             series={[
               {
-                label: 'Température Serre (°C)',
+                label: 'Température Serre actuel (°C)',
                 color: '#f5a623',
                 unit: '°C',
                 decimals: 1,
                 data: buildSeries('avg_temp'),
-              },
+              }
+            ]}
+          />
+
+          {/* Graphique 4 — Humidité Serre */}
+          <ChartCard
+            title="Humidité Serre"
+            C={C}
+            dark={dark}
+            onSelectRange={(from, to) => { setChartZoomFrom(from); setChartZoomTo(to); isZoomedRef.current = true }}
+            series={[
               {
                 label: 'Humidité Serre (%)',
                 color: '#b197fc',
                 unit: '%',
                 decimals: 1,
                 data: buildSeries('humidity'),
-              },
+              }
             ]}
           />
 
-          {/* Graphique 3 — Radiation solaire */}
+          {/* Graphique 5 — Radiation solaire */}
           <ChartCard
             title="Radiation solaire"
             C={C}
@@ -1936,47 +1956,67 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             onSelectRange={(from, to) => { setChartZoomFrom(from); setChartZoomTo(to); isZoomedRef.current = true }}
             series={[
               {
-                label: 'Radiation (W/m²)',
+                label: 'Radiation actuel (W/m²)',
                 color: '#f5e642',
                 unit: 'W/m²',
                 decimals: 1,
                 data: buildSeries('radiation'),
-              },
-              {
-                label: 'Cumul journalier (J/cm²)',
-                color: '#f5a623',
-                unit: 'J/cm²',
-                decimals: 1,
-                data: buildSeries('radiation_sum'),
-              },
+              }
             ]}
           />
-
-          {/* Graphique 4 — Débit */}
+          
+          {/* Graphique 6 — Radiation solaire */}
           <ChartCard
-            title="Débit & Irrigation"
+            title="Radiation solaire"
             C={C}
             dark={dark}
             onSelectRange={(from, to) => { setChartZoomFrom(from); setChartZoomTo(to); isZoomedRef.current = true }}
             series={[
               {
-                label: 'Débit (L/h)',
+                label: 'Cumul journalier actuel (J/cm²)',
+                color: '#f5a623',
+                unit: 'J/cm²',
+                decimals: 1,
+                data: buildSeries('radiation_sum'),
+              }
+            ]}
+          />
+
+          {/* Graphique 7 — Débit */}
+          <ChartCard
+            title="Débit"
+            C={C}
+            dark={dark}
+            onSelectRange={(from, to) => { setChartZoomFrom(from); setChartZoomTo(to); isZoomedRef.current = true }}
+            series={[
+              {
+                label: 'Débit actuel (L/h)',
                 color: '#ff48bf',
                 unit: 'L/h',
                 decimals: 0,
                 data: buildSeries('flow'),
-              },
+              }
+            ]}
+          />
+
+          {/* Graphique 8 — Débit */}
+          <ChartCard
+            title="Irrigation"
+            C={C}
+            dark={dark}
+            onSelectRange={(from, to) => { setChartZoomFrom(from); setChartZoomTo(to); isZoomedRef.current = true }}
+            series={[
               {
-                label: 'Débit nominal (L/h)',
+                label: 'Débit nominal actuel (L/h)',
                 color: '#05e4bf',
                 unit: 'L/h',
                 decimals: 0,
                 data: buildSeries('flow_nominal') ,
-              },
+              }
             ]}
           />
 
-          {/* Graphique 5 — Poids substrat (si données disponibles) */}
+          {/* Graphique 9 — Poids substrat (si données disponibles) */}
           {weightData && weightData.length > 0 && (() => {
             const series = [...weightData]
               .reverse()
