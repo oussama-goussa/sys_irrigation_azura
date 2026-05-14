@@ -62,6 +62,23 @@ async function fetchAlerts(token, deviceId = null, resolved = false, limit = 200
     } catch { return [] }
 }
 
+// ── Helper: formate les messages OFFLINE "X min" → "6j 10h" ──
+function fmtOfflineMessage(alerts) {
+    alerts.forEach(a => {
+        if (a.alert_type?.toUpperCase() === 'OFFLINE' && a.message) {
+            a.message = a.message.replace(/(\d+)\s*min/g, (_, n) => {
+                const mins = parseInt(n)
+                const d = Math.floor(mins / 1440)
+                const h = Math.floor((mins % 1440) / 60)
+                const m = mins % 60
+                if (d > 0) return h ? `${d}j ${h}h` : `${d}j`
+                if (h > 0) return m ? `${h}h ${m}min` : `${h}h`
+                return `${mins} min`
+            })
+        }
+    })
+}
+
 async function resolveAlert(token, alertId, deviceId) {
     // Note: si l'API n'a pas de route PATCH, on fait un fallback silencieux
     try {
@@ -381,19 +398,7 @@ export default function AlertsPage({ token, auth, C, dark }) {
         if (!silent) setLoading(true)
         else setRefreshing(true)
         const data = await fetchAlerts(token, null, showResolved)
-        data.forEach(a => {
-            if (a.alert_type?.toUpperCase() === 'OFFLINE' && a.message) {
-                a.message = a.message.replace(/(\d+)\s*min/g, (_, n) => {
-                    const mins = parseInt(n)
-                    const d = Math.floor(mins / 1440)
-                    const h = Math.floor((mins % 1440) / 60)
-                    const m = mins % 60
-                    if (d > 0) return h ? `${d}j ${h}h` : `${d}j`
-                    if (h > 0) return m ? `${h}h ${m}min` : `${h}h`
-                    return `${mins} min`
-                })
-            }
-        })
+        fmtOfflineMessage(data)
         setAlerts(data)
         setLoading(false)
         setRefreshing(false)
@@ -404,10 +409,11 @@ export default function AlertsPage({ token, auth, C, dark }) {
     // Auto-refresh
     useEffect(() => {
         const iv = setInterval(async () => {
-            const fresh = await fetchAlerts(token, null, false, 50)
+            const fresh = await fetchAlerts(token, null, showResolved, 50)  // ← showResolved au lieu de false
+            fmtOfflineMessage(fresh)
             setAlerts(prev => {
                 const prevIds = new Set(prev.map(a => a.id))
-                const newOnes = fresh.filter(a => !prevIds.has(a.id))
+                const newOnes = fresh.filter(a => !prevIds.has(a.id) && !showResolved)
                 if (newOnes.length > 0 && toasts?.addToast) {
                     setTimeout(() => {
                         newOnes.slice(0, 3).forEach(a => toasts.addToast(a))
@@ -417,7 +423,7 @@ export default function AlertsPage({ token, auth, C, dark }) {
             })
         }, 30000)
         return () => clearInterval(iv)
-    }, [token])
+    }, [token, showResolved])  // ← ajouter showResolved dans les dépendances
 
     const handleResolve = async (alert) => {
         await resolveAlert(token, alert.id, alert.device_id)
@@ -775,24 +781,17 @@ function AlertCard({ alert, expanded, onToggle, onResolve, C, dark, isMobile }) 
                 {/* Actions */}
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                     {!isResolved && (
-                        <button
-                            onClick={e => { e.stopPropagation(); onResolve() }}
-                            title="Marquer comme résolue"
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: 5,
-                                padding: '5px 10px', borderRadius: 7,
-                                border: `1.5px solid ${C.green}40`,
-                                background: `${C.green}10`,
-                                color: C.green, fontSize: 11, fontWeight: 630,
-                                fontFamily: 'inherit', cursor: 'pointer',
-                                transition: 'all 0.15s',
-                            }}
-                            onMouseEnter={e => { e.currentTarget.style.background = `${C.green}20` }}
-                            onMouseLeave={e => { e.currentTarget.style.background = `${C.green}10` }}
-                        >
-                            <Check size={11} strokeWidth={2.5} />
-                            {!isMobile && 'Résoudre'}
-                        </button>
+                        <span style={{
+                            display: 'flex', alignItems: 'center', gap: 5,
+                            padding: '4px 10px', borderRadius: 7,
+                            border: `1.5px solid ${C.amber}40`,
+                            background: `${C.amber}10`,
+                            color: C.amber, fontSize: 11, fontWeight: 630,
+                            whiteSpace: 'nowrap',
+                        }}>
+                            <CircleSlash size={11} strokeWidth={2.5} />
+                            {!isMobile && 'Non résolu'}
+                        </span>
                     )}
                     <div style={{ color: C.textDim, display: 'flex', alignItems: 'center' }}>
                         {expanded ? <ChevronUp size={14} strokeWidth={2} /> : <ChevronDown size={14} strokeWidth={2} />}
