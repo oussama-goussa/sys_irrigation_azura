@@ -820,8 +820,10 @@ function AlertCard({ alert, expanded, onToggle, onResolve, C, dark, isMobile }) 
                                     : '—', 
                                 color: sev.color 
                             },
-                            { label: 'Seuil min', value: alert.threshold_min != null ? `${alert.threshold_min} ${cfg.unit}` : '—' },
-                            { label: 'Seuil max', value: alert.threshold_max != null ? `${alert.threshold_max} ${cfg.unit}` : '—' },
+                            ...(['OFFLINE', 'ALARM'].includes(alert.alert_type?.toUpperCase()) ? [] : [
+                                { label: 'Seuil min', value: alert.threshold_min != null ? `${alert.threshold_min} ${cfg.unit}` : '—' },
+                                { label: 'Seuil max', value: alert.threshold_max != null ? `${alert.threshold_max} ${cfg.unit}` : '—' },
+                            ]),
                             { label: 'Détectée le', value: fmtTs(alert.timestamp) },
                             { label: 'Ferme', value: alert._farm_name || '—' },
                             { label: 'Station', value: alert._house_number ? `Station ${alert._house_number}` : '—' },
