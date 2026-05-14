@@ -561,6 +561,7 @@ export default function AlertsPage({ token, auth, C, dark }) {
                         { value: 'all', label: 'Toutes' },
                         { value: 'CRITICAL', label: 'Critique' },
                         { value: 'WARNING', label: 'Attention' },
+                        { value: 'INFO',     label: 'Info' },
                     ].map(f => (
                         <button key={f.value} onClick={() => setFilterSeverity(f.value)}
                             style={{

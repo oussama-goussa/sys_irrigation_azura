@@ -169,11 +169,11 @@ def get_or_create_device(db: Session, headers: dict) -> Device:
 
     # Créer seuils par défaut pour ce nouveau device
     default_thresholds = [
-        {"parameter": "ec_actual",  "min": 1.5,  "max": 3.5,  "severity": "CRITICAL"},
-        {"parameter": "ph_actual",  "min": 5.5,  "max": 6.8,  "severity": "CRITICAL"},
+        {"parameter": "ec_actual",  "min": 1.5,  "max": 3.5,  "severity": "WARNING"},
+        {"parameter": "ph_actual",  "min": 5.5,  "max": 6.8,  "severity": "WARNING"},
         {"parameter": "avg_temp",   "min": 15.0, "max": 35.0, "severity": "WARNING"},
         {"parameter": "humidity",   "min": 50.0, "max": 90.0, "severity": "WARNING"},
-        {"parameter": "flow",       "min": 0.0,  "max": None, "severity": "CRITICAL"},
+        {"parameter": "flow",       "min": 0.0,  "max": None, "severity": "WARNING"},
     ]
     for t in default_thresholds:
         threshold = AlertThreshold(
@@ -193,45 +193,56 @@ def check_and_create_alerts(
     db: Session,
     device: Device,
     timestamp: datetime,
-    ts: "TempSensor data dict",
+    sensor_data: dict,
     sr: SensorReading
 ):
     """
-    Vérifie les seuils et crée des alertes intelligentes.
-    Règles :
-    - EC/pH : alerte UNIQUEMENT si débit > 0 (irrigation active)
-    - EC/pH = 0 avec débit > 0 → alerte critique (capteur défaillant)
-    - Temp/Humidité : ignorer si valeur hors plage physiologique (hiver = pas alerte froide)
-    - Débit nominal : alerte si débit << débit nominal pendant irrigation
-    - Radiation : alerte si radiation anormalement élevée
-    - VPD : alerte si VPD élevé (stress hydrique)
-    - Doublon : pas d'alerte si alerte identique non résolue dans les 30 dernières minutes
+    Logique d'alertes graduée INFO / WARNING / CRITICAL.
+    
+    Règles de sévérité :
+    ┌──────────┬────────────────────────────────────────────────────────┐
+    │ CRITICAL │ Valeur hors plage de ±20% des seuils configurés       │
+    │          │ EC/pH = 0 pendant irrigation                          │
+    │          │ Débit < 40% ou > 200% du nominal                     │
+    │          │ Station offline (géré séparément)                     │
+    │          │ Alarme Netafim active                                 │
+    ├──────────┼────────────────────────────────────────────────────────┤
+    │ WARNING  │ Valeur entre seuil et ±20% (zone orange)              │
+    │          │ Débit entre 40-60% ou 150-200% du nominal            │
+    │          │ VPD entre 2.0 et 3.0 kPa                             │
+    │          │ Radiation entre 1500 et 1800 W/m²                    │
+    ├──────────┼────────────────────────────────────────────────────────┤
+    │ INFO     │ Retour à la normale après alerte (log uniquement)     │
+    │          │ Valeur OK mais proche du seuil (dans 10% du seuil)   │
+    └──────────┴────────────────────────────────────────────────────────┘
     """
     from datetime import timedelta
 
-    flow = sr.flow or 0.0
-    is_irrigating = flow > 0
+    flow      = sr.flow or 0.0
+    is_irrig  = flow > 0.0
+    farm_info = f"{device.farm_name} Station {device.house_number}"
 
     thresholds = db.query(AlertThreshold).filter(
         AlertThreshold.device_id == device.id,
-        AlertThreshold.is_active == True
+        AlertThreshold.is_active  == True
     ).all()
     thresh_map = {t.parameter: t for t in thresholds}
 
-    def already_alerted(alert_type: str) -> bool:
-        """Vérifie si une alerte identique existe dans les 30 dernières minutes."""
-        cutoff = timestamp - timedelta(minutes=30)
+    # ── helpers ──────────────────────────────────────────────────
+
+    def already_alerted(alert_type: str, window_min: int = 30) -> bool:
+        cutoff = timestamp - timedelta(minutes=window_min)
         return db.query(Alert).filter(
-            Alert.device_id == device.id,
+            Alert.device_id  == device.id,
             Alert.alert_type == alert_type,
             Alert.resolved_at == None,
-            Alert.timestamp >= cutoff,
+            Alert.timestamp  >= cutoff,
         ).first() is not None
 
-    def create_alert(alert_type, value, thresh_min, thresh_max, severity, message):
-        if already_alerted(alert_type):
+    def create_alert(alert_type, value, thresh_min, thresh_max, severity, message, window_min=30):
+        if already_alerted(alert_type, window_min):
             return
-        alert = Alert(
+        db.add(Alert(
             device_id      = device.id,
             timestamp      = timestamp,
             alert_type     = alert_type,
@@ -240,61 +251,10 @@ def check_and_create_alerts(
             threshold_max  = thresh_max,
             severity       = severity,
             message        = message,
-        )
-        db.add(alert)
-        logger.warning(f"⚠️ ALERTE {alert_type} : {message}")
+        ))
+        logger.warning(f"⚠️ [{severity}] {alert_type} : {message}")
 
-    def auto_resolve(alert_type: str, condition_ok: bool):
-        """Résout automatiquement une alerte si la condition est revenue à la normale."""
-        if not condition_ok:
-            return
-        db.query(Alert).filter(
-            Alert.device_id  == device.id,
-            Alert.alert_type == alert_type,
-            Alert.resolved_at == None,
-        ).update({
-            "resolved_at": timestamp,
-            "resolved_by": "auto",
-        })
-
-    farm_info = f"{device.farm_name} Station {device.house_number}"
-
-# Déplacer ALARM_CODES ici (hors de la boucle)
-    ALARM_CODES = {
-        1:  "Court-circuit sonde température interne (Temp Sns Shorted)",
-        2:  "Coupure câble sonde température interne (Temp Sns Opened)",
-        3:  "Défaillance sonde température interne (Temp Sensor Fail)",
-        4:  "Court-circuit sonde température extérieure (Out Temp Sen. Shorted)",
-        5:  "Coupure câble sonde température extérieure (Out Temp Sen. Opened)",
-        6:  "Défaillance sonde température extérieure (Out Temp Sen. Fail)",
-        7:  "Défaillance carte relais (Relay Card Fail)",
-        8:  "Défaillance entrée analogique (Analog In Fail)",
-        9:  "Défaillance entrée digitale (Digital In Fail)",
-        10: "Défaillance horloge interne (Clock Failure)",
-        11: "Défaillance carte CPU (CPU Card Failure)",
-        12: "Défaillance mémoire (Memory Failure)",
-        13: "Défaillance capteur EC (EC Sensor Fail)",
-        14: "Défaillance capteur pH (pH Sensor Fail)",
-        15: "Débit trop élevé (High Flow)",
-        16: "Débit trop faible (Low Flow)",
-        17: "Fuite d'eau détectée (Water Leak)",
-        18: "Fuite canal de dosage (Dosing Channel Leak)",
-        19: "Défaut canal de dosage (Dosing Channel Fault)",
-        20: "Pause externe activée (External Pause)",
-        21: "Défaut pression différentielle (Delta Pressure)",
-        22: "EC trop élevé (EC High)",
-        23: "EC trop bas (EC Low)",
-        24: "pH trop élevé (pH High)",
-        25: "pH trop bas (pH Low)",
-        26: "Absence de débit (No Flow)",
-        27: "Alarme débit (Flow Alarm)",
-        28: "Court-circuit sortie (Short Circuit)",
-    }
-
-    def auto_resolve(alert_type: str, condition_ok: bool):
-        """Résout automatiquement toutes les alertes actives si condition revenue à normale."""
-        if not condition_ok:
-            return
+    def auto_resolve(alert_type: str):
         resolved = db.query(Alert).filter(
             Alert.device_id  == device.id,
             Alert.alert_type == alert_type,
@@ -306,127 +266,302 @@ def check_and_create_alerts(
         if resolved:
             logger.info(f"✅ Auto-résolution {alert_type} — {farm_info} ({len(resolved)} alertes)")
 
-    # ── 1. EC Apport — seulement si irrigation active ─────────
+    def severity_for_value(value, t_min, t_max) -> str:
+        """
+        Retourne CRITICAL / WARNING / INFO selon l'écart au seuil.
+        Zone WARNING = entre le seuil et 15% au-delà (tampon).
+        Zone CRITICAL = au-delà de 15% du seuil.
+        """
+        if t_max is not None and value > t_max:
+            ratio = (value - t_max) / max(abs(t_max), 0.01)
+            return "CRITICAL" if ratio > 0.15 else "WARNING"
+        if t_min is not None and value < t_min:
+            ratio = (t_min - value) / max(abs(t_min), 0.01)
+            return "CRITICAL" if ratio > 0.15 else "WARNING"
+        return "INFO"
+
+    def near_threshold(value, t_min, t_max, pct=0.10) -> bool:
+        """Vrai si la valeur est dans les 10% d'un seuil (pré-alerte)."""
+        if t_max is not None and value <= t_max:
+            if (t_max - value) / max(abs(t_max), 0.01) < pct:
+                return True
+        if t_min is not None and value >= t_min:
+            if (value - t_min) / max(abs(t_min), 0.01) < pct:
+                return True
+        return False
+
+    ALARM_CODES = {
+        1:  "Court-circuit sonde température interne",
+        2:  "Coupure câble sonde température interne",
+        3:  "Défaillance sonde température interne",
+        4:  "Court-circuit sonde température extérieure",
+        5:  "Coupure câble sonde température extérieure",
+        6:  "Défaillance sonde température extérieure",
+        7:  "Défaillance carte relais",
+        8:  "Défaillance entrée analogique",
+        9:  "Défaillance entrée digitale",
+        10: "Défaillance horloge interne",
+        11: "Défaillance carte CPU",
+        12: "Défaillance mémoire",
+        13: "Défaillance capteur EC",
+        14: "Défaillance capteur pH",
+        15: "Débit trop élevé (High Flow)",
+        16: "Débit trop faible (Low Flow)",
+        17: "Fuite d'eau détectée",
+        18: "Fuite canal de dosage",
+        19: "Défaut canal de dosage",
+        20: "Pause externe activée",
+        21: "Défaut pression différentielle",
+        22: "EC trop élevé",
+        23: "EC trop bas",
+        24: "pH trop élevé",
+        25: "pH trop bas",
+        26: "Absence de débit",
+        27: "Alarme débit",
+        28: "Court-circuit sortie",
+    }
+
+    current_month = timestamp.month
+    is_winter     = current_month in (11, 12, 1, 2, 3)   # Nov→Mars Agadir
+    outside_temp  = sr.outside_temp
+
+    # ══════════════════════════════════════════════════════════════
+    # 1. EC APPORT — seulement pendant irrigation
+    # ══════════════════════════════════════════════════════════════
     t_ec = thresh_map.get("ec_actual")
-    if t_ec and sr.ec_actual is not None:
-        if is_irrigating:
-            ec_ok = (
-                sr.ec_actual != 0 and
-                (t_ec.threshold_min is None or sr.ec_actual >= t_ec.threshold_min) and
-                (t_ec.threshold_max is None or sr.ec_actual <= t_ec.threshold_max)
-            )
-            auto_resolve("EC_ACTUAL", ec_ok)
-            if sr.ec_actual == 0:
-                create_alert("EC_ACTUAL", 0, t_ec.threshold_min, t_ec.threshold_max, "CRITICAL",
-                    f"EC = 0 mS/cm pendant irrigation (débit={flow} L/h) → capteur défaillant — {farm_info}")
-            elif t_ec.threshold_min is not None and sr.ec_actual < t_ec.threshold_min:
-                create_alert("EC_ACTUAL", sr.ec_actual, t_ec.threshold_min, t_ec.threshold_max, t_ec.severity,
-                    f"EC trop bas : {sr.ec_actual} mS/cm < min {t_ec.threshold_min} — {farm_info}")
-            elif t_ec.threshold_max is not None and sr.ec_actual > t_ec.threshold_max:
-                create_alert("EC_ACTUAL", sr.ec_actual, t_ec.threshold_min, t_ec.threshold_max, t_ec.severity,
-                    f"EC trop élevé : {sr.ec_actual} mS/cm > max {t_ec.threshold_max} — {farm_info}")
-        else:
-            # Fin irrigation → résoudre alertes EC automatiquement
-            auto_resolve("EC_ACTUAL", True)
+    if t_ec and sr.ec_actual is not None and is_irrig:
+        ec = sr.ec_actual
 
-    # ── 2. pH Apport — seulement si irrigation active ─────────
+        if ec == 0.0:
+            # EC = 0 en irrigation → capteur défaillant → CRITICAL immédiat
+            create_alert(
+                "EC_ACTUAL", 0.0,
+                t_ec.threshold_min, t_ec.threshold_max,
+                "CRITICAL",
+                f"EC = 0 mS/cm pendant irrigation (débit {flow:.0f} L/h) → capteur défaillant — {farm_info}",
+            )
+        elif (t_ec.threshold_min is not None and ec < t_ec.threshold_min) or \
+             (t_ec.threshold_max is not None and ec > t_ec.threshold_max):
+            sev = severity_for_value(ec, t_ec.threshold_min, t_ec.threshold_max)
+            if ec < (t_ec.threshold_min or 0):
+                msg = f"EC trop bas : {ec:.2f} mS/cm (seuil min {t_ec.threshold_min}) — {farm_info}"
+            else:
+                msg = f"EC trop élevé : {ec:.2f} mS/cm (seuil max {t_ec.threshold_max}) — {farm_info}"
+            create_alert("EC_ACTUAL", ec, t_ec.threshold_min, t_ec.threshold_max, sev, msg)
+        else:
+            # Valeur OK
+            auto_resolve("EC_ACTUAL")
+            # Pré-alerte INFO si proche du seuil
+            if near_threshold(ec, t_ec.threshold_min, t_ec.threshold_max):
+                create_alert(
+                    "EC_ACTUAL", ec,
+                    t_ec.threshold_min, t_ec.threshold_max,
+                    "INFO",
+                    f"EC proche du seuil : {ec:.2f} mS/cm — {farm_info}",
+                    window_min=60,   # pré-alerte toutes les 60 min max
+                )
+    elif t_ec and not is_irrig:
+        auto_resolve("EC_ACTUAL")
+
+    # ══════════════════════════════════════════════════════════════
+    # 2. pH APPORT — seulement pendant irrigation
+    # ══════════════════════════════════════════════════════════════
     t_ph = thresh_map.get("ph_actual")
-    if t_ph and sr.ph_actual is not None:
-        if is_irrigating:
-            ph_ok = (
-                sr.ph_actual != 0 and
-                (t_ph.threshold_min is None or sr.ph_actual >= t_ph.threshold_min) and
-                (t_ph.threshold_max is None or sr.ph_actual <= t_ph.threshold_max)
-            )
-            auto_resolve("PH_ACTUAL", ph_ok)
-            if sr.ph_actual == 0:
-                create_alert("PH_ACTUAL", 0, t_ph.threshold_min, t_ph.threshold_max, "CRITICAL",
-                    f"pH = 0 pendant irrigation (débit={flow} L/h) → capteur défaillant — {farm_info}")
-            elif t_ph.threshold_min is not None and sr.ph_actual < t_ph.threshold_min:
-                create_alert("PH_ACTUAL", sr.ph_actual, t_ph.threshold_min, t_ph.threshold_max, t_ph.severity,
-                    f"pH trop bas : {sr.ph_actual} < min {t_ph.threshold_min} — {farm_info}")
-            elif t_ph.threshold_max is not None and sr.ph_actual > t_ph.threshold_max:
-                create_alert("PH_ACTUAL", sr.ph_actual, t_ph.threshold_min, t_ph.threshold_max, t_ph.severity,
-                    f"pH trop élevé : {sr.ph_actual} > max {t_ph.threshold_max} — {farm_info}")
-        else:
-            auto_resolve("PH_ACTUAL", True)
+    if t_ph and sr.ph_actual is not None and is_irrig:
+        ph = sr.ph_actual
 
-    # ── 3. Température ─────────────────────────────────────────
+        if ph == 0.0:
+            create_alert(
+                "PH_ACTUAL", 0.0,
+                t_ph.threshold_min, t_ph.threshold_max,
+                "CRITICAL",
+                f"pH = 0 pendant irrigation (débit {flow:.0f} L/h) → capteur défaillant — {farm_info}",
+            )
+        elif (t_ph.threshold_min is not None and ph < t_ph.threshold_min) or \
+             (t_ph.threshold_max is not None and ph > t_ph.threshold_max):
+            sev = severity_for_value(ph, t_ph.threshold_min, t_ph.threshold_max)
+            if ph < (t_ph.threshold_min or 0):
+                msg = f"pH trop bas : {ph:.2f} (seuil min {t_ph.threshold_min}) — {farm_info}"
+            else:
+                msg = f"pH trop élevé : {ph:.2f} (seuil max {t_ph.threshold_max}) — {farm_info}"
+            create_alert("PH_ACTUAL", ph, t_ph.threshold_min, t_ph.threshold_max, sev, msg)
+        else:
+            auto_resolve("PH_ACTUAL")
+            if near_threshold(ph, t_ph.threshold_min, t_ph.threshold_max):
+                create_alert(
+                    "PH_ACTUAL", ph,
+                    t_ph.threshold_min, t_ph.threshold_max,
+                    "INFO",
+                    f"pH proche du seuil : {ph:.2f} — {farm_info}",
+                    window_min=60,
+                )
+    elif t_ph and not is_irrig:
+        auto_resolve("PH_ACTUAL")
+
+    # ══════════════════════════════════════════════════════════════
+    # 3. TEMPÉRATURE SERRE
+    # Pas d'alerte froid en hiver (Nov→Mars Agadir) sauf >5°C d'écart
+    # ══════════════════════════════════════════════════════════════
     t_temp = thresh_map.get("avg_temp")
     if t_temp and sr.avg_temp is not None:
-        outside = sr.outside_temp
-        
-        # Hiver : soit outside_temp < 8°C, soit mois de Nov-Fév (Maroc/Agadir)
-        from datetime import datetime
-        current_month = timestamp.month
-        is_winter_month = current_month in (11, 12, 1, 2, 3)  # Nov→Mars = hiver Agadir
-        cold_winter = (outside is not None and outside < 8.0) or is_winter_month        
+        temp = sr.avg_temp
+        cold_outside = (outside_temp is not None and outside_temp < 8.0) or is_winter
 
-        too_hot  = t_temp.threshold_max is not None and sr.avg_temp > t_temp.threshold_max
-        too_cold = t_temp.threshold_min is not None and sr.avg_temp < t_temp.threshold_min and not cold_winter
-        temp_ok  = not too_hot and not too_cold
-        auto_resolve("AVG_TEMP", temp_ok)
-        if too_hot:
-            create_alert("AVG_TEMP", sr.avg_temp, t_temp.threshold_min, t_temp.threshold_max, t_temp.severity,
-                f"Température serre trop élevée : {sr.avg_temp}°C > max {t_temp.threshold_max}°C — {farm_info}")
-        elif too_cold:
-            create_alert("AVG_TEMP", sr.avg_temp, t_temp.threshold_min, t_temp.threshold_max, t_temp.severity,
-                f"Température serre trop basse : {sr.avg_temp}°C < min {t_temp.threshold_min}°C — {farm_info}")
+        too_hot  = t_temp.threshold_max is not None and temp > t_temp.threshold_max
+        too_cold = (
+            t_temp.threshold_min is not None and
+            temp < t_temp.threshold_min and
+            not (cold_outside and temp >= t_temp.threshold_min - 5.0)
+            # En hiver, tolérer jusqu'à 5°C sous le seuil min avant d'alerter
+        )
 
-    # ── 4. Humidité ────────────────────────────────────────────
+        if too_hot or too_cold:
+            sev = severity_for_value(temp, t_temp.threshold_min, t_temp.threshold_max)
+            if too_hot:
+                msg = f"Température serre élevée : {temp:.1f}°C (max {t_temp.threshold_max}°C) — {farm_info}"
+            else:
+                msg = f"Température serre basse : {temp:.1f}°C (min {t_temp.threshold_min}°C) — {farm_info}"
+            create_alert("AVG_TEMP", temp, t_temp.threshold_min, t_temp.threshold_max, sev, msg)
+        else:
+            auto_resolve("AVG_TEMP")
+            if near_threshold(temp, t_temp.threshold_min, t_temp.threshold_max):
+                create_alert(
+                    "AVG_TEMP", temp,
+                    t_temp.threshold_min, t_temp.threshold_max,
+                    "INFO",
+                    f"Température proche du seuil : {temp:.1f}°C — {farm_info}",
+                    window_min=60,
+                )
+
+    # ══════════════════════════════════════════════════════════════
+    # 4. HUMIDITÉ SERRE
+    # ══════════════════════════════════════════════════════════════
     t_hum = thresh_map.get("humidity")
     if t_hum and sr.humidity is not None:
-        outside = sr.outside_temp
-        cold_winter = outside is not None and outside < 8.0
-        too_high = t_hum.threshold_max is not None and sr.humidity > t_hum.threshold_max
-        too_low  = t_hum.threshold_min is not None and sr.humidity < t_hum.threshold_min and not cold_winter
-        hum_ok   = not too_high and not too_low
-        auto_resolve("HUMIDITY", hum_ok)
-        if too_high:
-            create_alert("HUMIDITY", sr.humidity, t_hum.threshold_min, t_hum.threshold_max, t_hum.severity,
-                f"Humidité trop élevée : {sr.humidity}% > max {t_hum.threshold_max}% — {farm_info}")
-        elif too_low:
-            create_alert("HUMIDITY", sr.humidity, t_hum.threshold_min, t_hum.threshold_max, t_hum.severity,
-                f"Humidité trop basse : {sr.humidity}% < min {t_hum.threshold_min}% — {farm_info}")
+        hum = sr.humidity
+        cold_outside = outside_temp is not None and outside_temp < 8.0
 
-    # ── 5. Débit anormal pendant irrigation ───────────────────
-    t_flow = thresh_map.get("flow")
-    if t_flow and sr.flow is not None:
-        if is_irrigating and sr.flow_nominal and sr.flow_nominal > 0:
-            ratio = sr.flow / sr.flow_nominal
-            flow_ok = 0.5 <= ratio <= 1.5
-            auto_resolve("FLOW", flow_ok)
-            if ratio < 0.5:
-                create_alert("FLOW", sr.flow, None, sr.flow_nominal, "WARNING",
-                    f"Débit trop bas pendant irrigation : {sr.flow} L/h vs nominal {sr.flow_nominal} L/h ({ratio*100:.0f}%) — {farm_info}")
-            elif ratio > 1.5:
-                create_alert("FLOW", sr.flow, None, sr.flow_nominal, "WARNING",
-                    f"Débit trop élevé : {sr.flow} L/h vs nominal {sr.flow_nominal} L/h ({ratio*100:.0f}%) — {farm_info}")
+        too_high = t_hum.threshold_max is not None and hum > t_hum.threshold_max
+        too_low  = (
+            t_hum.threshold_min is not None and
+            hum < t_hum.threshold_min and
+            not cold_outside
+        )
+
+        if too_high or too_low:
+            sev = severity_for_value(hum, t_hum.threshold_min, t_hum.threshold_max)
+            if too_high:
+                msg = f"Humidité élevée : {hum:.1f}% (max {t_hum.threshold_max}%) → risque botrytis — {farm_info}"
+            else:
+                msg = f"Humidité basse : {hum:.1f}% (min {t_hum.threshold_min}%) → stress hydrique — {farm_info}"
+            create_alert("HUMIDITY", hum, t_hum.threshold_min, t_hum.threshold_max, sev, msg)
         else:
-            # Fin irrigation → résoudre alertes débit
-            auto_resolve("FLOW", True)
+            auto_resolve("HUMIDITY")
+            if near_threshold(hum, t_hum.threshold_min, t_hum.threshold_max):
+                create_alert(
+                    "HUMIDITY", hum,
+                    t_hum.threshold_min, t_hum.threshold_max,
+                    "INFO",
+                    f"Humidité proche du seuil : {hum:.1f}% — {farm_info}",
+                    window_min=60,
+                )
 
-    # ── 6. VPD ─────────────────────────────────────────────────
+    # ══════════════════════════════════════════════════════════════
+    # 5. DÉBIT — pendant irrigation uniquement
+    # Seuils : <40% nominal = CRITICAL, 40-60% = WARNING
+    #          >200% nominal = CRITICAL, 150-200% = WARNING
+    # ══════════════════════════════════════════════════════════════
+    if is_irrig and sr.flow_nominal and sr.flow_nominal > 0:
+        ratio = flow / sr.flow_nominal
+
+        if ratio < 0.40:
+            create_alert(
+                "FLOW", flow, None, sr.flow_nominal, "CRITICAL",
+                f"Débit très faible : {flow:.0f} L/h ({ratio*100:.0f}% du nominal {sr.flow_nominal:.0f}) → vérifier pompe — {farm_info}",
+            )
+        elif ratio < 0.60:
+            create_alert(
+                "FLOW", flow, None, sr.flow_nominal, "WARNING",
+                f"Débit bas : {flow:.0f} L/h ({ratio*100:.0f}% du nominal {sr.flow_nominal:.0f}) — {farm_info}",
+            )
+        elif ratio > 2.00:
+            create_alert(
+                "FLOW", flow, None, sr.flow_nominal, "CRITICAL",
+                f"Débit excessif : {flow:.0f} L/h ({ratio*100:.0f}% du nominal) → risque fuite — {farm_info}",
+            )
+        elif ratio > 1.50:
+            create_alert(
+                "FLOW", flow, None, sr.flow_nominal, "WARNING",
+                f"Débit élevé : {flow:.0f} L/h ({ratio*100:.0f}% du nominal) — {farm_info}",
+            )
+        else:
+            auto_resolve("FLOW")
+    elif not is_irrig:
+        auto_resolve("FLOW")
+
+    # ══════════════════════════════════════════════════════════════
+    # 6. VPD (stress hydrique)
+    # >3.0 = CRITICAL, 2.0-3.0 = WARNING, 1.5-2.0 = INFO
+    # ══════════════════════════════════════════════════════════════
     if sr.vpd is not None:
-        auto_resolve("VPD", sr.vpd <= 3.0)
-        if sr.vpd > 3.0:
-            create_alert("VPD", sr.vpd, None, 3.0, "WARNING",
-                f"VPD critique : {sr.vpd} kPa > 3.0 (stress hydrique fort) — {farm_info}")
+        vpd = sr.vpd
+        if vpd > 3.0:
+            create_alert(
+                "VPD", vpd, None, 3.0, "CRITICAL",
+                f"VPD critique : {vpd:.2f} kPa → stress hydrique sévère, irrigation urgente — {farm_info}",
+            )
+        elif vpd > 2.0:
+            create_alert(
+                "VPD", vpd, None, 2.0, "WARNING",
+                f"VPD élevé : {vpd:.2f} kPa → stress hydrique modéré — {farm_info}",
+            )
+        elif vpd > 1.5:
+            create_alert(
+                "VPD", vpd, None, 1.5, "INFO",
+                f"VPD en hausse : {vpd:.2f} kPa — surveiller — {farm_info}",
+                window_min=120,
+            )
+        else:
+            auto_resolve("VPD")
 
-    # ── 7. Radiation ───────────────────────────────────────────
+    # ══════════════════════════════════════════════════════════════
+    # 7. RADIATION solaire
+    # >1800 = CRITICAL, 1500-1800 = WARNING, 1200-1500 = INFO
+    # ══════════════════════════════════════════════════════════════
     if sr.radiation is not None:
-        auto_resolve("RADIATION", sr.radiation <= 1800)
-        if sr.radiation > 1800:
-            create_alert("RADIATION", sr.radiation, None, 1800, "WARNING",
-                f"Radiation excessive : {sr.radiation} W/m² > 1800 (risque brûlures) — {farm_info}")
+        rad = sr.radiation
+        if rad > 1800:
+            create_alert(
+                "RADIATION", rad, None, 1800, "CRITICAL",
+                f"Radiation excessive : {rad:.0f} W/m² → risque brûlures feuilles — {farm_info}",
+            )
+        elif rad > 1500:
+            create_alert(
+                "RADIATION", rad, None, 1500, "WARNING",
+                f"Radiation élevée : {rad:.0f} W/m² → surveiller température — {farm_info}",
+            )
+        elif rad > 1200:
+            create_alert(
+                "RADIATION", rad, None, 1200, "INFO",
+                f"Radiation forte : {rad:.0f} W/m² — normal mais surveiller — {farm_info}",
+                window_min=120,
+            )
+        else:
+            auto_resolve("RADIATION")
 
-    # ── 8. Alarme Netafim ──────────────────────────────────────
+    # ══════════════════════════════════════════════════════════════
+    # 8. ALARME NETAFIM
+    # Toujours CRITICAL (code matériel)
+    # ══════════════════════════════════════════════════════════════
     if sr.alarm is not None:
-        auto_resolve("ALARM", sr.alarm == 0)
         if sr.alarm > 0:
             alarm_desc = ALARM_CODES.get(int(sr.alarm), f"Alarme inconnue code {sr.alarm}")
-            create_alert("ALARM", sr.alarm, None, None, "CRITICAL",
-                f"{alarm_desc} — {farm_info}")
+            create_alert(
+                "ALARM", sr.alarm, None, None, "CRITICAL",
+                f"{alarm_desc} — {farm_info}",
+            )
+        else:
+            auto_resolve("ALARM")
 
 # ── ENDPOINT PRINCIPAL ────────────────────────────────────────
 @router.post("/ingest")
