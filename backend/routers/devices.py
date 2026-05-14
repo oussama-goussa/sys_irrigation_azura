@@ -597,13 +597,31 @@ def get_alerts(
     db       : Session = Depends(get_db),
     user             = Depends(require_any)
 ):
-    """Retourne les alertes d'un device."""
     q = db.query(Alert).filter(Alert.device_id == device_id)
     if not resolved:
         q = q.filter(Alert.resolved_at == None)
     alerts = q.order_by(desc(Alert.timestamp)).limit(limit).all()
-    return [a.to_dict() for a in alerts]
 
+    # Charger les seuils configurés pour enrichir les alertes sans min/max
+    thresholds = {
+        t.parameter.upper(): t
+        for t in db.query(AlertThreshold)
+        .filter(AlertThreshold.device_id == device_id, AlertThreshold.is_active == True)
+        .all()
+    }
+
+    result = []
+    for a in alerts:
+        d = a.to_dict()
+        # Si l'alerte n'a pas de seuils enregistrés → les prendre depuis AlertThreshold
+        if d.get("threshold_min") is None and d.get("threshold_max") is None:
+            t = thresholds.get((a.alert_type or "").upper())
+            if t:
+                d["threshold_min"] = t.threshold_min
+                d["threshold_max"] = t.threshold_max
+        result.append(d)
+
+    return result
 
 # ── GET /api/devices/{id}/thresholds — Seuils configurés ─────
 @router.get("/{device_id}/thresholds")
