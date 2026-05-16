@@ -633,8 +633,8 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
     : []
 
   // ── % Ressuyage ──
-  const pctRessuyage = poidsMatin && poidsSoir && Number(poidsMatin) > 0
-    ? (((Number(poidsSoir) - Number(poidsMatin)) / Number(poidsMatin)) * 100).toFixed(1)
+  const pctRessuyage = poidsMatin && poidsSoir && Number(poidsSoir) > 0
+    ? (((Number(poidsSoir) - Number(poidsMatin)) / Number(poidsSoir)) * 100).toFixed(1)
     : null
 
   // ── Recalcul tours ──
