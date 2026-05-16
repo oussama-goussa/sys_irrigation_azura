@@ -657,7 +657,7 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
         if (tempsRepos < 0) tempsRepos = 0
       }
 
-      // % Drain
+      // % Drain 
       let pctDrain = null
       if (t.vDrain && t.vApport && nbrGoutteurs && Number(t.vApport) > 0 && Number(nbrGoutteurs) > 0) {
         pctDrain = (Number(t.vDrain) / Number(nbrGoutteurs) / Number(t.vApport)) * 100
