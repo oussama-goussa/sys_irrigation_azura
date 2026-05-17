@@ -104,6 +104,7 @@ def get_recommandation(
             result = generer_recommandation_matin(
                 device_id      = device_id,
                 date_str       = target_date,
+                db             = db,  # PASS DB
                 ec_bassin      = cfg.ec_eau_brute or 0.8,
                 date_plantation= str(cfg.date_plantation) if cfg.date_plantation else None,
                 methode        = cfg.methode_decision or "hybride",
