@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
-from datetime import date as date_type
+from datetime import date as date_type, timedelta
 import datetime as _dt_module
 from loguru import logger
 
@@ -254,6 +254,77 @@ def ajuster_tour(
         "recommandation_mise_a_jour": rec.to_dict(),
     }
 
+@router.get("/poids-soir/{device_id}")
+def get_poids_soir(
+    device_id : int,
+    db        : Session = Depends(get_db),
+    user      : dict    = Depends(require_any),
+):
+    """
+    Retourne le poids soir = première lecture poids 
+    20 min après la fin du dernier tour complété hier.
+    """
+    from models.weight_model import WeightReading
+    import datetime as _dt
+
+    today_utc   = _dt.datetime.utcnow().date()
+    date_veille = today_utc - timedelta(days=1)
+
+    # Dernier tour complété hier
+    last_tour = (
+        db.query(IrrigationTour)
+        .filter(
+            IrrigationTour.device_id   == device_id,
+            IrrigationTour.date        == date_veille,
+            IrrigationTour.is_complete == True,
+        )
+        .order_by(desc(IrrigationTour.tour_num))
+        .first()
+    )
+
+    if not last_tour or not last_tour.fin:
+        return {"poids_soir": None, "timestamp": None, "message": "Pas de tour complété hier"}
+
+    # Poids 20 min après fin du dernier tour
+    evening_time = last_tour.fin + timedelta(minutes=20)
+
+    poids = (
+        db.query(WeightReading)
+        .filter(
+            WeightReading.timestamp >= evening_time,
+            WeightReading.timestamp <= _dt.datetime.combine(date_veille, _dt.time(22, 59)),
+        )
+        .order_by(WeightReading.timestamp)
+        .first()
+    )
+
+    # Fallback : dernier poids après 17h UTC hier
+    if not poids:
+        poids = (
+            db.query(WeightReading)
+            .filter(
+                WeightReading.timestamp >= _dt.datetime.combine(date_veille, _dt.time(17, 0)),
+                WeightReading.timestamp <= _dt.datetime.combine(date_veille, _dt.time(22, 59)),
+            )
+            .order_by(desc(WeightReading.timestamp))
+            .first()
+        )
+
+    if not poids:
+        return {
+            "poids_soir" : None,
+            "timestamp"  : None,
+            "message"    : f"Pas de poids trouvé après {evening_time.strftime('%H:%M')} UTC",
+            "fin_tour"   : last_tour.fin.strftime("%H:%M"),
+        }
+
+    return {
+        "poids_soir" : poids.poids_kg,
+        "timestamp"  : str(poids.timestamp),
+        "capteur_id" : poids.capteur_id,
+        "fin_tour"   : last_tour.fin.strftime("%H:%M"),
+        "message"    : f"Poids 20min après fin tour {last_tour.tour_num} ({last_tour.fin.strftime('%H:%M')} UTC)",
+    }
 
 # ── GET /api/ai/resume/{device_id} ───────────────────────────
 @router.get("/resume/{device_id}")

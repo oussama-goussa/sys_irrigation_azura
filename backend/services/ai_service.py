@@ -133,52 +133,75 @@ def get_seuils(periode: str) -> dict:
 def calculer_prt_ressuyage_az106(db: Session, device_id: int, target_date: date) -> Optional[float]:
     """
     PRT = ((Poids soir - Poids matin) / Poids soir) * 100
-    Poids soir  : 20 min après fin du dernier tour de la veille (fallback: après 17h UTC)
-    Poids matin : première lecture à partir de 06:00 UTC aujourd'hui
+    Poids soir  : première lecture 20 min après fin du dernier tour complet de la veille
+    Poids matin : première lecture après 06:00 UTC aujourd'hui
+    Même logique que GET /api/ai/poids-soir/{device_id}
     """
+    # Récupérer farm_name du device pour filtrer le bon capteur
     device = db.query(Device).filter(Device.id == device_id).first()
     if not device:
         return None
 
-    # Utiliser la date UTC courante pour éviter décalage GMT
-    today_utc = _dt.datetime.utcnow().date()
+    today_utc   = _dt.datetime.utcnow().date()
     date_veille = today_utc - timedelta(days=1)
-    target_date = today_utc  # écraser le paramètre avec UTC réel
 
-    # 1. Poids soir — 20 min après dernier tour complet de la veille
-    last_tour = db.query(IrrigationTour).filter(
-        IrrigationTour.device_id == device_id,
-        IrrigationTour.date      == date_veille,
-        IrrigationTour.is_complete == True,
-    ).order_by(desc(IrrigationTour.tour_num)).first()
+    # ── 1. Poids soir : 20 min après fin dernier tour complet de la veille ──
+    last_tour = (
+        db.query(IrrigationTour)
+        .filter(
+            IrrigationTour.device_id   == device_id,
+            IrrigationTour.date        == date_veille,
+            IrrigationTour.is_complete == True,
+        )
+        .order_by(desc(IrrigationTour.tour_num))
+        .first()
+    )
 
     poids_soir_reading = None
     if last_tour and last_tour.fin:
         evening_time = last_tour.fin + timedelta(minutes=20)
-        poids_soir_reading = db.query(WeightReading).filter(
-            WeightReading.timestamp >= evening_time,
-            WeightReading.timestamp <= _dt.datetime.combine(date_veille, _dt.time(22, 59)),
-        ).order_by(WeightReading.timestamp).first()
+        poids_soir_reading = (
+            db.query(WeightReading)
+            .filter(
+                WeightReading.farm_name  == device.farm_name,
+                WeightReading.timestamp  >= evening_time,
+                WeightReading.timestamp  <= _dt.datetime.combine(date_veille, _dt.time(22, 59)),
+            )
+            .order_by(WeightReading.timestamp)
+            .first()
+        )
 
-    # Fallback : dernier poids après 17h UTC (= 18h Maroc)
+    # Fallback : dernier poids après 17h UTC hier
     if not poids_soir_reading:
-        poids_soir_reading = db.query(WeightReading).filter(
-            WeightReading.timestamp >= _dt.datetime.combine(date_veille, _dt.time(17, 0)),
-            WeightReading.timestamp <= _dt.datetime.combine(date_veille, _dt.time(22, 59)),
-        ).order_by(desc(WeightReading.timestamp)).first()
+        poids_soir_reading = (
+            db.query(WeightReading)
+            .filter(
+                WeightReading.farm_name  == device.farm_name,
+                WeightReading.timestamp  >= _dt.datetime.combine(date_veille, _dt.time(17, 0)),
+                WeightReading.timestamp  <= _dt.datetime.combine(date_veille, _dt.time(22, 59)),
+            )
+            .order_by(desc(WeightReading.timestamp))
+            .first()
+        )
 
     if not poids_soir_reading:
         logger.warning(f"PRT AZ106 : pas de poids soir pour {date_veille}")
         return None
 
-    # 2. Poids matin — première lecture à partir de 06:00 UTC
-    matin_start = _dt.datetime.combine(target_date, _dt.time(6, 0))
-    poids_matin_reading = db.query(WeightReading).filter(
-        WeightReading.timestamp >= matin_start,
-    ).order_by(WeightReading.timestamp).first()
+    # ── 2. Poids matin : première lecture après 06:00 UTC aujourd'hui ──
+    matin_start = _dt.datetime.combine(today_utc, _dt.time(6, 0))
+    poids_matin_reading = (
+        db.query(WeightReading)
+        .filter(
+            WeightReading.farm_name  == device.farm_name,
+            WeightReading.timestamp  >= matin_start,
+        )
+        .order_by(WeightReading.timestamp)
+        .first()
+    )
 
     if not poids_matin_reading:
-        logger.warning(f"PRT AZ106 : pas de poids matin pour {target_date}")
+        logger.warning(f"PRT AZ106 : pas de poids matin pour {today_utc}")
         return None
 
     poids_soir  = poids_soir_reading.poids_kg
@@ -188,7 +211,11 @@ def calculer_prt_ressuyage_az106(db: Session, device_id: int, target_date: date)
         return None
 
     prt = ((poids_soir - poids_matin) / poids_soir) * 100
-    logger.info(f"PRT AZ106 : soir={poids_soir}kg matin={poids_matin}kg → {prt:.2f}%")
+    logger.info(
+        f"PRT AZ106 : soir={poids_soir}kg ({poids_soir_reading.timestamp}) "
+        f"matin={poids_matin}kg ({poids_matin_reading.timestamp}) "
+        f"→ {prt:.2f}%"
+    )
     return round(prt, 2)
 
 def get_radiation_sum_actuel(db: Session, device_id: int) -> Optional[float]:

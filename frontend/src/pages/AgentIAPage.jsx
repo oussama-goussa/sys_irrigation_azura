@@ -48,9 +48,14 @@ async function fetchWithToken(url, token, opts = {}) {
   return res.json()
 }
 
+async function getPoidsSOir(token, deviceId) {
+  return fetchWithToken(`/api/ai/poids-soir/${deviceId}`, token)
+}
+
 async function getDevices(token) {
   return fetchWithToken('/api/devices', token)
 }
+
 async function getAIRec(token, deviceId, date) {
   const params = date ? `?date=${date}` : ''
   return fetchWithToken(`/api/ai/recommandation/${deviceId}${params}`, token)
@@ -135,14 +140,17 @@ function getPRTStatus(prt, mois) {
 // ─────────────────────────────────────────────────────────────
 
 // Carte PRT Ressuyage + Poids
-function PRTCard({ weight, deviceLatest, prtBackend, C, dark }) {
+function PRTCard({ weight, poidsSoir: poidsSoirData, deviceLatest, prtBackend, C, dark }) {
   const mois = new Date().getMonth() + 1
   const periode = getPeriode(mois)
   const seuils = PRT_SEUILS[periode]
   const prt = prtBackend ?? null
   const prtStatus = prt !== null ? getPRTStatus(prt, mois) : null
 
-  const poidsSoir = weight?.poids_kg ?? null
+  const poidsKg    = poidsSoirData?.poids_soir ?? null   // poids soir réel depuis BDD
+  const finTour    = poidsSoirData?.fin_tour ?? null      // heure fin dernier tour
+  const msgPoids   = poidsSoirData?.message ?? null
+
   const radiationSum = deviceLatest?.sensor?.radiation_sum ?? null
   const radiationLive = deviceLatest?.sensor?.radiation ?? null
 
@@ -193,9 +201,17 @@ function PRTCard({ weight, deviceLatest, prtBackend, C, dark }) {
             letterSpacing: '0.07em', marginBottom: 6,
           }}>Poids soir</div>
           <div style={{ fontSize: 24, fontWeight: 900, color: C.green, lineHeight: 1 }}>
-            {poidsSoir != null ? poidsSoir.toFixed(2) : '—'}
+            {poidsKg != null ? poidsKg.toFixed(2) : '—'}
           </div>
           <div style={{ fontSize: 10, color: C.textDim, marginTop: 4 }}>kg</div>
+          <div style={{
+            marginTop: 6, fontSize: 9, color: C.textDim,
+            borderTop: `1px solid ${C.border}`, paddingTop: 5,
+          }}>
+            {finTour
+              ? `20min après fin tour (${finTour} UTC)`
+              : msgPoids || '—'}
+          </div>
         </div>
 
         {/* Radiation */}
@@ -821,6 +837,8 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
   const intervalRef = useRef(null)
   const weightIntervalRef = useRef(null)
 
+  const [poidsSoir, setPoidsSoir] = useState(null)
+
   const today = new Date().toISOString().split('T')[0]
   const mois = new Date().getMonth() + 1
 
@@ -846,8 +864,12 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
   const loadWeight = useCallback(async () => {
     if (!az106Device) return
     try {
-      const w = await getLatestWeight(token, az106Device.farm_name)
+      const [w, ps] = await Promise.all([
+        getLatestWeight(token, az106Device.farm_name),
+        getPoidsSOir(token, az106Device.id),         // ← AJOUTER
+      ])
       setWeight(w)
+      setPoidsSoir(ps)                               // ← AJOUTER
     } catch {
       // poids non disponible
     }
@@ -1048,7 +1070,7 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
         }}>
           {/* Colonne gauche : PRT + Poids */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <PRTCard weight={weight} deviceLatest={deviceLatest} prtBackend={rec?.pct_ressuyage} C={C} dark={dark} />
+            <PRTCard weight={weight} poidsSoir={poidsSoir} deviceLatest={deviceLatest} prtBackend={rec?.pct_ressuyage} C={C} dark={dark} />
 
             {/* Stade agronomique */}
             {rec?.stade && (
