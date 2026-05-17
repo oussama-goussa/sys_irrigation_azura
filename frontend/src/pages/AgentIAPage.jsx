@@ -412,13 +412,6 @@ function PlanCard({ rec, prtStatus, C, dark }) {
           <div style={{ fontSize: 9, marginTop: 6, display: 'flex',
             alignItems: 'center', justifyContent: 'center', gap: 4 }}>
             <span style={{ color: C.textDim }}>UTC</span>
-            {heureDebut && (
-              <span style={{
-                background: '#4d9de015', border: '1px solid #4d9de030',
-                color: '#4d9de0', borderRadius: 4, padding: '1px 6px',
-                fontSize: 8, fontWeight: 700,
-              }}>IA ONLY</span>
-            )}
           </div>
         </div>
       </div>
