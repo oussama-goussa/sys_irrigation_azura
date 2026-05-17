@@ -104,6 +104,12 @@ METEO_FALLBACK = {
 # HELPERS
 # ─────────────────────────────────────────────────────────────
 
+def get_stade(j_plantation: int) -> str:
+    for nom, v in KC_TABLE.items():
+        if v["j_min"] <= j_plantation <= v["j_max"]:
+            return nom
+    return "recolte"
+
 def get_periode(mois: int) -> str:
     if mois in [10, 11, 12, 1, 2]: return "chaud" # Correspond au CDC Azura pour PRT 10-12%
     if mois in [4, 5, 6, 7]: return "froid"       # Correspond au CDC Azura pour PRT 8-9%
