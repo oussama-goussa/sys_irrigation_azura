@@ -132,56 +132,72 @@ def get_seuils(periode: str) -> dict:
 
 def calculer_prt_ressuyage_az106(db: Session, device_id: int, target_date: date) -> Optional[float]:
     """
-    Calcule le PRT ressuyage pour AZ106:
     PRT = ((Poids soir - Poids matin) / Poids soir) * 100
-    Poids soir: 20 min après le dernier tour de la veille.
-    Poids matin: poids actuel.
+    Poids soir  : 20 min après fin du dernier tour de la veille (fallback: après 17h UTC)
+    Poids matin : première lecture à partir de 06:00 UTC aujourd'hui
     """
     device = db.query(Device).filter(Device.id == device_id).first()
-    if not device or device.house_number != "106":
+    if not device:
         return None
 
-    # 1. Trouver le dernier tour de la veille
-    date_veille = target_date - timedelta(days=1)
+    # Utiliser la date UTC courante pour éviter décalage GMT
+    today_utc = _dt.datetime.utcnow().date()
+    date_veille = today_utc - timedelta(days=1)
+    target_date = today_utc  # écraser le paramètre avec UTC réel
+
+    # 1. Poids soir — 20 min après dernier tour complet de la veille
     last_tour = db.query(IrrigationTour).filter(
         IrrigationTour.device_id == device_id,
-        IrrigationTour.date == date_veille
+        IrrigationTour.date      == date_veille,
+        IrrigationTour.is_complete == True,
     ).order_by(desc(IrrigationTour.tour_num)).first()
 
-    if not last_tour or not last_tour.fin:
-        logger.warning(f"Pas de dernier tour trouvé pour AZ106 le {date_veille}")
-        return None
-
-    # 2. Poids soir (20 min après fin dernier tour)
-    evening_time = last_tour.fin + timedelta(minutes=20)
-    # Chercher le poids le plus proche de evening_time
-    poids_soir_reading = db.query(WeightReading).filter(
-        WeightReading.timestamp >= evening_time
-    ).order_by(WeightReading.timestamp).first()
-
-    if not poids_soir_reading:
-        # Fallback: le dernier poids de la veille
+    poids_soir_reading = None
+    if last_tour and last_tour.fin:
+        evening_time = last_tour.fin + timedelta(minutes=20)
         poids_soir_reading = db.query(WeightReading).filter(
-            WeightReading.timestamp <= _dt.datetime.combine(date_veille, _dt.time(23, 59))
+            WeightReading.timestamp >= evening_time,
+            WeightReading.timestamp <= _dt.datetime.combine(date_veille, _dt.time(22, 59)),
+        ).order_by(WeightReading.timestamp).first()
+
+    # Fallback : dernier poids après 17h UTC (= 18h Maroc)
+    if not poids_soir_reading:
+        poids_soir_reading = db.query(WeightReading).filter(
+            WeightReading.timestamp >= _dt.datetime.combine(date_veille, _dt.time(17, 0)),
+            WeightReading.timestamp <= _dt.datetime.combine(date_veille, _dt.time(22, 59)),
         ).order_by(desc(WeightReading.timestamp)).first()
 
     if not poids_soir_reading:
+        logger.warning(f"PRT AZ106 : pas de poids soir pour {date_veille}")
         return None
 
-    # 3. Poids matin (dernier poids reçu aujourd'hui)
-    poids_matin_reading = db.query(WeightReading).order_by(desc(WeightReading.timestamp)).first()
+    # 2. Poids matin — première lecture à partir de 06:00 UTC
+    matin_start = _dt.datetime.combine(target_date, _dt.time(6, 0))
+    poids_matin_reading = db.query(WeightReading).filter(
+        WeightReading.timestamp >= matin_start,
+    ).order_by(WeightReading.timestamp).first()
 
     if not poids_matin_reading:
+        logger.warning(f"PRT AZ106 : pas de poids matin pour {target_date}")
         return None
 
-    poids_soir = poids_soir_reading.poids_kg
+    poids_soir  = poids_soir_reading.poids_kg
     poids_matin = poids_matin_reading.poids_kg
 
-    if poids_soir == 0:
-        return 0.0
+    if not poids_soir or poids_soir <= 0:
+        return None
 
     prt = ((poids_soir - poids_matin) / poids_soir) * 100
+    logger.info(f"PRT AZ106 : soir={poids_soir}kg matin={poids_matin}kg → {prt:.2f}%")
     return round(prt, 2)
+
+def get_radiation_sum_actuel(db: Session, device_id: int) -> Optional[float]:
+    """Radiation_Sum actuel depuis la dernière lecture capteur."""
+    from models.sensor_model import SensorReading
+    last = db.query(SensorReading).filter(
+        SensorReading.device_id == device_id
+    ).order_by(desc(SensorReading.timestamp)).first()
+    return last.radiation_sum if last else None
 
 def calc_vpd(t: float, hr: float) -> float:
     if not t or not hr: return 1.0
@@ -248,7 +264,7 @@ def generer_recommandation_matin(
     methode: str = "hybride",
     meteo_override: Optional[dict] = None,
 ) -> dict:
-    target_date = _datetime.strptime(date_str, "%Y-%m-%d").date() 
+    target_date = _dt.datetime.utcnow().date()
     mois = target_date.month
     periode = get_periode(mois)
     seuils_generaux = get_seuils(periode)
@@ -282,33 +298,49 @@ def generer_recommandation_matin(
     pluie = meteo.get("pluie_mm", 0.0)
     vpd = calc_vpd(t_moy, hr_moy)
 
-    # Vérification du seuil de ressuyage (Trigger début première tour)
-    recommandation_prete = True
-    message_ressuyage = "Seuil de ressuyage atteint"
-    if pct_ressuyage is not None:
-        if pct_ressuyage < seuils_ressuyage["min"]:
-            recommandation_prete = False
-            message_ressuyage = f"En attente: PRT {pct_ressuyage:.1f}% < seuil {seuils_ressuyage['min']}%"
-        elif pct_ressuyage > seuils_ressuyage["max"]:
-            message_ressuyage = f"PRT {pct_ressuyage:.1f}% > seuil {seuils_ressuyage['max']}% (Début avancé)"
+    # ── Vérification PRT ─────────────────────────────────────
+    # PRT absent → retour immédiat sans recommandation
+    if pct_ressuyage is None:
+        return {
+            "device_id"     : device_id,
+            "date"          : date_str,
+            "statut"        : "en_attente_prt",
+            "message"       : "En attente du calcul PRT (poids soir/matin manquant)",
+            "pct_ressuyage" : None,
+            "nb_tours_prevu": 0,
+            "heure_debut"   : None,
+        }
 
-    # Plan
-    nb_tours = 0
-    if recommandation_prete:
-        if radiation < 20:    nb_tours = 2
-        elif radiation < 40:  nb_tours = 4
-        elif radiation < 60:  nb_tours = 6
-        elif radiation < 80:  nb_tours = 8
-        elif radiation < 100: nb_tours = 10
-        else:                 nb_tours = 12
-        if periode == "froid": nb_tours = max(2, nb_tours - 2)
-    
-    # Heure début automatique: maintenant + 5-10 min si seuil atteint
-    now = _datetime.now()
-    if recommandation_prete:
-        heure_debut = (now + timedelta(minutes=7)).strftime("%H:%M")
+    if pct_ressuyage < seuils_ressuyage["min"]:
+        return {
+            "device_id"     : device_id,
+            "date"          : date_str,
+            "statut"        : "en_attente_prt",
+            "message"       : f"En attente: PRT {pct_ressuyage:.1f}% < seuil min {seuils_ressuyage['min']}%",
+            "pct_ressuyage" : pct_ressuyage,
+            "nb_tours_prevu": 0,
+            "heure_debut"   : None,
+        }
+
+    if pct_ressuyage > seuils_ressuyage["max"]:
+        message_ressuyage = f"PRT {pct_ressuyage:.1f}% > seuil max {seuils_ressuyage['max']}% → début avancé"
     else:
-        heure_debut = "06:00" # Heure de début de calcul
+        message_ressuyage = f"PRT {pct_ressuyage:.1f}% ✓ seuil atteint"
+
+    # ── Plan — nb_tours basé sur Radiation_Sum J/cm² ─────────
+    if radiation < 10:    nb_tours = 2
+    elif radiation < 20:  nb_tours = 4
+    elif radiation < 35:  nb_tours = 6
+    elif radiation < 50:  nb_tours = 8
+    elif radiation < 65:  nb_tours = 10
+    else:                 nb_tours = 12
+    if periode == "froid": nb_tours = max(2, nb_tours - 2)
+
+    # ── Heure début 1er tour — UTC + 7 min ───────────────────
+    heure_debut = (_datetime.utcnow() + timedelta(minutes=7)).strftime("%H:%M")
+
+    # ── Radiation_Sum actuel depuis capteur ───────────────────
+    radiation_sum_actuel = get_radiation_sum_actuel(db, device_id)
 
     # FAO-56
     et0 = calculer_et0(t_max, t_min, hr_moy, radiation)
@@ -319,7 +351,10 @@ def generer_recommandation_matin(
     return {
         "device_id"          : device_id,
         "date"               : date_str,
-        "statut"             : "optimal" if recommandation_prete else "en_attente",
+        "statut"             : "en_cours",
+        "message"            : message_ressuyage,
+        "radiation_sum_actuel": radiation_sum_actuel,
+        "repos_t1_t2_min"    : 8,
         "message"            : message_ressuyage,
         "stade"              : stade,
         "j_plantation"       : j_plantation,

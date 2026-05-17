@@ -84,7 +84,8 @@ def get_recommandation(
     Si elle n'existe pas encore → la génère automatiquement.
     """
     _get_device(db, device_id)
-    target_date = date or date_type.today().isoformat()
+    import datetime as _dt
+    target_date = date or _dt.datetime.utcnow().date().isoformat()
 
     rec = (
         db.query(AIRecommandation)
@@ -109,6 +110,9 @@ def get_recommandation(
                 date_plantation= str(cfg.date_plantation) if cfg.date_plantation else None,
                 methode        = cfg.methode_decision or "hybride",
             )
+            # Ne pas sauvegarder si PRT pas encore atteint
+            if result.get("statut") == "en_attente_prt":
+                return result            
             rec = _sauvegarder_recommandation(db, result)
         except Exception as e:
             logger.error(f"Auto-génération échouée device {device_id} : {e}")

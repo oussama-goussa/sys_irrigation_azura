@@ -135,7 +135,7 @@ function getPRTStatus(prt, mois) {
 // ─────────────────────────────────────────────────────────────
 
 // Carte PRT Ressuyage + Poids
-function PRTCard({ weight, deviceLatest, C, dark }) {
+function PRTCard({ weight, deviceLatest, prtBackend, C, dark }) {
   const mois = new Date().getMonth() + 1
   const periode = getPeriode(mois)
   const seuils = PRT_SEUILS[periode]
@@ -146,9 +146,7 @@ function PRTCard({ weight, deviceLatest, C, dark }) {
   const hour = new Date().getHours()
   const poidsMatin = hour < 10 ? poidsSoir : null // simplification: en prod, on stocke poids matin separement
 
-  const prt = poidsSoir && weight?.poids_kg_matin
-    ? calculerPRT(weight.poids_kg, weight.poids_kg_matin)
-    : null
+  const prt = prtBackend ?? null
 
   const radiationSum = deviceLatest?.sensor?.radiation_sum ?? null
   const radiationLive = deviceLatest?.sensor?.radiation ?? null
@@ -274,131 +272,168 @@ function PRTCard({ weight, deviceLatest, C, dark }) {
   )
 }
 
-// Carte Météo
-function MeteoCard({ rec, C, dark }) {
-  if (!rec) return null
-  const ScenIcon = SCENARIO_ICONS[rec.scenario_meteo] || Sun
-  return (
-    <div style={{
-      background: C.surface, border: `1.5px solid ${C.border}`,
-      borderRadius: 12, padding: '14px 16px',
-      display: 'flex', flexDirection: 'column', gap: 10,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <ScenIcon size={14} color={C.amber} strokeWidth={2} />
-        <span style={{ fontSize: 11, fontWeight: 700, color: C.textMuted,
-          textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-          Météo du jour
-        </span>
-        <span style={{
-          marginLeft: 'auto', fontSize: 10, fontWeight: 600,
-          background: `${C.amber}18`, color: C.amber,
-          border: `1px solid ${C.amber}35`, borderRadius: 4, padding: '1px 7px',
-        }}>
-          {rec.scenario_meteo || '—'}
-        </span>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-        {[
-          { icon: Thermometer, label: 'T max',   value: rec.t_max  != null ? `${rec.t_max}°C`         : '—', color: '#f5a623' },
-          { icon: Droplets,    label: 'HR moy',  value: rec.hr_moy != null ? `${rec.hr_moy}%`          : '—', color: '#4d9de0' },
-          { icon: Sun,         label: 'Rad.',    value: rec.radiation_jcm2 != null ? `${rec.radiation_jcm2.toFixed(1)} J/cm²` : '—', color: '#f5e642' },
-          { icon: Wind,        label: 'VPD',     value: rec.vpd_kpa != null ? `${rec.vpd_kpa} kPa`     : '—', color: '#b197fc' },
-          { icon: CloudRain,   label: 'Pluie',   value: rec.pluie_mm != null ? `${rec.pluie_mm} mm`    : '0 mm', color: '#4d9de0' },
-          { icon: Leaf,        label: 'Stade',   value: rec.stade  || '—',                              color: '#34d96f' },
-        ].map(m => (
-          <div key={m.label} style={{
-            background: dark ? '#0d1610' : '#f4f9f5',
-            border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 10px',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
-              <m.icon size={10} color={m.color} strokeWidth={2} />
-              <span style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                {m.label}
-              </span>
-            </div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: m.color }}>{m.value}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 // Carte Plan Journée
 function PlanCard({ rec, prtStatus, C, dark }) {
   if (!rec) return null
   const statut = STATUT_MAP[rec.statut || 'non_disponible']
+  const heureDebut = rec.heure_debut || null
+
   return (
     <div style={{
       background: C.surface, border: `1.5px solid ${C.border}`,
-      borderRadius: 12, padding: '14px 16px',
+      borderRadius: 14, padding: '18px 20px',
+      display: 'flex', flexDirection: 'column', gap: 14,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <Activity size={14} color={C.green} strokeWidth={2} />
         <span style={{ fontSize: 11, fontWeight: 700, color: C.textMuted,
           textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-          Plan de la journée
+          Recommandation du jour
         </span>
         <span style={{
           marginLeft: 'auto', fontSize: 10, fontWeight: 700,
           color: statut.color, background: `${statut.color}18`,
-          border: `1px solid ${statut.color}35`, borderRadius: 4, padding: '1px 8px',
-        }}>
-          {statut.label}
-        </span>
+          border: `1px solid ${statut.color}35`,
+          borderRadius: 4, padding: '2px 10px',
+        }}>{statut.label}</span>
       </div>
 
-      {/* Alerte PRT si hors seuil */}
-      {prtStatus && !prtStatus.ok && (
+      {/* PRT badge */}
+      {prtStatus && (
         <div style={{
-          marginBottom: 10, padding: '8px 12px', borderRadius: 8,
-          background: `${prtStatus.color}12`, border: `1px solid ${prtStatus.color}35`,
-          fontSize: 11, color: prtStatus.color, display: 'flex', alignItems: 'center', gap: 7,
+          padding: '8px 14px', borderRadius: 9,
+          background: `${prtStatus.color}10`,
+          border: `1px solid ${prtStatus.color}30`,
+          display: 'flex', alignItems: 'center', gap: 8,
         }}>
-          <AlertTriangle size={12} strokeWidth={2} />
-          {prtStatus.msg} — 1er tour retardé
+          <Scale size={12} color={prtStatus.color} strokeWidth={2} />
+          <span style={{ fontSize: 11, fontWeight: 700, color: prtStatus.color }}>
+            {prtStatus.msg}
+          </span>
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 12 }}>
+      {/* Tours + Heure début */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div style={{
+          background: dark ? '#0a1a0d' : '#f0faf2',
+          border: `1.5px solid ${C.green}30`,
+          borderRadius: 12, padding: '14px 16px', textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
+            letterSpacing: '0.07em', marginBottom: 6 }}>Tours prévus</div>
+          <div style={{ fontSize: 36, fontWeight: 900, color: C.green, lineHeight: 1 }}>
+            {rec.nb_tours_prevu ?? '—'}
+          </div>
+          {rec.nb_tours_prevu > 0 && (
+            <div style={{ marginTop: 8 }}>
+              <div style={{ fontSize: 9, color: C.textDim, marginBottom: 3 }}>
+                {rec.nb_tours_reel || 0} / {rec.nb_tours_prevu} effectués
+              </div>
+              <div style={{ height: 4, borderRadius: 2, background: C.border, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: 2, background: C.green,
+                  width: `${Math.min(100, ((rec.nb_tours_reel || 0) / rec.nb_tours_prevu) * 100)}%`,
+                  transition: 'width 0.5s ease',
+                }} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{
+          background: dark ? '#0a0f1a' : '#f0f5ff',
+          border: `1.5px solid #4d9de030`,
+          borderRadius: 12, padding: '14px 16px', textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
+            letterSpacing: '0.07em', marginBottom: 6 }}>Début 1er tour</div>
+          <div style={{ fontSize: heureDebut ? 28 : 14, fontWeight: 900,
+            color: heureDebut ? '#4d9de0' : C.amber, lineHeight: 1 }}>
+            {heureDebut || '⏳ Calcul...'}
+          </div>
+          <div style={{ fontSize: 9, color: C.textDim, marginTop: 6 }}>Heure UTC</div>
+        </div>
+      </div>
+
+      {/* Durée T1, T2, Repos */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
         {[
-          { label: 'Tours prévus',   value: rec.nb_tours_prevu ?? '—',                          color: C.green, big: true },
-          { label: 'Début prévu',    value: rec.heure_debut    || '—',                          color: C.blue,  big: true },
-          { label: 'Durée T1-T2',   value: rec.duree_t12_min != null ? `${rec.duree_t12_min} min` : '—', color: C.text },
-          { label: 'Durée T3+',     value: rec.duree_t3p_min != null ? `${rec.duree_t3p_min} min` : '—', color: C.text },
-          { label: 'Repos initial', value: rec.repos_initial_min != null ? `${rec.repos_initial_min} min` : '—', color: C.text },
-          { label: 'Seuil drainage', value: rec.seuil_drainage_pct != null ? `${rec.seuil_drainage_pct}%` : '—', color: C.amber },
+          { label: 'Durée Tour 1', value: rec.duree_t12_min != null ? `${rec.duree_t12_min} min` : '—', color: C.green },
+          { label: 'Durée Tour 2', value: rec.duree_t12_min != null ? `${rec.duree_t12_min} min` : '—', color: C.green },
+          { label: 'Repos T1 → T2', value: rec.repos_t1_t2_min != null ? `${rec.repos_t1_t2_min} min` : rec.repos_initial_min != null ? `${rec.repos_initial_min} min` : '—', color: C.amber },
         ].map(s => (
           <div key={s.label} style={{
             background: dark ? '#0d1610' : '#f4f9f5',
-            border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 10px',
+            border: `1px solid ${C.border}`,
+            borderRadius: 10, padding: '10px 12px', textAlign: 'center',
           }}>
             <div style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
-              letterSpacing: '0.06em', marginBottom: 3 }}>{s.label}</div>
-            <div style={{ fontSize: s.big ? 20 : 13, fontWeight: 700, color: s.color }}>
-              {s.value}
-            </div>
+              letterSpacing: '0.05em', marginBottom: 5 }}>{s.label}</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: s.color }}>{s.value}</div>
           </div>
         ))}
       </div>
 
-      {/* Progression tours */}
-      {rec.nb_tours_prevu > 0 && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10,
-            color: C.textDim, marginBottom: 5 }}>
-            <span>Tours effectués</span>
-            <span style={{ fontWeight: 700, color: C.green }}>
-              {rec.nb_tours_reel || 0} / {rec.nb_tours_prevu}
-            </span>
+      {/* Stade + EC cible */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div style={{
+          background: dark ? '#0d1610' : '#f4f9f5',
+          border: `1px solid ${C.border}`,
+          borderRadius: 10, padding: '10px 14px',
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <Leaf size={16} color='#34d96f' strokeWidth={2} />
+          <div>
+            <div style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
+              letterSpacing: '0.05em', marginBottom: 2 }}>Stade · J plantation</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#34d96f', textTransform: 'capitalize' }}>
+              {rec.stade || '—'} · {rec.j_plantation != null ? `J+${rec.j_plantation}` : '—'}
+            </div>
           </div>
-          <div style={{ height: 6, borderRadius: 3, background: C.border, overflow: 'hidden' }}>
-            <div style={{
-              height: '100%', borderRadius: 3, background: C.green,
-              width: `${Math.min(100, ((rec.nb_tours_reel || 0) / rec.nb_tours_prevu) * 100)}%`,
-              transition: 'width 0.5s ease',
-            }} />
+        </div>
+        <div style={{
+          background: dark ? '#0d1610' : '#f4f9f5',
+          border: `1px solid ${C.border}`,
+          borderRadius: 10, padding: '10px 14px',
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <FlaskConical size={16} color='#b197fc' strokeWidth={2} />
+          <div>
+            <div style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
+              letterSpacing: '0.05em', marginBottom: 2 }}>EC cible</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#b197fc' }}>
+              {rec.ec_cible_dSm != null ? `${rec.ec_cible_dSm} dS/m` : '—'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Radiation Sum — uniquement si heure début définie */}
+      {heureDebut && (
+        <div style={{
+          background: dark ? '#1a1500' : '#fffbea',
+          border: `1.5px solid #f5e64240`,
+          borderRadius: 10, padding: '12px 16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Sun size={16} color='#f5e642' strokeWidth={2} />
+            <div>
+              <div style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
+                letterSpacing: '0.05em', marginBottom: 2 }}>
+                Radiation Sum au début du tour
+              </div>
+              <div style={{ fontSize: 9, color: C.textDim }}>Valeur capteur à {heureDebut} UTC</div>
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 22, fontWeight: 900, color: '#f5e642' }}>
+              {rec.radiation_sum_actuel != null ? `${rec.radiation_sum_actuel.toFixed(1)}` : '—'}
+            </div>
+            <div style={{ fontSize: 9, color: C.textDim }}>J/cm²</div>
           </div>
         </div>
       )}
@@ -978,7 +1013,7 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
         }}>
           {/* Colonne gauche : PRT + Poids */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <PRTCard weight={weight} deviceLatest={deviceLatest} C={C} dark={dark} />
+            <PRTCard weight={weight} deviceLatest={deviceLatest} prtBackend={rec?.pct_ressuyage} C={C} dark={dark} />
 
             {/* Stade agronomique */}
             {rec?.stade && (
@@ -1022,98 +1057,68 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
               </div>
             )}
 
-            {!loading && rec && (
-              <>
-                {/* Météo */}
-                <MeteoCard rec={rec} C={C} dark={dark} />
-
-                {/* Tabs */}
-                <div style={{ display: 'flex', gap: 4, borderBottom: `1px solid ${C.border}`, paddingBottom: 0 }}>
-                  {tabs.map(tab => {
-                    const active = activeTab === tab.id
-                    const TabIcon = tab.icon
-                    return (
-                      <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 5,
-                          padding: '8px 14px', border: 'none',
-                          borderBottom: `2.5px solid ${active ? C.green : 'transparent'}`,
-                          background: 'transparent',
-                          color: active ? C.green : C.textMuted,
-                          fontSize: 12, fontWeight: active ? 700 : 500,
-                          fontFamily: 'inherit', cursor: 'pointer',
-                          transition: 'all 0.15s', marginBottom: -1,
-                        }}>
-                        <TabIcon size={12} strokeWidth={2} />
-                        {tab.label}
-                        {tab.id === 'ajustements' && rec.ajustements?.length > 0 && (
-                          <span style={{
-                            background: C.green, color: '#fff',
-                            borderRadius: 10, padding: '0 5px',
-                            fontSize: 9, fontWeight: 800, marginLeft: 2,
-                          }}>{rec.ajustements.length}</span>
-                        )}
-                      </button>
-                    )
-                  })}
+            {/* Écran attente PRT */}
+            {!loading && rec && rec.statut === 'en_attente_prt' && (
+              <div style={{
+                background: C.surface, border: `1.5px solid ${C.amber}40`,
+                borderRadius: 14, padding: '40px 28px', textAlign: 'center',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
+              }}>
+                <div style={{
+                  width: 60, height: 60, borderRadius: '50%',
+                  background: `${C.amber}15`, border: `2px solid ${C.amber}40`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Scale size={28} color={C.amber} strokeWidth={1.5} />
                 </div>
-
-                {/* Tab content */}
-                {activeTab === 'plan' && (
-                  <PlanCard rec={rec} prtStatus={prtStatus} C={C} dark={dark} />
-                )}
-
-                {activeTab === 'npk' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                    <NPKCard rec={rec} C={C} dark={dark} />
-                    {rec.et0_mm && (
-                      <div style={{
-                        background: C.surface, border: `1.5px solid ${C.border}`,
-                        borderRadius: 12, padding: '14px 16px',
-                      }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted,
-                          textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
-                          Calculs FAO-56
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 8 }}>
-                          {[
-                            { label: 'ET0 (Penman)', value: `${rec.et0_mm} mm/j`, color: '#4d9de0' },
-                            { label: 'ETc cultural', value: `${rec.etc_mm} mm/j`,  color: C.green },
-                            { label: 'Fraction lessivage', value: `${((rec.fraction_lessivage||0)*100).toFixed(0)}%`, color: C.amber },
-                            { label: 'Volume total', value: rec.volume_total_l_ha ? `${(rec.volume_total_l_ha/1000).toFixed(1)} m³/ha` : '—', color: C.green },
-                          ].map(s => (
-                            <div key={s.label} style={{
-                              background: dark ? '#0d1610' : '#f4f9f5',
-                              border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 12px',
-                            }}>
-                              <div style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
-                                letterSpacing: '0.05em', marginBottom: 4 }}>{s.label}</div>
-                              <div style={{ fontSize: 16, fontWeight: 800, color: s.color }}>{s.value}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 8 }}>
+                    En attente du seuil de ressuyage
                   </div>
-                )}
-
-                {activeTab === 'ajustements' && (
+                  <div style={{ fontSize: 12, color: C.textDim, lineHeight: 1.7, maxWidth: 380 }}>
+                    {rec.message}
+                  </div>
+                </div>
+                {rec.pct_ressuyage != null && (
                   <div style={{
-                    background: C.surface, border: `1.5px solid ${C.border}`,
-                    borderRadius: 12, padding: '14px 16px',
+                    padding: '14px 28px', borderRadius: 12,
+                    background: `${C.amber}10`, border: `1px solid ${C.amber}30`,
                   }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted,
-                      textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
-                      Ajustements automatiques du jour
+                    <div style={{ fontSize: 32, fontWeight: 900, color: C.amber }}>
+                      {rec.pct_ressuyage.toFixed(1)}%
                     </div>
-                    <AjustementPanel ajustements={rec.ajustements} C={C} dark={dark} />
+                    <div style={{ fontSize: 10, color: C.textDim, marginTop: 3 }}>PRT Ressuyage actuel</div>
                   </div>
                 )}
+                <div style={{ fontSize: 11, color: C.textDim }}>
+                  Vérification automatique toutes les 30 secondes…
+                </div>
+              </div>
+            )}
 
-                {activeTab === 'tours' && (
-                  <TourTableMini tours={tours} C={C} dark={dark} />
-                )}
+            {/* Recommandation complète */}
+            {!loading && rec && rec.statut !== 'en_attente_prt' && (
+              <>
+                <PlanCard rec={rec} prtStatus={prtStatus} C={C} dark={dark} />
+                <TourTableMini tours={tours} C={C} dark={dark} />
               </>
+            )}
+
+            {/* Pas encore de données */}
+            {!loading && !rec && !error && az106Device && (
+              <div style={{
+                background: C.surface, border: `1.5px solid ${C.border}`,
+                borderRadius: 12, padding: '40px 24px', textAlign: 'center',
+              }}>
+                <Brain size={32} color={C.green} strokeWidth={1.5}
+                  style={{ display: 'block', margin: '0 auto 12px' }} />
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 6 }}>
+                  Génération en cours…
+                </div>
+                <div style={{ fontSize: 11, color: C.textDim }}>
+                  Configurez la date de plantation via le bouton <strong>Date plantation</strong>.
+                </div>
+              </div>
             )}
 
             {!loading && !rec && !error && az106Device && (
