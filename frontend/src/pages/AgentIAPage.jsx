@@ -496,7 +496,7 @@ function PlanCard({ rec, prtStatus, C, dark }) {
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 22, fontWeight: 900, color: '#f5e642' }}>
-              {rec.radiation_sum_actuel != null ? `${rec.radiation_sum_actuel.toFixed(1)}` : '—'}
+              {rec.radiation_sum_debut != null ? `${rec.radiation_sum_debut.toFixed(1)}` : '—'}
             </div>
             <div style={{ fontSize: 9, color: C.textDim }}>J/cm²</div>
           </div>
