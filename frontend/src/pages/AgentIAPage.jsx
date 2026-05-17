@@ -305,23 +305,6 @@ function PRTCard({ weight, deviceLatest, prtBackend, C, dark }) {
           </div>
         )}
       </div>
-
-      {/* ── Formule — compacte ── */}
-      <div style={{
-        fontSize: 10, color: C.textDim,
-        background: `${C.green}06`,
-        border: `1px solid ${C.green}18`,
-        borderRadius: 8, padding: '8px 12px',
-        lineHeight: 1.6,
-      }}>
-        <span style={{ color: C.green, fontWeight: 700 }}>Formule : </span>
-        (Psoir − Pmatin) / Psoir × 100
-        <span style={{ margin: '0 6px', color: C.border }}>·</span>
-        Calcul dès 06:00 UTC
-        <span style={{ margin: '0 6px', color: C.border }}>·</span>
-        Début 1er tour : 5–10 min après seuil
-      </div>
-
     </div>
   )
 }
