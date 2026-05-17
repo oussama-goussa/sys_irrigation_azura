@@ -6,6 +6,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from loguru import logger
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from routers.auth import limiter
 
 from core.database import Base, engine, SessionLocal
 from models.user_model import User, AuditLog
@@ -140,6 +143,8 @@ Cliquez sur **Authorize** 🔒 et entrez : `Bearer <votre_token>`
     """,
     version = "1.0.0",
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ── CORS ──────────────────────────────────────────────────────
 app.add_middleware(
