@@ -72,6 +72,8 @@ def _get_device(db: Session, device_id: int) -> Device:
 
 
 # ── GET /api/ai/recommandation/{device_id} ────────────────────
+# REMPLACER tout le bloc get_recommandation par :
+
 @router.get("/recommandation/{device_id}")
 def get_recommandation(
     device_id  : int,
@@ -79,12 +81,8 @@ def get_recommandation(
     db         : Session = Depends(get_db),
     user       : dict    = Depends(require_any),
 ):
-    """
-    Retourne la recommandation IA du jour pour un device.
-    Si elle n'existe pas encore → la génère automatiquement.
-    """
-    _get_device(db, device_id)
     import datetime as _dt
+    _get_device(db, device_id)
     target_date = date or _dt.datetime.utcnow().date().isoformat()
 
     rec = (
@@ -96,23 +94,35 @@ def get_recommandation(
         .first()
     )
 
-    # Auto-génération si absente
+    # ── Supprimer si heure_debut avant 06:00 UTC (bug ancien code) ──
+    if rec and rec.heure_debut:
+        try:
+            h, m = map(int, rec.heure_debut.split(":"))
+            if h < 6:
+                logger.warning(f"Suppression recommandation invalide device {device_id} (heure={rec.heure_debut})")
+                db.delete(rec)
+                db.commit()
+                rec = None
+        except Exception:
+            pass
+
+    # ── Auto-génération si absente ──
     if not rec:
         cfg = _get_or_create_config(db, device_id)
         if not cfg.actif:
             raise HTTPException(404, "Agent IA désactivé pour ce device")
         try:
             result = generer_recommandation_matin(
-                device_id      = device_id,
-                date_str       = target_date,
-                db             = db,  # PASS DB
-                ec_bassin      = cfg.ec_eau_brute or 0.8,
-                date_plantation= str(cfg.date_plantation) if cfg.date_plantation else None,
-                methode        = cfg.methode_decision or "hybride",
+                device_id       = device_id,
+                date_str        = target_date,
+                db              = db,
+                ec_bassin       = cfg.ec_eau_brute or 0.8,
+                date_plantation = str(cfg.date_plantation) if cfg.date_plantation else None,
+                methode         = cfg.methode_decision or "hybride",
             )
             # Ne pas sauvegarder si PRT pas encore atteint
             if result.get("statut") == "en_attente_prt":
-                return result            
+                return result
             rec = _sauvegarder_recommandation(db, result)
         except Exception as e:
             logger.error(f"Auto-génération échouée device {device_id} : {e}")
@@ -121,7 +131,6 @@ def get_recommandation(
             raise HTTPException(500, f"Erreur génération recommandation : {str(e)}")
 
     return rec.to_dict()
-
 
 # ── POST /api/ai/recommandation/{device_id}/generer ───────────
 @router.post("/recommandation/{device_id}/generer")
@@ -163,8 +172,11 @@ def generer_recommandation_endpoint(
     ).delete()
 
     rec = _sauvegarder_recommandation(db, result)
-    logger.success(f"Recommandation générée device {device_id} {target_date} ✅")
-    return {"message": "Recommandation générée ✅", "recommandation": rec.to_dict()}
+    logger.success(
+        f"✅ Recommandation IA device {result['device_id']} : "
+        f"début 1er tour = {result.get('heure_debut')} UTC "
+        f"(décision IA)"
+    )
 
 
 # ── POST /api/ai/recommandation/{device_id}/ajuster ──────────

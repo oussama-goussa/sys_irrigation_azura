@@ -399,13 +399,27 @@ function PlanCard({ rec, prtStatus, C, dark }) {
           border: `1.5px solid #4d9de030`,
           borderRadius: 12, padding: '14px 16px', textAlign: 'center',
         }}>
-          <div style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
-            letterSpacing: '0.07em', marginBottom: 6 }}>Début 1er tour</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
+            gap: 5, marginBottom: 6 }}>
+            <Brain size={10} color='#4d9de0' strokeWidth={2} />
+            <span style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
+              letterSpacing: '0.07em' }}>Décision IA · 1er tour</span>
+          </div>
           <div style={{ fontSize: heureDebut ? 28 : 14, fontWeight: 900,
             color: heureDebut ? '#4d9de0' : C.amber, lineHeight: 1 }}>
             {heureDebut || '⏳ Calcul...'}
           </div>
-          <div style={{ fontSize: 9, color: C.textDim, marginTop: 6 }}>Heure UTC</div>
+          <div style={{ fontSize: 9, marginTop: 6, display: 'flex',
+            alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+            <span style={{ color: C.textDim }}>UTC</span>
+            {heureDebut && (
+              <span style={{
+                background: '#4d9de015', border: '1px solid #4d9de030',
+                color: '#4d9de0', borderRadius: 4, padding: '1px 6px',
+                fontSize: 8, fontWeight: 700,
+              }}>IA ONLY</span>
+            )}
+          </div>
         </div>
       </div>
 
