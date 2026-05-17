@@ -486,10 +486,8 @@ def generer_recommandation_matin(
                 hr_moy or 65.0,        # hr_moy
                 vpd or 1.0,            # vpd_kpa
                 drain_prev_estime,     # drain_prev
-                ec_bassin or 0.75,     # ec_bassin  ← ajout
-                t_max or 25.0,         # t_max      ← ajout
             ]])
-
+            
             preds = _rf_model.predict(_rf_scaler.transform(X))[0]
             duree_t3p  = max(5, min(15, int(round(float(preds[0])))))
             repos_init = max(5, min(40, int(round(float(preds[1])))))
