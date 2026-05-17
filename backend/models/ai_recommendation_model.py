@@ -101,6 +101,7 @@ class AIRecommandation(Base):
             "ec_cible_dSm"      : self.ec_cible_dsm,
             "nb_tours_prevu"    : self.nb_tours_prevu,
             "heure_debut"       : self.heure_debut,
+            "radiation_sum_debut": self.radiation_sum_debut,
             "duree_t12_min"     : self.duree_t12_min,
             "duree_t3p_min"     : self.duree_t3p_min,
             "repos_initial_min" : self.repos_initial_min,

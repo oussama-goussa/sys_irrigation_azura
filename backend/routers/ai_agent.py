@@ -576,6 +576,7 @@ def _sauvegarder_recommandation(db: Session, result: dict) -> AIRecommandation:
         ec_cible_dsm       = result.get("ec_cible_dSm"),
         nb_tours_prevu     = result.get("nb_tours_prevu"),
         heure_debut        = result.get("heure_debut"),
+        radiation_sum_debut = result.get("radiation_sum_debut"),
         duree_t12_min      = result.get("duree_t12_min"),
         duree_t3p_min      = result.get("duree_t3p_min"),
         repos_initial_min  = result.get("repos_initial_min"),
