@@ -534,7 +534,7 @@ def generer_recommandation_matin(
         "date"               : date_str,
         "statut"             : "en_cours",
         "message"            : message_ressuyage,
-        "radiation_sum_actuel": radiation_sum_actuel,
+        "radiation_sum_debut": radiation_sum_debut,
         "repos_t1_t2_min"    : 8,
         "message"            : message_ressuyage,
         "stade"              : stade,

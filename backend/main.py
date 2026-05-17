@@ -115,6 +115,10 @@ def run_migrations():
                     CONSTRAINT uq_ai_rec UNIQUE (device_id, date)
                 )
             """))
+            conn.execute(text("""
+                ALTER TABLE ai_recommandations
+                ADD COLUMN IF NOT EXISTS radiation_sum_debut FLOAT
+            """))
             conn.commit()
         logger.success("Migrations appliquées ✅")
     except Exception as e:

@@ -50,6 +50,7 @@ class AIRecommandation(Base):
     # ── Plan de la journée ────────────────────────────────────
     nb_tours_prevu   = Column(Integer, nullable=True)
     heure_debut      = Column(String(5), nullable=True)   # HH:MM
+    radiation_sum_debut = Column(Float, nullable=True)     # Radiation au début du tour
     duree_t12_min    = Column(Integer, nullable=True)
     duree_t3p_min    = Column(Integer, nullable=True)
     repos_initial_min = Column(Integer, nullable=True)
