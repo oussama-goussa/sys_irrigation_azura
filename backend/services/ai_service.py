@@ -438,7 +438,7 @@ def generer_recommandation_matin(
     if periode == "froid": nb_tours = max(2, nb_tours - 2)
 
     heure_debut = get_heure_debut_depuis_capteur(db, device_id, stade)
-    radiation_sum_actuel = get_radiation_sum_actuel(db, device_id, heure_debut) if heure_debut else None
+    radiation_sum_debut = get_radiation_sum_actuel(db, device_id, heure_debut) if heure_debut else None
 
     if heure_debut is None:
         return {
