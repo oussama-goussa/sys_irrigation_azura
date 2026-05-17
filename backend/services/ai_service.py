@@ -9,7 +9,10 @@ import math
 import os
 import json
 import requests
-from datetime import date, datetime, timedelta
+import datetime as _dt
+from datetime import date, timedelta
+# Alias pour éviter le conflit avec les paramètres FastAPI nommés 'date' ou 'datetime'
+_datetime = _dt.datetime
 from typing import Optional
 from loguru import logger
 
@@ -84,10 +87,10 @@ KC_TABLE = {
 }
 
 FEATURES_ML = [
-    "rad_cumul_tour_Jcm2", "mois", "num_tour", "ec_apport", "ph_apport",
-    "ec_bassin", "temps_repos_min", "nbr_tours_total",
-    "pct_ressuyage", "t_moy", "hr_moy", "vpd_kpa",
-    "est_premier_tour", "drain_prev",
+    "radiation_jour", "mois", "num_tour", "ec_apport", "ph_apport",
+    "v_apport", "ec_bassin", "temps_repos_min", "nbr_tours_total",
+    "pct_ressuyage", "duree_min", "t_moy", "hr_moy", "vpd_kpa",
+    "est_premier_tour",
 ]
 
 # ── Méteo fallback Agadir sous serre ─────────────────────────
@@ -175,7 +178,7 @@ def get_meteo_open_meteo(mois: int) -> dict:
         tmin = d["temperature_2m_min"][0]
         rs_kwh = d["shortwave_radiation_sum"][0]
         # Serre = 27% de la radiation extérieure (facteur Azura)
-        rs_jcm2 = float(rs_kwh) * 360 * 0.27 if rs_kwh is not None else METEO_FALLBACK[mois]["rs_jcm2"]
+        rs_jcm2 = rs_kwh * 360 * 0.27 if rs_kwh else None
         return {
             "t_max": tmax, "t_min": tmin,
             "t_moy": round((tmax + tmin) / 2, 1),
@@ -262,15 +265,15 @@ def _plan_couche1(radiation, mois, pct_ressuyage, periode, seuils, scenario, j_p
     }
 
 def _correction_ml(features_dict: dict) -> Optional[float]:
-    """Prédit la DURÉE optimale du prochain tour (comme 03_random_forest.py)."""
+    """Applique le modèle RF si disponible. Retourne drainage prévu ou None."""
     if _rf_model is None:
         return None
     try:
         import numpy as np
         X = [[features_dict.get(f, 0) for f in FEATURES_ML]]
         X_sc = _rf_scaler.transform(X)
-        duree = float(_rf_model.predict(X_sc)[0])
-        return max(5, min(15, duree))   # contrainte 5-15 min comme dans 03
+        drainage = float(_rf_model.predict(X_sc)[0])
+        return max(0.0, min(100.0, drainage))
     except Exception as e:
         logger.warning(f"Erreur ML prédiction : {e}")
         return None
@@ -310,20 +313,6 @@ def correction_ph_acide(ph_mesure: float, volume_L: float) -> dict:
         dose = (6.0 - ph_mesure) * 10 * volume_L / 1000
         return {"action": "ajouter_base", "dose_ml": round(dose, 1), "produit": "KOH"}
 
-def _estimer_rad_cumul(radiation_jour: float, heure_debut: str, heure_actuelle: str) -> float:
-    import math
-    try:
-        h = int(heure_actuelle.split(":")[0])
-        m = int(heure_actuelle.split(":")[1])
-        minute_actuelle = h * 60 + m
-        debut_min, fin_min = 6 * 60, 20 * 60
-        if minute_actuelle < debut_min or minute_actuelle > fin_min:
-            return 0.0
-        t = (minute_actuelle - debut_min) / (fin_min - debut_min)
-        return round(radiation_jour * (1 - math.cos(math.pi * t)) / 2, 2)
-    except Exception:
-        return 0.0
-
 # ─────────────────────────────────────────────────────────────
 # POINT D'ENTRÉE PRINCIPAL — Recommandation du matin
 # ─────────────────────────────────────────────────────────────
@@ -341,7 +330,7 @@ def generer_recommandation_matin(
     Génère la recommandation initiale du matin pour un device.
     Fonctionne même sans pct_ressuyage ni drainage (dégradé gracieux).
     """
-    target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    target_date = _datetime.strptime(date_str, "%Y-%m-%d").date()
     mois = target_date.month
     periode = get_periode(mois)
     seuils = get_seuils(periode)
@@ -350,7 +339,7 @@ def generer_recommandation_matin(
     j_plantation = 60  # défaut si absent
     if date_plantation:
         try:
-            dp = datetime.strptime(date_plantation, "%Y-%m-%d").date()
+            dp = _datetime.strptime(date_plantation, "%Y-%m-%d").date()
             j_plantation = max(0, (target_date - dp).days)
         except Exception:
             pass
@@ -359,10 +348,7 @@ def generer_recommandation_matin(
     ec_cible_stade = KC_TABLE[stade]["ec_cible"]
 
     # Météo
-    try:
-        meteo = meteo_override or get_meteo_open_meteo(mois)
-    except Exception:
-        meteo = {**METEO_FALLBACK[mois], "source": f"fallback_mois{mois}"}
+    meteo = meteo_override or get_meteo_open_meteo(mois)
     radiation = meteo.get("rs_jcm2") or METEO_FALLBACK[mois]["rs_jcm2"]
     t_max = meteo.get("t_max")
     t_min = meteo.get("t_min")
@@ -404,44 +390,28 @@ def generer_recommandation_matin(
             apport = etc / (1 - fl) if fl < 1 else etc
             volume_total = round(apport * 10000, 0)
 
-    # Après (prédit durée → remplace duree_t3p) — METTRE À LA PLACE
+    # Correction ML (si disponible et pas STOP)
     if methode in ("hybride", "ml_seul") and plan["nb_tours"] > 0 and _rf_model is not None:
-        # Estimer rad_cumul au tour médian (comme 05_agent_ia.py)
-        from datetime import datetime, timedelta
-        heure_str = plan.get("heure_debut") or "07:30"
-        num_tour_median = max(3, plan["nb_tours"] // 2)
-        duree_moy = (plan["duree_t12"] + plan["duree_t3p"]) / 2
-        repos_moy = plan["repos"]
-        minutes_decal = num_tour_median * (duree_moy + repos_moy)
-        try:
-            h, m = map(int, heure_str.split(":"))
-            dt_debut = datetime(2000, 1, 1, h, m)
-            dt_median = dt_debut + timedelta(minutes=minutes_decal)
-            heure_median = dt_median.strftime("%H:%M")
-            rad_cumul = _estimer_rad_cumul(radiation, heure_str, heure_median)
-        except Exception:
-            rad_cumul = radiation / 2
-
-        drain_prev_estime = seuils["drainage_cible"]
         features = {
-            "rad_cumul_tour_Jcm2" : rad_cumul,
-            "mois"                : mois,
-            "num_tour"            : num_tour_median,
-            "ec_apport"           : ec_cible_stade,
-            "ph_apport"           : 6.0,
-            "ec_bassin"           : ec_bassin,
-            "temps_repos_min"     : plan["repos"],
-            "nbr_tours_total"     : plan["nb_tours"],
-            "pct_ressuyage"       : pct_ressuyage_eff,
-            "t_moy"               : t_moy or 22,
-            "hr_moy"              : hr_moy or 65,
-            "vpd_kpa"             : vpd,
-            "est_premier_tour"    : 0,
-            "drain_prev"          : drain_prev_estime,
+            "radiation_jour": radiation, "mois": mois,
+            "num_tour": max(3, plan["nb_tours"] // 2),
+            "ec_apport": ec_cible_stade, "ph_apport": 6.0,
+            "v_apport": plan["duree_t3p"] * (1000 / 60),
+            "ec_bassin": ec_bassin, "temps_repos_min": plan["repos"],
+            "nbr_tours_total": plan["nb_tours"],
+            "pct_ressuyage": pct_ressuyage_eff,
+            "duree_min": plan["duree_t3p"],
+            "t_moy": t_moy or 22, "hr_moy": hr_moy or 65,
+            "vpd_kpa": vpd, "est_premier_tour": 0,
         }
-        duree_ml = _correction_ml(features)
-        if duree_ml and methode == "hybride":
-            plan["duree_t3p"] = int(duree_ml)   # remplace la durée T3+ comme dans 05
+        drainage_ml = _correction_ml(features)
+        if drainage_ml and methode == "hybride":
+            cible = seuils["drainage_cible"]
+            if drainage_ml > cible * 1.3:
+                plan["nb_tours"] = max(2, plan["nb_tours"] - 1)
+                plan["duree_t3p"] = max(5, plan["duree_t3p"] - 2)
+            elif drainage_ml < cible * 0.7:
+                plan["nb_tours"] = min(14, plan["nb_tours"] + 1)
 
     # NPK + pH
     volume_cycle_L = (volume_total / plan["nb_tours"]) / 1000 if (volume_total and plan["nb_tours"] > 0) else 166.0
@@ -464,7 +434,7 @@ def generer_recommandation_matin(
         "hr_moy"             : hr_moy, "vpd_kpa": vpd, "pluie_mm": pluie,
         "et0_mm"             : et0, "etc_mm": etc,
         "fraction_lessivage" : fl, "volume_total_l_ha": volume_total,
-        "ec_cible_dSm"      : ec_cible_stade,
+        "ec_cible_dSm"       : ec_cible_stade,
         "nb_tours_prevu"     : plan["nb_tours"],
         "heure_debut"        : plan.get("heure_debut") or "07:30",
         "duree_t12_min"      : plan["duree_t12"],
