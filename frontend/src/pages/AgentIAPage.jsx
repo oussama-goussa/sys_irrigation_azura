@@ -807,19 +807,65 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
                   </div>
 
                   {/* Durées et repos */}
-                  <Section title="Programme" icon={Clock} C={C} dark={dark}>
-                    <DataRow label="Durée Tour 1" value={rec.duree_t12_min != null ? `${rec.duree_t12_min} min` : '—'} C={C} />
-                    <DataRow label="Durée Tour 2" value={rec.duree_t12_min != null ? `${rec.duree_t12_min} min` : '—'} C={C} />
-                    <DataRow label="Repos T1 → T2"
-                      value={rec.repos_t1_t2_min != null ? `${rec.repos_t1_t2_min} min` : rec.repos_initial_min != null ? `${rec.repos_initial_min} min` : '—'}
-                      C={C}
-                    />
-                    <DataRow label="Stade" value={rec.stade || '—'} C={C} />
-                    <DataRow label="EC cible" value={rec.ec_cible_dSm != null ? `${rec.ec_cible_dSm} dS/m` : '—'} C={C} />
-                    {rec.heure_debut && rec.radiation_sum_debut != null && (
-                      <DataRow label="Rad. Sum au 1er tour" value={`${rec.radiation_sum_debut.toFixed(1)} J/cm²`} C={C} />
-                    )}
-                  </Section>
+                  <div style={{
+                    background: C.card, border: `1px solid ${C.border}`,
+                    borderRadius: 10, overflow: 'hidden',
+                  }}>
+                    <div style={{
+                      padding: '11px 18px', borderBottom: `1px solid ${C.border}`,
+                      display: 'flex', alignItems: 'center', gap: 8,
+                    }}>
+                      <Clock size={13} color={C.green} strokeWidth={2.5} />
+                      <span style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        Programme
+                      </span>
+                    </div>
+
+                    {/* Grille 3 métriques principales */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', borderBottom: `1px solid ${C.border}` }}>
+                      {[
+                        { label: 'Durée Tour 1', value: rec.duree_t12_min != null ? rec.duree_t12_min : '—', unit: 'min' },
+                        { label: 'Durée Tour 2', value: rec.duree_t12_min != null ? rec.duree_t12_min : '—', unit: 'min' },
+                        { label: 'Repos T1→T2',  value: rec.repos_t1_t2_min ?? rec.repos_initial_min ?? '—', unit: 'min' },
+                      ].map((m, i, arr) => (
+                        <div key={m.label} style={{
+                          padding: '18px 16px',
+                          borderRight: i < arr.length - 1 ? `1px solid ${C.border}` : 'none',
+                          display: 'flex', flexDirection: 'column', gap: 6,
+                        }}>
+                          <span style={{ fontSize: 10, fontWeight: 600, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                            {m.label}
+                          </span>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                            <span style={{ fontSize: 28, fontWeight: 900, color: C.text, lineHeight: 1 }}>{m.value}</span>
+                            {m.value !== '—' && <span style={{ fontSize: 12, color: C.textDim }}>{m.unit}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Infos secondaires en lignes */}
+                    <div style={{ padding: '2px 0' }}>
+                      {[
+                        { label: 'Stade agronomique', value: rec.stade || '—' },
+                        { label: 'EC cible', value: rec.ec_cible_dSm != null ? `${rec.ec_cible_dSm} dS/m` : '—' },
+                        ...(rec.heure_debut && rec.radiation_sum_debut != null
+                          ? [{ label: 'Rad. Sum au 1er tour', value: `${rec.radiation_sum_debut.toFixed(1)} J/cm²` }]
+                          : []),
+                      ].map((row, i, arr) => (
+                        <div key={row.label} style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '10px 18px',
+                          borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : 'none',
+                        }}>
+                          <span style={{ fontSize: 11, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                            {row.label}
+                          </span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{row.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
                   {/* Badge PRT si disponible */}
                   {prtStatus && (
