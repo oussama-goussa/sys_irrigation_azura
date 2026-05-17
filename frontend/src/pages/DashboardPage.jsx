@@ -182,9 +182,10 @@ function HouseCard({ house, onSelectDevice, C, dark, accentColor, isMobile }) {
   )
 }
 
-export default function DashboardPage({ token, onSelectDevice, C, dark, isMobile = false, isTablet = false }) {
-  const [farms, setFarms] = useState([])
-  const [loading, setLoading] = useState(true)
+export default function DashboardPage({ token, onSelectDevice, initialFarms, C, dark, isMobile = false, isTablet = false }) {
+  const [farms, setFarms] = useState(initialFarms || [])
+  const [loading, setLoading] = useState(!initialFarms) // skip loading if parent provided data
+  const fetchingRef = useRef(false)
   const [error, setError] = useState(null)
   const [time, setTime] = useState('')
   const [readings24h, setReadings24h] = useState(null)
@@ -201,12 +202,13 @@ export default function DashboardPage({ token, onSelectDevice, C, dark, isMobile
   }, [])
 
   const loadFarms = async (silent = false) => {
+    if (fetchingRef.current) return   // ← guard
+    fetchingRef.current = true
     if (!silent) setLoading(true)
     else setRefreshing(true)
     setError(null)
     try {
       const data = await getDashboard(token)
-      console.log('Dashboard data:', data)
       setFarms(data?.farms || [])
       if (data?.stats?.readings_24h !== undefined) setReadings24h(data.stats.readings_24h)
     } catch (e) {
@@ -214,6 +216,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark, isMobile
     } finally {
       setLoading(false)
       setRefreshing(false)
+      fetchingRef.current = false     // ← release guard
     }
   }
 

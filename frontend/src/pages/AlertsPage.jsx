@@ -945,25 +945,28 @@ export function AlertWatcher({ token }) {
 
     useEffect(() => {
         const check = async () => {
+        try {
             const alerts = await fetchAlerts(token, null, false, 30)
             if (isFirst.current) {
-                // Premier chargement : marquer toutes comme vues (pas de toast au boot)
-                alerts.forEach(a => seenIds.current.add(a.id))
-                isFirst.current = false
-                return
+            alerts.forEach(a => seenIds.current.add(a.id))
+            isFirst.current = false
+            return
             }
-            // Nouvelles alertes critiques uniquement
             const newCritical = alerts.filter(
-                a => !seenIds.current.has(a.id) && a.severity === 'CRITICAL'
+            a => !seenIds.current.has(a.id) && a.severity === 'CRITICAL'
             )
-            newCritical.forEach(a => {
-                seenIds.current.add(a.id)
-                toasts?.addToast(a)
-            })
+            if (newCritical.length > 0) {
+            newCritical.forEach(a => seenIds.current.add(a.id))
+            // Only toast max 3 at once to avoid notification storm
+            newCritical.slice(0, 3).forEach(a => toasts?.addToast(a))
+            }
+        } catch {
+            // silently ignore — watcher should never crash the app
+        }
         }
         check()
-        const iv = setInterval(check, 30000)
-        return () => clearInterval(iv)
+        const iv = setInterval(check, 60_000) // ← 60s instead of 30s
+        return () => clearInterval(iv)        
     }, [token])
 
     return null

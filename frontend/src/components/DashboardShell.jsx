@@ -352,21 +352,27 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
   }, [mobileOpen])
 
   const tokenRef = useRef(null)
+  const fetchingRef = useRef(false)
   
   useEffect(() => {
+    // Already have farms for this token → skip
     if (farms.length > 0 && tokenRef.current === auth.access_token) return
+    // Another fetch already in flight → skip
+    if (fetchingRef.current) return
+
+    fetchingRef.current = true
     tokenRef.current = auth.access_token
-    setLoadingFarms(true)
+
+    // Only show spinner if no farms yet (don't flash on token refresh)
+    if (farms.length === 0) setLoadingFarms(true)
+
     getDevices(auth.access_token)
-      .then(data => {
-        console.log('[DashboardShell] farms:', data)
-        setFarms(Array.isArray(data) ? data : [])
+      .then(data => setFarms(Array.isArray(data) ? data : []))
+      .catch(() => setFarms([]))
+      .finally(() => {
+        setLoadingFarms(false)
+        fetchingRef.current = false
       })
-      .catch(err => {
-        console.error('[DashboardShell] getDevices error:', err)
-        setFarms([])
-      })
-      .finally(() => setLoadingFarms(false))
   }, [auth.access_token])
 
   const handleSelectDevice = (device) => {
@@ -491,6 +497,7 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
             <DashboardPage
               token={auth.access_token}
               onSelectDevice={handleSelectDevice}
+              initialFarms={farms.length > 0 ? undefined : undefined} // dashboard needs metrics, always fetches
               C={C} dark={dark} {...responsiveProps}
             />
           )}
