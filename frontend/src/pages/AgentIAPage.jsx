@@ -326,7 +326,7 @@ function PlanCard({ rec, prtStatus, C, dark }) {
               <div style={{ fontSize: 9, color: C.textDim, marginBottom: 3 }}>
                 {rec.nb_tours_reel || 0} / {rec.nb_tours_prevu} effectués
               </div>
-              <div style={{ height: 3, borderRadius: 2, background: C.border, overflow: 'hidden' }}>
+              <div style={{ height: 4, borderRadius: 2, background: C.border, overflow: 'hidden' }}>
                 <div style={{
                   height: '100%', borderRadius: 2, background: T.greenMid,
                   width: `${Math.min(100, ((rec.nb_tours_reel || 0) / rec.nb_tours_prevu) * 100)}%`,
