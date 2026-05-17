@@ -276,7 +276,7 @@ def get_heure_debut_depuis_capteur(
 ) -> Optional[str]:
     from models.sensor_model import SensorReading
     seuil = SEUIL_RADIATION_DEBUT.get(stade, 8.0)
-    today_start = _dt.datetime.combine(_dt.datetime.utcnow().date(), _dt.time(5, 0))
+    today_start = _dt.datetime.combine(_dt.datetime.utcnow().date(), _dt.time(7, 0))
 
     lecture = (
         db.query(SensorReading)
