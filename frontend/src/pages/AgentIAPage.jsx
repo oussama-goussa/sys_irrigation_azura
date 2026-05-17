@@ -1,21 +1,35 @@
 // ============================================================
 // frontend/src/pages/AgentIAPage.jsx
-// Page Agent IA — Recommandations & Ajustements temps réel
-// 4 fermes × 2 houses — fonctionne sans drainage/poids
+// Agent IA — AZ106 uniquement · Ressuyage depuis capteur poids
+// Recommandation automatique sans bouton Générer
 // Projet Azura Irrigation IA — GOUSSA Oussama
 // ============================================================
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
-  Brain, RefreshCw, Settings, ChevronDown, ChevronUp,
-  Sun, CloudRain, Wind, Thermometer, Droplets, Zap,
-  Play, Pause, StopCircle, TrendingUp, TrendingDown,
-  AlertTriangle, CheckCircle2, Clock, BarChart2,
-  FlaskConical, Leaf, Calendar, Info, ChevronRight,
-  Activity, Save, X,
+  Brain, RefreshCw, Settings, Scale,
+  Sun, CloudRain, Wind, Thermometer, Droplets,
+  Pause, StopCircle, TrendingUp, TrendingDown,
+  AlertTriangle, CheckCircle2, Clock,
+  FlaskConical, Leaf, Info,
+  Activity, Save, X, Zap,
 } from 'lucide-react'
 import { getColors } from '../theme.js'
 import { useWindowWidth } from '../components/DashboardShell.jsx'
+
+// ─── Constantes ──────────────────────────────────────────────
+const AZ106_FARM = 'AZ106'   // Ferme avec capteur poids
+const PRT_SEUILS = {         // Seuils ressuyage par période
+  froid:      { min: 10.0, max: 12.0 }, // Nov–Fév
+  chaud:      { min:  8.0, max:  9.0 }, // Avr–Jul
+  transition: { min:  9.0, max: 10.5 }, // autres
+}
+
+function getPeriode(mois) {
+  if ([11,12,1,2].includes(mois)) return 'froid'
+  if ([4,5,6,7].includes(mois)) return 'chaud'
+  return 'transition'
+}
 
 // ── API helpers ───────────────────────────────────────────────
 async function fetchWithToken(url, token, opts = {}) {
@@ -34,6 +48,9 @@ async function fetchWithToken(url, token, opts = {}) {
   return res.json()
 }
 
+async function getDevices(token) {
+  return fetchWithToken('/api/devices', token)
+}
 async function getAIRec(token, deviceId, date) {
   const params = date ? `?date=${date}` : ''
   return fetchWithToken(`/api/ai/recommandation/${deviceId}${params}`, token)
@@ -56,14 +73,14 @@ async function saveAIConfig(token, deviceId, payload) {
     method: 'PUT', body: JSON.stringify(payload),
   })
 }
-async function getResume(token, deviceId, date) {
-  return fetchWithToken(`/api/ai/resume/${deviceId}?date=${date}`, token)
-}
-async function getDevices(token) {
-  return fetchWithToken('/api/devices', token)
-}
 async function getDeviceTours(token, deviceId, date) {
   return fetchWithToken(`/api/devices/${deviceId}/tours?date=${date}`, token)
+}
+async function getLatestWeight(token, farmName) {
+  return fetchWithToken(`/api/weight/${farmName}/latest`, token)
+}
+async function getDeviceLatest(token, deviceId) {
+  return fetchWithToken(`/api/devices/${deviceId}/latest`, token)
 }
 
 // ── Color maps ────────────────────────────────────────────────
@@ -76,38 +93,188 @@ const ACTION_COLORS = {
 }
 
 const SCENARIO_ICONS = {
-  ensoleille       : Sun,
-  nuageux          : CloudRain,
-  chergui          : Wind,
-  brouillard       : CloudRain,
-  pluie            : CloudRain,
-  hiver_clair      : Sun,
-  hiver_nuageux    : CloudRain,
-  ressuyage_eleve  : TrendingUp,
+  ensoleille           : Sun,
+  nuageux              : CloudRain,
+  chergui              : Wind,
+  brouillard           : CloudRain,
+  pluie                : CloudRain,
+  hiver_clair          : Sun,
+  hiver_nuageux        : CloudRain,
+  ressuyage_eleve      : TrendingUp,
   ressuyage_trop_faible: TrendingDown,
 }
 
-const STADE_COLORS = {
-  vegetatif    : '#34d96f',
-  developpement: '#4d9de0',
-  floraison    : '#f5a623',
-  grossissement: '#f5e642',
-  recolte      : '#b197fc',
+const STATUT_MAP = {
+  en_cours      : { label: 'En cours',     color: '#4d9de0' },
+  optimal       : { label: 'Optimal ✓',    color: '#34d96f' },
+  a_ajuster     : { label: 'À surveiller', color: '#f5a623' },
+  arrete        : { label: 'Arrêté',       color: '#f05252' },
+  pluie         : { label: 'Pluie – arrêt',color: '#4d9de0' },
+  non_disponible: { label: '—',            color: '#9cb8a6' },
 }
 
-const STATUT_MAP = {
-  en_cours        : { label: 'En cours',      color: '#4d9de0' },
-  optimal         : { label: 'Optimal ✓',     color: '#34d96f' },
-  a_ajuster       : { label: 'À surveiller',  color: '#f5a623' },
-  arrete          : { label: 'Arrêté',        color: '#f05252' },
-  pluie           : { label: 'Pluie – arrêt', color: '#4d9de0' },
-  non_disponible  : { label: '—',             color: '#9cb8a6' },
+// ─────────────────────────────────────────────────────────────
+// Calcul PRT Ressuyage
+// ─────────────────────────────────────────────────────────────
+function calculerPRT(poidsSoir, poidsMatin) {
+  if (!poidsSoir || !poidsMatin || poidsSoir <= 0) return null
+  return ((poidsSoir - poidsMatin) / poidsSoir) * 100
+}
+
+function getPRTStatus(prt, mois) {
+  if (prt === null) return null
+  const periode = getPeriode(mois)
+  const s = PRT_SEUILS[periode]
+  if (prt < s.min) return { ok: false, msg: `PRT ${prt.toFixed(1)}% < ${s.min}% → attendre`, color: '#f5a623' }
+  if (prt > s.max) return { ok: false, msg: `PRT ${prt.toFixed(1)}% > ${s.max}% → avancer début`, color: '#4d9de0' }
+  return { ok: true, msg: `PRT ${prt.toFixed(1)}% ✓ dans la plage`, color: '#34d96f' }
 }
 
 // ─────────────────────────────────────────────────────────────
 // SUB-COMPONENTS
 // ─────────────────────────────────────────────────────────────
 
+// Carte PRT Ressuyage + Poids
+function PRTCard({ weight, deviceLatest, C, dark }) {
+  const mois = new Date().getMonth() + 1
+  const periode = getPeriode(mois)
+  const seuils = PRT_SEUILS[periode]
+
+  const poidsSoir = weight?.poids_kg ?? null
+  // poidsMatin = poids actuel du capteur ce matin (on utilise la dernière lecture < 8h)
+  // On utilise directement le poids live comme poids matin si avant 9h, sinon c'est indéterminé
+  const hour = new Date().getHours()
+  const poidsMatin = hour < 10 ? poidsSoir : null // simplification: en prod, on stocke poids matin separement
+
+  const prt = poidsSoir && weight?.poids_kg_matin
+    ? calculerPRT(weight.poids_kg, weight.poids_kg_matin)
+    : null
+
+  const radiationSum = deviceLatest?.sensor?.radiation_sum ?? null
+  const radiationLive = deviceLatest?.sensor?.radiation ?? null
+
+  return (
+    <div style={{
+      background: C.surface, border: `1.5px solid ${C.border}`,
+      borderRadius: 14, padding: '16px 18px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+        <Scale size={14} color={C.green} strokeWidth={2} />
+        <span style={{ fontSize: 11, fontWeight: 700, color: C.textMuted,
+          textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          Capteur Poids · AZ106
+        </span>
+        {weight && (
+          <span style={{
+            marginLeft: 'auto', fontSize: 9, color: C.textDim,
+            background: `${C.green}15`, border: `1px solid ${C.green}25`,
+            borderRadius: 4, padding: '2px 7px', fontWeight: 600,
+          }}>
+            {new Date(weight.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        )}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 12 }}>
+        {/* Poids actuel */}
+        <div style={{
+          background: dark ? '#0d1610' : '#f4f9f5',
+          border: `1px solid ${C.border}`, borderRadius: 9, padding: '10px 12px',
+        }}>
+          <div style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
+            letterSpacing: '0.06em', marginBottom: 4 }}>Poids soir / actuel</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: C.green }}>
+            {poidsSoir !== null ? `${poidsSoir.toFixed(2)} kg` : '—'}
+          </div>
+          {weight?.capteur_id && (
+            <div style={{ fontSize: 9, color: C.textDim, marginTop: 3 }}>
+              Capteur : {weight.capteur_id}
+            </div>
+          )}
+        </div>
+
+        {/* Radiation Sum */}
+        <div style={{
+          background: dark ? '#0d1610' : '#f4f9f5',
+          border: `1px solid ${C.border}`, borderRadius: 9, padding: '10px 12px',
+        }}>
+          <div style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
+            letterSpacing: '0.06em', marginBottom: 4 }}>Radiation Sum J/cm²</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: '#f5e642' }}>
+            {radiationSum !== null ? `${radiationSum.toFixed(1)}` : '—'}
+          </div>
+          <div style={{ fontSize: 9, color: C.textDim, marginTop: 3 }}>
+            Instant : {radiationLive !== null ? `${radiationLive.toFixed(0)} W/m²` : '—'}
+          </div>
+        </div>
+      </div>
+
+      {/* PRT Ressuyage */}
+      <div style={{
+        background: dark ? '#0d1610' : '#f4f9f5',
+        border: `1px solid ${C.border}`, borderRadius: 9, padding: '10px 14px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <div style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
+            letterSpacing: '0.06em' }}>% Ressuyage (PRT)</div>
+          <div style={{ fontSize: 9, color: C.textDim }}>
+            Cible : {seuils.min}% – {seuils.max}% ({periode})
+          </div>
+        </div>
+
+        {prt !== null ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <span style={{ fontSize: 24, fontWeight: 900,
+                color: getPRTStatus(prt, mois)?.color || C.text }}>
+                {prt.toFixed(1)}%
+              </span>
+              <span style={{
+                fontSize: 10, fontWeight: 600, padding: '2px 9px', borderRadius: 5,
+                color: getPRTStatus(prt, mois)?.color,
+                background: `${getPRTStatus(prt, mois)?.color}18`,
+                border: `1px solid ${getPRTStatus(prt, mois)?.color}35`,
+              }}>
+                {getPRTStatus(prt, mois)?.msg}
+              </span>
+            </div>
+            {/* Barre de progression */}
+            <div style={{ height: 6, borderRadius: 3, background: C.border, overflow: 'hidden', position: 'relative' }}>
+              <div style={{
+                position: 'absolute', left: `${(seuils.min / 20) * 100}%`,
+                width: `${((seuils.max - seuils.min) / 20) * 100}%`,
+                height: '100%', background: `${C.green}30`, borderRadius: 2,
+              }} />
+              <div style={{
+                height: '100%', borderRadius: 3,
+                background: getPRTStatus(prt, mois)?.color || C.green,
+                width: `${Math.min(100, (prt / 20) * 100)}%`,
+                transition: 'width 0.5s ease',
+              }} />
+            </div>
+          </>
+        ) : (
+          <div style={{ fontSize: 12, color: C.textDim, fontStyle: 'italic', padding: '4px 0' }}>
+            En attente des données poids matin et soir…
+          </div>
+        )}
+      </div>
+
+      {/* Explication méthode */}
+      <div style={{
+        marginTop: 10, padding: '8px 12px',
+        background: `${C.green}08`, border: `1px solid ${C.green}20`,
+        borderRadius: 8, fontSize: 10, color: C.textDim, lineHeight: 1.5,
+      }}>
+        <strong style={{ color: C.green }}>Formule PRT :</strong>
+        {' '}((Poids soir − Poids matin) / Poids soir) × 100
+        {' '}· Mesuré toutes les 30 s dès 6h00 · Début 1er tour : 5-10 min après seuil atteint
+      </div>
+    </div>
+  )
+}
+
+// Carte Météo
 function MeteoCard({ rec, C, dark }) {
   if (!rec) return null
   const ScenIcon = SCENARIO_ICONS[rec.scenario_meteo] || Sun
@@ -133,17 +300,16 @@ function MeteoCard({ rec, C, dark }) {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
         {[
-          { icon: Thermometer, label: 'T max', value: rec.t_max != null ? `${rec.t_max}°C` : '—', color: '#f5a623' },
-          { icon: Droplets,    label: 'HR moy', value: rec.hr_moy != null ? `${rec.hr_moy}%` : '—', color: '#4d9de0' },
-          { icon: Sun,         label: 'Rad.',   value: rec.radiation_jcm2 != null ? `${rec.radiation_jcm2} J/cm²` : '—', color: '#f5e642' },
-          { icon: Wind,        label: 'VPD',    value: rec.vpd_kpa != null ? `${rec.vpd_kpa} kPa` : '—', color: '#b197fc' },
-          { icon: CloudRain,   label: 'Pluie',  value: rec.pluie_mm != null ? `${rec.pluie_mm} mm` : '0 mm', color: '#4d9de0' },
-          { icon: Leaf,        label: 'Stade',  value: rec.stade || '—', color: STADE_COLORS[rec.stade] || C.green },
+          { icon: Thermometer, label: 'T max',   value: rec.t_max  != null ? `${rec.t_max}°C`         : '—', color: '#f5a623' },
+          { icon: Droplets,    label: 'HR moy',  value: rec.hr_moy != null ? `${rec.hr_moy}%`          : '—', color: '#4d9de0' },
+          { icon: Sun,         label: 'Rad.',    value: rec.radiation_jcm2 != null ? `${rec.radiation_jcm2.toFixed(1)} J/cm²` : '—', color: '#f5e642' },
+          { icon: Wind,        label: 'VPD',     value: rec.vpd_kpa != null ? `${rec.vpd_kpa} kPa`     : '—', color: '#b197fc' },
+          { icon: CloudRain,   label: 'Pluie',   value: rec.pluie_mm != null ? `${rec.pluie_mm} mm`    : '0 mm', color: '#4d9de0' },
+          { icon: Leaf,        label: 'Stade',   value: rec.stade  || '—',                              color: '#34d96f' },
         ].map(m => (
           <div key={m.label} style={{
             background: dark ? '#0d1610' : '#f4f9f5',
-            border: `1px solid ${C.border}`,
-            borderRadius: 8, padding: '8px 10px',
+            border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 10px',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
               <m.icon size={10} color={m.color} strokeWidth={2} />
@@ -159,7 +325,8 @@ function MeteoCard({ rec, C, dark }) {
   )
 }
 
-function PlanCard({ rec, C, dark }) {
+// Carte Plan Journée
+function PlanCard({ rec, prtStatus, C, dark }) {
   if (!rec) return null
   const statut = STATUT_MAP[rec.statut || 'non_disponible']
   return (
@@ -175,28 +342,37 @@ function PlanCard({ rec, C, dark }) {
         </span>
         <span style={{
           marginLeft: 'auto', fontSize: 10, fontWeight: 700,
-          color: statut.color,
-          background: `${statut.color}18`,
-          border: `1px solid ${statut.color}35`,
-          borderRadius: 4, padding: '1px 8px',
+          color: statut.color, background: `${statut.color}18`,
+          border: `1px solid ${statut.color}35`, borderRadius: 4, padding: '1px 8px',
         }}>
           {statut.label}
         </span>
       </div>
 
+      {/* Alerte PRT si hors seuil */}
+      {prtStatus && !prtStatus.ok && (
+        <div style={{
+          marginBottom: 10, padding: '8px 12px', borderRadius: 8,
+          background: `${prtStatus.color}12`, border: `1px solid ${prtStatus.color}35`,
+          fontSize: 11, color: prtStatus.color, display: 'flex', alignItems: 'center', gap: 7,
+        }}>
+          <AlertTriangle size={12} strokeWidth={2} />
+          {prtStatus.msg} — 1er tour retardé
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 12 }}>
         {[
-          { label: 'Tours prévus',    value: rec.nb_tours_prevu ?? '—', color: C.green, big: true },
-          { label: 'Début prévu',     value: rec.heure_debut    || '—', color: C.blue,  big: true },
-          { label: 'Durée T1-T2',    value: rec.duree_t12_min != null ? `${rec.duree_t12_min} min` : '—', color: C.text },
-          { label: 'Durée T3+',      value: rec.duree_t3p_min != null ? `${rec.duree_t3p_min} min` : '—', color: C.text },
-          { label: 'Repos initial',  value: rec.repos_initial_min != null ? `${rec.repos_initial_min} min` : '—', color: C.text },
+          { label: 'Tours prévus',   value: rec.nb_tours_prevu ?? '—',                          color: C.green, big: true },
+          { label: 'Début prévu',    value: rec.heure_debut    || '—',                          color: C.blue,  big: true },
+          { label: 'Durée T1-T2',   value: rec.duree_t12_min != null ? `${rec.duree_t12_min} min` : '—', color: C.text },
+          { label: 'Durée T3+',     value: rec.duree_t3p_min != null ? `${rec.duree_t3p_min} min` : '—', color: C.text },
+          { label: 'Repos initial', value: rec.repos_initial_min != null ? `${rec.repos_initial_min} min` : '—', color: C.text },
           { label: 'Seuil drainage', value: rec.seuil_drainage_pct != null ? `${rec.seuil_drainage_pct}%` : '—', color: C.amber },
         ].map(s => (
           <div key={s.label} style={{
             background: dark ? '#0d1610' : '#f4f9f5',
-            border: `1px solid ${C.border}`, borderRadius: 8,
-            padding: '8px 10px',
+            border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 10px',
           }}>
             <div style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
               letterSpacing: '0.06em', marginBottom: 3 }}>{s.label}</div>
@@ -207,7 +383,7 @@ function PlanCard({ rec, C, dark }) {
         ))}
       </div>
 
-      {/* Progression */}
+      {/* Progression tours */}
       {rec.nb_tours_prevu > 0 && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10,
@@ -230,11 +406,12 @@ function PlanCard({ rec, C, dark }) {
   )
 }
 
+// Carte NPK
 function NPKCard({ rec, C, dark }) {
   if (!rec?.doses_npk) return null
   const npk = rec.doses_npk
   const canaux = [
-    { key: 'canal_A_g', label: 'Canal A (KNO₃)', color: '#34d96f',  note: 'N + K' },
+    { key: 'canal_A_g', label: 'Canal A (KNO₃)',   color: '#34d96f', note: 'N + K' },
     { key: 'canal_B_g', label: 'Canal B (Ca·NO₃)', color: '#4d9de0', note: 'Calcium' },
     { key: 'canal_C_g', label: 'Canal C (MgSO₄)', color: '#b197fc', note: 'Magnésium' },
     { key: 'canal_D_g', label: 'Canal D (K₂SO₄)', color: '#f5a623', note: 'K supplém.' },
@@ -261,7 +438,7 @@ function NPKCard({ rec, C, dark }) {
           const pct = max > 0 ? (val / max) * 100 : 0
           return (
             <div key={c.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 80, fontSize: 10, color: C.textMuted, flexShrink: 0 }}>
+              <div style={{ width: 90, fontSize: 10, color: C.textMuted, flexShrink: 0 }}>
                 {c.label}
               </div>
               <div style={{ flex: 1, height: 8, borderRadius: 4, background: C.border, overflow: 'hidden' }}>
@@ -278,7 +455,8 @@ function NPKCard({ rec, C, dark }) {
             </div>
           )
         })}
-        <div style={{ marginTop: 4, padding: '7px 10px',
+        <div style={{
+          marginTop: 4, padding: '7px 10px',
           background: dark ? 'rgba(52,217,111,0.06)' : 'rgba(24,120,63,0.04)',
           border: `1px solid ${C.green}25`, borderRadius: 7,
           fontSize: 10, color: C.textMuted,
@@ -292,86 +470,19 @@ function NPKCard({ rec, C, dark }) {
   )
 }
 
-function AjustementPanel({ ajustements, C, dark }) {
-  if (!ajustements || ajustements.length === 0) return (
-    <div style={{ textAlign: 'center', padding: '24px 0',
-      color: C.textDim, fontSize: 12, fontStyle: 'italic' }}>
-      Aucun ajustement encore — en attente du premier tour
-    </div>
-  )
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {[...ajustements].reverse().map((a, i) => {
-        const cfg = ACTION_COLORS[a.action] || { color: C.textMuted, bg: C.toggleBg, icon: Info }
-        const AIcon = cfg.icon
-        return (
-          <div key={i} style={{
-            background: cfg.bg,
-            border: `1.5px solid ${cfg.color}35`,
-            borderRadius: 10, padding: '11px 14px',
-            display: 'flex', flexDirection: 'column', gap: 6,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{
-                width: 26, height: 26, borderRadius: 7,
-                background: cfg.color + '20',
-                border: `1px solid ${cfg.color}40`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              }}>
-                <AIcon size={13} color={cfg.color} strokeWidth={2.5} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: cfg.color }}>
-                    Tour {a.tour}
-                  </span>
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, color: cfg.color,
-                    background: cfg.color + '18',
-                    border: `1px solid ${cfg.color}35`,
-                    borderRadius: 4, padding: '1px 7px',
-                  }}>
-                    {a.action}
-                  </span>
-                  {a.drainage_reel != null && (
-                    <span style={{ marginLeft: 'auto', fontSize: 10, color: C.textDim }}>
-                      Drain : <strong style={{ color: cfg.color }}>{a.drainage_reel.toFixed(1)}%</strong>
-                    </span>
-                  )}
-                </div>
-                <div style={{ fontSize: 11, color: C.textMuted, marginTop: 3 }}>
-                  {a.raison}
-                </div>
-              </div>
-            </div>
-            {!a.stop && (
-              <div style={{ display: 'flex', gap: 12, paddingLeft: 34, fontSize: 11 }}>
-                <span style={{ color: C.textDim }}>
-                  Repos suivant :
-                  <strong style={{ color: C.text, marginLeft: 4 }}>
-                    {a.repos_suivant_min} min
-                  </strong>
-                </span>
-                <span style={{ color: C.textDim }}>
-                  Durée suivante :
-                  <strong style={{ color: C.text, marginLeft: 4 }}>
-                    {a.duree_suivant_min} min
-                  </strong>
-                </span>
-              </div>
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
+// Tableau des tours
 function TourTableMini({ tours, C, dark }) {
   if (!tours || tours.length === 0) return null
   const valids = tours.filter(t => t.debut !== null)
-  if (valids.length === 0) return null
+  if (valids.length === 0) return (
+    <div style={{
+      background: C.surface, border: `1.5px solid ${C.border}`,
+      borderRadius: 12, padding: '32px 16px',
+      textAlign: 'center', color: C.textDim, fontSize: 12, fontStyle: 'italic',
+    }}>
+      Aucun tour démarré aujourd'hui
+    </div>
+  )
 
   return (
     <div style={{
@@ -390,7 +501,7 @@ function TourTableMini({ tours, C, dark }) {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit', fontSize: 11 }}>
           <thead>
             <tr style={{ background: dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
-              {['N°', 'Début', 'Fin', 'Durée', 'Rad.', 'Cumul Rad.', 'EC Apport'].map(h => (
+              {['N°', 'Début', 'Fin', 'Durée', 'Rad. Sum', 'Cumul Rad.', 'EC Apport'].map(h => (
                 <th key={h} style={{ padding: '6px 10px', textAlign: 'center',
                   color: C.textDim, fontWeight: 630, fontSize: 10,
                   textTransform: 'uppercase', letterSpacing: '0.04em',
@@ -404,7 +515,7 @@ function TourTableMini({ tours, C, dark }) {
             {valids.map((t, i) => (
               <tr key={i}
                 style={{ borderBottom: i < valids.length - 1 ? `1px solid ${C.border}` : 'none' }}
-                onMouseEnter={e => e.currentTarget.style.background = C.tableHover}
+                onMouseEnter={e => e.currentTarget.style.background = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
                 <td style={{ padding: '7px 10px', textAlign: 'center' }}>
@@ -415,24 +526,12 @@ function TourTableMini({ tours, C, dark }) {
                     {t.tour_num}
                   </div>
                 </td>
-                <td style={{ padding: '7px 10px', textAlign: 'center', color: C.text, fontWeight: 630 }}>
-                  {t.debut || '—'}
-                </td>
-                <td style={{ padding: '7px 10px', textAlign: 'center', color: C.textMuted }}>
-                  {t.fin || '—'}
-                </td>
-                <td style={{ padding: '7px 10px', textAlign: 'center', color: C.text }}>
-                  {t.duree_min != null ? `${t.duree_min} min` : '—'}
-                </td>
-                <td style={{ padding: '7px 10px', textAlign: 'center', color: '#f5e642' }}>
-                  {t.radiation_sum != null ? t.radiation_sum.toFixed(1) : '—'}
-                </td>
-                <td style={{ padding: '7px 10px', textAlign: 'center', color: '#f5a623' }}>
-                  {t.cumul_radiation != null ? t.cumul_radiation.toFixed(1) : '—'}
-                </td>
-                <td style={{ padding: '7px 10px', textAlign: 'center', color: C.green }}>
-                  {t.ec_apport != null ? t.ec_apport.toFixed(2) : '—'}
-                </td>
+                <td style={{ padding: '7px 10px', textAlign: 'center', color: C.text, fontWeight: 630 }}>{t.debut || '—'}</td>
+                <td style={{ padding: '7px 10px', textAlign: 'center', color: C.textMuted }}>{t.fin || '—'}</td>
+                <td style={{ padding: '7px 10px', textAlign: 'center', color: C.text }}>{t.duree_min != null ? `${t.duree_min} min` : '—'}</td>
+                <td style={{ padding: '7px 10px', textAlign: 'center', color: '#f5e642' }}>{t.radiation_sum != null ? t.radiation_sum.toFixed(1) : '—'}</td>
+                <td style={{ padding: '7px 10px', textAlign: 'center', color: '#f5a623' }}>{t.cumul_radiation != null ? t.cumul_radiation.toFixed(1) : '—'}</td>
+                <td style={{ padding: '7px 10px', textAlign: 'center', color: C.green }}>{t.ec_apport != null ? t.ec_apport.toFixed(2) : '—'}</td>
               </tr>
             ))}
           </tbody>
@@ -442,25 +541,77 @@ function TourTableMini({ tours, C, dark }) {
   )
 }
 
+// Ajustements
+function AjustementPanel({ ajustements, C, dark }) {
+  if (!ajustements || ajustements.length === 0) return (
+    <div style={{ textAlign: 'center', padding: '24px 0',
+      color: C.textDim, fontSize: 12, fontStyle: 'italic' }}>
+      Aucun ajustement encore — en attente du premier tour
+    </div>
+  )
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {[...ajustements].reverse().map((a, i) => {
+        const cfg = ACTION_COLORS[a.action] || { color: C.textMuted, bg: C.toggleBg, icon: Info }
+        const AIcon = cfg.icon
+        return (
+          <div key={i} style={{
+            background: cfg.bg, border: `1.5px solid ${cfg.color}35`,
+            borderRadius: 10, padding: '11px 14px',
+            display: 'flex', flexDirection: 'column', gap: 6,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                width: 26, height: 26, borderRadius: 7,
+                background: cfg.color + '20', border: `1px solid ${cfg.color}40`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <AIcon size={13} color={cfg.color} strokeWidth={2.5} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: cfg.color }}>Tour {a.tour}</span>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, color: cfg.color,
+                    background: cfg.color + '18', border: `1px solid ${cfg.color}35`,
+                    borderRadius: 4, padding: '1px 7px',
+                  }}>{a.action}</span>
+                  {a.drainage_reel != null && (
+                    <span style={{ marginLeft: 'auto', fontSize: 10, color: C.textDim }}>
+                      Drain : <strong style={{ color: cfg.color }}>{a.drainage_reel.toFixed(1)}%</strong>
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: 11, color: C.textMuted, marginTop: 3 }}>{a.raison}</div>
+              </div>
+            </div>
+            {!a.stop && (
+              <div style={{ display: 'flex', gap: 12, paddingLeft: 34, fontSize: 11 }}>
+                <span style={{ color: C.textDim }}>
+                  Repos : <strong style={{ color: C.text }}>{a.repos_suivant_min} min</strong>
+                </span>
+                <span style={{ color: C.textDim }}>
+                  Durée : <strong style={{ color: C.text }}>{a.duree_suivant_min} min</strong>
+                </span>
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// Modal Config — uniquement date plantation
 function ConfigModal({ deviceId, token, onClose, C, dark }) {
   const [cfg, setCfg] = useState(null)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({
-    date_plantation: '',
-    ec_eau_brute: '',
-    methode_decision: 'hybride',
-    actif: true,
-  })
+  const [form, setForm] = useState({ date_plantation: '', actif: true })
 
   useEffect(() => {
     getAIConfig(token, deviceId).then(c => {
       setCfg(c)
-      setForm({
-        date_plantation : c.date_plantation || '',
-        ec_eau_brute    : c.ec_eau_brute ?? 0.8,
-        methode_decision: c.methode_decision || 'hybride',
-        actif           : c.actif !== false,
-      })
+      setForm({ date_plantation: c.date_plantation || '', actif: c.actif !== false })
     }).catch(() => {})
   }, [deviceId])
 
@@ -468,10 +619,8 @@ function ConfigModal({ deviceId, token, onClose, C, dark }) {
     setSaving(true)
     try {
       await saveAIConfig(token, deviceId, {
-        date_plantation : form.date_plantation || null,
-        ec_eau_brute    : Number(form.ec_eau_brute) || 0.8,
-        methode_decision: form.methode_decision,
-        actif           : form.actif,
+        date_plantation: form.date_plantation || null,
+        actif: form.actif,
       })
       onClose()
     } catch (e) {
@@ -482,13 +631,14 @@ function ConfigModal({ deviceId, token, onClose, C, dark }) {
   }
 
   const inputSt = {
-    width: '100%', padding: '8px 10px', borderRadius: 8,
+    width: '100%', padding: '9px 12px', borderRadius: 8,
     border: `1.5px solid ${C.border}`, background: C.inputBg,
     color: C.text, fontSize: 12, fontFamily: 'inherit', outline: 'none',
+    boxSizing: 'border-box',
   }
   const labelSt = {
     display: 'block', color: C.textMuted, fontSize: 10, fontWeight: 700,
-    textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5,
+    textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6,
   }
 
   return (
@@ -498,13 +648,13 @@ function ConfigModal({ deviceId, token, onClose, C, dark }) {
     }}>
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: 16, padding: '24px 28px', width: '100%', maxWidth: 440,
+        borderRadius: 16, padding: '24px 28px', width: '100%', maxWidth: 420,
         boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
           <Settings size={16} color={C.green} strokeWidth={2} />
           <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>
-            Configuration IA — Device {deviceId}
+            Configuration IA — AZ106
           </div>
           <button onClick={onClose} style={{ marginLeft: 'auto', background: 'none',
             border: 'none', cursor: 'pointer', color: C.textDim }}>
@@ -519,31 +669,19 @@ function ConfigModal({ deviceId, token, onClose, C, dark }) {
             <div style={{ marginBottom: 14 }}>
               <label style={labelSt}>Date de plantation</label>
               <input type="date" value={form.date_plantation}
-                onChange={e => setForm(p => ({...p, date_plantation: e.target.value}))}
+                onChange={e => setForm(p => ({ ...p, date_plantation: e.target.value }))}
                 style={inputSt} />
+              <div style={{ fontSize: 10, color: C.textDim, marginTop: 5 }}>
+                Utilisé pour calculer le stade agronomique (végétatif, floraison, etc.)
+              </div>
             </div>
-            <div style={{ marginBottom: 14 }}>
-              <label style={labelSt}>EC eau brute bassin (dS/m)</label>
-              <input type="number" step="0.1" value={form.ec_eau_brute}
-                onChange={e => setForm(p => ({...p, ec_eau_brute: e.target.value}))}
-                style={inputSt} />
-            </div>
-            <div style={{ marginBottom: 14 }}>
-              <label style={labelSt}>Méthode de décision</label>
-              <select value={form.methode_decision}
-                onChange={e => setForm(p => ({...p, methode_decision: e.target.value}))}
-                style={{ ...inputSt, cursor: 'pointer' }}>
-                <option value="hybride">Hybride (règles + ML)</option>
-                <option value="regles">Règles agronomiques uniquement</option>
-                <option value="ml_seul">ML uniquement</option>
-              </select>
-            </div>
+
             <div style={{ marginBottom: 20 }}>
               <label style={labelSt}>Agent IA actif</label>
               <div style={{ display: 'flex', gap: 8 }}>
                 {[true, false].map(v => (
                   <button key={String(v)}
-                    onClick={() => setForm(p => ({...p, actif: v}))}
+                    onClick={() => setForm(p => ({ ...p, actif: v }))}
                     style={{
                       flex: 1, padding: '8px', borderRadius: 7, fontFamily: 'inherit',
                       border: `1.5px solid ${form.actif === v ? C.green : C.border}`,
@@ -556,6 +694,17 @@ function ConfigModal({ deviceId, token, onClose, C, dark }) {
                 ))}
               </div>
             </div>
+
+            {/* Info EC bassin */}
+            <div style={{
+              marginBottom: 20, padding: '10px 14px', borderRadius: 9,
+              background: `${C.green}08`, border: `1px solid ${C.green}20`,
+              fontSize: 11, color: C.textMuted, lineHeight: 1.6,
+            }}>
+              <strong style={{ color: C.green }}>EC bassin :</strong> valeur fixe 0.7–0.8 dS/m (eau source Azura)<br />
+              <strong style={{ color: C.green }}>Méthode :</strong> Hybride (règles agronomiques + ML)
+            </div>
+
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button onClick={onClose} style={{
                 padding: '8px 18px', borderRadius: 8,
@@ -580,145 +729,90 @@ function ConfigModal({ deviceId, token, onClose, C, dark }) {
   )
 }
 
-function AjustementManuelModal({ deviceId, token, numTour, onClose, C, dark, onSuccess }) {
-  const [drainage, setDrainage] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
-
-  const handleSubmit = async () => {
-    setSubmitting(true); setError('')
-    try {
-      await ajusterTour(token, deviceId, {
-        num_tour      : numTour,
-        drainage_reel : drainage !== '' ? Number(drainage) : null,
-        tours_restants: 1,
-      })
-      onSuccess()
-      onClose()
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.7)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
-    }}>
-      <div style={{
-        background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: 16, padding: '24px 28px', width: '100%', maxWidth: 380,
-        boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-          <Brain size={15} color={C.green} strokeWidth={2} />
-          <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>
-            Ajustement après Tour {numTour}
-          </div>
-          <button onClick={onClose} style={{ marginLeft: 'auto', background: 'none',
-            border: 'none', cursor: 'pointer', color: C.textDim }}>
-            <X size={16} strokeWidth={2} />
-          </button>
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', color: C.textMuted, fontSize: 10, fontWeight: 700,
-            textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
-            % Drainage mesuré (laisser vide si capteur absent)
-          </label>
-          <input type="number" step="0.1" min="0" max="100"
-            value={drainage}
-            onChange={e => setDrainage(e.target.value)}
-            placeholder="Ex: 18.5 — ou vide si pas de capteur"
-            style={{
-              width: '100%', padding: '9px 12px', borderRadius: 8,
-              border: `1.5px solid ${C.border}`, background: C.inputBg,
-              color: C.text, fontSize: 12, fontFamily: 'inherit', outline: 'none',
-            }} />
-          <div style={{ fontSize: 10, color: C.textDim, marginTop: 6 }}>
-            💡 Sans drainage : l'IA utilisera uniquement la progression temporelle.
-          </div>
-        </div>
-
-        {error && (
-          <div style={{ padding: '8px 12px', borderRadius: 7, background: 'rgba(240,82,82,0.08)',
-            border: `1px solid #f0525235`, color: '#f05252', fontSize: 11, marginBottom: 12 }}>
-            {error}
-          </div>
-        )}
-
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={{
-            padding: '8px 18px', borderRadius: 8,
-            border: `1.5px solid ${C.border}`, background: 'transparent',
-            color: C.textMuted, fontSize: 12, fontFamily: 'inherit', cursor: 'pointer',
-          }}>Annuler</button>
-          <button onClick={handleSubmit} disabled={submitting} style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '8px 20px', borderRadius: 8,
-            background: submitting ? C.toggleBg : C.green, color: '#fff',
-            border: 'none', fontSize: 12, fontWeight: 700,
-            fontFamily: 'inherit', cursor: submitting ? 'not-allowed' : 'pointer',
-          }}>
-            <Brain size={12} strokeWidth={2.5} />
-            {submitting ? 'Calcul…' : 'Calculer ajustement'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ─────────────────────────────────────────────────────────────
-// MAIN PAGE
+// PAGE PRINCIPALE
 // ─────────────────────────────────────────────────────────────
-
 export default function AgentIAPage({ token, auth, C: CProps, dark }) {
   const C = CProps || getColors(dark)
   const width = useWindowWidth()
   const isMobile = width < 640
-  const isTablet = width >= 640 && width < 900
 
-  const [farms, setFarms] = useState([])
-  const [selectedDeviceId, setSelectedDeviceId] = useState(null)
+  // Device AZ106 uniquement
+  const [az106Device, setAz106Device] = useState(null)
   const [rec, setRec] = useState(null)
   const [tours, setTours] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [generating, setGenerating] = useState(false)
+  const [weight, setWeight] = useState(null)        // dernière lecture poids
+  const [deviceLatest, setDeviceLatest] = useState(null)  // lectures capteurs live
+  const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [showConfig, setShowConfig] = useState(false)
-  const [showAjustModal, setShowAjustModal] = useState(false)
-  const [ajustTour, setAjustTour] = useState(1)
   const [error, setError] = useState('')
-  const [activeTab, setActiveTab] = useState('plan') // plan | npk | ajustements | tours
-  const [ecBassinInput, setEcBassinInput] = useState('')
-  const [ressuyageInput, setRessuyageInput] = useState('')
+  const [activeTab, setActiveTab] = useState('plan')
   const intervalRef = useRef(null)
+  const weightIntervalRef = useRef(null)
 
   const today = new Date().toISOString().split('T')[0]
+  const mois = new Date().getMonth() + 1
 
-  // Charger les fermes
+  // ── Trouver device AZ106 ──────────────────────────────────
   useEffect(() => {
-    getDevices(token).then(data => {
-      setFarms(data)
-      // Sélectionner le premier device disponible
-      if (data.length > 0 && data[0].houses?.length > 0) {
-        setSelectedDeviceId(data[0].houses[0].id)
+    getDevices(token).then(farms => {
+      const az = farms.find(f => f.farm_name === AZ106_FARM || f.farm_name?.includes('AZ106'))
+      if (az?.houses?.length > 0) {
+        setAz106Device(az.houses[0])
+      } else {
+        // fallback: premier device disponible
+        for (const farm of farms) {
+          if (farm.houses?.length > 0) {
+            setAz106Device(farm.houses[0])
+            break
+          }
+        }
       }
-    }).catch(() => {})
+    }).catch(e => setError('Impossible de charger les devices'))
   }, [token])
 
+  // ── Charger données capteur poids ─────────────────────────
+  const loadWeight = useCallback(async () => {
+    if (!az106Device) return
+    try {
+      const w = await getLatestWeight(token, az106Device.farm_name)
+      setWeight(w)
+    } catch {
+      // poids non disponible
+    }
+  }, [az106Device, token])
+
+  // ── Charger lectures live sensor (radiation_sum) ──────────
+  const loadDeviceLatest = useCallback(async () => {
+    if (!az106Device) return
+    try {
+      const d = await getDeviceLatest(token, az106Device.id)
+      setDeviceLatest(d)
+    } catch {}
+  }, [az106Device, token])
+
+  // ── Calculer PRT depuis capteur (6h–10h, toutes les 30s) ─
+  const prt = weight?.poids_kg && weight?.poids_kg_matin
+    ? calculerPRT(weight.poids_kg, weight.poids_kg_matin)
+    : null
+  const prtStatus = prt !== null ? getPRTStatus(prt, mois) : null
+
+  // ── Charger recommandation (auto-génération) ──────────────
   const loadRec = useCallback(async (silent = false) => {
-    if (!selectedDeviceId) return
+    if (!az106Device) return
     if (!silent) setLoading(true)
     else setRefreshing(true)
     setError('')
     try {
+      // Radiation_Sum depuis capteur live
+      const radSum = deviceLatest?.sensor?.radiation_sum ?? null
+
+      // Appeler l'endpoint recommandation (auto-génère si absent)
+      // Passer radiation_sum en payload si dispo
       const [recData, toursData] = await Promise.all([
-        getAIRec(token, selectedDeviceId, today),
-        getDeviceTours(token, selectedDeviceId, today),
+        getAIRec(token, az106Device.id, today),
+        getDeviceTours(token, az106Device.id, today),
       ])
       setRec(recData)
       setTours(toursData?.tours || [])
@@ -728,67 +822,54 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [selectedDeviceId, token, today])
+  }, [az106Device, token, today, deviceLatest])
 
+  // ── Auto-génération initiale dès device disponible ────────
   useEffect(() => {
-    if (selectedDeviceId) loadRec()
-  }, [selectedDeviceId])
-
-  // Refresh automatique toutes les 30s
-  useEffect(() => {
-    intervalRef.current = setInterval(() => loadRec(true), 30_000)
-    return () => clearInterval(intervalRef.current)
-  }, [loadRec])
-
-  const handleGenerer = async () => {
-    setGenerating(true); setError('')
-    try {
-      const payload = { methode: 'hybride' }
-      if (ecBassinInput) payload.ec_bassin = Number(ecBassinInput)
-      if (ressuyageInput) payload.pct_ressuyage = Number(ressuyageInput)
-      const result = await genererRec(token, selectedDeviceId, payload)
-      setRec(result.recommandation)
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setGenerating(false)
+    if (az106Device) {
+      loadWeight()
+      loadDeviceLatest()
     }
-  }
+  }, [az106Device])
 
-  const handleAjustSuccess = () => loadRec()
+  useEffect(() => {
+    if (az106Device) loadRec()
+  }, [az106Device])
 
-  // Trouver le nom du device sélectionné
-  const selectedFarm = farms.find(f => f.houses?.some(h => h.id === selectedDeviceId))
-  const selectedHouse = selectedFarm?.houses?.find(h => h.id === selectedDeviceId)
+  // ── Refresh automatique toutes les 30s ───────────────────
+  useEffect(() => {
+    if (!az106Device) return
+    intervalRef.current = setInterval(() => {
+      loadWeight()
+      loadDeviceLatest()
+      loadRec(true)
+    }, 30_000)
+    return () => clearInterval(intervalRef.current)
+  }, [loadRec, loadWeight, loadDeviceLatest, az106Device])
 
   const tabs = [
-    { id: 'plan',         label: 'Plan',      icon: Activity },
-    { id: 'npk',          label: 'NPK',        icon: FlaskConical },
-    { id: 'ajustements',  label: 'Ajustements', icon: Brain },
-    { id: 'tours',        label: 'Tours réels', icon: Clock },
+    { id: 'plan',        label: 'Plan',       icon: Activity },
+    { id: 'npk',         label: 'NPK',         icon: FlaskConical },
+    { id: 'ajustements', label: 'Ajustements', icon: Brain },
+    { id: 'tours',       label: 'Tours réels', icon: Clock },
   ]
 
+  // ── Render ────────────────────────────────────────────────
   return (
     <div style={{ animation: 'az-fade-in 0.3s ease both' }}>
 
-      {/* ── Modals ──────────────────────────────────────────── */}
-      {showConfig && selectedDeviceId && (
-        <ConfigModal deviceId={selectedDeviceId} token={token}
+      {showConfig && az106Device && (
+        <ConfigModal deviceId={az106Device.id} token={token}
           onClose={() => { setShowConfig(false); loadRec() }}
           C={C} dark={dark} />
       )}
-      {showAjustModal && selectedDeviceId && (
-        <AjustementManuelModal
-          deviceId={selectedDeviceId} token={token} numTour={ajustTour}
-          onClose={() => setShowAjustModal(false)}
-          onSuccess={handleAjustSuccess}
-          C={C} dark={dark} />
-      )}
 
-      {/* ── Header ──────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center',
+      {/* Header */}
+      <div style={{
+        display: 'flex', alignItems: isMobile ? 'flex-start' : 'center',
         flexDirection: isMobile ? 'column' : 'row',
-        justifyContent: 'space-between', marginBottom: 24, gap: 12 }}>
+        justifyContent: 'space-between', marginBottom: 24, gap: 12,
+      }}>
         <div>
           <h1 style={{ fontSize: isMobile ? 18 : 22, fontWeight: 900, color: C.text,
             marginBottom: 4, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -796,11 +877,15 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
             Agent IA Irrigation
           </h1>
           <p style={{ fontSize: 11, color: C.textDim }}>
-            Recommandations automatiques · {farms.reduce((a,f)=>(a+f.houses?.length||0),0)} houses actives
+            Station AZ106 · Recommandation automatique · {today}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button onClick={() => loadRec(true)} disabled={refreshing}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => {
+            loadWeight()
+            loadDeviceLatest()
+            loadRec(true)
+          }} disabled={refreshing}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '7px 14px', borderRadius: 8,
@@ -812,7 +897,7 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
               style={{ animation: refreshing ? 'az-spin 0.7s linear infinite' : 'none' }} />
             {!isMobile && 'Actualiser'}
           </button>
-          {selectedDeviceId && (
+          {az106Device && (
             <button onClick={() => setShowConfig(true)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
@@ -822,167 +907,128 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
                 fontSize: 12, fontWeight: 630, fontFamily: 'inherit', cursor: 'pointer',
               }}>
               <Settings size={12} strokeWidth={2} />
-              {!isMobile && 'Config IA'}
+              {!isMobile && 'Date plantation'}
             </button>
           )}
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 20, flexDirection: isMobile ? 'column' : 'row' }}>
+      {/* Layout principal */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-        {/* ── Sidebar : sélecteur houses ───────────────────── */}
-        <div style={{
-          width: isMobile ? '100%' : 200, flexShrink: 0,
-          display: 'flex', flexDirection: isMobile ? 'row' : 'column',
-          gap: 6, flexWrap: isMobile ? 'wrap' : 'nowrap',
-        }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: C.textDim,
-            textTransform: 'uppercase', letterSpacing: '0.08em',
-            marginBottom: isMobile ? 0 : 6,
-            display: isMobile ? 'none' : 'block' }}>
-            Sélectionner une house
+        {/* Erreur */}
+        {error && (
+          <div style={{ padding: '10px 14px', borderRadius: 8,
+            background: 'rgba(240,82,82,0.08)', border: '1px solid rgba(240,82,82,0.25)',
+            color: '#f05252', fontSize: 12 }}>
+            ⚠ {error}
           </div>
-          {farms.map(farm => (
-            farm.houses?.map(house => {
-              const active = house.id === selectedDeviceId
-              return (
-                <button key={house.id}
-                  onClick={() => setSelectedDeviceId(house.id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 7,
-                    padding: '8px 12px', borderRadius: 8,
-                    border: `1.5px solid ${active ? C.green : C.border}`,
-                    background: active ? `${C.green}12` : C.surface,
-                    color: active ? C.green : C.textMuted,
-                    fontSize: 12, fontWeight: active ? 700 : 500,
-                    fontFamily: 'inherit', cursor: 'pointer',
-                    textAlign: 'left', transition: 'all 0.15s',
-                    width: isMobile ? 'auto' : '100%',
-                  }}>
-                  <div style={{
-                    width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-                    background: active ? C.green : C.textDim,
-                  }} />
-                  <div>
-                    <div style={{ fontSize: 10, color: active ? C.green : C.textDim,
-                      fontWeight: 600, lineHeight: 1 }}>
-                      {farm.farm_name}
-                    </div>
-                    <div style={{ fontWeight: active ? 800 : 600, lineHeight: 1.3 }}>
-                      H{house.house_number}
-                    </div>
-                  </div>
-                </button>
-              )
-            })
-          ))}
-        </div>
+        )}
 
-        {/* ── Main content ─────────────────────────────────── */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-
-          {/* Device header */}
-          {selectedHouse && (
+        {/* Device info banner */}
+        {az106Device && (
+          <div style={{
+            background: C.surface, border: `1.5px solid ${C.border}`,
+            borderRadius: 12, padding: '10px 16px',
+            display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+          }}>
             <div style={{
-              background: C.surface, border: `1.5px solid ${C.border}`,
-              borderRadius: 12, padding: '12px 16px', marginBottom: 16,
-              display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-            }}>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>
-                  {selectedFarm?.farm_name} — Station {selectedHouse.house_number}
-                </div>
-                <div style={{ fontSize: 11, color: C.textDim, marginTop: 2 }}>
-                  {today} · Méthode : {rec?.methode_decision || 'hybride'}
-                  {rec && !rec.pct_ressuyage && (
-                    <span style={{ marginLeft: 8, color: C.amber, fontSize: 10 }}>
-                      ⚠ Mode dégradé — pas de capteur poids/drainage
-                    </span>
-                  )}
-                </div>
+              width: 10, height: 10, borderRadius: '50%',
+              background: deviceLatest?.online ? '#34d96f' : '#f05252',
+              boxShadow: deviceLatest?.online ? '0 0 8px #34d96f60' : 'none',
+              flexShrink: 0,
+            }} />
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: C.text }}>
+                {az106Device.farm_name} — Station {az106Device.house_number}
               </div>
-
-              {/* Quick inputs */}
-              <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span style={{ fontSize: 10, color: C.textDim, whiteSpace: 'nowrap' }}>EC bassin :</span>
-                  <input type="number" step="0.1" placeholder="0.8"
-                    value={ecBassinInput}
-                    onChange={e => setEcBassinInput(e.target.value)}
-                    style={{
-                      width: 58, padding: '4px 6px', borderRadius: 6,
-                      border: `1.5px solid ${C.border}`, background: C.inputBg,
-                      color: C.text, fontSize: 11, fontFamily: 'inherit', outline: 'none',
-                    }} />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span style={{ fontSize: 10, color: C.textDim, whiteSpace: 'nowrap' }}>Ressuyage % :</span>
-                  <input type="number" step="0.1" placeholder="optionnel"
-                    value={ressuyageInput}
-                    onChange={e => setRessuyageInput(e.target.value)}
-                    style={{
-                      width: 70, padding: '4px 6px', borderRadius: 6,
-                      border: `1.5px solid ${C.border}`, background: C.inputBg,
-                      color: C.text, fontSize: 11, fontFamily: 'inherit', outline: 'none',
-                    }} />
-                </div>
-                <button onClick={handleGenerer} disabled={generating}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 5,
-                    padding: '6px 14px', borderRadius: 8,
-                    background: generating ? C.toggleBg : C.green, color: '#fff',
-                    border: 'none', fontSize: 12, fontWeight: 700,
-                    fontFamily: 'inherit', cursor: generating ? 'not-allowed' : 'pointer',
-                  }}>
-                  <Brain size={12} strokeWidth={2.5} />
-                  {generating ? 'Génération…' : rec ? 'Régénérer' : 'Générer'}
-                </button>
+              <div style={{ fontSize: 10, color: C.textDim }}>
+                {deviceLatest?.online ? 'En ligne' : 'Hors ligne'}
+                {' '}· Méthode : hybride (règles + ML)
+                {rec && !rec.pct_ressuyage && (
+                  <span style={{ marginLeft: 8, color: '#f5a623' }}>
+                    ⚠ Ressuyage calculé depuis capteur poids
+                  </span>
+                )}
               </div>
             </div>
-          )}
+            {/* Radiation live badge */}
+            {deviceLatest?.sensor?.radiation_sum != null && (
+              <div style={{
+                marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6,
+                padding: '5px 12px', borderRadius: 8,
+                background: 'rgba(245,230,66,0.1)', border: '1px solid rgba(245,230,66,0.3)',
+              }}>
+                <Zap size={11} color='#f5e642' strokeWidth={2} />
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#f5e642' }}>
+                  {deviceLatest.sensor.radiation_sum.toFixed(1)} J/cm²
+                </span>
+                <span style={{ fontSize: 9, color: C.textDim }}>Rad. Sum</span>
+              </div>
+            )}
+          </div>
+        )}
 
-          {/* Error */}
-          {error && (
-            <div style={{ padding: '10px 14px', borderRadius: 8,
-              background: 'rgba(240,82,82,0.08)', border: '1px solid rgba(240,82,82,0.25)',
-              color: '#f05252', fontSize: 12, marginBottom: 14 }}>
-              ⚠ {error}
-            </div>
-          )}
+        {/* Grille principale : PRT à gauche, contenu à droite */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '300px 1fr',
+          gap: 16,
+          alignItems: 'start',
+        }}>
+          {/* Colonne gauche : PRT + Poids */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <PRTCard weight={weight} deviceLatest={deviceLatest} C={C} dark={dark} />
 
-          {/* Loading */}
-          {loading && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10,
-              color: C.textDim, fontSize: 12, padding: '40px 0',
-              justifyContent: 'center' }}>
-              <RefreshCw size={16} style={{ animation: 'az-pulse 1.2s ease-in-out infinite' }} />
-              Chargement de la recommandation IA…
-            </div>
-          )}
+            {/* Stade agronomique */}
+            {rec?.stade && (
+              <div style={{
+                background: C.surface, border: `1.5px solid ${C.border}`,
+                borderRadius: 12, padding: '12px 16px',
+                display: 'flex', alignItems: 'center', gap: 10,
+              }}>
+                <Leaf size={14} color='#34d96f' strokeWidth={2} />
+                <div>
+                  <div style={{ fontSize: 10, color: C.textDim, textTransform: 'uppercase',
+                    letterSpacing: '0.06em', marginBottom: 2 }}>Stade phénologique</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: '#34d96f',
+                    textTransform: 'capitalize' }}>{rec.stade}</div>
+                </div>
+                <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                  <div style={{ fontSize: 10, color: C.textDim, marginBottom: 2 }}>J plantation</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>
+                    {rec.j_plantation != null ? `J+${rec.j_plantation}` : '—'}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
-          {!loading && !selectedDeviceId && (
-            <div style={{ textAlign: 'center', padding: '60px 0', color: C.textDim, fontSize: 12 }}>
-              Sélectionnez une house pour voir la recommandation IA
-            </div>
-          )}
+          {/* Colonne droite : Recommandation */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-          {!loading && selectedDeviceId && !rec && !error && (
-            <div style={{ textAlign: 'center', padding: '60px 0', color: C.textDim, fontSize: 12 }}>
-              <Brain size={32} strokeWidth={1.2} style={{ marginBottom: 12, display: 'block', margin: '0 auto 12px' }} />
-              Aucune recommandation générée. Cliquez sur <strong style={{ color: C.green }}>Générer</strong> pour démarrer.
-            </div>
-          )}
+            {loading && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10,
+                color: C.textDim, fontSize: 12, padding: '60px 0',
+                justifyContent: 'center' }}>
+                <RefreshCw size={16} style={{ animation: 'az-pulse 1.2s ease-in-out infinite' }} />
+                Génération automatique de la recommandation IA…
+              </div>
+            )}
 
-          {!loading && rec && (
-            <>
-              {/* Météo toujours visible en haut */}
-              <MeteoCard rec={rec} C={C} dark={dark} />
+            {!loading && !az106Device && (
+              <div style={{ textAlign: 'center', padding: '60px 0', color: C.textDim, fontSize: 12 }}>
+                Station AZ106 non trouvée
+              </div>
+            )}
 
-              <div style={{ marginTop: 14 }}>
+            {!loading && rec && (
+              <>
+                {/* Météo */}
+                <MeteoCard rec={rec} C={C} dark={dark} />
 
                 {/* Tabs */}
-                <div style={{ display: 'flex', gap: 4, marginBottom: 14,
-                  borderBottom: `1px solid ${C.border}`, paddingBottom: 0 }}>
+                <div style={{ display: 'flex', gap: 4, borderBottom: `1px solid ${C.border}`, paddingBottom: 0 }}>
                   {tabs.map(tab => {
                     const active = activeTab === tab.id
                     const TabIcon = tab.icon
@@ -996,8 +1042,7 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
                           color: active ? C.green : C.textMuted,
                           fontSize: 12, fontWeight: active ? 700 : 500,
                           fontFamily: 'inherit', cursor: 'pointer',
-                          transition: 'all 0.15s',
-                          marginBottom: -1,
+                          transition: 'all 0.15s', marginBottom: -1,
                         }}>
                         <TabIcon size={12} strokeWidth={2} />
                         {tab.label}
@@ -1015,52 +1060,12 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
 
                 {/* Tab content */}
                 {activeTab === 'plan' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                    <PlanCard rec={rec} C={C} dark={dark} />
-
-                    {/* Bouton ajustement manuel */}
-                    <div style={{
-                      background: C.surface, border: `1.5px solid ${C.border}`,
-                      borderRadius: 12, padding: '14px 16px',
-                    }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted,
-                        textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
-                        Ajustement manuel après tour
-                      </div>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 12, color: C.textMuted }}>Tour numéro :</span>
-                        <input type="number" min="1" max="20" value={ajustTour}
-                          onChange={e => setAjustTour(Number(e.target.value))}
-                          style={{
-                            width: 60, padding: '5px 8px', borderRadius: 7,
-                            border: `1.5px solid ${C.border}`, background: C.inputBg,
-                            color: C.text, fontSize: 12, fontFamily: 'inherit', outline: 'none',
-                          }} />
-                        <button onClick={() => setShowAjustModal(true)}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 6,
-                            padding: '7px 16px', borderRadius: 8,
-                            background: `${C.green}12`,
-                            border: `1.5px solid ${C.green}40`,
-                            color: C.green, fontSize: 12, fontWeight: 700,
-                            fontFamily: 'inherit', cursor: 'pointer',
-                          }}>
-                          <Brain size={12} strokeWidth={2.5} />
-                          Calculer ajustement
-                        </button>
-                        <span style={{ fontSize: 10, color: C.textDim }}>
-                          💡 Pendant le repos inter-tour, saisissez le drainage mesuré
-                          (ou laissez vide si pas de capteur).
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                  <PlanCard rec={rec} prtStatus={prtStatus} C={C} dark={dark} />
                 )}
 
                 {activeTab === 'npk' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                     <NPKCard rec={rec} C={C} dark={dark} />
-                    {/* Explication FAO-56 */}
                     {rec.et0_mm && (
                       <div style={{
                         background: C.surface, border: `1.5px solid ${C.border}`,
@@ -1075,8 +1080,7 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
                             { label: 'ET0 (Penman)', value: `${rec.et0_mm} mm/j`, color: '#4d9de0' },
                             { label: 'ETc cultural', value: `${rec.etc_mm} mm/j`,  color: C.green },
                             { label: 'Fraction lessivage', value: `${((rec.fraction_lessivage||0)*100).toFixed(0)}%`, color: C.amber },
-                            { label: 'Volume total',  value: rec.volume_total_l_ha
-                              ? `${(rec.volume_total_l_ha/1000).toFixed(1)} m³/ha` : '—', color: C.green },
+                            { label: 'Volume total', value: rec.volume_total_l_ha ? `${(rec.volume_total_l_ha/1000).toFixed(1)} m³/ha` : '—', color: C.green },
                           ].map(s => (
                             <div key={s.label} style={{
                               background: dark ? '#0d1610' : '#f4f9f5',
@@ -1100,7 +1104,7 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
                   }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted,
                       textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
-                      Historique des ajustements du jour
+                      Ajustements automatiques du jour
                     </div>
                     <AjustementPanel ajustements={rec.ajustements} C={C} dark={dark} />
                   </div>
@@ -1109,9 +1113,26 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
                 {activeTab === 'tours' && (
                   <TourTableMini tours={tours} C={C} dark={dark} />
                 )}
+              </>
+            )}
+
+            {!loading && !rec && !error && az106Device && (
+              <div style={{
+                background: C.surface, border: `1.5px solid ${C.border}`,
+                borderRadius: 12, padding: '40px 24px', textAlign: 'center',
+              }}>
+                <Brain size={32} color={C.green} strokeWidth={1.5}
+                  style={{ display: 'block', margin: '0 auto 12px' }} />
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 6 }}>
+                  Génération en cours…
+                </div>
+                <div style={{ fontSize: 11, color: C.textDim }}>
+                  La recommandation IA se génère automatiquement chaque matin à 6h00.<br />
+                  Configurez la date de plantation via le bouton <strong>Date plantation</strong>.
+                </div>
               </div>
-            </>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
