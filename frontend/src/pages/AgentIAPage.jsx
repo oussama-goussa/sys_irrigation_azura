@@ -1,7 +1,7 @@
 // ============================================================
 // frontend/src/pages/AgentIAPage.jsx
-// Agent IA — AZ106 uniquement · Recommandation Matinale
-// Recommandation automatique basée sur PRT Ressuyage
+// Agent IA — AZ106 uniquement · Ressuyage depuis capteur poids
+// Recommandation automatique sans bouton Générer
 // Projet Azura Irrigation IA — GOUSSA Oussama
 // ============================================================
 
@@ -18,7 +18,18 @@ import { getColors } from '../theme.js'
 import { useWindowWidth } from '../components/DashboardShell.jsx'
 
 // ─── Constantes ──────────────────────────────────────────────
-const AZ106_FARM = 'AZ106'
+const AZ106_FARM = 'AZ106'   // Ferme avec capteur poids
+const PRT_SEUILS = {         // Seuils ressuyage par période
+  froid:      { min: 10.0, max: 12.0 }, // Nov–Fév
+  chaud:      { min:  8.0, max:  9.0 }, // Avr–Jul
+  transition: { min:  9.0, max: 10.5 }, // autres
+}
+
+function getPeriode(mois) {
+  if ([11,12,1,2].includes(mois)) return 'froid'
+  if ([4,5,6,7].includes(mois)) return 'chaud'
+  return 'transition'
+}
 
 // ── API helpers ───────────────────────────────────────────────
 async function fetchWithToken(url, token, opts = {}) {
@@ -44,6 +55,16 @@ async function getAIRec(token, deviceId, date) {
   const params = date ? `?date=${date}` : ''
   return fetchWithToken(`/api/ai/recommandation/${deviceId}${params}`, token)
 }
+async function genererRec(token, deviceId, payload) {
+  return fetchWithToken(`/api/ai/recommandation/${deviceId}/generer`, token, {
+    method: 'POST', body: JSON.stringify(payload),
+  })
+}
+async function ajusterTour(token, deviceId, payload) {
+  return fetchWithToken(`/api/ai/recommandation/${deviceId}/ajuster`, token, {
+    method: 'POST', body: JSON.stringify(payload),
+  })
+}
 async function getAIConfig(token, deviceId) {
   return fetchWithToken(`/api/ai/config/${deviceId}`, token)
 }
@@ -54,6 +75,9 @@ async function saveAIConfig(token, deviceId, payload) {
 }
 async function getDeviceTours(token, deviceId, date) {
   return fetchWithToken(`/api/devices/${deviceId}/tours?date=${date}`, token)
+}
+async function getLatestWeight(token, farmName) {
+  return fetchWithToken(`/api/weight/${farmName}/latest`, token)
 }
 async function getDeviceLatest(token, deviceId) {
   return fetchWithToken(`/api/devices/${deviceId}/latest`, token)
@@ -68,73 +92,291 @@ const ACTION_COLORS = {
   ARRET_URGENT      : { color: '#f05252', bg: 'rgba(240,82,82,0.10)',   icon: StopCircle },
 }
 
+const SCENARIO_ICONS = {
+  ensoleille           : Sun,
+  nuageux              : CloudRain,
+  chergui              : Wind,
+  brouillard           : CloudRain,
+  pluie                : CloudRain,
+  hiver_clair          : Sun,
+  hiver_nuageux        : CloudRain,
+  ressuyage_eleve      : TrendingUp,
+  ressuyage_trop_faible: TrendingDown,
+}
+
 const STATUT_MAP = {
   en_cours      : { label: 'En cours',     color: '#4d9de0' },
-  en_attente    : { label: 'En attente PRT', color: '#f5a623' },
-  optimal       : { label: 'Prêt ✓',       color: '#34d96f' },
-  arrete        : { label: 'Terminé',      color: '#f05252' },
+  optimal       : { label: 'Optimal ✓',    color: '#34d96f' },
+  a_ajuster     : { label: 'À surveiller', color: '#f5a623' },
+  arrete        : { label: 'Arrêté',       color: '#f05252' },
+  pluie         : { label: 'Pluie – arrêt',color: '#4d9de0' },
   non_disponible: { label: '—',            color: '#9cb8a6' },
+}
+
+// ─────────────────────────────────────────────────────────────
+// Calcul PRT Ressuyage
+// ─────────────────────────────────────────────────────────────
+function calculerPRT(poidsSoir, poidsMatin) {
+  if (!poidsSoir || !poidsMatin || poidsSoir <= 0) return null
+  return ((poidsSoir - poidsMatin) / poidsSoir) * 100
+}
+
+function getPRTStatus(prt, mois) {
+  if (prt === null) return null
+  const periode = getPeriode(mois)
+  const s = PRT_SEUILS[periode]
+  if (prt < s.min) return { ok: false, msg: `PRT ${prt.toFixed(1)}% < ${s.min}% → attendre`, color: '#f5a623' }
+  if (prt > s.max) return { ok: false, msg: `PRT ${prt.toFixed(1)}% > ${s.max}% → avancer début`, color: '#4d9de0' }
+  return { ok: true, msg: `PRT ${prt.toFixed(1)}% ✓ dans la plage`, color: '#34d96f' }
 }
 
 // ─────────────────────────────────────────────────────────────
 // SUB-COMPONENTS
 // ─────────────────────────────────────────────────────────────
 
-// Carte Plan Journée
-function PlanCard({ rec, C, dark }) {
-  if (!rec) return null
-  const statut = STATUT_MAP[rec.statut || 'non_disponible']
-  const enAttente = rec.statut === 'en_attente'
+// Carte PRT Ressuyage + Poids
+function PRTCard({ weight, deviceLatest, C, dark }) {
+  const mois = new Date().getMonth() + 1
+  const periode = getPeriode(mois)
+  const seuils = PRT_SEUILS[periode]
+
+  const poidsSoir = weight?.poids_kg ?? null
+  // poidsMatin = poids actuel du capteur ce matin (on utilise la dernière lecture < 8h)
+  // On utilise directement le poids live comme poids matin si avant 9h, sinon c'est indéterminé
+  const hour = new Date().getHours()
+  const poidsMatin = hour < 10 ? poidsSoir : null // simplification: en prod, on stocke poids matin separement
+
+  const prt = poidsSoir && weight?.poids_kg_matin
+    ? calculerPRT(weight.poids_kg, weight.poids_kg_matin)
+    : null
+
+  const radiationSum = deviceLatest?.sensor?.radiation_sum ?? null
+  const radiationLive = deviceLatest?.sensor?.radiation ?? null
 
   return (
     <div style={{
       background: C.surface, border: `1.5px solid ${C.border}`,
-      borderRadius: 12, padding: '20px 22px',
+      borderRadius: 14, padding: '16px 18px',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-        <Activity size={18} color={C.green} strokeWidth={2.5} />
-        <span style={{ fontSize: 14, fontWeight: 800, color: C.text,
-          textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          RECOMMANDATION INITIALE (Matin)
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+        <Scale size={14} color={C.green} strokeWidth={2} />
+        <span style={{ fontSize: 11, fontWeight: 700, color: C.textMuted,
+          textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          Capteur Poids · AZ106
+        </span>
+        {weight && (
+          <span style={{
+            marginLeft: 'auto', fontSize: 9, color: C.textDim,
+            background: `${C.green}15`, border: `1px solid ${C.green}25`,
+            borderRadius: 4, padding: '2px 7px', fontWeight: 600,
+          }}>
+            {new Date(weight.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        )}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 12 }}>
+        {/* Poids actuel */}
+        <div style={{
+          background: dark ? '#0d1610' : '#f4f9f5',
+          border: `1px solid ${C.border}`, borderRadius: 9, padding: '10px 12px',
+        }}>
+          <div style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
+            letterSpacing: '0.06em', marginBottom: 4 }}>Poids soir / actuel</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: C.green }}>
+            {poidsSoir !== null ? `${poidsSoir.toFixed(2)} kg` : '—'}
+          </div>
+          {weight?.capteur_id && (
+            <div style={{ fontSize: 9, color: C.textDim, marginTop: 3 }}>
+              Capteur : {weight.capteur_id}
+            </div>
+          )}
+        </div>
+
+        {/* Radiation Sum */}
+        <div style={{
+          background: dark ? '#0d1610' : '#f4f9f5',
+          border: `1px solid ${C.border}`, borderRadius: 9, padding: '10px 12px',
+        }}>
+          <div style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
+            letterSpacing: '0.06em', marginBottom: 4 }}>Radiation Sum J/cm²</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: '#f5e642' }}>
+            {radiationSum !== null ? `${radiationSum.toFixed(1)}` : '—'}
+          </div>
+          <div style={{ fontSize: 9, color: C.textDim, marginTop: 3 }}>
+            Instant : {radiationLive !== null ? `${radiationLive.toFixed(0)} W/m²` : '—'}
+          </div>
+        </div>
+      </div>
+
+      {/* PRT Ressuyage */}
+      <div style={{
+        background: dark ? '#0d1610' : '#f4f9f5',
+        border: `1px solid ${C.border}`, borderRadius: 9, padding: '10px 14px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <div style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
+            letterSpacing: '0.06em' }}>% Ressuyage (PRT)</div>
+          <div style={{ fontSize: 9, color: C.textDim }}>
+            Cible : {seuils.min}% – {seuils.max}% ({periode})
+          </div>
+        </div>
+
+        {prt !== null ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <span style={{ fontSize: 24, fontWeight: 900,
+                color: getPRTStatus(prt, mois)?.color || C.text }}>
+                {prt.toFixed(1)}%
+              </span>
+              <span style={{
+                fontSize: 10, fontWeight: 600, padding: '2px 9px', borderRadius: 5,
+                color: getPRTStatus(prt, mois)?.color,
+                background: `${getPRTStatus(prt, mois)?.color}18`,
+                border: `1px solid ${getPRTStatus(prt, mois)?.color}35`,
+              }}>
+                {getPRTStatus(prt, mois)?.msg}
+              </span>
+            </div>
+            {/* Barre de progression */}
+            <div style={{ height: 6, borderRadius: 3, background: C.border, overflow: 'hidden', position: 'relative' }}>
+              <div style={{
+                position: 'absolute', left: `${(seuils.min / 20) * 100}%`,
+                width: `${((seuils.max - seuils.min) / 20) * 100}%`,
+                height: '100%', background: `${C.green}30`, borderRadius: 2,
+              }} />
+              <div style={{
+                height: '100%', borderRadius: 3,
+                background: getPRTStatus(prt, mois)?.color || C.green,
+                width: `${Math.min(100, (prt / 20) * 100)}%`,
+                transition: 'width 0.5s ease',
+              }} />
+            </div>
+          </>
+        ) : (
+          <div style={{ fontSize: 12, color: C.textDim, fontStyle: 'italic', padding: '4px 0' }}>
+            En attente des données poids matin et soir…
+          </div>
+        )}
+      </div>
+
+      {/* Explication méthode */}
+      <div style={{
+        marginTop: 10, padding: '8px 12px',
+        background: `${C.green}08`, border: `1px solid ${C.green}20`,
+        borderRadius: 8, fontSize: 10, color: C.textDim, lineHeight: 1.5,
+      }}>
+        <strong style={{ color: C.green }}>Formule PRT :</strong>
+        {' '}((Poids soir − Poids matin) / Poids soir) × 100
+        {' '}· Mesuré toutes les 30 s dès 6h00 · Début 1er tour : 5-10 min après seuil atteint
+      </div>
+    </div>
+  )
+}
+
+// Carte Météo
+function MeteoCard({ rec, C, dark }) {
+  if (!rec) return null
+  const ScenIcon = SCENARIO_ICONS[rec.scenario_meteo] || Sun
+  return (
+    <div style={{
+      background: C.surface, border: `1.5px solid ${C.border}`,
+      borderRadius: 12, padding: '14px 16px',
+      display: 'flex', flexDirection: 'column', gap: 10,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <ScenIcon size={14} color={C.amber} strokeWidth={2} />
+        <span style={{ fontSize: 11, fontWeight: 700, color: C.textMuted,
+          textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          Météo du jour
         </span>
         <span style={{
-          marginLeft: 'auto', fontSize: 11, fontWeight: 700,
+          marginLeft: 'auto', fontSize: 10, fontWeight: 600,
+          background: `${C.amber}18`, color: C.amber,
+          border: `1px solid ${C.amber}35`, borderRadius: 4, padding: '1px 7px',
+        }}>
+          {rec.scenario_meteo || '—'}
+        </span>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+        {[
+          { icon: Thermometer, label: 'T max',   value: rec.t_max  != null ? `${rec.t_max}°C`         : '—', color: '#f5a623' },
+          { icon: Droplets,    label: 'HR moy',  value: rec.hr_moy != null ? `${rec.hr_moy}%`          : '—', color: '#4d9de0' },
+          { icon: Sun,         label: 'Rad.',    value: rec.radiation_jcm2 != null ? `${rec.radiation_jcm2.toFixed(1)} J/cm²` : '—', color: '#f5e642' },
+          { icon: Wind,        label: 'VPD',     value: rec.vpd_kpa != null ? `${rec.vpd_kpa} kPa`     : '—', color: '#b197fc' },
+          { icon: CloudRain,   label: 'Pluie',   value: rec.pluie_mm != null ? `${rec.pluie_mm} mm`    : '0 mm', color: '#4d9de0' },
+          { icon: Leaf,        label: 'Stade',   value: rec.stade  || '—',                              color: '#34d96f' },
+        ].map(m => (
+          <div key={m.label} style={{
+            background: dark ? '#0d1610' : '#f4f9f5',
+            border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 10px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
+              <m.icon size={10} color={m.color} strokeWidth={2} />
+              <span style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                {m.label}
+              </span>
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: m.color }}>{m.value}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Carte Plan Journée
+function PlanCard({ rec, prtStatus, C, dark }) {
+  if (!rec) return null
+  const statut = STATUT_MAP[rec.statut || 'non_disponible']
+  return (
+    <div style={{
+      background: C.surface, border: `1.5px solid ${C.border}`,
+      borderRadius: 12, padding: '14px 16px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <Activity size={14} color={C.green} strokeWidth={2} />
+        <span style={{ fontSize: 11, fontWeight: 700, color: C.textMuted,
+          textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          Plan de la journée
+        </span>
+        <span style={{
+          marginLeft: 'auto', fontSize: 10, fontWeight: 700,
           color: statut.color, background: `${statut.color}18`,
-          border: `1px solid ${statut.color}35`, borderRadius: 6, padding: '3px 12px',
+          border: `1px solid ${statut.color}35`, borderRadius: 4, padding: '1px 8px',
         }}>
           {statut.label}
         </span>
       </div>
 
-      {enAttente && (
+      {/* Alerte PRT si hors seuil */}
+      {prtStatus && !prtStatus.ok && (
         <div style={{
-          marginBottom: 20, padding: '12px 16px', borderRadius: 10,
-          background: 'rgba(245,166,35,0.08)', border: '1px solid rgba(245,166,35,0.3)',
-          display: 'flex', alignItems: 'center', gap: 10, color: '#f5a623',
+          marginBottom: 10, padding: '8px 12px', borderRadius: 8,
+          background: `${prtStatus.color}12`, border: `1px solid ${prtStatus.color}35`,
+          fontSize: 11, color: prtStatus.color, display: 'flex', alignItems: 'center', gap: 7,
         }}>
-          <Clock size={16} style={{ animation: 'az-pulse 2s infinite' }} />
-          <div style={{ fontSize: 13, fontWeight: 600 }}>
-            {rec.message || "En attente du seuil de ressuyage pour débuter..."}
-          </div>
+          <AlertTriangle size={12} strokeWidth={2} />
+          {prtStatus.msg} — 1er tour retardé
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 12 }}>
         {[
           { label: 'Tours prévus',   value: rec.nb_tours_prevu ?? '—',                          color: C.green, big: true },
-          { label: 'Heure début',    value: rec.heure_debut    || '—',                          color: C.blue,  big: true },
+          { label: 'Début prévu',    value: rec.heure_debut    || '—',                          color: C.blue,  big: true },
           { label: 'Durée T1-T2',   value: rec.duree_t12_min != null ? `${rec.duree_t12_min} min` : '—', color: C.text },
           { label: 'Durée T3+',     value: rec.duree_t3p_min != null ? `${rec.duree_t3p_min} min` : '—', color: C.text },
           { label: 'Repos initial', value: rec.repos_initial_min != null ? `${rec.repos_initial_min} min` : '—', color: C.text },
-          { label: 'Radiation Prévue', value: rec.radiation_jcm2 != null ? `${rec.radiation_jcm2.toFixed(0)} J/cm²` : '—', color: '#f5e642' },
+          { label: 'Seuil drainage', value: rec.seuil_drainage_pct != null ? `${rec.seuil_drainage_pct}%` : '—', color: C.amber },
         ].map(s => (
           <div key={s.label} style={{
             background: dark ? '#0d1610' : '#f4f9f5',
-            border: `1px solid ${C.border}`, borderRadius: 10, padding: '12px 14px',
+            border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 10px',
           }}>
-            <div style={{ fontSize: 10, color: C.textDim, textTransform: 'uppercase',
-              letterSpacing: '0.06em', marginBottom: 4 }}>{s.label}</div>
-            <div style={{ fontSize: s.big ? 24 : 14, fontWeight: 800, color: s.color }}>
+            <div style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
+              letterSpacing: '0.06em', marginBottom: 3 }}>{s.label}</div>
+            <div style={{ fontSize: s.big ? 20 : 13, fontWeight: 700, color: s.color }}>
               {s.value}
             </div>
           </div>
@@ -142,21 +384,20 @@ function PlanCard({ rec, C, dark }) {
       </div>
 
       {/* Progression tours */}
-      {rec.nb_tours_prevu > 0 && !enAttente && (
+      {rec.nb_tours_prevu > 0 && (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11,
-            color: C.textDim, marginBottom: 6 }}>
-            <span>Progression des tours</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10,
+            color: C.textDim, marginBottom: 5 }}>
+            <span>Tours effectués</span>
             <span style={{ fontWeight: 700, color: C.green }}>
               {rec.nb_tours_reel || 0} / {rec.nb_tours_prevu}
             </span>
           </div>
-          <div style={{ height: 8, borderRadius: 4, background: C.border, overflow: 'hidden' }}>
+          <div style={{ height: 6, borderRadius: 3, background: C.border, overflow: 'hidden' }}>
             <div style={{
-              height: '100%', borderRadius: 4, background: C.green,
+              height: '100%', borderRadius: 3, background: C.green,
               width: `${Math.min(100, ((rec.nb_tours_reel || 0) / rec.nb_tours_prevu) * 100)}%`,
-              transition: 'width 0.8s ease-out',
-              boxShadow: `0 0 10px ${C.green}40`,
+              transition: 'width 0.5s ease',
             }} />
           </div>
         </div>
@@ -170,47 +411,193 @@ function NPKCard({ rec, C, dark }) {
   if (!rec?.doses_npk) return null
   const npk = rec.doses_npk
   const canaux = [
-    { key: 'canal_A_g', label: 'Canal A (KNO₃)',   color: '#34d96f' },
-    { key: 'canal_B_g', label: 'Canal B (Ca·NO₃)', color: '#4d9de0' },
-    { key: 'canal_C_g', label: 'Canal C (MgSO₄)', color: '#b197fc' },
-    { key: 'canal_D_g', label: 'Canal D (K₂SO₄)', color: '#f5a623' },
+    { key: 'canal_A_g', label: 'Canal A (KNO₃)',   color: '#34d96f', note: 'N + K' },
+    { key: 'canal_B_g', label: 'Canal B (Ca·NO₃)', color: '#4d9de0', note: 'Calcium' },
+    { key: 'canal_C_g', label: 'Canal C (MgSO₄)', color: '#b197fc', note: 'Magnésium' },
+    { key: 'canal_D_g', label: 'Canal D (K₂SO₄)', color: '#f5a623', note: 'K supplém.' },
   ]
   return (
     <div style={{
       background: C.surface, border: `1.5px solid ${C.border}`,
-      borderRadius: 12, padding: '16px 20px',
+      borderRadius: 12, padding: '14px 16px',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-        <FlaskConical size={16} color='#b197fc' strokeWidth={2.5} />
-        <span style={{ fontSize: 12, fontWeight: 800, color: C.textMuted,
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <FlaskConical size={14} color='#b197fc' strokeWidth={2} />
+        <span style={{ fontSize: 11, fontWeight: 700, color: C.textMuted,
           textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-          Fertilisation / cycle
+          Doses NPK / cycle
+        </span>
+        <span style={{ marginLeft: 'auto', fontSize: 10, color: C.textDim }}>
+          EC cible : {rec.ec_cible_dSm ?? '—'} dS/m
         </span>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
         {canaux.map(c => {
           const val = npk[c.key]
           const max = Math.max(...canaux.map(x => npk[x.key] || 0))
           const pct = max > 0 ? (val / max) * 100 : 0
           return (
-            <div key={c.key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 110, fontSize: 11, color: C.textMuted, flexShrink: 0 }}>
+            <div key={c.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 90, fontSize: 10, color: C.textMuted, flexShrink: 0 }}>
                 {c.label}
               </div>
-              <div style={{ flex: 1, height: 10, borderRadius: 5, background: C.border, overflow: 'hidden' }}>
+              <div style={{ flex: 1, height: 8, borderRadius: 4, background: C.border, overflow: 'hidden' }}>
                 <div style={{
-                  height: '100%', borderRadius: 5, background: c.color,
-                  width: `${pct}%`, transition: 'width 0.8s ease-out',
+                  height: '100%', borderRadius: 4, background: c.color,
+                  width: `${pct}%`, transition: 'width 0.5s ease',
+                  boxShadow: `0 0 6px ${c.color}60`,
                 }} />
               </div>
-              <div style={{ width: 60, fontSize: 12, fontWeight: 800, color: c.color,
+              <div style={{ width: 52, fontSize: 11, fontWeight: 700, color: c.color,
                 textAlign: 'right', flexShrink: 0 }}>
                 {val != null ? `${val}g` : '—'}
               </div>
             </div>
           )
         })}
+        <div style={{
+          marginTop: 4, padding: '7px 10px',
+          background: dark ? 'rgba(52,217,111,0.06)' : 'rgba(24,120,63,0.04)',
+          border: `1px solid ${C.green}25`, borderRadius: 7,
+          fontSize: 10, color: C.textMuted,
+        }}>
+          EC à ajouter : <strong style={{ color: C.green }}>{npk.ec_ajouter ?? '—'} dS/m</strong>
+          {' '}· Dose totale : <strong style={{ color: C.green }}>{npk.dose_totale_g ?? '—'} g</strong>
+          {' '}· Conc. : <strong style={{ color: C.green }}>{npk.concentration_g_L ?? '—'} g/L</strong>
+        </div>
       </div>
+    </div>
+  )
+}
+
+// Tableau des tours
+function TourTableMini({ tours, C, dark }) {
+  if (!tours || tours.length === 0) return null
+  const valids = tours.filter(t => t.debut !== null)
+  if (valids.length === 0) return (
+    <div style={{
+      background: C.surface, border: `1.5px solid ${C.border}`,
+      borderRadius: 12, padding: '32px 16px',
+      textAlign: 'center', color: C.textDim, fontSize: 12, fontStyle: 'italic',
+    }}>
+      Aucun tour démarré aujourd'hui
+    </div>
+  )
+
+  return (
+    <div style={{
+      background: C.surface, border: `1.5px solid ${C.border}`,
+      borderRadius: 12, overflow: 'hidden',
+    }}>
+      <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}`,
+        fontSize: 11, fontWeight: 700, color: C.textMuted,
+        textTransform: 'uppercase', letterSpacing: '0.08em',
+        display: 'flex', alignItems: 'center', gap: 6,
+      }}>
+        <Clock size={12} color={C.green} strokeWidth={2} />
+        Tours réels aujourd'hui ({valids.length})
+      </div>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit', fontSize: 11 }}>
+          <thead>
+            <tr style={{ background: dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
+              {['N°', 'Début', 'Fin', 'Durée', 'Rad. Sum', 'Cumul Rad.', 'EC Apport'].map(h => (
+                <th key={h} style={{ padding: '6px 10px', textAlign: 'center',
+                  color: C.textDim, fontWeight: 630, fontSize: 10,
+                  textTransform: 'uppercase', letterSpacing: '0.04em',
+                  borderBottom: `1px solid ${C.border}` }}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {valids.map((t, i) => (
+              <tr key={i}
+                style={{ borderBottom: i < valids.length - 1 ? `1px solid ${C.border}` : 'none' }}
+                onMouseEnter={e => e.currentTarget.style.background = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <td style={{ padding: '7px 10px', textAlign: 'center' }}>
+                  <div style={{ width: 22, height: 22, borderRadius: 5, margin: '0 auto',
+                    background: `${C.green}15`, border: `1px solid ${C.green}30`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 11, fontWeight: 800, color: C.green }}>
+                    {t.tour_num}
+                  </div>
+                </td>
+                <td style={{ padding: '7px 10px', textAlign: 'center', color: C.text, fontWeight: 630 }}>{t.debut || '—'}</td>
+                <td style={{ padding: '7px 10px', textAlign: 'center', color: C.textMuted }}>{t.fin || '—'}</td>
+                <td style={{ padding: '7px 10px', textAlign: 'center', color: C.text }}>{t.duree_min != null ? `${t.duree_min} min` : '—'}</td>
+                <td style={{ padding: '7px 10px', textAlign: 'center', color: '#f5e642' }}>{t.radiation_sum != null ? t.radiation_sum.toFixed(1) : '—'}</td>
+                <td style={{ padding: '7px 10px', textAlign: 'center', color: '#f5a623' }}>{t.cumul_radiation != null ? t.cumul_radiation.toFixed(1) : '—'}</td>
+                <td style={{ padding: '7px 10px', textAlign: 'center', color: C.green }}>{t.ec_apport != null ? t.ec_apport.toFixed(2) : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// Ajustements
+function AjustementPanel({ ajustements, C, dark }) {
+  if (!ajustements || ajustements.length === 0) return (
+    <div style={{ textAlign: 'center', padding: '24px 0',
+      color: C.textDim, fontSize: 12, fontStyle: 'italic' }}>
+      Aucun ajustement encore — en attente du premier tour
+    </div>
+  )
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {[...ajustements].reverse().map((a, i) => {
+        const cfg = ACTION_COLORS[a.action] || { color: C.textMuted, bg: C.toggleBg, icon: Info }
+        const AIcon = cfg.icon
+        return (
+          <div key={i} style={{
+            background: cfg.bg, border: `1.5px solid ${cfg.color}35`,
+            borderRadius: 10, padding: '11px 14px',
+            display: 'flex', flexDirection: 'column', gap: 6,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                width: 26, height: 26, borderRadius: 7,
+                background: cfg.color + '20', border: `1px solid ${cfg.color}40`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <AIcon size={13} color={cfg.color} strokeWidth={2.5} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: cfg.color }}>Tour {a.tour}</span>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, color: cfg.color,
+                    background: cfg.color + '18', border: `1px solid ${cfg.color}35`,
+                    borderRadius: 4, padding: '1px 7px',
+                  }}>{a.action}</span>
+                  {a.drainage_reel != null && (
+                    <span style={{ marginLeft: 'auto', fontSize: 10, color: C.textDim }}>
+                      Drain : <strong style={{ color: cfg.color }}>{a.drainage_reel.toFixed(1)}%</strong>
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: 11, color: C.textMuted, marginTop: 3 }}>{a.raison}</div>
+              </div>
+            </div>
+            {!a.stop && (
+              <div style={{ display: 'flex', gap: 12, paddingLeft: 34, fontSize: 11 }}>
+                <span style={{ color: C.textDim }}>
+                  Repos : <strong style={{ color: C.text }}>{a.repos_suivant_min} min</strong>
+                </span>
+                <span style={{ color: C.textDim }}>
+                  Durée : <strong style={{ color: C.text }}>{a.duree_suivant_min} min</strong>
+                </span>
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -244,61 +631,63 @@ function ConfigModal({ deviceId, token, onClose, C, dark }) {
   }
 
   const inputSt = {
-    width: '100%', padding: '10px 14px', borderRadius: 9,
+    width: '100%', padding: '9px 12px', borderRadius: 8,
     border: `1.5px solid ${C.border}`, background: C.inputBg,
-    color: C.text, fontSize: 13, fontFamily: 'inherit', outline: 'none',
+    color: C.text, fontSize: 12, fontFamily: 'inherit', outline: 'none',
     boxSizing: 'border-box',
   }
   const labelSt = {
-    display: 'block', color: C.textMuted, fontSize: 11, fontWeight: 700,
-    textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8,
+    display: 'block', color: C.textMuted, fontSize: 10, fontWeight: 700,
+    textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6,
   }
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.75)',
+      position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.7)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
-      backdropFilter: 'blur(4px)',
     }}>
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
-        borderRadius: 20, padding: '28px 32px', width: '100%', maxWidth: 440,
-        boxShadow: '0 32px 100px rgba(0,0,0,0.6)',
+        borderRadius: 16, padding: '24px 28px', width: '100%', maxWidth: 420,
+        boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-          <Settings size={20} color={C.green} strokeWidth={2.5} />
-          <div style={{ fontSize: 16, fontWeight: 900, color: C.text }}>
-            Configuration AZ106
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+          <Settings size={16} color={C.green} strokeWidth={2} />
+          <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>
+            Configuration IA — AZ106
           </div>
           <button onClick={onClose} style={{ marginLeft: 'auto', background: 'none',
             border: 'none', cursor: 'pointer', color: C.textDim }}>
-            <X size={20} strokeWidth={2.5} />
+            <X size={16} strokeWidth={2} />
           </button>
         </div>
 
         {!cfg ? (
-          <div style={{ textAlign: 'center', color: C.textDim, padding: 32 }}>Chargement...</div>
+          <div style={{ textAlign: 'center', color: C.textDim, padding: 24 }}>Chargement…</div>
         ) : (
           <>
-            <div style={{ marginBottom: 20 }}>
+            <div style={{ marginBottom: 14 }}>
               <label style={labelSt}>Date de plantation</label>
               <input type="date" value={form.date_plantation}
                 onChange={e => setForm(p => ({ ...p, date_plantation: e.target.value }))}
                 style={inputSt} />
+              <div style={{ fontSize: 10, color: C.textDim, marginTop: 5 }}>
+                Utilisé pour calculer le stade agronomique (végétatif, floraison, etc.)
+              </div>
             </div>
 
-            <div style={{ marginBottom: 24 }}>
-              <label style={labelSt}>Agent IA</label>
-              <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ marginBottom: 20 }}>
+              <label style={labelSt}>Agent IA actif</label>
+              <div style={{ display: 'flex', gap: 8 }}>
                 {[true, false].map(v => (
                   <button key={String(v)}
                     onClick={() => setForm(p => ({ ...p, actif: v }))}
                     style={{
-                      flex: 1, padding: '10px', borderRadius: 9, fontFamily: 'inherit',
-                      border: `2px solid ${form.actif === v ? C.green : C.border}`,
+                      flex: 1, padding: '8px', borderRadius: 7, fontFamily: 'inherit',
+                      border: `1.5px solid ${form.actif === v ? C.green : C.border}`,
                       background: form.actif === v ? `${C.green}15` : 'transparent',
                       color: form.actif === v ? C.green : C.textMuted,
-                      fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                      fontSize: 12, fontWeight: 630, cursor: 'pointer',
                     }}>
                     {v ? 'Activé' : 'Désactivé'}
                   </button>
@@ -306,21 +695,31 @@ function ConfigModal({ deviceId, token, onClose, C, dark }) {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+            {/* Info EC bassin */}
+            <div style={{
+              marginBottom: 20, padding: '10px 14px', borderRadius: 9,
+              background: `${C.green}08`, border: `1px solid ${C.green}20`,
+              fontSize: 11, color: C.textMuted, lineHeight: 1.6,
+            }}>
+              <strong style={{ color: C.green }}>EC bassin :</strong> valeur fixe 0.7–0.8 dS/m (eau source Azura)<br />
+              <strong style={{ color: C.green }}>Méthode :</strong> Hybride (règles agronomiques + ML)
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button onClick={onClose} style={{
-                padding: '10px 22px', borderRadius: 10,
+                padding: '8px 18px', borderRadius: 8,
                 border: `1.5px solid ${C.border}`, background: 'transparent',
-                color: C.textMuted, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                color: C.textMuted, fontSize: 12, fontFamily: 'inherit', cursor: 'pointer',
               }}>Annuler</button>
               <button onClick={handleSave} disabled={saving} style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '10px 24px', borderRadius: 10,
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '8px 20px', borderRadius: 8,
                 background: saving ? C.toggleBg : C.green, color: '#fff',
-                border: 'none', fontSize: 13, fontWeight: 800,
+                border: 'none', fontSize: 12, fontWeight: 700,
                 fontFamily: 'inherit', cursor: saving ? 'not-allowed' : 'pointer',
               }}>
-                <Save size={14} strokeWidth={3} />
-                {saving ? 'Enregistrement...' : 'Enregistrer'}
+                <Save size={12} strokeWidth={2.5} />
+                {saving ? 'Enregistrement…' : 'Enregistrer'}
               </button>
             </div>
           </>
@@ -338,29 +737,53 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
   const width = useWindowWidth()
   const isMobile = width < 640
 
+  // Device AZ106 uniquement
   const [az106Device, setAz106Device] = useState(null)
   const [rec, setRec] = useState(null)
   const [tours, setTours] = useState([])
-  const [deviceLatest, setDeviceLatest] = useState(null)
+  const [weight, setWeight] = useState(null)        // dernière lecture poids
+  const [deviceLatest, setDeviceLatest] = useState(null)  // lectures capteurs live
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [showConfig, setShowConfig] = useState(false)
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState('plan')
   const intervalRef = useRef(null)
+  const weightIntervalRef = useRef(null)
 
   const today = new Date().toISOString().split('T')[0]
+  const mois = new Date().getMonth() + 1
 
   // ── Trouver device AZ106 ──────────────────────────────────
   useEffect(() => {
     getDevices(token).then(farms => {
       const az = farms.find(f => f.farm_name === AZ106_FARM || f.farm_name?.includes('AZ106'))
-      if (az?.houses?.length > 0) setAz106Device(az.houses[0])
-      else if (farms[0]?.houses?.length > 0) setAz106Device(farms[0].houses[0])
-    }).catch(() => setError('Impossible de charger les devices'))
+      if (az?.houses?.length > 0) {
+        setAz106Device(az.houses[0])
+      } else {
+        // fallback: premier device disponible
+        for (const farm of farms) {
+          if (farm.houses?.length > 0) {
+            setAz106Device(farm.houses[0])
+            break
+          }
+        }
+      }
+    }).catch(e => setError('Impossible de charger les devices'))
   }, [token])
 
-  // ── Charger lectures live sensor ──────────────────────────
+  // ── Charger données capteur poids ─────────────────────────
+  const loadWeight = useCallback(async () => {
+    if (!az106Device) return
+    try {
+      const w = await getLatestWeight(token, az106Device.farm_name)
+      setWeight(w)
+    } catch {
+      // poids non disponible
+    }
+  }, [az106Device, token])
+
+  // ── Charger lectures live sensor (radiation_sum) ──────────
   const loadDeviceLatest = useCallback(async () => {
     if (!az106Device) return
     try {
@@ -369,12 +792,24 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
     } catch {}
   }, [az106Device, token])
 
+  // ── Calculer PRT depuis capteur (6h–10h, toutes les 30s) ─
+  const prt = weight?.poids_kg && weight?.poids_kg_matin
+    ? calculerPRT(weight.poids_kg, weight.poids_kg_matin)
+    : null
+  const prtStatus = prt !== null ? getPRTStatus(prt, mois) : null
+
   // ── Charger recommandation (auto-génération) ──────────────
   const loadRec = useCallback(async (silent = false) => {
     if (!az106Device) return
     if (!silent) setLoading(true)
     else setRefreshing(true)
+    setError('')
     try {
+      // Radiation_Sum depuis capteur live
+      const radSum = deviceLatest?.sensor?.radiation_sum ?? null
+
+      // Appeler l'endpoint recommandation (auto-génère si absent)
+      // Passer radiation_sum en payload si dispo
       const [recData, toursData] = await Promise.all([
         getAIRec(token, az106Device.id, today),
         getDeviceTours(token, az106Device.id, today),
@@ -387,28 +822,41 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [az106Device, token, today])
+  }, [az106Device, token, today, deviceLatest])
 
+  // ── Auto-génération initiale dès device disponible ────────
   useEffect(() => {
     if (az106Device) {
+      loadWeight()
       loadDeviceLatest()
-      loadRec()
     }
-  }, [az106Device, loadRec, loadDeviceLatest])
+  }, [az106Device])
+
+  useEffect(() => {
+    if (az106Device) loadRec()
+  }, [az106Device])
 
   // ── Refresh automatique toutes les 30s ───────────────────
   useEffect(() => {
     if (!az106Device) return
     intervalRef.current = setInterval(() => {
+      loadWeight()
       loadDeviceLatest()
       loadRec(true)
     }, 30_000)
     return () => clearInterval(intervalRef.current)
-  }, [loadRec, loadDeviceLatest, az106Device])
+  }, [loadRec, loadWeight, loadDeviceLatest, az106Device])
+
+  const tabs = [
+    { id: 'plan',        label: 'Plan',       icon: Activity },
+    { id: 'npk',         label: 'NPK',         icon: FlaskConical },
+    { id: 'ajustements', label: 'Ajustements', icon: Brain },
+    { id: 'tours',       label: 'Tours réels', icon: Clock },
+  ]
 
   // ── Render ────────────────────────────────────────────────
   return (
-    <div style={{ animation: 'az-fade-in 0.3s ease both', maxWidth: 1000, margin: '0 auto' }}>
+    <div style={{ animation: 'az-fade-in 0.3s ease both' }}>
 
       {showConfig && az106Device && (
         <ConfigModal deviceId={az106Device.id} token={token}
@@ -418,106 +866,274 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
 
       {/* Header */}
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 24, gap: 12, flexWrap: 'wrap'
+        display: 'flex', alignItems: isMobile ? 'flex-start' : 'center',
+        flexDirection: isMobile ? 'column' : 'row',
+        justifyContent: 'space-between', marginBottom: 24, gap: 12,
       }}>
         <div>
           <h1 style={{ fontSize: isMobile ? 18 : 22, fontWeight: 900, color: C.text,
             marginBottom: 4, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Brain size={isMobile ? 22 : 26} color={C.green} strokeWidth={2.5} />
+            <Brain size={isMobile ? 18 : 22} color={C.green} strokeWidth={2} />
             Agent IA Irrigation
           </h1>
-          <p style={{ fontSize: 12, color: C.textDim, fontWeight: 600 }}>
-            AZ106 · {today} · Auto-piloté
+          <p style={{ fontSize: 11, color: C.textDim }}>
+            Station AZ106 · Recommandation automatique · {today}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={() => { loadDeviceLatest(); loadRec(true) }} disabled={refreshing}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => {
+            loadWeight()
+            loadDeviceLatest()
+            loadRec(true)
+          }} disabled={refreshing}
             style={{
-              display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px',
-              borderRadius: 10, border: `1.5px solid ${C.border}`,
-              background: C.surface, color: C.textMuted,
-              fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '7px 14px', borderRadius: 8,
+              border: `1px solid ${dark ? '#1c2e22' : '#c0d8c8'}`,
+              background: C.toggleBg, color: C.textMuted,
+              fontSize: 12, fontWeight: 630, fontFamily: 'inherit', cursor: 'pointer',
             }}>
-            <RefreshCw size={14} strokeWidth={2.5}
+            <RefreshCw size={12} strokeWidth={2}
               style={{ animation: refreshing ? 'az-spin 0.7s linear infinite' : 'none' }} />
             {!isMobile && 'Actualiser'}
           </button>
-          <button onClick={() => setShowConfig(true)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px',
-              borderRadius: 10, border: `1.5px solid ${C.border}`,
-              background: C.surface, color: C.textMuted,
-              fontSize: 13, fontWeight: 700, cursor: 'pointer'
-            }}>
-            <Settings size={14} strokeWidth={2.5} />
-            {!isMobile && 'Date plantation'}
-          </button>
+          {az106Device && (
+            <button onClick={() => setShowConfig(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '7px 14px', borderRadius: 8,
+                border: `1px solid ${dark ? '#1c2e22' : '#c0d8c8'}`,
+                background: C.toggleBg, color: C.textMuted,
+                fontSize: 12, fontWeight: 630, fontFamily: 'inherit', cursor: 'pointer',
+              }}>
+              <Settings size={12} strokeWidth={2} />
+              {!isMobile && 'Date plantation'}
+            </button>
+          )}
         </div>
       </div>
 
+      {/* Layout principal */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        {/* Erreur */}
         {error && (
-          <div style={{ padding: '12px 16px', borderRadius: 10,
+          <div style={{ padding: '10px 14px', borderRadius: 8,
             background: 'rgba(240,82,82,0.08)', border: '1px solid rgba(240,82,82,0.25)',
-            color: '#f05252', fontSize: 13, fontWeight: 600 }}>
+            color: '#f05252', fontSize: 12 }}>
             ⚠ {error}
           </div>
         )}
 
-        {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12,
-            color: C.textDim, fontSize: 14, padding: '100px 0', justifyContent: 'center' }}>
-            <RefreshCw size={20} style={{ animation: 'az-pulse 1.2s ease-in-out infinite' }} />
-            Calcul de la recommandation initiale...
-          </div>
-        ) : rec ? (
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 340px', gap: 16 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <PlanCard rec={rec} C={C} dark={dark} />
-              <div style={{ background: C.surface, border: `1.5px solid ${C.border}`,
-                borderRadius: 12, padding: '16px 20px' }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: C.textMuted,
-                  textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
-                  Tours réels aujourd'hui
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {tours.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '20px', color: C.textDim, fontSize: 13 }}>
-                      En attente du premier tour
-                    </div>
-                  ) : tours.map(t => (
-                    <div key={t.tour_num} style={{ display: 'flex', alignItems: 'center', gap: 12,
-                      padding: '10px 14px', background: dark ? '#0d1610' : '#f4f9f5',
-                      borderRadius: 8, border: `1px solid ${C.border}` }}>
-                      <div style={{ width: 24, height: 24, borderRadius: 6, background: C.green,
-                        color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 12, fontWeight: 900 }}>{t.tour_num}</div>
-                      <div style={{ flex: 1, fontSize: 13, fontWeight: 700, color: C.text }}>
-                        Début: {t.debut || '—'} · Durée: {t.duree_min || '—'} min
-                      </div>
-                      <div style={{ fontSize: 12, color: C.textDim }}>{t.ec_apport ? `EC: ${t.ec_apport.toFixed(1)}` : ''}</div>
-                    </div>
-                  ))}
-                </div>
+        {/* Device info banner */}
+        {az106Device && (
+          <div style={{
+            background: C.surface, border: `1.5px solid ${C.border}`,
+            borderRadius: 12, padding: '10px 16px',
+            display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+          }}>
+            <div style={{
+              width: 10, height: 10, borderRadius: '50%',
+              background: deviceLatest?.online ? '#34d96f' : '#f05252',
+              boxShadow: deviceLatest?.online ? '0 0 8px #34d96f60' : 'none',
+              flexShrink: 0,
+            }} />
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: C.text }}>
+                {az106Device.farm_name} — Station {az106Device.house_number}
+              </div>
+              <div style={{ fontSize: 10, color: C.textDim }}>
+                {deviceLatest?.online ? 'En ligne' : 'Hors ligne'}
+                {' '}· Méthode : hybride (règles + ML)
+                {rec && !rec.pct_ressuyage && (
+                  <span style={{ marginLeft: 8, color: '#f5a623' }}>
+                    ⚠ Ressuyage calculé depuis capteur poids
+                  </span>
+                )}
               </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <NPKCard rec={rec} C={C} dark={dark} />
-              {/* Note informative */}
-              <div style={{ padding: '16px', background: `${C.green}08`, borderRadius: 12,
-                border: `1.5px dashed ${C.green}30`, fontSize: 12, color: C.textDim, lineHeight: 1.6 }}>
-                <Info size={14} color={C.green} style={{ marginBottom: 8 }} />
-                La recommandation est pilotée par le <strong>PRT (Pourcentage de Ressuyage)</strong> calculé via le capteur de poids.<br /><br />
-                EC Bassin cible: <strong>0.7 – 0.8 dS/m</strong>.
+            {/* Radiation live badge */}
+            {deviceLatest?.sensor?.radiation_sum != null && (
+              <div style={{
+                marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6,
+                padding: '5px 12px', borderRadius: 8,
+                background: 'rgba(245,230,66,0.1)', border: '1px solid rgba(245,230,66,0.3)',
+              }}>
+                <Zap size={11} color='#f5e642' strokeWidth={2} />
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#f5e642' }}>
+                  {deviceLatest.sensor.radiation_sum.toFixed(1)} J/cm²
+                </span>
+                <span style={{ fontSize: 9, color: C.textDim }}>Rad. Sum</span>
               </div>
-            </div>
-          </div>
-        ) : (
-          <div style={{ textAlign: 'center', padding: '100px 0', color: C.textDim }}>
-            Aucune recommandation disponible pour AZ106
+            )}
           </div>
         )}
+
+        {/* Grille principale : PRT à gauche, contenu à droite */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '300px 1fr',
+          gap: 16,
+          alignItems: 'start',
+        }}>
+          {/* Colonne gauche : PRT + Poids */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <PRTCard weight={weight} deviceLatest={deviceLatest} C={C} dark={dark} />
+
+            {/* Stade agronomique */}
+            {rec?.stade && (
+              <div style={{
+                background: C.surface, border: `1.5px solid ${C.border}`,
+                borderRadius: 12, padding: '12px 16px',
+                display: 'flex', alignItems: 'center', gap: 10,
+              }}>
+                <Leaf size={14} color='#34d96f' strokeWidth={2} />
+                <div>
+                  <div style={{ fontSize: 10, color: C.textDim, textTransform: 'uppercase',
+                    letterSpacing: '0.06em', marginBottom: 2 }}>Stade phénologique</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: '#34d96f',
+                    textTransform: 'capitalize' }}>{rec.stade}</div>
+                </div>
+                <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                  <div style={{ fontSize: 10, color: C.textDim, marginBottom: 2 }}>J plantation</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>
+                    {rec.j_plantation != null ? `J+${rec.j_plantation}` : '—'}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Colonne droite : Recommandation */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+            {loading && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10,
+                color: C.textDim, fontSize: 12, padding: '60px 0',
+                justifyContent: 'center' }}>
+                <RefreshCw size={16} style={{ animation: 'az-pulse 1.2s ease-in-out infinite' }} />
+                Génération automatique de la recommandation IA…
+              </div>
+            )}
+
+            {!loading && !az106Device && (
+              <div style={{ textAlign: 'center', padding: '60px 0', color: C.textDim, fontSize: 12 }}>
+                Station AZ106 non trouvée
+              </div>
+            )}
+
+            {!loading && rec && (
+              <>
+                {/* Météo */}
+                <MeteoCard rec={rec} C={C} dark={dark} />
+
+                {/* Tabs */}
+                <div style={{ display: 'flex', gap: 4, borderBottom: `1px solid ${C.border}`, paddingBottom: 0 }}>
+                  {tabs.map(tab => {
+                    const active = activeTab === tab.id
+                    const TabIcon = tab.icon
+                    return (
+                      <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 5,
+                          padding: '8px 14px', border: 'none',
+                          borderBottom: `2.5px solid ${active ? C.green : 'transparent'}`,
+                          background: 'transparent',
+                          color: active ? C.green : C.textMuted,
+                          fontSize: 12, fontWeight: active ? 700 : 500,
+                          fontFamily: 'inherit', cursor: 'pointer',
+                          transition: 'all 0.15s', marginBottom: -1,
+                        }}>
+                        <TabIcon size={12} strokeWidth={2} />
+                        {tab.label}
+                        {tab.id === 'ajustements' && rec.ajustements?.length > 0 && (
+                          <span style={{
+                            background: C.green, color: '#fff',
+                            borderRadius: 10, padding: '0 5px',
+                            fontSize: 9, fontWeight: 800, marginLeft: 2,
+                          }}>{rec.ajustements.length}</span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Tab content */}
+                {activeTab === 'plan' && (
+                  <PlanCard rec={rec} prtStatus={prtStatus} C={C} dark={dark} />
+                )}
+
+                {activeTab === 'npk' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <NPKCard rec={rec} C={C} dark={dark} />
+                    {rec.et0_mm && (
+                      <div style={{
+                        background: C.surface, border: `1.5px solid ${C.border}`,
+                        borderRadius: 12, padding: '14px 16px',
+                      }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted,
+                          textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+                          Calculs FAO-56
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 8 }}>
+                          {[
+                            { label: 'ET0 (Penman)', value: `${rec.et0_mm} mm/j`, color: '#4d9de0' },
+                            { label: 'ETc cultural', value: `${rec.etc_mm} mm/j`,  color: C.green },
+                            { label: 'Fraction lessivage', value: `${((rec.fraction_lessivage||0)*100).toFixed(0)}%`, color: C.amber },
+                            { label: 'Volume total', value: rec.volume_total_l_ha ? `${(rec.volume_total_l_ha/1000).toFixed(1)} m³/ha` : '—', color: C.green },
+                          ].map(s => (
+                            <div key={s.label} style={{
+                              background: dark ? '#0d1610' : '#f4f9f5',
+                              border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 12px',
+                            }}>
+                              <div style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
+                                letterSpacing: '0.05em', marginBottom: 4 }}>{s.label}</div>
+                              <div style={{ fontSize: 16, fontWeight: 800, color: s.color }}>{s.value}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'ajustements' && (
+                  <div style={{
+                    background: C.surface, border: `1.5px solid ${C.border}`,
+                    borderRadius: 12, padding: '14px 16px',
+                  }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted,
+                      textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+                      Ajustements automatiques du jour
+                    </div>
+                    <AjustementPanel ajustements={rec.ajustements} C={C} dark={dark} />
+                  </div>
+                )}
+
+                {activeTab === 'tours' && (
+                  <TourTableMini tours={tours} C={C} dark={dark} />
+                )}
+              </>
+            )}
+
+            {!loading && !rec && !error && az106Device && (
+              <div style={{
+                background: C.surface, border: `1.5px solid ${C.border}`,
+                borderRadius: 12, padding: '40px 24px', textAlign: 'center',
+              }}>
+                <Brain size={32} color={C.green} strokeWidth={1.5}
+                  style={{ display: 'block', margin: '0 auto 12px' }} />
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 6 }}>
+                  Génération en cours…
+                </div>
+                <div style={{ fontSize: 11, color: C.textDim }}>
+                  La recommandation IA se génère automatiquement chaque matin à 6h00.<br />
+                  Configurez la date de plantation via le bouton <strong>Date plantation</strong>.
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
