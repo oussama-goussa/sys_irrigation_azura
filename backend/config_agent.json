@@ -8,7 +8,7 @@
     "increment_prudence": 4,
     "increment_arret": 8,
     "coeff_prolongation": 0.8,
-    "max_repos": 25
+    "max_repos": 40
   },
   "duree": {
     "reduction_prudence": 1,
