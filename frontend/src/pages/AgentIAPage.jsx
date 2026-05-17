@@ -1032,18 +1032,41 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
             display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
           }}>
             <div style={{
-              width: 8, height: 8, borderRadius: '40%',
-              background: deviceLatest?.online ? '#137f39' : '#f05252',
-              boxShadow: deviceLatest?.online ? '0 0 8px #34d96f60' : 'none',
-              flexShrink: 0,
-            }} />
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: deviceLatest?.online
+                ? (dark ? 'rgba(52,217,111,0.10)' : 'rgba(52,217,111,0.08)')
+                : (dark ? 'rgba(255,80,80,0.10)'  : 'rgba(255,80,80,0.08)'),
+              border: `1px solid ${deviceLatest?.online ? '#34d96f30' : '#ff505030'}`,
+              borderRadius: 6, padding: '4px 10px',
+              color: deviceLatest?.online ? C.green : C.red,
+              fontWeight: 630, fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0,
+            }}>
+              <div style={{ position: 'relative', width: 10, height: 10, flexShrink: 0 }}>
+                {deviceLatest?.online && (
+                  <div style={{
+                    position: 'absolute', top: '50%', left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: 10, height: 10, borderRadius: '50%',
+                    background: C.green, opacity: 0.4,
+                    animation: 'ripple 1.5s ease-out infinite',
+                  }} />
+                )}
+                <div style={{
+                  position: 'absolute', top: '50%', left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: 8, height: 8, borderRadius: '50%',
+                  background: deviceLatest?.online ? C.green : '#ff5050',
+                  boxShadow: deviceLatest?.online ? `0 0 5px ${C.green}` : 'none',
+                }} />
+              </div>
+              {deviceLatest?.online ? '\u00A0En ligne' : 'Hors ligne'}
+            </div>
             <div>
               <div style={{ fontSize: 13, fontWeight: 800, color: C.text }}>
                 {az106Device.farm_name} — Station {az106Device.house_number}
               </div>
               <div style={{ fontSize: 10, color: C.textDim }}>
-                {deviceLatest?.online ? 'En ligne' : 'Hors ligne'}
-                {' '}· Méthode : hybride (règles + ML)
+                Méthode : hybride (règles + ML)
                 {rec && !rec.pct_ressuyage && (
                   <span style={{ marginLeft: 8, color: '#f5a623' }}>
                     ⚠ Ressuyage calculé depuis capteur poids
