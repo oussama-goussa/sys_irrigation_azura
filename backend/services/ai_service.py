@@ -492,9 +492,11 @@ def generer_recommandation_matin(
             preds = _rf_model.predict(_rf_scaler.transform(X))[0]
             duree_t3p  = max(5, min(15, int(round(float(preds[0])))))
             repos_init = max(5, min(40, int(round(float(preds[1])))))
-            logger.info(f"ML hybride → duree_t3p={duree_t3p} repos={repos_init}")
+            logger.success(f"✅ ML ACTIF → duree_t3p={duree_t3p}min repos={repos_init}min R²={_rf_r2:.3f}")
         except Exception as e:
-            logger.warning(f"ML ignoré : {e}")
+            logger.warning(f"⚠️ ML IGNORÉ → fallback règles : {e}")
+    else:
+        logger.warning(f"⚠️ ML NON DISPONIBLE → règles agronomiques seules (R²={_rf_r2:.3f})")
 
     return {
         "device_id"          : device_id,

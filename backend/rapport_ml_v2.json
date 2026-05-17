@@ -1,0 +1,43 @@
+{
+  "version": "v3_multi_target",
+  "r2_global": 0.9679,
+  "r2_par_target": {
+    "duree_min": 0.9612,
+    "vrai_repos_min": 0.9689,
+    "moy_pct_drainage": 0.9737
+  },
+  "n_features": 12,
+  "features": [
+    "rad_cumul_tour_Jcm2",
+    "radiation_tour",
+    "mois",
+    "num_tour",
+    "ec_apport",
+    "nbr_tours_total",
+    "pct_ressuyage",
+    "stress_index",
+    "t_moy",
+    "hr_moy",
+    "vpd_kpa",
+    "drain_prev"
+  ],
+  "targets": [
+    "duree_min",
+    "vrai_repos_min",
+    "moy_pct_drainage"
+  ],
+  "feature_importance": {
+    "rad_cumul_tour_Jcm2": 0.2364,
+    "nbr_tours_total": 0.1141,
+    "ec_apport": 0.0872,
+    "num_tour": 0.0778,
+    "pct_ressuyage": 0.0718,
+    "drain_prev": 0.0676,
+    "radiation_tour": 0.0654,
+    "mois": 0.0648,
+    "t_moy": 0.057,
+    "hr_moy": 0.055,
+    "vpd_kpa": 0.0518,
+    "stress_index": 0.0512
+  }
+}
