@@ -197,7 +197,7 @@ def calculer_prt_ressuyage_az106(db: Session, device_id: int, target_date: date)
         return None
 
     # ── 2. Poids matin : première lecture après 06:00 UTC aujourd'hui ──
-    matin_start = _dt.datetime.combine(today_utc, _dt.time(6, 45))
+    matin_start = _dt.datetime.combine(today_utc, _dt.time(7, 00))
     poids_matin_reading = (
         db.query(WeightReading)
         .filter(
