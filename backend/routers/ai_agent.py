@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from datetime import date as date_type, timedelta
 import datetime as _dt_module
+import json
 from loguru import logger
 
 from core.database import get_db
@@ -94,7 +95,7 @@ def get_recommandation(
         .first()
     )
 
-    # ── Supprimer si heure_debut avant 06:00 UTC (bug ancien code) ──
+    # ── Supprimer si heure_debut avant 07:00 UTC (bug ancien code) ──
     if rec and rec.heure_debut:
         try:
             h, m = map(int, rec.heure_debut.split(":"))
@@ -121,9 +122,9 @@ def get_recommandation(
                 methode         = cfg.methode_decision or "hybride",
             )
             # Ne pas sauvegarder si PRT pas encore atteint
-            if result.get("statut") == "en_attente_prt":
-                return result
-            if result.get("statut") == "en_attente_radiation":
+            if result.get("statut") in ["en_attente_prt", "en_attente_radiation"]:
+                logger.info(f"🤖 [AI AGENT] Device {device_id} status: {result.get('statut')} | {result.get('message')}")
+                logger.debug(f"Data: {json.dumps(result, indent=2, default=str)}")
                 return result
             rec = _sauvegarder_recommandation(db, result)
         except Exception as e:
@@ -147,7 +148,10 @@ def get_recommandation(
         db.commit()
         db.refresh(rec)
 
-    return rec.to_dict()              # ← FIN
+    res_dict = rec.to_dict()
+    logger.success(f"🤖 [AI AGENT] Recommendation sent for device {device_id} ({target_date})")
+    logger.debug(f"Payload: {json.dumps(res_dict, indent=2, default=str)}")
+    return res_dict
 
 # ── POST /api/ai/recommandation/{device_id}/generer ───────────
 @router.post("/recommandation/{device_id}/generer")

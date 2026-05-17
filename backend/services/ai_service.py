@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc, and_
 from models.sensor_model import Device, IrrigationTour
 from models.weight_model import WeightReading
+from services.ec_ph import calculer_dose_engrais, corriger_ph
 
 # ── Tentative de chargement du modèle ML ─────────────────────
 _rf_model  = None
@@ -141,7 +142,7 @@ def calculer_prt_ressuyage_az106(db: Session, device_id: int, target_date: date)
     """
     PRT = ((Poids soir - Poids matin) / Poids soir) * 100
     Poids soir  : première lecture 20 min après fin du dernier tour complet de la veille
-    Poids matin : première lecture après 06:00 UTC aujourd'hui
+    Poids matin : première lecture après 07:00 UTC aujourd'hui
     Même logique que GET /api/ai/poids-soir/{device_id}
     """
     # Récupérer farm_name du device pour filtrer le bon capteur
@@ -195,7 +196,7 @@ def calculer_prt_ressuyage_az106(db: Session, device_id: int, target_date: date)
         logger.warning(f"PRT AZ106 : pas de poids soir pour {date_veille}")
         return None
 
-    # ── 2. Poids matin : première lecture après 06:00 UTC aujourd'hui ──
+    # ── 2. Poids matin : première lecture après 07:00 UTC aujourd'hui ──
     matin_start = _dt.datetime.combine(today_utc, _dt.time(7, 00))
     poids_matin_reading = (
         db.query(WeightReading)
@@ -463,6 +464,22 @@ def generer_recommandation_matin(
     duree_t12 = 15 if j_plantation > 30 else 12
     repos_init = 8
 
+    # ── Fertigation : Calculer doses NPK ─────────────────────
+    doses_npk = None
+    correction_ph = None
+    if volume_total and nb_tours > 0:
+        volume_par_cycle = volume_total / nb_tours
+        try:
+            doses_npk = calculer_dose_engrais(
+                ec_cible       = ec_cible_stade,
+                ec_eau_brute   = ec_bassin,
+                volume_cycle_l = volume_par_cycle,
+                stade          = stade
+            )
+            correction_ph = corriger_ph(ph_mesure=6.8, volume_cycle_l=volume_par_cycle)
+        except Exception as e:
+            logger.warning(f"Erreur calcul NPK : {e}")
+
     if _rf_model is not None and _rf_r2 >= 0.70:
         try:
             import numpy as np
@@ -537,6 +554,8 @@ def generer_recommandation_matin(
         "etc_mm"             : etc,
         "volume_total_l_ha"  : volume_total,
         "methode_decision"   : methode,
+        "doses_npk"          : doses_npk,
+        "correction_ph"      : correction_ph,
     }
 
 def ajuster_apres_tour(recommandation: dict, drainage_reel: Optional[float], num_tour: int, tours_restants: int) -> dict:
