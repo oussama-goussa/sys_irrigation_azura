@@ -14,7 +14,8 @@ from pydantic import BaseModel
 from typing import Optional, List
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
-from datetime import date as date_type, datetime
+from datetime import date as date_type
+import datetime as _dt_module
 from loguru import logger
 
 from core.database import get_db
@@ -379,7 +380,7 @@ def update_config(
 
     if body.date_plantation is not None:
         try:
-            cfg.date_plantation = datetime.strptime(body.date_plantation, "%Y-%m-%d").date()
+            cfg.date_plantation = _dt_module.datetime.strptime(body.date_plantation, "%Y-%m-%d").date()
         except ValueError:
             raise HTTPException(400, "Format date_plantation invalide (YYYY-MM-DD)")
     if body.ec_eau_brute is not None:
