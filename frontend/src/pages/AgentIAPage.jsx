@@ -628,7 +628,7 @@ function TourTableMini({ tours, C, dark }) {
                 </td>
                 <td style={{ padding: '7px 10px', textAlign: 'center', color: C.text, fontWeight: 630 }}>{t.debut || '—'}</td>
                 <td style={{ padding: '7px 10px', textAlign: 'center', color: C.textMuted }}>{t.fin || '—'}</td>
-                <td style={{ padding: '7px 10px', textAlign: 'center', color: C.text }}>{t.duree_min != null ? `${t.duree_min} min` : '—'}</td>
+                <td style={{ padding: '7px 10px', textAlign: 'center', color: C.text }}>{t.prg_time_min != null ? `${t.prg_time_min} min` : '—'}</td>
                 <td style={{ padding: '7px 10px', textAlign: 'center', color: '#f5e642' }}>{t.radiation_sum != null ? t.radiation_sum.toFixed(1) : '—'}</td>
                 <td style={{ padding: '7px 10px', textAlign: 'center', color: '#f5a623' }}>{t.cumul_radiation != null ? t.cumul_radiation.toFixed(1) : '—'}</td>
                 <td style={{ padding: '7px 10px', textAlign: 'center', color: C.green }}>{t.ec_apport != null ? t.ec_apport.toFixed(2) : '—'}</td>
@@ -1167,8 +1167,54 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
               </div>
             )}
 
+            {/* Écran attente Radiation */}
+            {!loading && rec && rec.statut === 'en_attente_radiation' && (
+              <div style={{
+                background: C.surface, border: `1.5px solid #4d9de040`,
+                borderRadius: 14, padding: '40px 28px', textAlign: 'center',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
+              }}>
+                <div style={{
+                  width: 60, height: 60, borderRadius: '50%',
+                  background: '#4d9de015', border: '2px solid #4d9de040',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Sun size={28} color='#4d9de0' strokeWidth={1.5} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 8 }}>
+                    PRT ✓ — En attente du seuil de radiation
+                  </div>
+                  <div style={{ fontSize: 12, color: C.textDim, lineHeight: 1.7, maxWidth: 380 }}>
+                    {rec.message}
+                  </div>
+                </div>
+                {rec.nb_tours_prevu > 0 && (
+                  <div style={{
+                    padding: '14px 28px', borderRadius: 12,
+                    background: '#4d9de010', border: '1px solid #4d9de030',
+                  }}>
+                    <div style={{ fontSize: 32, fontWeight: 900, color: '#4d9de0' }}>
+                      {rec.nb_tours_prevu} tours
+                    </div>
+                    <div style={{ fontSize: 10, color: C.textDim, marginTop: 3 }}>
+                      Plan prévu · début dès seuil atteint
+                    </div>
+                  </div>
+                )}
+                {deviceLatest?.sensor?.radiation_sum != null && (
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#f5e642' }}>
+                    Radiation actuelle : {deviceLatest.sensor.radiation_sum.toFixed(1)} J/cm²
+                  </div>
+                )}
+                <div style={{ fontSize: 11, color: C.textDim }}>
+                  Vérification automatique toutes les 30 secondes…
+                </div>
+              </div>
+            )}            
+
             {/* Recommandation complète */}
-            {!loading && rec && rec.statut !== 'en_attente_prt' && (
+            {!loading && rec && rec.statut !== 'en_attente_prt' && rec.statut !== 'en_attente_radiation' && (
               <>
                 <PlanCard rec={rec} prtStatus={prtStatus} C={C} dark={dark} />
                 <TourTableMini tours={tours} C={C} dark={dark} />

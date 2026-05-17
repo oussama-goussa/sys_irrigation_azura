@@ -123,6 +123,8 @@ def get_recommandation(
             # Ne pas sauvegarder si PRT pas encore atteint
             if result.get("statut") == "en_attente_prt":
                 return result
+            if result.get("statut") == "en_attente_radiation":
+                return result
             rec = _sauvegarder_recommandation(db, result)
         except Exception as e:
             logger.error(f"Auto-génération échouée device {device_id} : {e}")
@@ -130,7 +132,22 @@ def get_recommandation(
             logger.error(traceback.format_exc())
             raise HTTPException(500, f"Erreur génération recommandation : {str(e)}")
 
-    return rec.to_dict()
+    # ── Sync nb_tours_reel depuis irrigation_tours ──        ← ICI
+    from models.sensor_model import IrrigationTour
+    tours_count = (
+        db.query(IrrigationTour)
+        .filter(
+            IrrigationTour.device_id == device_id,
+            IrrigationTour.date      == target_date,
+        )
+        .count()
+    )
+    if tours_count != (rec.nb_tours_reel or 0):
+        rec.nb_tours_reel = tours_count
+        db.commit()
+        db.refresh(rec)
+
+    return rec.to_dict()              # ← FIN
 
 # ── POST /api/ai/recommandation/{device_id}/generer ───────────
 @router.post("/recommandation/{device_id}/generer")

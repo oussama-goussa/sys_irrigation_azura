@@ -78,6 +78,14 @@ KC_TABLE = {
     "recolte"      : {"kc": 0.85, "ec_cible": 3.2,  "j_min": 121, "j_max": 9999},
 }
 
+SEUIL_RADIATION_DEBUT = {
+    "vegetatif"    : 5.0,
+    "developpement": 7.0,
+    "floraison"    : 8.0,
+    "grossissement": 10.0,
+    "recolte"      : 8.0,
+}
+
 FEATURES_ML = [
     "rad_cumul_tour_Jcm2", "mois", "num_tour", "ec_apport", "ph_apport",
     "ec_bassin", "temps_repos_min", "nbr_tours_total",
@@ -218,13 +226,79 @@ def calculer_prt_ressuyage_az106(db: Session, device_id: int, target_date: date)
     )
     return round(prt, 2)
 
-def get_radiation_sum_actuel(db: Session, device_id: int) -> Optional[float]:
-    """Radiation_Sum actuel depuis la dernière lecture capteur."""
+def get_radiation_sum_actuel(db: Session, device_id: int, heure_debut_str: Optional[str] = None) -> Optional[float]:
+    """
+    Radiation_Sum depuis capteur.
+    Si heure_debut fournie → dernière lecture AVANT ou À cette heure.
+    Sinon → dernière lecture disponible.
+    """
     from models.sensor_model import SensorReading
-    last = db.query(SensorReading).filter(
-        SensorReading.device_id == device_id
-    ).order_by(desc(SensorReading.timestamp)).first()
-    return last.radiation_sum if last else None
+    import datetime as _dt
+
+    q = db.query(SensorReading).filter(SensorReading.device_id == device_id)
+
+    if heure_debut_str:
+        try:
+            today_utc = _dt.datetime.utcnow().date()
+            h, m = map(int, heure_debut_str.split(":"))
+            # Prendre jusqu'à heure_debut + 5min (marge pour le délai capteur)
+            heure_limite = _dt.datetime.combine(today_utc, _dt.time(h, m)) + _dt.timedelta(minutes=5)
+            q = q.filter(SensorReading.timestamp <= heure_limite)
+        except Exception:
+            pass  # fallback dernière lecture
+
+    last = q.order_by(desc(SensorReading.timestamp)).first()
+
+    if not last:
+        return None
+
+    # radiation_sum peut être 0.0 tôt le matin — retourner None si 0
+    if last.radiation_sum is not None and last.radiation_sum > 0:
+        return last.radiation_sum
+
+    # Chercher la dernière valeur non nulle
+    last_nonzero = (
+        db.query(SensorReading)
+        .filter(
+            SensorReading.device_id   == device_id,
+            SensorReading.radiation_sum > 0,
+        )
+        .order_by(desc(SensorReading.timestamp))
+        .first()
+    )
+    return last_nonzero.radiation_sum if last_nonzero else None
+
+def get_heure_debut_depuis_capteur(
+    db: Session,
+    device_id: int,
+    stade: str,
+    delai_apres_seuil_min: int = 10,   # ← délai configurable
+) -> Optional[str]:
+    from models.sensor_model import SensorReading
+    seuil = SEUIL_RADIATION_DEBUT.get(stade, 8.0)
+    today_start = _dt.datetime.combine(_dt.datetime.utcnow().date(), _dt.time(5, 0))
+
+    lecture = (
+        db.query(SensorReading)
+        .filter(
+            SensorReading.device_id     == device_id,
+            SensorReading.timestamp     >= today_start,
+            SensorReading.radiation_sum >= seuil,
+        )
+        .order_by(SensorReading.timestamp)
+        .first()
+    )
+
+    if lecture:
+        heure_debut = lecture.timestamp + _dt.timedelta(minutes=delai_apres_seuil_min)
+        logger.info(
+            f"Seuil atteint à {lecture.timestamp.strftime('%H:%M')} UTC "
+            f"(radiation_sum={lecture.radiation_sum:.1f} >= {seuil}) "
+            f"→ heure_debut = {heure_debut.strftime('%H:%M')} UTC (+{delai_apres_seuil_min}min)"
+        )
+        return heure_debut.strftime("%H:%M")
+
+    return None
 
 def calc_vpd(t: float, hr: float) -> float:
     if not t or not hr: return 1.0
@@ -363,11 +437,21 @@ def generer_recommandation_matin(
     else:                 nb_tours = 12
     if periode == "froid": nb_tours = max(2, nb_tours - 2)
 
-    # ── Heure début 1er tour — UTC + 7 min ───────────────────
-    heure_debut = (_datetime.utcnow() + timedelta(minutes=7)).strftime("%H:%M")
+    heure_debut = get_heure_debut_depuis_capteur(db, device_id, stade)
+    radiation_sum_actuel = get_radiation_sum_actuel(db, device_id, heure_debut) if heure_debut else None
 
-    # ── Radiation_Sum actuel depuis capteur ───────────────────
-    radiation_sum_actuel = get_radiation_sum_actuel(db, device_id)
+    if heure_debut is None:
+        return {
+            "device_id"     : device_id,
+            "date"          : date_str,
+            "statut"        : "en_attente_radiation",
+            "message"       : f"En attente radiation_sum >= {SEUIL_RADIATION_DEBUT.get(stade, 8.0)} J/cm² (stade: {stade})",
+            "pct_ressuyage" : pct_ressuyage,
+            "nb_tours_prevu": nb_tours,
+            "heure_debut"   : None,
+            "stade"         : stade,
+            "j_plantation"  : j_plantation,
+        }
 
     # FAO-56
     et0 = calculer_et0(t_max, t_min, hr_moy, radiation)
