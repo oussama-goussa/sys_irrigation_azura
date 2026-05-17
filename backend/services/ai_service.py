@@ -461,8 +461,8 @@ def generer_recommandation_matin(
 
     # ── Couche ML : affiner duree_t3p et repos ───────────────
     duree_t3p = 10 if radiation > 90 else 8
-    duree_t12 = 15 if j_plantation > 30 else 12
-    repos_init = 8
+    duree_t12 = 12 if j_plantation > 30 else 11
+    repos_init = 4
 
     # ── Fertigation : Calculer doses NPK ─────────────────────
     doses_npk = None
