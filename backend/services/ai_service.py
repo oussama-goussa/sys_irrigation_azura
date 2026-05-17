@@ -87,11 +87,10 @@ SEUIL_RADIATION_DEBUT = {
 }
 
 FEATURES_ML = [
-    "rad_cumul_tour_Jcm2", "mois", "num_tour", "ec_apport", "ph_apport",
-    "ec_bassin", "temps_repos_min", "nbr_tours_total",
-    "pct_ressuyage", "t_moy", "hr_moy", "vpd_kpa",
-    "est_premier_tour", "drain_prev",
-]
+    "rad_cumul_tour_Jcm2", "radiation_tour", "mois", "num_tour", "ec_apport",
+    "nbr_tours_total", "pct_ressuyage", "stress_index",
+    "t_moy", "hr_moy", "vpd_kpa", "drain_prev",
+]  # 12 features — alignées sur rf_model_v2 / scaler_v2
 
 METEO_FALLBACK = {
     1:  {"t_max":18,"t_min":10,"t_moy":14,"hr_moy":72,"vent_max":2,"pluie_mm":0,"rs_jcm2":43},
