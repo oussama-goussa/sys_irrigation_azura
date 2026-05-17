@@ -6,6 +6,7 @@
 // ============================================================
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Brain, RefreshCw, Settings, Scale,
   Sun, CloudRain, Wind, Thermometer, Droplets,
@@ -734,15 +735,20 @@ function ConfigModal({ deviceId, token, onClose, C, dark }) {
     textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6,
   }
 
-  return (
+  return createPortal(
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.7)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      width: '100vw', height: '100vh', zIndex: 99999,
+      background: 'rgba(0,0,0,0.7)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 24, boxSizing: 'border-box',
     }}>
       <div style={{
         background: C.card, border: `1.5px solid ${C.border}`,
         borderRadius: 16, padding: '24px 28px', width: '100%', maxWidth: 420,
+        maxHeight: '90vh', overflowY: 'auto',
         boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
+        boxSizing: 'border-box', position: 'relative', zIndex: 10000,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
           <Settings size={16} color={C.green} strokeWidth={2} />
@@ -818,7 +824,8 @@ function ConfigModal({ deviceId, token, onClose, C, dark }) {
           </>
         )}
       </div>
-    </div>
+    </div>,
+  document.body
   )
 }
 
