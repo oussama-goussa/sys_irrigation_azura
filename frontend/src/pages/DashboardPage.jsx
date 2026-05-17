@@ -256,7 +256,7 @@ export default function DashboardPage({ token, onSelectDevice, C, dark, isMobile
         marginBottom: 24, flexWrap: 'wrap', gap: 12,
       }}>
         <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 900, color: C.text }}>
-          Dashboard me
+          Dashboard
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 20, flexWrap: 'wrap' }}>
