@@ -474,21 +474,20 @@ def generer_recommandation_matin(
             drain_prev_estime = seuils_generaux["drainage_cible"]
 
             X = np.array([[
-                rad_cumul_estime,
-                mois,
-                num_tour_median,
-                ec_cible_stade,
-                6.0,
-                ec_bassin,
-                repos_init,
-                nb_tours,
-                pct_ressuyage,
-                t_moy or 22.0,
-                hr_moy or 65.0,
-                vpd,
-                0,
-                drain_prev_estime,
+                rad_cumul_estime,      # rad_cumul_tour_Jcm2
+                radiation / nb_tours,  # radiation_tour
+                mois,                  # mois
+                num_tour_median,       # num_tour
+                ec_cible_stade,        # ec_apport
+                nb_tours,              # nbr_tours_total
+                pct_ressuyage,         # pct_ressuyage
+                stress_index,          # stress_index
+                t_moy or 22.0,         # t_moy
+                hr_moy or 65.0,        # hr_moy
+                vpd or 1.0,            # vpd_kpa
+                drain_prev_estime,     # drain_prev
             ]])
+            
             preds = _rf_model.predict(_rf_scaler.transform(X))[0]
             duree_t3p  = max(5, min(15, int(round(float(preds[0])))))
             repos_init = max(5, min(40, int(round(float(preds[1])))))
