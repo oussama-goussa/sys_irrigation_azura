@@ -404,9 +404,9 @@ function PlanCard({ rec, prtStatus, C, dark }) {
             gap: 5, marginBottom: 6 }}>
             <Brain size={10} color='#4d9de0' strokeWidth={2} />
             <span style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
-              letterSpacing: '0.07em' }}>Décision IA · 1er tour</span>
+              letterSpacing: '0.07em' }}>Heure de 1er tour</span>
           </div>
-          <div style={{ fontSize: heureDebut ? 28 : 14, fontWeight: 900,
+          <div style={{ fontSize: heureDebut ? 40 : 14, fontWeight: 900,
             color: heureDebut ? '#4d9de0' : C.amber, lineHeight: 1 }}>
             {heureDebut || '⏳ Calcul...'}
           </div>
