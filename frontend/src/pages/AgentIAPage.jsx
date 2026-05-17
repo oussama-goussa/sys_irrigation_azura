@@ -1032,8 +1032,8 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
             display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
           }}>
             <div style={{
-              width: 10, height: 10, borderRadius: '50%',
-              background: deviceLatest?.online ? '#34d96f' : '#f05252',
+              width: 8, height: 8, borderRadius: '40%',
+              background: deviceLatest?.online ? '#137f39' : '#f05252',
               boxShadow: deviceLatest?.online ? '0 0 8px #34d96f60' : 'none',
               flexShrink: 0,
             }} />
