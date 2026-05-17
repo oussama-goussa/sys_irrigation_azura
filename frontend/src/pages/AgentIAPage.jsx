@@ -298,8 +298,7 @@ function PRTCard({ weight, deviceLatest, prtBackend, C, dark }) {
           </>
         ) : (
           <div style={{
-            fontSize: 11, color: C.textDim,
-            fontStyle: 'italic', padding: '4px 0',
+            fontSize: 8, color: C.textDim, padding: '4px 0',
           }}>
             En attente des données poids matin et soir…
           </div>
