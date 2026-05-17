@@ -459,6 +459,43 @@ def generer_recommandation_matin(
     fl = 0.20
     volume_total = round(etc / (1 - fl) * 10000, 0) if etc else None
 
+    # ── Couche ML : affiner duree_t3p et repos ───────────────
+    duree_t3p = 10 if radiation > 90 else 8
+    duree_t12 = 15 if j_plantation > 30 else 12
+    repos_init = 8
+
+    if _rf_model is not None and _rf_r2 >= 0.70:
+        try:
+            import numpy as np
+            num_tour_median = max(3, nb_tours // 2)
+            rad_cumul_estime = radiation / 2
+            vpd = vpd or 1.0
+            stress_index = vpd * radiation / 1000
+            drain_prev_estime = seuils_generaux["drainage_cible"]
+
+            X = np.array([[
+                rad_cumul_estime,
+                mois,
+                num_tour_median,
+                ec_cible_stade,
+                6.0,
+                ec_bassin,
+                repos_init,
+                nb_tours,
+                pct_ressuyage,
+                t_moy or 22.0,
+                hr_moy or 65.0,
+                vpd,
+                0,
+                drain_prev_estime,
+            ]])
+            preds = _rf_model.predict(_rf_scaler.transform(X))[0]
+            duree_t3p  = max(5, min(15, int(round(float(preds[0])))))
+            repos_init = max(5, min(40, int(round(float(preds[1])))))
+            logger.info(f"ML hybride → duree_t3p={duree_t3p} repos={repos_init}")
+        except Exception as e:
+            logger.warning(f"ML ignoré : {e}")
+
     return {
         "device_id"          : device_id,
         "date"               : date_str,
@@ -474,9 +511,10 @@ def generer_recommandation_matin(
         "ec_cible_dSm"       : ec_cible_stade,
         "nb_tours_prevu"     : nb_tours,
         "heure_debut"        : heure_debut,
-        "duree_t12_min"      : 15 if j_plantation > 30 else 12,
-        "duree_t3p_min"      : 10 if radiation > 90 else 8,
-        "repos_initial_min"  : 8,
+        "duree_t12_min"     : duree_t12,
+        "duree_t3p_min"     : duree_t3p,
+        "repos_initial_min" : repos_init,
+        "ml_utilise"        : _rf_model is not None and _rf_r2 >= 0.70,
         "seuil_drainage_pct" : seuils_generaux["drainage_max"],
         "et0_mm"             : et0,
         "etc_mm"             : etc,
