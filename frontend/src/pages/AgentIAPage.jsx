@@ -481,8 +481,6 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
   // ── Onglets ────────────────────────────────────────────────
   const tabs = [
     { id: 'plan',        label: 'Plan du jour' },
-    { id: 'npk',         label: 'Nutrition NPK' },
-    { id: 'ajustements', label: 'Ajustements' },
     { id: 'tours',       label: 'Tours réels' },
   ]
 
@@ -797,16 +795,13 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
                       borderRadius: 10, padding: '16px 18px',
                     }}>
                       <div style={{ fontSize: 10, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8, fontWeight: 600 }}>
-                        Décision IA · 1er tour
+                        1er tour
                       </div>
                       <div style={{ fontSize: rec.heure_debut ? 32 : 14, fontWeight: 900, color: rec.heure_debut ? C.text : C.textDim, lineHeight: 1, marginBottom: 4 }}>
                         {rec.heure_debut || '⏳ Calcul...'}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
                         <span style={{ fontSize: 10, color: C.textDim }}>UTC</span>
-                        {rec.heure_debut && (
-                          <StatusBadge label="IA ONLY" color={C.green} />
-                        )}
                       </div>
                     </div>
                   </div>
@@ -840,67 +835,6 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
                     </div>
                   )}
                 </div>
-              )}
-
-              {/* Contenu onglet NPK */}
-              {activeTab === 'npk' && rec?.doses_npk && (
-                <Section title="Doses NPK / cycle" icon={FlaskConical} C={C} dark={dark}
-                  action={<span style={{ fontSize: 11, color: C.textDim }}>EC cible : {rec.ec_cible_dSm ?? '—'} dS/m</span>}
-                >
-                  {(() => {
-                    const npk = rec.doses_npk
-                    const canaux = [
-                      { key: 'canal_A_g', label: 'Canal A — KNO₃' },
-                      { key: 'canal_B_g', label: 'Canal B — Ca·NO₃' },
-                      { key: 'canal_C_g', label: 'Canal C — MgSO₄' },
-                      { key: 'canal_D_g', label: 'Canal D — K₂SO₄' },
-                    ]
-                    const maxVal = Math.max(...canaux.map(c => npk[c.key] || 0))
-                    return (
-                      <>
-                        {canaux.map(c => {
-                          const val = npk[c.key]
-                          const pct = maxVal > 0 ? (val / maxVal) * 100 : 0
-                          return (
-                            <div key={c.key} style={{ paddingTop: 10 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                                <span style={{ fontSize: 11, color: C.textMuted }}>{c.label}</span>
-                                <span style={{ fontSize: 12, fontWeight: 700, color: C.text }}>
-                                  {val != null ? `${val} g` : '—'}
-                                </span>
-                              </div>
-                              <ProgressBar value={val || 0} min={0} max={maxVal || 1} color={C.green} C={C} />
-                            </div>
-                          )
-                        })}
-                        <div style={{
-                          marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}`,
-                          display: 'flex', gap: 20, flexWrap: 'wrap',
-                        }}>
-                          <div>
-                            <div style={{ fontSize: 10, color: C.textDim, marginBottom: 2 }}>EC à ajouter</div>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{npk.ec_ajouter ?? '—'} dS/m</div>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 10, color: C.textDim, marginBottom: 2 }}>Dose totale</div>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{npk.dose_totale_g ?? '—'} g</div>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 10, color: C.textDim, marginBottom: 2 }}>Concentration</div>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{npk.concentration_g_L ?? '—'} g/L</div>
-                          </div>
-                        </div>
-                      </>
-                    )
-                  })()}
-                </Section>
-              )}
-
-              {/* Contenu onglet Ajustements */}
-              {activeTab === 'ajustements' && (
-                <Section title="Historique des ajustements" icon={Brain} C={C} dark={dark}>
-                  <AdjustmentList ajustements={rec?.ajustements} C={C} dark={dark} />
-                </Section>
               )}
 
               {/* Contenu onglet Tours réels */}
