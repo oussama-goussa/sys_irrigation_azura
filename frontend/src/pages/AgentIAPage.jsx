@@ -621,7 +621,7 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
           <Section title="% Ressuyage (PRT)" icon={Activity} C={C} dark={dark}
             action={
               <span style={{
-                fontSize: 10, color: C.textDim,
+                fontSize: 8, color: C.textDim,
                 background: C.toggleBg, borderRadius: 4,
                 padding: '2px 7px', border: `1px solid ${C.border}`,
               }}>
@@ -772,7 +772,7 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
                       <div style={{ fontSize: 10, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8, fontWeight: 600 }}>
                         Tours prévus
                       </div>
-                      <div style={{ fontSize: 40, fontWeight: 900, color: C.text, lineHeight: 1, marginBottom: 6 }}>
+                      <div style={{ fontSize: 32, fontWeight: 900, color: C.text, lineHeight: 1, marginBottom: 6 }}>
                         {rec.nb_tours_prevu ?? '—'}
                       </div>
                       {rec.nb_tours_prevu > 0 && (
