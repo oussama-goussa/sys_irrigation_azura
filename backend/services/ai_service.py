@@ -466,11 +466,17 @@ def generer_recommandation_matin(
     if _rf_model is not None and _rf_r2 >= 0.70:
         try:
             import numpy as np
+            # Pour la recommandation du MATIN :
+            # - num_tour = tour median (pour duree_t3p), pas le premier tour
+            # - rad_cumul = estimation milieu de journée (radiation/2)
+            # - drain_prev = 0 (début de journée, substrat non saturé)
+            # - Le ML prédit la duree_t3p et le repos inter-tour (tours 3+)
+            #   Le repos_init (T1-T2) reste fixé par les règles agronomiques
             num_tour_median = max(3, nb_tours // 2)
             rad_cumul_estime = radiation / 2
             vpd = vpd or 1.0
             stress_index = vpd * radiation / 1000
-            drain_prev_estime = seuils_generaux["drainage_cible"]
+            drain_prev_matin = 0.0  # début de journée : pas de drainage précédent
 
             X = np.array([[
                 rad_cumul_estime,      # rad_cumul_tour_Jcm2
@@ -484,15 +490,27 @@ def generer_recommandation_matin(
                 t_moy or 22.0,         # t_moy
                 hr_moy or 65.0,        # hr_moy
                 vpd or 1.0,            # vpd_kpa
-                drain_prev_estime,     # drain_prev
+                drain_prev_matin,      # drain_prev = 0 au matin
             ]])
             
             preds = _rf_model.predict(_rf_scaler.transform(X))[0]
-            duree_t3p  = max(5, min(15, int(round(float(preds[0])))))
-            repos_init = max(5, min(40, int(round(float(preds[1])))))
-            logger.success(f"✅ ML ACTIF → duree_t3p={duree_t3p}min repos={repos_init}min R²={_rf_r2:.3f}")
+            duree_t3p = max(5, min(15, int(round(float(preds[0])))))
+            
+            # Le repos ML concerne les tours 3+ uniquement.
+            # Le repos initial T1-T2 reste agronomique (8 min chaud / 5 min froid).
+            # On plafonne à 20 min car le repos inter-tour max observé en début
+            # de journée est ~15-20 min (données Azura).
+            repos_ml = max(5, min(20, int(round(float(preds[1])))))
+            # repos_init (T1-T2) reste inchangé — on stocke repos_ml séparément
+            repos_t3p_ml = repos_ml
+            
+            logger.success(f"✅ ML ACTIF → duree_t3p={duree_t3p}min repos_t3p={repos_t3p_ml}min R²={_rf_r2:.3f}")
         except Exception as e:
             logger.warning(f"⚠️ ML IGNORÉ → fallback règles : {e}")
+            repos_t3p_ml = repos_init
+    else:
+        logger.warning(f"⚠️ ML NON DISPONIBLE → règles agronomiques seules (R²={_rf_r2:.3f})")
+        repos_t3p_ml = repos_init
     else:
         logger.warning(f"⚠️ ML NON DISPONIBLE → règles agronomiques seules (R²={_rf_r2:.3f})")
 
@@ -513,7 +531,8 @@ def generer_recommandation_matin(
         "heure_debut"        : heure_debut,
         "duree_t12_min"     : duree_t12,
         "duree_t3p_min"     : duree_t3p,
-        "repos_initial_min" : repos_init,
+        "repos_initial_min" : repos_init,   # T1-T2 : agronomique (8 min)
+        "repos_t3p_min"      : repos_t3p_ml,    # T3+  : affiné par ML
         "ml_utilise"        : _rf_model is not None and _rf_r2 >= 0.70,
         "seuil_drainage_pct" : seuils_generaux["drainage_max"],
         "et0_mm"             : et0,
