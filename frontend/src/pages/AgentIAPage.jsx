@@ -406,7 +406,7 @@ function PlanCard({ rec, prtStatus, C, dark }) {
             <span style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
               letterSpacing: '0.07em' }}>Heure de 1er tour</span>
           </div>
-          <div style={{ fontSize: heureDebut ? 40 : 14, fontWeight: 900,
+          <div style={{ fontSize: heureDebut ? 36 : 25, fontWeight: 900,
             color: heureDebut ? '#4d9de0' : C.amber, lineHeight: 1 }}>
             {heureDebut || '⏳ Calcul...'}
           </div>
