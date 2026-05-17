@@ -98,7 +98,7 @@ def get_recommandation(
     if rec and rec.heure_debut:
         try:
             h, m = map(int, rec.heure_debut.split(":"))
-            if h < 7:
+            if h < 5:
                 logger.warning(f"Suppression recommandation invalide device {device_id} (heure={rec.heure_debut})")
                 db.delete(rec)
                 db.commit()

@@ -511,8 +511,6 @@ def generer_recommandation_matin(
     else:
         logger.warning(f"⚠️ ML NON DISPONIBLE → règles agronomiques seules (R²={_rf_r2:.3f})")
         repos_t3p_ml = repos_init
-    else:
-        logger.warning(f"⚠️ ML NON DISPONIBLE → règles agronomiques seules (R²={_rf_r2:.3f})")
 
     return {
         "device_id"          : device_id,
