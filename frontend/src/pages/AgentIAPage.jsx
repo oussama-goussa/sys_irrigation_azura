@@ -139,139 +139,192 @@ function PRTCard({ weight, deviceLatest, prtBackend, C, dark }) {
   const mois = new Date().getMonth() + 1
   const periode = getPeriode(mois)
   const seuils = PRT_SEUILS[periode]
+  const prt = prtBackend ?? null
+  const prtStatus = prt !== null ? getPRTStatus(prt, mois) : null
 
   const poidsSoir = weight?.poids_kg ?? null
-  // poidsMatin = poids actuel du capteur ce matin (on utilise la dernière lecture < 8h)
-  // On utilise directement le poids live comme poids matin si avant 9h, sinon c'est indéterminé
-  const hour = new Date().getHours()
-  const poidsMatin = hour < 10 ? poidsSoir : null // simplification: en prod, on stocke poids matin separement
-
-  const prt = prtBackend ?? null
-
   const radiationSum = deviceLatest?.sensor?.radiation_sum ?? null
   const radiationLive = deviceLatest?.sensor?.radiation ?? null
 
   return (
     <div style={{
-      background: C.surface, border: `1.5px solid ${C.border}`,
-      borderRadius: 14, padding: '16px 18px',
+      background: C.surface,
+      border: `1.5px solid ${C.border}`,
+      borderRadius: 14,
+      padding: '16px 18px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 12,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-        <Scale size={14} color={C.green} strokeWidth={2} />
-        <span style={{ fontSize: 11, fontWeight: 700, color: C.textMuted,
-          textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+
+      {/* ── Header ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Scale size={13} color={C.green} strokeWidth={2} />
+        <span style={{
+          fontSize: 11, fontWeight: 700, color: C.textMuted,
+          textTransform: 'uppercase', letterSpacing: '0.08em',
+        }}>
           Capteur Poids · AZ106
         </span>
         {weight && (
           <span style={{
-            marginLeft: 'auto', fontSize: 9, color: C.textDim,
-            background: `${C.green}15`, border: `1px solid ${C.green}25`,
-            borderRadius: 4, padding: '2px 7px', fontWeight: 600,
+            marginLeft: 'auto', fontSize: 10, color: C.textDim,
+            background: `${C.green}12`, border: `1px solid ${C.green}25`,
+            borderRadius: 5, padding: '2px 8px', fontWeight: 600,
           }}>
-            {new Date(weight.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+            {new Date(weight.timestamp).toLocaleTimeString('fr-FR', {
+              hour: '2-digit', minute: '2-digit',
+            })}
           </span>
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 12 }}>
-        {/* Poids actuel */}
+      {/* ── Poids + Radiation sur une ligne ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+
+        {/* Poids */}
         <div style={{
-          background: dark ? '#0d1610' : '#f4f9f5',
-          border: `1px solid ${C.border}`, borderRadius: 9, padding: '10px 12px',
+          background: dark ? '#0a1a0d' : '#f0faf2',
+          border: `1px solid ${C.green}25`,
+          borderRadius: 10, padding: '12px 14px',
         }}>
-          <div style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
-            letterSpacing: '0.06em', marginBottom: 4 }}>Poids soir / actuel</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: C.green }}>
-            {poidsSoir !== null ? `${poidsSoir.toFixed(2)} kg` : '—'}
+          <div style={{
+            fontSize: 9, color: C.textDim, textTransform: 'uppercase',
+            letterSpacing: '0.07em', marginBottom: 6,
+          }}>Poids soir</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: C.green, lineHeight: 1 }}>
+            {poidsSoir != null ? poidsSoir.toFixed(2) : '—'}
           </div>
-          {weight?.capteur_id && (
-            <div style={{ fontSize: 9, color: C.textDim, marginTop: 3 }}>
-              Capteur : {weight.capteur_id}
-            </div>
-          )}
+          <div style={{ fontSize: 10, color: C.textDim, marginTop: 4 }}>kg</div>
         </div>
 
-        {/* Radiation Sum */}
+        {/* Radiation */}
         <div style={{
-          background: dark ? '#0d1610' : '#f4f9f5',
-          border: `1px solid ${C.border}`, borderRadius: 9, padding: '10px 12px',
+          background: dark ? '#1a1500' : '#fffbea',
+          border: `1px solid #f5e64225`,
+          borderRadius: 10, padding: '12px 14px',
         }}>
-          <div style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
-            letterSpacing: '0.06em', marginBottom: 4 }}>Radiation Sum J/cm²</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: '#f5e642' }}>
-            {radiationSum !== null ? `${radiationSum.toFixed(1)}` : '—'}
+          <div style={{
+            fontSize: 9, color: C.textDim, textTransform: 'uppercase',
+            letterSpacing: '0.07em', marginBottom: 6,
+          }}>Radiation Sum</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: '#f5e642', lineHeight: 1 }}>
+            {radiationSum != null ? radiationSum.toFixed(1) : '—'}
           </div>
-          <div style={{ fontSize: 9, color: C.textDim, marginTop: 3 }}>
-            Instant : {radiationLive !== null ? `${radiationLive.toFixed(0)} W/m²` : '—'}
+          <div style={{ fontSize: 10, color: C.textDim, marginTop: 4 }}>J/cm²</div>
+          <div style={{
+            marginTop: 6, fontSize: 9, color: C.textDim,
+            borderTop: `1px solid ${C.border}`, paddingTop: 5,
+          }}>
+            {radiationLive != null ? `${radiationLive.toFixed(0)} W/m² instant` : '—'}
           </div>
         </div>
       </div>
 
-      {/* PRT Ressuyage */}
+      {/* ── PRT Ressuyage ── */}
       <div style={{
         background: dark ? '#0d1610' : '#f4f9f5',
-        border: `1px solid ${C.border}`, borderRadius: 9, padding: '10px 14px',
+        border: `1px solid ${C.border}`,
+        borderRadius: 10, padding: '12px 14px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-          <div style={{ fontSize: 9, color: C.textDim, textTransform: 'uppercase',
-            letterSpacing: '0.06em' }}>% Ressuyage (PRT)</div>
-          <div style={{ fontSize: 9, color: C.textDim }}>
-            Cible : {seuils.min}% – {seuils.max}% ({periode})
-          </div>
+        {/* Label + cible */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', marginBottom: 10,
+        }}>
+          <span style={{
+            fontSize: 9, fontWeight: 700, color: C.textDim,
+            textTransform: 'uppercase', letterSpacing: '0.07em',
+          }}>% Ressuyage (PRT)</span>
+          <span style={{
+            fontSize: 9, color: C.textDim,
+            background: C.toggleBg, borderRadius: 4,
+            padding: '2px 7px', border: `1px solid ${C.border}`,
+          }}>
+            Cible {seuils.min}%–{seuils.max}% · {periode}
+          </span>
         </div>
 
         {prt !== null ? (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-              <span style={{ fontSize: 24, fontWeight: 900,
-                color: getPRTStatus(prt, mois)?.color || C.text }}>
+            {/* Valeur + badge statut */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <span style={{
+                fontSize: 32, fontWeight: 900,
+                color: prtStatus?.color || C.text, lineHeight: 1,
+              }}>
                 {prt.toFixed(1)}%
               </span>
               <span style={{
-                fontSize: 10, fontWeight: 600, padding: '2px 9px', borderRadius: 5,
-                color: getPRTStatus(prt, mois)?.color,
-                background: `${getPRTStatus(prt, mois)?.color}18`,
-                border: `1px solid ${getPRTStatus(prt, mois)?.color}35`,
+                fontSize: 10, fontWeight: 700,
+                color: prtStatus?.color,
+                background: `${prtStatus?.color}15`,
+                border: `1px solid ${prtStatus?.color}35`,
+                borderRadius: 5, padding: '3px 9px',
               }}>
-                {getPRTStatus(prt, mois)?.msg}
+                {prtStatus?.ok ? '✓ Seuil atteint' : '⏳ En attente'}
               </span>
             </div>
-            {/* Barre de progression */}
-            <div style={{ height: 6, borderRadius: 3, background: C.border, overflow: 'hidden', position: 'relative' }}>
+
+            {/* Barre progression */}
+            <div style={{ position: 'relative', height: 6, borderRadius: 3,
+              background: C.border, overflow: 'hidden' }}>
+              {/* Zone cible */}
               <div style={{
-                position: 'absolute', left: `${(seuils.min / 20) * 100}%`,
+                position: 'absolute',
+                left: `${(seuils.min / 20) * 100}%`,
                 width: `${((seuils.max - seuils.min) / 20) * 100}%`,
-                height: '100%', background: `${C.green}30`, borderRadius: 2,
+                height: '100%',
+                background: `${C.green}25`,
               }} />
+              {/* Valeur actuelle */}
               <div style={{
                 height: '100%', borderRadius: 3,
-                background: getPRTStatus(prt, mois)?.color || C.green,
+                background: prtStatus?.color || C.green,
                 width: `${Math.min(100, (prt / 20) * 100)}%`,
                 transition: 'width 0.5s ease',
               }} />
             </div>
+            <div style={{
+              display: 'flex', justifyContent: 'space-between',
+              marginTop: 4, fontSize: 9, color: C.textDim,
+            }}>
+              <span>0%</span>
+              <span style={{ color: C.green }}>
+                ↑ {seuils.min}%–{seuils.max}%
+              </span>
+              <span>20%</span>
+            </div>
           </>
         ) : (
-          <div style={{ fontSize: 12, color: C.textDim, fontStyle: 'italic', padding: '4px 0' }}>
+          <div style={{
+            fontSize: 11, color: C.textDim,
+            fontStyle: 'italic', padding: '4px 0',
+          }}>
             En attente des données poids matin et soir…
           </div>
         )}
       </div>
 
-      {/* Explication méthode */}
+      {/* ── Formule — compacte ── */}
       <div style={{
-        marginTop: 10, padding: '8px 12px',
-        background: `${C.green}08`, border: `1px solid ${C.green}20`,
-        borderRadius: 8, fontSize: 10, color: C.textDim, lineHeight: 1.5,
+        fontSize: 10, color: C.textDim,
+        background: `${C.green}06`,
+        border: `1px solid ${C.green}18`,
+        borderRadius: 8, padding: '8px 12px',
+        lineHeight: 1.6,
       }}>
-        <strong style={{ color: C.green }}>Formule PRT :</strong>
-        {' '}((Poids soir − Poids matin) / Poids soir) × 100
-        {' '}· Mesuré toutes les 30 s dès 6h00 · Début 1er tour : 5-10 min après seuil atteint
+        <span style={{ color: C.green, fontWeight: 700 }}>Formule : </span>
+        (Psoir − Pmatin) / Psoir × 100
+        <span style={{ margin: '0 6px', color: C.border }}>·</span>
+        Calcul dès 06:00 UTC
+        <span style={{ margin: '0 6px', color: C.border }}>·</span>
+        Début 1er tour : 5–10 min après seuil
       </div>
+
     </div>
   )
 }
-
 
 // Carte Plan Journée
 function PlanCard({ rec, prtStatus, C, dark }) {
