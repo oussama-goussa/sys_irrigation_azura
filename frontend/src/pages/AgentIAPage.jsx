@@ -1090,7 +1090,7 @@ export default function AgentIAPage({ token, auth, C: CProps, dark }) {
                 <div>
                   <div style={{ fontSize: 10, color: C.textDim, textTransform: 'uppercase',
                     letterSpacing: '0.06em', marginBottom: 2 }}>Stade phénologique</div>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: '#34d96f',
+                  <div style={{ fontSize: 14, fontWeight: 900, color: '#34d96f',
                     textTransform: 'capitalize' }}>{rec.stade}</div>
                 </div>
                 <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
