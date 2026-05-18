@@ -433,7 +433,7 @@ def generer_recommandation_matin(
     elif radiation < 20:  nb_tours = 4
     elif radiation < 35:  nb_tours = 6
     elif radiation < 50:  nb_tours = 8
-    elif radiation < 65:  nb_tours = 10
+    elif radiation < 65:  nb_tours = 11
     else:                 nb_tours = 12
     if periode == "froid": nb_tours = max(2, nb_tours - 2)
 
@@ -460,9 +460,9 @@ def generer_recommandation_matin(
     volume_total = round(etc / (1 - fl) * 10000, 0) if etc else None
 
     # ── Couche ML : affiner duree_t3p et repos ───────────────
-    duree_t3p = 10 if radiation > 90 else 8
-    duree_t12 = 12 if j_plantation > 30 else 11
-    repos_init = 4
+    duree_t3p = 11 if radiation > 90 else 8
+    duree_t12 = 13 if j_plantation > 30 else 11
+    repos_init = 5
 
     # ── Fertigation : Calculer doses NPK ─────────────────────
     doses_npk = None
@@ -535,7 +535,7 @@ def generer_recommandation_matin(
         "statut"             : "en_cours",
         "message"            : message_ressuyage,
         "radiation_sum_debut": radiation_sum_debut,
-        "repos_t1_t2_min"    : 4,
+        "repos_t1_t2_min"    : 5,
         "stade"              : stade,
         "j_plantation"       : j_plantation,
         "pct_ressuyage"      : pct_ressuyage,
