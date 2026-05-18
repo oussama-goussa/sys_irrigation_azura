@@ -309,7 +309,7 @@ def get_poids_soir(
         .filter(
             IrrigationTour.device_id   == device_id,
             IrrigationTour.date        == date_veille,
-            IrrigationTour.is_complete != True,
+            IrrigationTour.fin != True,
         )
         .order_by(desc(IrrigationTour.tour_num))
         .first()
