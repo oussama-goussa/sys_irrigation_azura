@@ -605,7 +605,7 @@ async def ingest_sensor_data(
         if isinstance(digital_data, list): digital_data = digital_data[0]
         
         weather_data = xml.get("HK_WeatherStation") or {}
-        if isinstance(weather_data, list): weather_data = weather_data[0]
+        if isinstance(weather_data, list): weather_data = next((item for item in weather_data if item is not None), {})
         
         chart_data = xml.get("IrrigationChartArray") or {}
         if isinstance(chart_data, list): chart_data = chart_data[0]
