@@ -165,12 +165,12 @@ def startup():
     db = SessionLocal()
     try:
         init_default_users(db)
-        try:
-            from core.celery_app import task_historique_tours, task_tours_jour_en_cours
-            task_historique_tours.delay()
-            task_tours_jour_en_cours.delay()
-        except Exception as e:
-            logger.warning(f"Celery non disponible au démarrage : {e}")
+        #try:
+        #    from core.celery_app import task_historique_tours, task_tours_jour_en_cours
+        #    task_historique_tours.delay()
+        #    task_tours_jour_en_cours.delay()
+        #except Exception as e:
+        #    logger.warning(f"Celery non disponible au démarrage : {e}")
         logger.success("Application Azura démarrée ✅")
     finally:
         db.close()
@@ -203,5 +203,14 @@ def root():
     }
 
 @app.get("/health", tags=["General"])
-def health():
-    return {"statut": "ok", "service": "azura-backend"}
+async def health():
+    logger.info("❤️ Health endpoint appelé")
+
+    return {
+        "statut": "ok",
+        "service": "azura-backend"
+    }
+
+@app.get("/ping")
+async def ping():
+    return {"ping": "pong"}
