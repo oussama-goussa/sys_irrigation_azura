@@ -1,9 +1,4 @@
 # backend/routers/export_sensor.py
-# ─────────────────────────────────────────────────────────────
-# Endpoint : GET /export/sensor-csv
-# Exporte sensor_readings → CSV (StreamingResponse)
-# Filtres : farm_name, house_number, date_debut, date_fin
-# ─────────────────────────────────────────────────────────────
 
 import csv
 import io
@@ -27,6 +22,8 @@ COLUMNS = [
     "humidity",
     "outside_temp",
     "outside_humidity",
+    "radiation",        # ← AJOUT
+    "radiation_sum",    # ← AJOUT
 ]
 
 QUERY = text("""
@@ -56,8 +53,8 @@ QUERY = text("""
     response_description="Fichier CSV téléchargeable",
 )
 def export_sensor_csv(
-    farm_name:    str           = Query(...,  example="AZ106", description="Nom de la ferme"),
-    house_number: str           = Query(...,  example="1",     description="Numéro de serre"),
+    farm_name:    str            = Query(...,  example="AZ106", description="Nom de la ferme"),
+    house_number: str            = Query(...,  example="1",     description="Numéro de serre"),
     date_debut:   Optional[date] = Query(None, description="Date début (YYYY-MM-DD)"),
     date_fin:     Optional[date] = Query(None, description="Date fin   (YYYY-MM-DD)"),
     db: Session = Depends(get_db),
@@ -69,7 +66,6 @@ def export_sensor_csv(
         "date_fin":     date_fin,
     }).fetchall()
 
-    # Construire le CSV en mémoire
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(COLUMNS)
@@ -83,11 +79,12 @@ def export_sensor_csv(
             row.humidity,
             row.outside_temp,
             row.outside_humidity,
+            row.radiation,
+            row.radiation_sum,
         ])
 
     output.seek(0)
 
-    # Nom du fichier
     now_str  = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"sensor_{farm_name}_H{house_number}_{now_str}.csv"
 
