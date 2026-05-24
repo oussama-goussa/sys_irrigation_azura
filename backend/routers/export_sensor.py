@@ -37,7 +37,9 @@ QUERY = text("""
         sr.avg_temp,
         sr.humidity,
         sr.outside_temp,
-        sr.outside_humidity
+        sr.outside_humidity,
+        sr.radiation,
+        sr.radiation_sum
     FROM sensor_readings sr
     JOIN devices d ON d.id = sr.device_id
     WHERE d.farm_name    = :farm_name
