@@ -23,7 +23,7 @@ from models.ai_recommendation_model import AIRecommandation, AIConfigDevice
 from routers.ai_agent import router as ai_router
 from routers.weight import router as weight_router
 
-from routers.export_sensor import router as export_sensor_router
+from routers.export_sensor import router as export_sensor_router 
 
 from models.sensor_model import (
     Device, SensorReading, IrrigationCycle,
@@ -34,7 +34,7 @@ from models.sensor_model import (
 # ── Migrations automatiques AVANT create_all ─────────────────
 def run_migrations():
     """
-    Ajoute les colonnes manquantes avant que SQLAlchemy
+    Ajoute les colonnes manquantes avant que SQLAlchemy 
     lise le schéma. ADD COLUMN IF NOT EXISTS = safe.
     """
     try:
