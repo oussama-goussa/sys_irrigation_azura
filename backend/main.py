@@ -23,6 +23,8 @@ from models.ai_recommendation_model import AIRecommandation, AIConfigDevice
 from routers.ai_agent import router as ai_router
 from routers.weight import router as weight_router
 
+from routers.export_sensor import router as export_sensor_router
+
 from models.sensor_model import (
     Device, SensorReading, IrrigationCycle,
     FertigationState, Alert, AlertThreshold,
@@ -184,6 +186,8 @@ app.include_router(saisie_router)
 app.include_router(export_router)
 app.include_router(ai_router)
 app.include_router(weight_router)
+
+app.include_router(export_sensor_router) 
 
 # ── Endpoints publics ─────────────────────────────────────────
 @app.get("/", tags=["General"])
