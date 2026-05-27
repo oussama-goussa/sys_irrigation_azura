@@ -2,13 +2,6 @@
 # backend/services/tour_service.py
 # Calcul et stockage des tours d'irrigation
 # Logique basée sur analyse_tours.py — GOUSSA Oussama
-#
-# RÉVISION MAJEURE — corrections :
-#   1. is_complete basé sur une lecture APRÈS la fin estimée (granularité 5 min)
-#   2. repos_apres_min calculé et mis à jour sur le tour PRÉCÉDENT
-#   3. ec_apport/ph_apport : prend la première lecture NON nulle du demi-tour
-#   4. Filtrage renforcé des mini-tours parasites (sequence=16)
-#   5. has_flow vérifie la DERNIÈRE lecture ≤ fin du tour (pas n'importe où)
 # ============================================================
 
 from datetime import datetime, timedelta, date
@@ -20,9 +13,6 @@ from models.sensor_model import (
     Device, SensorReading, IrrigationCycle,
     IrrigationTour
 )
-
-# Granularité des lectures Netafim en secondes (5 min + marge)
-LECTURE_INTERVAL_SEC = 330  # 5 min + 30s de marge
 
 
 # ── Helpers ───────────────────────────────────────────────────
@@ -36,41 +26,29 @@ def time_to_seconds(t) -> int:
         return 0
 
 
-def _premier_ec_non_nul(chunk: list):
-    """
-    Retourne (ec_prog, ph_prog) de la première lecture du chunk
-    où ec_prog > 0 et ph_prog > 0. Fallback : première lecture.
-    """
-    for sr, ic in chunk:
-        if sr.ec_prog and sr.ec_prog > 0 and sr.ph_prog and sr.ph_prog > 0:
-            return sr.ec_prog, sr.ph_prog
-    # fallback
-    return chunk[0][0].ec_prog, chunk[0][0].ph_prog
-
-
 def split_bloc_en_demitours(rows: list) -> list:
     """
     Découpe un bloc d'irrigation continu en demi-tours.
-    - Reset de water_act_time (curr < prev) → nouveau demi-tour
+    - Reset de water_act_time → nouveau demi-tour
     - Changement de cycle_act → nouveau tour complet (nouveau bloc)
     """
     if not rows:
         return []
 
     demitours = []
-    current        = [rows[0]]
-    prev_sec       = time_to_seconds(rows[0][1].water_act_time)
+    current   = [rows[0]]
+    prev_sec  = time_to_seconds(rows[0][1].water_act_time)
     prev_cycle_act = rows[0][1].cycle_act
 
     for row in rows[1:]:
-        curr_sec       = time_to_seconds(row[1].water_act_time)
+        curr_sec = time_to_seconds(row[1].water_act_time)
         curr_cycle_act = row[1].cycle_act
 
         # Changement de cycle_act → nouveau tour complet
         if curr_cycle_act != prev_cycle_act and prev_cycle_act is not None:
             demitours.append(current)
-            current        = [row]
-            prev_sec       = curr_sec
+            current = [row]
+            prev_sec = curr_sec
             prev_cycle_act = curr_cycle_act
             continue
 
@@ -80,15 +58,14 @@ def split_bloc_en_demitours(rows: list) -> list:
             current = [row]
         else:
             current.append(row)
-
-        prev_sec       = curr_sec
+        
+        prev_sec = curr_sec
         prev_cycle_act = curr_cycle_act
 
     if current:
         demitours.append(current)
 
     return demitours
-
 
 # ── Calcul des tours pour un device et une date ───────────────
 
@@ -99,20 +76,12 @@ def calculer_tours_journee(
 ) -> list:
     """
     Calcule les tours d'irrigation pour un device et une date.
-
-    PRINCIPE DE STOCKAGE « FIN D'ABORD » :
-    Un tour n'est marqué is_complete=True que si on a observé
-    une lecture avec débit dans la fenêtre du tour ET une lecture
-    postérieure à la fin estimée (Pause/Wait OU timestamp > fin + 1 lecture).
-    Tant que cette confirmation n'existe pas, is_complete=False.
-
-    repos_apres_min du tour N est mis à jour au moment où le tour N+1
-    est confirmé (on connaît alors le début réel du tour N+1).
+    Retourne une liste de dicts représentant les tours.
     """
     start_dt = datetime.combine(target_date, datetime.min.time())
     end_dt   = start_dt + timedelta(days=1)
 
-    # ── 1. Charger sensor_readings + irrigation_cycles ────────
+    # Récupérer sensor_readings + irrigation_cycles joinés
     rows = (
         db.query(SensorReading, IrrigationCycle)
         .join(
@@ -121,9 +90,9 @@ def calculer_tours_journee(
             (IrrigationCycle.timestamp == SensorReading.timestamp)
         )
         .filter(
-            SensorReading.device_id == device.id,
-            SensorReading.timestamp >= start_dt,
-            SensorReading.timestamp <  end_dt,
+            SensorReading.device_id  == device.id,
+            SensorReading.timestamp  >= start_dt,
+            SensorReading.timestamp  <  end_dt,
         )
         .order_by(SensorReading.timestamp.asc())
         .all()
@@ -133,99 +102,125 @@ def calculer_tours_journee(
         logger.debug(f"Aucune donnée pour {device.farm_name} H{device.house_number} {target_date}")
         return []
 
-    # ── 2. Construire les blocs d'irrigation ─────────────────
-    # Un bloc = séquence continue avec au plus 1 interruption courte
-    # (≤ 150% de water_prg_time, min 6 min) entre deux demi-tours.
-    blocs     = []
-    cur_bloc  = []
-    gap_rows  = []
+    # Détecter les blocs d'irrigation.
+    # Un bloc = burst continu d'irrigation avec au plus UNE interruption courte
+    # (≤ 6 min = 1 seul cycle de lecture à 5 min) entre 2 demi-tours Netafim.
+    # Les vraies pauses inter-tours durent 20+ min → elles clôturent le bloc.
+    blocs = []
+    current_bloc = []
+    gap_rows = []
 
     for sr, ic in rows:
-        # Filtre : ignorer les séquences parasites de rinçage/flush
-        # sequence=16 avec water_prg_qty ≤ 3 OU ec_prog=0 → mini-tour parasite
-        is_parasite = (
-            ic.sequence == 16
-            and (
-                (ic.water_prg_qty is not None and ic.water_prg_qty <= 3)
-                or (sr.ec_prog == 0 and sr.ph_prog == 0)
+
+        is_irr = (
+            sr.ec_ph_status == 'Irrigation'
+            and not (
+                ic.sequence == 16
+                and (ic.water_prg_qty <= 3 or (sr.ec_prog == 0 and sr.ph_prog == 0))
             )
         )
-        is_irr = (sr.ec_ph_status == 'Irrigation') and not is_parasite
-
         if is_irr:
-            if gap_rows and cur_bloc:
-                gap_sec   = (sr.timestamp - cur_bloc[-1][0].timestamp).total_seconds()
-                prg_sec   = time_to_seconds(cur_bloc[-1][1].water_prg_time)
-                threshold = max(prg_sec * 1.5, 360)
+            if gap_rows and current_bloc:
+                gap_sec   = (sr.timestamp - current_bloc[-1][0].timestamp).total_seconds()
+                # Seuil dynamique = 150% de la durée d'un demi-tour programmé.
+                # S'adapte automatiquement si l'agronome change water_prg_time
+                # (ex: 10 min → seuil 900s, 20 min → seuil 1800s).
+                prg_sec   = time_to_seconds(current_bloc[-1][1].water_prg_time)
+                threshold = max(prg_sec * 1.5, 360)  # minimum 6 min si prg_time absent
                 if gap_sec <= threshold:
-                    cur_bloc.extend(gap_rows)
+                    current_bloc.extend(gap_rows)
                 else:
-                    blocs.append(cur_bloc)
-                    cur_bloc = []
+                    blocs.append(current_bloc)
+                    current_bloc = []
             gap_rows = []
-            cur_bloc.append((sr, ic))
+            current_bloc.append((sr, ic))
         else:
-            if cur_bloc:
+            if current_bloc:
                 gap_rows.append((sr, ic))
 
-    if cur_bloc:
-        blocs.append(cur_bloc)
+    if current_bloc:
+        blocs.append(current_bloc)
 
     if not blocs:
         return []
 
-    # ── 3. Extraire les demi-tours de chaque bloc ─────────────
+    # Construire la liste de tous les demi-tours
     demitours_all = []
 
     for b_idx, bloc in enumerate(blocs):
+        # Status avant ce bloc
+        first_ts  = bloc[0][0].timestamp
+        prev_row = (
+            db.query(SensorReading)
+            .filter(
+                SensorReading.device_id == device.id,
+                SensorReading.timestamp < first_ts,
+            )
+            .order_by(SensorReading.timestamp.desc())
+            .first()
+        )
+        # Chercher dans les rows chargés
+        bloc_rows_idx = None
+        for i, (sr, ic) in enumerate(rows):
+            if sr.timestamp == first_ts:
+                bloc_rows_idx = i
+                break
+
+        prev_status = 'Pause'
+        if bloc_rows_idx is not None and bloc_rows_idx > 0:
+            prev_status = rows[bloc_rows_idx - 1][0].ec_ph_status or 'Pause'
+
         chunks = split_bloc_en_demitours(bloc)
 
         for k, chunk in enumerate(chunks):
             first_sr, first_ic = chunk[0]
             last_sr,  last_ic  = chunk[-1]
 
-            # Ignorer les chunks à débit nul
-            flows = [sr.flow for sr, _ in chunk if sr.flow is not None]
+            # ── Ignorer les chunks incomplets (débit nul ou durée insuffisante) ──
+            flows = [sr.flow for sr, ic in chunk if sr.flow is not None]
             flow_moyen = sum(flows) / len(flows) if flows else 0
             if flow_moyen == 0:
                 continue
 
-            # Ignorer si durée réelle < 30% de la durée programmée
+            # Durée réelle du chunk = water_act_time de la dernière lecture
             duree_reelle_sec = max(time_to_seconds(ic.water_act_time) for _, ic in chunk)
             prg_sec_check    = time_to_seconds(first_ic.water_prg_time)
+            # Ignorer si le chunk n'a pas atteint 50% de la durée programmée
             if prg_sec_check > 0 and duree_reelle_sec < (prg_sec_check * 0.3):
                 continue
 
-            # Ignorer les mini-tours avec prg_time < 3 min (< 180s)
-            if prg_sec_check < 180:
-                continue
-
-            # Début exact : timestamp première lecture - water_act_time
             act_sec     = time_to_seconds(first_ic.water_act_time)
             debut_exact = first_sr.timestamp - timedelta(seconds=act_sec)
 
-            # Fin exacte : timestamp dernière lecture + water_left
             left_sec   = time_to_seconds(last_ic.water_left)
-            fin_exacte = last_sr.timestamp + timedelta(seconds=left_sec)
+            fin_exacte  = last_sr.timestamp + timedelta(seconds=left_sec)
 
-            prg_min  = max(1, round(prg_sec_check / 60))
-            qte_prog = int(first_ic.water_prg_qty) if first_ic.water_prg_qty else 0
+            prg_sec    = time_to_seconds(first_ic.water_prg_time)
+            prg_min    = max(1, round(prg_sec / 60))
+            qte_prog   = int(first_ic.water_prg_qty) if first_ic.water_prg_qty else 0
 
-            # is_first_of_bloc
+            # is_first_of_bloc = True si premier chunk du bloc OU cycle_act différent du chunk précédent
             if k == 0:
                 is_first = True
+                prev_chunk_cycle = first_ic.cycle_act
             else:
-                prev_ic  = chunks[k - 1][0][1]
-                is_first = (first_ic.cycle_act != prev_ic.cycle_act)
-
-            # Ignorer les chunks avec prg_time incohérent dans le même bloc
-            if k > 0 and not is_first:
-                prev_prg = time_to_seconds(chunks[k - 1][-1][1].water_prg_time) // 60
-                if prg_min < prev_prg:
+                prev_chunk_first_ic = chunks[k-1][0][1]
+                is_first = (first_ic.cycle_act != prev_chunk_first_ic.cycle_act)
+                prev_chunk_cycle = first_ic.cycle_act
+            
+            # Ignorer les chunks avec prg_time incohérent par rapport au chunk précédent du même bloc
+            if k > 0:
+                prev_prg = time_to_seconds(chunks[k-1][-1][1].water_prg_time) // 60
+                curr_prg = prg_min
+                if not is_first and prev_prg != curr_prg and curr_prg < prev_prg:
                     continue
 
-            # ec/ph apport : première valeur non nulle du chunk
-            ec_apport, ph_apport = _premier_ec_non_nul(chunk)
+            # Prendre ec/ph depuis la 1ère ligne réellement en Irrigation
+            # (la 1ère ligne du chunk peut être un Wait mergé → ec_prog=0)
+            first_irr_sr = next(
+                (sr for sr, _ in chunk if sr.ec_ph_status == 'Irrigation' and sr.ec_prog),
+                first_sr
+            )
 
             demitours_all.append({
                 'debut'           : debut_exact,
@@ -233,15 +228,12 @@ def calculer_tours_journee(
                 'duree'           : round((fin_exacte - debut_exact).total_seconds() / 60),
                 'prg_time_min'    : prg_min,
                 'qte_prog'        : qte_prog,
+                'prev_status'     : prev_status if k == 0 else 'Irrigation',
                 'is_first_of_bloc': is_first,
                 'is_last_of_day'  : False,
-                'ec_apport'       : ec_apport,
-                'ph_apport'       : ph_apport,
+                'ec_apport'       : first_irr_sr.ec_prog,
+                'ph_apport'       : first_irr_sr.ph_prog,
                 'radiation_sum'   : first_sr.radiation_sum,
-                # Garder la dernière lecture pour la vérification de fin
-                '_last_ts'        : last_sr.timestamp,
-                '_last_status'    : last_sr.ec_ph_status,
-                '_prg_sec'        : prg_sec_check,
             })
 
     if not demitours_all:
@@ -249,8 +241,8 @@ def calculer_tours_journee(
 
     demitours_all[-1]['is_last_of_day'] = True
 
-    # ── 4. Regrouper 2 demi-tours en 1 tour complet ───────────
-    tours_raw = []
+    # Regrouper 2 demi-tours consécutifs en 1 tour complet
+    tours = []
     i = 0
     while i < len(demitours_all):
         dt1 = demitours_all[i]
@@ -261,136 +253,102 @@ def calculer_tours_journee(
             meme_bloc = not dt2['is_first_of_bloc']
 
             if gap_sec < 600 and meme_bloc:
-                tours_raw.append({
+                tours.append({
                     'debut'        : dt1['debut'],
                     'fin'          : dt2['fin'],
                     'duree_min'    : round((dt2['fin'] - dt1['debut']).total_seconds() / 60),
                     'prg_time_min' : dt1['prg_time_min'],
+                    'prev_status'  : dt1['prev_status'],
                     'is_last'      : dt2['is_last_of_day'],
                     'ec_apport'    : dt1['ec_apport'],
                     'ph_apport'    : dt1['ph_apport'],
                     'radiation_sum': dt1['radiation_sum'],
-                    '_last_ts'     : dt2['_last_ts'],
-                    '_last_status' : dt2['_last_status'],
-                    '_prg_sec'     : dt1['_prg_sec'],
                 })
                 i += 2
                 continue
 
-        tours_raw.append({
+        tours.append({
             'debut'        : dt1['debut'],
             'fin'          : dt1['fin'],
             'duree_min'    : dt1['duree'],
             'prg_time_min' : dt1['prg_time_min'],
+            'prev_status'  : dt1['prev_status'],
             'is_last'      : dt1['is_last_of_day'],
             'ec_apport'    : dt1['ec_apport'],
             'ph_apport'    : dt1['ph_apport'],
             'radiation_sum': dt1['radiation_sum'],
-            '_last_ts'     : dt1['_last_ts'],
-            '_last_status' : dt1['_last_status'],
-            '_prg_sec'     : dt1['_prg_sec'],
         })
         i += 1
 
-    # ── 5. Validation et calcul is_complete ───────────────────
-    #
-    # RÈGLE « FIN D'ABORD » :
-    # Un tour est is_complete=True si et seulement si on a une preuve
-    # que la fenêtre du tour est écoulée, à savoir :
-    #   (a) la dernière lecture du demi-tour 2 a water_left ≈ 0 (< 60s), OU
-    #   (b) il existe une lecture APRÈS fin_estimée avec ec_ph_status != 'Irrigation',
-    #   (c) OU la journée est passée (target_date < today)
-    #
-    # La granularité de 5 min est prise en compte : on tolère que la
-    # dernière lecture soit jusqu'à LECTURE_INTERVAL_SEC avant la fin.
-
+    # Calculer repos_apres et is_complete
+    # Vérifier si la journée est terminée (date passée ou Pause finale)
     journee_terminee = target_date < date.today()
     if not journee_terminee:
+        # Vérifier si dernier status est Pause
         last_status = rows[-1][0].ec_ph_status if rows else None
-        journee_terminee = (last_status not in ('Irrigation', 'Wait', None))
+        journee_terminee = last_status == 'Pause'
 
-    # Timestamp de la toute dernière lecture disponible
-    derniere_lecture_ts = rows[-1][0].timestamp if rows else None
-
-    result  = []
+    result = []
     tour_num = 1
     cumul_prev = 0
+    for idx, t in enumerate(tours):
+        # Durée complète = prg_time_min * 2 (2 demi-tours Netafim)
+        duree_complete = t['prg_time_min'] * 2
+        debut_tour     = t['debut']
+        fin_tour       = t['fin']   # fin précise calculée depuis last_sr + water_left
 
-    for idx, t in enumerate(tours_raw):
-        duree_complete    = t['prg_time_min'] * 2
-        debut_tour        = t['debut']
-        fin_estimee       = debut_tour + timedelta(minutes=duree_complete)
-
-        # ── Vérification débit réel ──────────────────────────
-        # Il doit y avoir au moins une lecture avec débit dans la fenêtre
-        # ET cette lecture doit être dans les LECTURE_INTERVAL_SEC avant la fin
-        has_flow_near_end = db.query(SensorReading).filter(
-            SensorReading.device_id   == device.id,
+        # Vérifier débit réel PRÈS DE LA FIN du tour
+        # Données toutes les 5 min → on accepte jusqu'à 2 lectures avant fin
+        # et 1 lecture après (buffer réseau/latence)
+        has_flow = db.query(SensorReading).filter(
+            SensorReading.device_id == device.id,
             SensorReading.ec_ph_status == 'Irrigation',
-            SensorReading.flow        >  0,
-            SensorReading.timestamp   >= fin_estimee - timedelta(seconds=t['_prg_sec'] + LECTURE_INTERVAL_SEC),
-            SensorReading.timestamp   <= fin_estimee + timedelta(seconds=LECTURE_INTERVAL_SEC),
+            SensorReading.flow > 0,
+            SensorReading.timestamp >= fin_tour - timedelta(minutes=11),
+            SensorReading.timestamp <= fin_tour + timedelta(minutes=6),
         ).first()
-
-        if not has_flow_near_end:
-            # Pas de débit confirmé près de la fin → tour non validé
+        if not has_flow:
             continue
 
-        # ── Détermination is_complete ────────────────────────
-        # Option (a) : water_left < 60s sur la dernière lecture du tour
-        water_left_ok = time_to_seconds(
-            getattr(has_flow_near_end, 'water_left', '00:00:00') or '00:00:00'
-        ) < 60
+        # Repos AVANT ce tour — basé sur result (tours déjà validés)
+        if result:
+            prev_t = result[-1]
+            repos = round((t['debut'] - prev_t['debut']).total_seconds() / 60) - prev_t['duree_min']
+            if repos < 0:
+                repos = 0
+        else:
+            repos = None
 
-        # Option (b) : lecture postérieure à fin_estimée avec statut Pause/Wait
-        lecture_post_fin = db.query(SensorReading).filter(
-            SensorReading.device_id  == device.id,
-            SensorReading.timestamp  >  fin_estimee - timedelta(seconds=LECTURE_INTERVAL_SEC),
-            SensorReading.timestamp  <= fin_estimee + timedelta(seconds=LECTURE_INTERVAL_SEC * 2),
-            SensorReading.ec_ph_status.notin_(['Irrigation']),
-        ).first()
+        if idx + 1 < len(tours):
+            is_complete = True
+        else:
+            is_complete = journee_terminee
 
-        is_complete = (
-            journee_terminee
-            or water_left_ok
-            or (lecture_post_fin is not None)
-        )
-
-        # ── Calcul cumul_radiation ───────────────────────────
+        # ── Calcul cumul_radiation ──
         rad_val = t.get('radiation_sum')
         if rad_val is not None:
-            cumul      = max(0.0, rad_val - cumul_prev)
-            cumul_prev = rad_val  # radiation_sum est cumulatif depuis minuit
+            cumul = max(0, rad_val - cumul_prev)
+            cumul_prev += cumul
         else:
             cumul = None
 
         result.append({
-            'tour_num'        : tour_num,
-            'debut'           : debut_tour,
-            'fin'             : fin_estimee,
-            'duree_min'       : duree_complete,
-            'prg_time_min'    : t['prg_time_min'],
-            'repos_apres_min' : None,   # calculé ci-dessous une fois result complet
-            'is_complete'     : is_complete,
-            'v_apport'        : round((t['prg_time_min'] * 1000) / 60, 1),
-            'ec_apport'       : t.get('ec_apport'),
-            'ph_apport'       : t.get('ph_apport'),
-            'radiation_sum'   : t.get('radiation_sum'),
+            'tour_num'       : tour_num,
+            'debut'          : t['debut'],
+            'fin'            : t['debut'] + timedelta(minutes=duree_complete),
+            'duree_min'      : duree_complete,
+            'prg_time_min'   : t['prg_time_min'],
+            'repos_apres_min': repos,
+            'is_complete'    : is_complete,
+            'v_apport'       : round((t['prg_time_min'] * 1000) / 60, 1),
+            'ec_apport'      : t.get('ec_apport'),
+            'ph_apport'      : t.get('ph_apport'),
+            'radiation_sum'  : t.get('radiation_sum'), 
             'cumul_radiation' : cumul,
         })
         tour_num += 1
 
-    # ── Calcul repos_apres_min sur la liste complète ──────────
-    # repos_apres du tour N = debut_(N+1) - fin_N
-    for j in range(len(result) - 1):
-        fin_n    = result[j]['fin']
-        debut_n1 = result[j + 1]['debut']
-        repos    = round((debut_n1 - fin_n).total_seconds() / 60)
-        result[j]['repos_apres_min'] = max(0, repos)
-    # Dernier tour : repos_apres_min reste None (pas de tour suivant connu)
-
     return result
-
 
 # ── Upsert tours en base ──────────────────────────────────────
 
@@ -402,7 +360,6 @@ def upsert_tours(
 ):
     """
     Insère ou met à jour les tours calculés en base.
-    repos_apres_min est déjà calculé dans la liste par calculer_tours_journee.
     Utilise UNIQUE (device_id, date, tour_num).
     """
     if not tours:
@@ -420,40 +377,36 @@ def upsert_tours(
         )
 
         if existing:
+            # Mettre à jour seulement si pas encore complet
             if not existing.is_complete:
-                existing.fin              = t['fin']
-                existing.duree_min        = t['duree_min']
-                existing.prg_time_min     = t['prg_time_min']
-                existing.repos_apres_min  = t['repos_apres_min']
-                existing.is_complete      = t['is_complete']
-                existing.v_apport         = t.get('v_apport')
-                existing.ec_apport        = t.get('ec_apport')
-                existing.ph_apport        = t.get('ph_apport')
-                existing.radiation_sum    = t.get('radiation_sum')
-                existing.cumul_radiation  = t.get('cumul_radiation')
-                existing.updated_at       = datetime.utcnow()
-            else:
-                # Tour déjà complet : mettre à jour repos_apres_min si on l'a maintenant
-                if existing.repos_apres_min is None and t['repos_apres_min'] is not None:
-                    existing.repos_apres_min = t['repos_apres_min']
-                    existing.updated_at      = datetime.utcnow()
+                existing.fin             = t['fin']
+                existing.duree_min       = t['duree_min']
+                existing.prg_time_min    = t['prg_time_min']
+                existing.repos_apres_min = t['repos_apres_min']
+                existing.is_complete     = t['is_complete']
+                existing.v_apport        = t.get('v_apport')
+                existing.ec_apport       = t.get('ec_apport')
+                existing.ph_apport       = t.get('ph_apport')
+                existing.radiation_sum   = t.get('radiation_sum')
+                existing.cumul_radiation = t.get('cumul_radiation') 
+                existing.updated_at      = datetime.utcnow()
         else:
             tour = IrrigationTour(
-                device_id       = device.id,
-                tour_num        = t['tour_num'],
-                date            = target_date,
-                debut           = t['debut'],
-                fin             = t['fin'],
-                house_number    = device.house_number,
-                duree_min       = t['duree_min'],
-                prg_time_min    = t['prg_time_min'],
-                repos_apres_min = t['repos_apres_min'],
-                is_complete     = t['is_complete'],
-                v_apport        = t.get('v_apport'),
-                ec_apport       = t.get('ec_apport'),
-                ph_apport       = t.get('ph_apport'),
-                radiation_sum   = t.get('radiation_sum'),
-                cumul_radiation = t.get('cumul_radiation'),
+                device_id        = device.id,
+                tour_num         = t['tour_num'],
+                date             = target_date,
+                debut            = t['debut'],
+                fin              = t['fin'],
+                house_number     = device.house_number,
+                duree_min        = t['duree_min'],
+                prg_time_min     = t['prg_time_min'],
+                repos_apres_min  = t['repos_apres_min'],
+                is_complete      = t['is_complete'],
+                v_apport         = t.get('v_apport'),
+                ec_apport        = t.get('ec_apport'),
+                ph_apport        = t.get('ph_apport'),
+                radiation_sum    = t.get('radiation_sum'),
+                cumul_radiation  = t.get('cumul_radiation'),
             )
             db.add(tour)
 
@@ -475,10 +428,11 @@ def calculer_historique_complet(db: Session, device: Device):
     Calcule les tours pour tous les jours manquants
     depuis la première donnée jusqu'à hier.
     """
+    # Première date avec irrigation
     first = (
         db.query(func.min(SensorReading.timestamp))
         .filter(
-            SensorReading.device_id    == device.id,
+            SensorReading.device_id  == device.id,
             SensorReading.ec_ph_status == 'Irrigation',
         )
         .scalar()
@@ -488,13 +442,15 @@ def calculer_historique_complet(db: Session, device: Device):
         return
 
     start_date = first.date()
-    end_date   = date.today() - timedelta(days=1)
+    end_date   = date.today() - timedelta(days=1)  # jusqu'à hier inclus
 
     current = start_date
     while current <= end_date:
+        # Vérifier si ce jour a déjà des tours complets
         logger.info(f"Calcul historique {device.farm_name} H{device.house_number} {current}")
         tours = calculer_tours_journee(db, device, current)
         if tours:
+            # Supprimer les anciens tours de ce jour avant upsert
             db.query(IrrigationTour).filter(
                 IrrigationTour.device_id == device.id,
                 IrrigationTour.date      == current,
