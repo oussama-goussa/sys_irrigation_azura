@@ -197,20 +197,29 @@ def calculer_tours_journee(
             )
             first_irr_sr, first_irr_ic = first_irr
 
-            # Durée réelle = water_act_time max sur TOUTES les lignes du chunk.
-            # Les lignes Pause/Wait entre demi-tours portent des water_act_time
-            # valides et croissants (le Netafim continue à compter pendant la pause).
-            # N'utiliser que les lignes Irrigation ici ferait filtrer des chunks légitimes
-            # dont la première ligne Irrigation n'a que quelques secondes (ex: 07:55:25 act=44s
-            # alors que les Pause suivantes ont act=5:44 puis 10:39).
-            duree_reelle_sec = max(time_to_seconds(ic.water_act_time) for _, ic in chunk)
-            prg_sec_check    = time_to_seconds(first_irr_ic.water_prg_time)
+            # Durée réelle = water_act_time max sur les lignes Irrigation uniquement
+            duree_reelle_sec = max(
+                (time_to_seconds(ic.water_act_time) for sr, ic in chunk
+                 if sr.ec_ph_status == 'Irrigation'),
+                default=0
+            )
+            prg_sec_check = time_to_seconds(first_irr_ic.water_prg_time)
             # Ignorer si le chunk n'a pas atteint 30% de la durée programmée
             if prg_sec_check > 0 and duree_reelle_sec < (prg_sec_check * 0.3):
                 continue
 
-            act_sec     = time_to_seconds(first_irr_ic.water_act_time)
-            debut_exact = first_irr_sr.timestamp - timedelta(seconds=act_sec)
+            # Chercher la lecture avec water_act_time le plus petit = vrai début du tour.
+            # first_irr change à chaque recalcul (nouvelles lectures arrivent) → debut dérive.
+            # Le min(water_act_time) est stable dès que la 1ère lecture est en base.
+            earliest_irr = min(
+                ((sr, ic) for sr, ic in chunk
+                 if sr.ec_ph_status == 'Irrigation'
+                 and time_to_seconds(ic.water_prg_time) > 0),
+                key=lambda x: time_to_seconds(x[1].water_act_time)
+            )
+            earliest_irr_sr, earliest_irr_ic = earliest_irr
+            act_sec     = time_to_seconds(earliest_irr_ic.water_act_time)
+            debut_exact = earliest_irr_sr.timestamp - timedelta(seconds=act_sec)
 
             left_sec   = time_to_seconds(last_ic.water_left)
             fin_exacte  = last_sr.timestamp + timedelta(seconds=left_sec)
