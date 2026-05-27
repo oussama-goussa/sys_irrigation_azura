@@ -176,51 +176,73 @@ def calculer_tours_journee(
             first_sr, first_ic = chunk[0]
             last_sr,  last_ic  = chunk[-1]
 
-            # ── Ignorer les chunks incomplets (débit nul ou durée insuffisante) ──
-            flows = [sr.flow for sr, ic in chunk if sr.flow is not None]
+            # ── Ignorer les chunks incomplets (débit nul) ──────────────
+            # Seules les lectures Irrigation ont un débit non nul
+            flows = [sr.flow for sr, ic in chunk
+                     if sr.ec_ph_status == 'Irrigation' and sr.flow is not None]
             flow_moyen = sum(flows) / len(flows) if flows else 0
             if flow_moyen == 0:
                 continue
 
-            # Durée réelle du chunk = water_act_time de la dernière lecture
-            duree_reelle_sec = max(time_to_seconds(ic.water_act_time) for _, ic in chunk)
-            prg_sec_check    = time_to_seconds(first_ic.water_prg_time)
-            # Ignorer si le chunk n'a pas atteint 50% de la durée programmée
+            # ── Trouver la 1ère ligne réellement en Irrigation du chunk ──
+            # Les premières lignes peuvent être des Wait mergés :
+            #   → water_prg_time = "00:00:00" → prg_min = 1 (faux)
+            #   → water_act_time = "00:00:00" → debut_exact erroné
+            #   → ec_prog = 0                  → ec_apport = 0 (faux)
+            first_irr = next(
+                ((sr, ic) for sr, ic in chunk
+                 if sr.ec_ph_status == 'Irrigation'
+                 and time_to_seconds(ic.water_prg_time) > 0),
+                (first_sr, first_ic)   # fallback (ne devrait pas arriver)
+            )
+            first_irr_sr, first_irr_ic = first_irr
+
+            # Durée réelle = water_act_time max sur les lignes Irrigation uniquement
+            duree_reelle_sec = max(
+                (time_to_seconds(ic.water_act_time) for sr, ic in chunk
+                 if sr.ec_ph_status == 'Irrigation'),
+                default=0
+            )
+            prg_sec_check = time_to_seconds(first_irr_ic.water_prg_time)
+            # Ignorer si le chunk n'a pas atteint 30% de la durée programmée
             if prg_sec_check > 0 and duree_reelle_sec < (prg_sec_check * 0.3):
                 continue
 
-            act_sec     = time_to_seconds(first_ic.water_act_time)
-            debut_exact = first_sr.timestamp - timedelta(seconds=act_sec)
+            act_sec     = time_to_seconds(first_irr_ic.water_act_time)
+            debut_exact = first_irr_sr.timestamp - timedelta(seconds=act_sec)
 
             left_sec   = time_to_seconds(last_ic.water_left)
             fin_exacte  = last_sr.timestamp + timedelta(seconds=left_sec)
 
-            prg_sec    = time_to_seconds(first_ic.water_prg_time)
+            prg_sec    = time_to_seconds(first_irr_ic.water_prg_time)
             prg_min    = max(1, round(prg_sec / 60))
-            qte_prog   = int(first_ic.water_prg_qty) if first_ic.water_prg_qty else 0
+            qte_prog   = int(first_irr_ic.water_prg_qty) if first_irr_ic.water_prg_qty else 0
 
-            # is_first_of_bloc = True si premier chunk du bloc OU cycle_act différent du chunk précédent
+            # is_first_of_bloc = True si premier chunk du bloc OU cycle_act différent
+            # Comparer via la 1ère ligne Irrigation (pas une ligne Wait)
             if k == 0:
                 is_first = True
-                prev_chunk_cycle = first_ic.cycle_act
             else:
-                prev_chunk_first_ic = chunks[k-1][0][1]
-                is_first = (first_ic.cycle_act != prev_chunk_first_ic.cycle_act)
-                prev_chunk_cycle = first_ic.cycle_act
-            
-            # Ignorer les chunks avec prg_time incohérent par rapport au chunk précédent du même bloc
+                prev_irr_ic = next(
+                    (ic for sr, ic in chunks[k-1]
+                     if sr.ec_ph_status == 'Irrigation'
+                     and time_to_seconds(ic.water_prg_time) > 0),
+                    chunks[k-1][0][1]
+                )
+                is_first = (first_irr_ic.cycle_act != prev_irr_ic.cycle_act)
+
+            # Ignorer les chunks avec prg_time incohérent (transition programme)
             if k > 0:
-                prev_prg = time_to_seconds(chunks[k-1][-1][1].water_prg_time) // 60
+                prev_irr_ic_last = next(
+                    (ic for sr, ic in reversed(chunks[k-1])
+                     if sr.ec_ph_status == 'Irrigation'
+                     and time_to_seconds(ic.water_prg_time) > 0),
+                    chunks[k-1][-1][1]
+                )
+                prev_prg = time_to_seconds(prev_irr_ic_last.water_prg_time) // 60
                 curr_prg = prg_min
                 if not is_first and prev_prg != curr_prg and curr_prg < prev_prg:
                     continue
-
-            # Prendre ec/ph depuis la 1ère ligne réellement en Irrigation
-            # (la 1ère ligne du chunk peut être un Wait mergé → ec_prog=0)
-            first_irr_sr = next(
-                (sr for sr, _ in chunk if sr.ec_ph_status == 'Irrigation' and sr.ec_prog),
-                first_sr
-            )
 
             demitours_all.append({
                 'debut'           : debut_exact,
