@@ -208,13 +208,37 @@ def calculer_tours_journee(
             if prg_sec_check > 0 and duree_reelle_sec < (prg_sec_check * 0.3):
                 continue
 
-            # Chercher la lecture avec water_act_time le plus petit = vrai début du tour.
-            # first_irr change à chaque recalcul (nouvelles lectures arrivent) → debut dérive.
-            # Le min(water_act_time) est stable dès que la 1ère lecture est en base.
+            # ── Trouver le vrai début = première lecture consécutive avec flow > 0 ──
+            # Problème : le contrôleur peut démarrer (07:09), s'arrêter 5 min (flow=0),
+            # puis relancer un vrai tour (07:15). Sans ce check, debut = 07:09 (faux).
+            # Logique : on cherche la dernière séquence CONTINUE de flow > 0 qui va
+            # jusqu'à la fin du chunk. On remonte depuis la fin jusqu'au 1er flow = 0,
+            # ce qui donne le vrai point de départ sans interruption.
+            irr_rows = [
+                (sr, ic) for sr, ic in chunk
+                if sr.ec_ph_status == 'Irrigation'
+                and time_to_seconds(ic.water_prg_time) > 0
+                and sr.flow is not None
+            ]
+
+            if not irr_rows:
+                continue
+
+            # Vérifier que toutes les lectures du chunk ont flow > 0.
+            # Si on trouve un flow = 0 quelque part → tour incomplet → ignorer.
+            flow_zero_found = any(sr.flow == 0 for sr, ic in irr_rows)
+            if flow_zero_found:
+                logger.debug(
+                    f"Tour ignoré (flow=0 détecté) : "
+                    f"{device.farm_name} H{device.house_number} "
+                    f"chunk début {irr_rows[0][0].timestamp}"
+                )
+                continue
+
+            # Toutes les lectures ont flow > 0 → vrai début = lecture avec
+            # water_act_time le plus petit (plus proche du démarrage réel).
             earliest_irr = min(
-                ((sr, ic) for sr, ic in chunk
-                 if sr.ec_ph_status == 'Irrigation'
-                 and time_to_seconds(ic.water_prg_time) > 0),
+                irr_rows,
                 key=lambda x: time_to_seconds(x[1].water_act_time)
             )
             earliest_irr_sr, earliest_irr_ic = earliest_irr
