@@ -336,6 +336,19 @@ CREATE TABLE IF NOT EXISTS alert_thresholds (
     CONSTRAINT uq_threshold UNIQUE (device_id, parameter)
 );
 
+-- Corriger les seuils sur tous les devices existants
+UPDATE alert_thresholds SET threshold_min = 2.5, threshold_max = 5.0
+WHERE parameter = 'ec_actual';
+
+UPDATE alert_thresholds SET threshold_max = 6.3
+WHERE parameter = 'ph_actual';
+
+UPDATE alert_thresholds SET threshold_max = 30.0
+WHERE parameter = 'avg_temp';
+
+UPDATE alert_thresholds SET threshold_min = 60.0, threshold_max = 82.0
+WHERE parameter = 'humidity';
+
 -- ============================================================
 -- TABLE 7 : irrigation_tours
 -- Tours d'irrigation calculés automatiquement par journée

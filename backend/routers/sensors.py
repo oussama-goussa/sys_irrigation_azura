@@ -169,10 +169,10 @@ def get_or_create_device(db: Session, headers: dict) -> Device:
 
     # Créer seuils par défaut pour ce nouveau device
     default_thresholds = [
-        {"parameter": "ec_actual",  "min": 1.5,  "max": 3.5,  "severity": "WARNING"},
-        {"parameter": "ph_actual",  "min": 5.5,  "max": 6.8,  "severity": "WARNING"},
-        {"parameter": "avg_temp",   "min": 15.0, "max": 35.0, "severity": "WARNING"},
-        {"parameter": "humidity",   "min": 50.0, "max": 90.0, "severity": "WARNING"},
+        {"parameter": "ec_actual",  "min": 2.5,  "max": 5.0,  "severity": "WARNING"},  # tomate cerise coco
+        {"parameter": "ph_actual",  "min": 5.5,  "max": 6.3,  "severity": "WARNING"},  # max abaissé (carence Fe)
+        {"parameter": "avg_temp",   "min": 14.0, "max": 30.0, "severity": "WARNING"},  # max 30°C pollinisation
+        {"parameter": "humidity",   "min": 60.0, "max": 82.0, "severity": "WARNING"},  # botrytis tomate cerise
         {"parameter": "flow",       "min": 0.0,  "max": None, "severity": "WARNING"},
     ]
     for t in default_thresholds:
@@ -310,20 +310,39 @@ def check_and_create_alerts(
         17: "Fuite d'eau détectée",
         18: "Fuite canal de dosage",
         19: "Défaut canal de dosage",
-        20: "Pause externe activée",
-        21: "Défaut pression différentielle",
-        22: "EC trop élevé",
-        23: "EC trop bas",
-        24: "pH trop élevé",
-        25: "pH trop bas",
+        20: "Pause externe activée",          # état normal
+        21: "Encrassement filtre — rinçage requis",
+        22: "EC trop élevé (contrôleur)",
+        23: "EC trop bas (contrôleur)",
+        24: "pH trop élevé (contrôleur)",
+        25: "pH trop bas (contrôleur)",
         26: "Absence de débit",
         27: "Alarme débit",
         28: "Court-circuit sortie",
+        # Codes spécifiques Netafim 4G
+        29: "Défaut communication 4G/réseau",
+        30: "Batterie faible (autonomie réduite)",
+        31: "Coupure secteur — fonctionnement sur batterie",
     }
+
+    # Codes qui sont des états normaux → INFO seulement
+    ALARM_INFO_ONLY = {20, 22, 23, 24, 25}  # pause + EC/pH redondants avec tes alertes
 
     current_month = timestamp.month
     is_winter     = current_month in (11, 12, 1, 2, 3)   # Nov→Mars Agadir
-    outside_temp  = sr.outside_temp
+    outside_temp = sr.outside_temp
+
+    # ══════════════════════════════════════════════════════════════
+    # 0. HOUSE CONNECTION — serre déconnectée du contrôleur
+    # ══════════════════════════════════════════════════════════════
+    if sr.house_connection is not None:
+        if sr.house_connection == 0:
+            create_alert(
+                "HOUSE_DISCONNECTED", 0, None, None, "CRITICAL",
+                f"Serre physiquement déconnectée du contrôleur Netafim — {farm_info}",
+            )
+        else:
+            auto_resolve("HOUSE_DISCONNECTED")
 
     # ══════════════════════════════════════════════════════════════
     # 1. EC APPORT — seulement pendant irrigation
@@ -399,6 +418,23 @@ def check_and_create_alerts(
         auto_resolve("PH_ACTUAL")
 
     # ══════════════════════════════════════════════════════════════
+    # 2b. ECPHSTATUS — signal direct du contrôleur Netafim
+    # États connus : OK / Pause / Alarm / Wash / Manual / Flushing
+    # ══════════════════════════════════════════════════════════════
+    ec_ph_status = (sr.ec_ph_status or "").strip()
+    if ec_ph_status == "Alarm":
+        create_alert(
+            "ECPH_STATUS", None, None, None, "CRITICAL",
+            f"Contrôleur Netafim signale alarme EC/pH (ECPHSTATUS=Alarm) — {farm_info}",
+        )
+    elif ec_ph_status in ("Wash", "Flushing"):
+        # Rinçage en cours = normal, résoudre alertes EC/pH actives
+        auto_resolve("EC_ACTUAL")
+        auto_resolve("PH_ACTUAL")
+    elif ec_ph_status == "OK":
+        auto_resolve("ECPH_STATUS")
+
+    # ══════════════════════════════════════════════════════════════
     # 3. TEMPÉRATURE SERRE
     # Pas d'alerte froid en hiver (Nov→Mars Agadir) sauf >5°C d'écart
     # ══════════════════════════════════════════════════════════════
@@ -416,10 +452,16 @@ def check_and_create_alerts(
         )
 
         if too_hot or too_cold:
-            sev = severity_for_value(temp, t_temp.threshold_min, t_temp.threshold_max)
             if too_hot:
-                msg = f"Température serre élevée : {temp:.1f}°C (max {t_temp.threshold_max}°C) — {farm_info}"
+                # Seuils agronomiques fixes tomate cerise : 30°C = pollinisation à risque, 32°C = CRITICAL
+                if temp >= 32.0:
+                    sev = "CRITICAL"
+                    msg = f"Température critique : {temp:.1f}°C → noircissement fruit, pollinisation impossible — {farm_info}"
+                else:
+                    sev = "WARNING"
+                    msg = f"Température élevée : {temp:.1f}°C → pollinisation dégradée (seuil {t_temp.threshold_max}°C) — {farm_info}"
             else:
+                sev = severity_for_value(temp, t_temp.threshold_min, t_temp.threshold_max)
                 msg = f"Température serre basse : {temp:.1f}°C (min {t_temp.threshold_min}°C) — {farm_info}"
             create_alert("AVG_TEMP", temp, t_temp.threshold_min, t_temp.threshold_max, sev, msg)
         else:
@@ -449,11 +491,17 @@ def check_and_create_alerts(
         )
 
         if too_high or too_low:
-            sev = severity_for_value(hum, t_hum.threshold_min, t_hum.threshold_max)
             if too_high:
-                msg = f"Humidité élevée : {hum:.1f}% (max {t_hum.threshold_max}%) → risque botrytis — {farm_info}"
+                # Tomate cerise très sensible au botrytis — CRITICAL dès 85%
+                if hum >= 85.0:
+                    sev = "CRITICAL"
+                    msg = f"Humidité critique : {hum:.1f}% → botrytis imminent sur fruits — ventiler immédiatement — {farm_info}"
+                else:
+                    sev = "WARNING"
+                    msg = f"Humidité élevée : {hum:.1f}% → risque botrytis/mildiou sur tomate cerise — {farm_info}"
             else:
-                msg = f"Humidité basse : {hum:.1f}% (min {t_hum.threshold_min}%) → stress hydrique — {farm_info}"
+                sev = severity_for_value(hum, t_hum.threshold_min, t_hum.threshold_max)
+                msg = f"Humidité basse : {hum:.1f}% (min {t_hum.threshold_min}%) → VPD élevé, stress hydrique — {farm_info}"
             create_alert("HUMIDITY", hum, t_hum.threshold_min, t_hum.threshold_max, sev, msg)
         else:
             auto_resolve("HUMIDITY")
@@ -500,6 +548,25 @@ def check_and_create_alerts(
         auto_resolve("FLOW")
 
     # ══════════════════════════════════════════════════════════════
+    # 5b. INJECTEURS FERTIGATION — tous null pendant irrigation
+    # ══════════════════════════════════════════════════════════════
+    if is_irrig:
+        fert_acts = [
+            getattr(sr, f"fert_act{i}", None)
+            for i in range(1, 9)
+            # récupérer depuis FertigationState n'est pas dispo ici,
+            # mais ECPreProcess est dans SensorReading
+        ]
+        if sr.ec_pre_process is not None and sr.ec_pre_process == 0.0 and flow > 0:
+            create_alert(
+                "FERT_SILENT", 0.0, None, None, "WARNING",
+                f"ECPreProcess = 0 pendant irrigation (débit {flow:.0f} L/h) → injecteurs silencieux ? — {farm_info}",
+                window_min=15,
+            )
+        else:
+            auto_resolve("FERT_SILENT")
+
+    # ══════════════════════════════════════════════════════════════
     # 6. VPD (stress hydrique)
     # >3.0 = CRITICAL, 2.0-3.0 = WARNING, 1.5-2.0 = INFO
     # ══════════════════════════════════════════════════════════════
@@ -521,45 +588,84 @@ def check_and_create_alerts(
                 f"VPD en hausse : {vpd:.2f} kPa — surveiller — {farm_info}",
                 window_min=120,
             )
+        elif vpd < 0.4:
+            create_alert(
+                "VPD_LOW", vpd, 0.4, None, "WARNING",
+                f"VPD trop bas : {vpd:.2f} kPa → risque mildiou, transpiration bloquée — {farm_info}",
+                window_min=60,
+            )
         else:
             auto_resolve("VPD")
+            auto_resolve("VPD_LOW")
 
     # ══════════════════════════════════════════════════════════════
-    # 7. RADIATION solaire
-    # >1800 = CRITICAL, 1500-1800 = WARNING, 1200-1500 = INFO
+    # 7. RADIATION solaire — capteur extérieur HK_WeatherStation
+    # Instantanée : max Agadir ~700-950 W/m² (extérieur)
+    # Cumulée (radiation_sum) : ~1400 J/cm² à 14h, ~2500-3000 fin journée été
     # ══════════════════════════════════════════════════════════════
+
+    # 7a. Radiation instantanée extérieure
     if sr.radiation is not None:
         rad = sr.radiation
-        if rad > 1800:
+        if rad > 900:
             create_alert(
-                "RADIATION", rad, None, 1800, "CRITICAL",
-                f"Radiation excessive : {rad:.0f} W/m² → risque brûlures feuilles — {farm_info}",
+                "RADIATION", rad, None, 900, "WARNING",
+                f"Radiation extérieure élevée : {rad:.0f} W/m² → surveiller température serre — {farm_info}",
+                window_min=60,
             )
-        elif rad > 1500:
+        elif rad > 700:
             create_alert(
-                "RADIATION", rad, None, 1500, "WARNING",
-                f"Radiation élevée : {rad:.0f} W/m² → surveiller température — {farm_info}",
-            )
-        elif rad > 1200:
-            create_alert(
-                "RADIATION", rad, None, 1200, "INFO",
-                f"Radiation forte : {rad:.0f} W/m² — normal mais surveiller — {farm_info}",
+                "RADIATION", rad, None, 700, "INFO",
+                f"Radiation extérieure forte : {rad:.0f} W/m² — vérifier ombrage serre — {farm_info}",
                 window_min=120,
             )
         else:
             auto_resolve("RADIATION")
+
+    # 7b. Radiation cumulée journalière (depuis minuit)
+    if sr.radiation_sum is not None:
+        rad_sum = sr.radiation_sum
+        if rad_sum > 3000:
+            create_alert(
+                "RADIATION_SUM", rad_sum, None, 3000, "CRITICAL",
+                f"Radiation cumulée très élevée : {rad_sum:.0f} J/cm² → tour irrigation supplémentaire requis — {farm_info}",
+                window_min=120,
+            )
+        elif rad_sum > 2000:
+            create_alert(
+                "RADIATION_SUM", rad_sum, None, 2000, "WARNING",
+                f"Radiation cumulée élevée : {rad_sum:.0f} J/cm² → vérifier plan irrigation — {farm_info}",
+                window_min=120,
+            )
+        else:
+            auto_resolve("RADIATION_SUM")
 
     # ══════════════════════════════════════════════════════════════
     # 8. ALARME NETAFIM
     # Toujours CRITICAL (code matériel)
     # ══════════════════════════════════════════════════════════════
     if sr.alarm is not None:
-        if sr.alarm > 0:
-            alarm_desc = ALARM_CODES.get(int(sr.alarm), f"Alarme inconnue code {sr.alarm}")
-            create_alert(
-                "ALARM", sr.alarm, None, None, "CRITICAL",
-                f"{alarm_desc} — {farm_info}",
-            )
+        alarm_code = int(sr.alarm) if sr.alarm else 0
+        if alarm_code > 0:
+            alarm_desc = ALARM_CODES.get(alarm_code, f"Alarme inconnue code {alarm_code}")
+            if alarm_code in ALARM_INFO_ONLY:
+                # Pause ou EC/pH signalé par le contrôleur = INFO seulement
+                create_alert(
+                    "ALARM", sr.alarm, None, None, "INFO",
+                    f"{alarm_desc} — {farm_info}",
+                    window_min=60,
+                )
+            elif alarm_code in (29, 30, 31):
+                # Problèmes 4G/batterie/secteur = CRITICAL immédiat
+                create_alert(
+                    "ALARM", sr.alarm, None, None, "CRITICAL",
+                    f"{alarm_desc} — {farm_info}",
+                )
+            else:
+                create_alert(
+                    "ALARM", sr.alarm, None, None, "CRITICAL",
+                    f"{alarm_desc} — {farm_info}",
+                )
         else:
             auto_resolve("ALARM")
 
@@ -669,7 +775,8 @@ async def ingest_sensor_data(
             # Environnement
             avg_temp         = safe_float(sensor_data.get("AvgTemp")),
             humidity         = safe_float(sensor_data.get("Humidity")),
-            outside_temp     = safe_float(sensor_data.get("OutsideTemp")),
+            outside_temp     = safe_float(sensor_data.get("OutsideTemp"))
+                    or safe_float(weather_data.get("Outside_Temperature")),
             outside_humidity = safe_float(weather_data.get("Outside_Humidity")),
 
             # Solution nutritive

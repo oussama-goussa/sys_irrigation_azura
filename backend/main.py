@@ -121,6 +121,12 @@ def run_migrations():
                 ALTER TABLE ai_recommandations
                 ADD COLUMN IF NOT EXISTS radiation_sum_debut FLOAT
             """))
+            conn.execute(text("""
+                UPDATE alerts SET resolved_at = NOW(), resolved_by = 'migration-v2'
+                WHERE alert_type IN ('RADIATION', 'VPD_LOW')
+                AND resolved_at IS NULL
+                AND value_detected < 1200
+            """))
             conn.commit()
         logger.success("Migrations appliquées ✅")
     except Exception as e:
