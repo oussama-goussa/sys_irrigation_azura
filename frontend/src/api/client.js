@@ -341,3 +341,13 @@ export async function getWeightHistory(token, farmName, { dateFrom, dateTo, page
   if (!res.ok) throw new Error('Erreur historique poids')
   return res.json()
 }
+
+// À ajouter dans client.js après getDeviceAlerts
+export async function resolveDeviceAlert(token, deviceId, alertId) {
+    const res = await fetchWithRefresh(`${BASE}/api/devices/${deviceId}/alerts/${alertId}/resolve`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) throw new Error('Erreur résolution alerte')
+    return res.json()
+}

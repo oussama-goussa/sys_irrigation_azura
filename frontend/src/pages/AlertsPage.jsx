@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import { useWindowWidth } from '../components/DashboardShell.jsx'
 
-import { getDeviceAlerts, getDashboard } from '../api/client.js'
+import { getDeviceAlerts, getDashboard, resolveDeviceAlert } from '../api/client.js'
 
 // ── Toast context — exporté pour usage global ─────────────────
 export const ToastContext = createContext(null)
@@ -84,13 +84,9 @@ function fmtOfflineMessage(alerts) {
 }
 
 async function resolveAlert(token, alertId, deviceId) {
-    // Note: si l'API n'a pas de route PATCH, on fait un fallback silencieux
     try {
-        const res = await fetch(`/api/devices/${deviceId}/alerts/${alertId}/resolve`, {
-            method: 'PATCH',
-            headers: { Authorization: `Bearer ${token}` }
-        })
-        return res.ok
+        await resolveDeviceAlert(token, deviceId, alertId)
+        return true
     } catch { return false }
 }
 
@@ -122,16 +118,21 @@ function timeSince(ts) {
 
 // ── Alert type config ─────────────────────────────────────────
 const ALERT_CONFIG = {
-    EC_ACTUAL: { label: 'EC Apport', icon: Droplets, color: '#34d96f', unit: 'mS/cm' },
-    PH_ACTUAL: { label: 'pH Apport', icon: FlaskConical, color: '#4d9de0', unit: '' },
-    AVG_TEMP: { label: 'Température', icon: Thermometer, color: '#f5a623', unit: '°C' },
-    HUMIDITY: { label: 'Humidité', icon: Activity, color: '#b197fc', unit: '%' },
-    FLOW: { label: 'Débit', icon: Gauge, color: '#ff48bf', unit: 'L/h' },
-    WIND_SPEED: { label: 'Vent', icon: Wind, color: '#576c58', unit: 'm/s' },
-    ALARM: { label: 'Alarme Netafim', icon: AlertTriangle, color: '#f05252', unit: '' },
-    OFFLINE: { label: 'Hors ligne', icon: WifiOff, color: '#f05252', unit: 'min' },  // ← déjà là
-    VPD: { label: 'Stress hydrique (VPD)', icon: Wind, color: '#f5a623', unit: 'kPa' },  // ← AJOUTER
-    RADIATION: { label: 'Radiation excessive', icon: Sun, color: '#f5e642', unit: 'W/m²' }, // ← AJOUTER
+    EC_ACTUAL:          { label: 'EC Apport',              icon: Droplets,      color: '#34d96f', unit: 'mS/cm' },
+    PH_ACTUAL:          { label: 'pH Apport',              icon: FlaskConical,  color: '#4d9de0', unit: '' },
+    AVG_TEMP:           { label: 'Température',            icon: Thermometer,   color: '#f5a623', unit: '°C' },
+    HUMIDITY:           { label: 'Humidité',               icon: Activity,      color: '#b197fc', unit: '%' },
+    FLOW:               { label: 'Débit',                  icon: Gauge,         color: '#ff48bf', unit: 'L/h' },
+    WIND_SPEED:         { label: 'Vent',                   icon: Wind,          color: '#576c58', unit: 'm/s' },
+    ALARM:              { label: 'Alarme Netafim',         icon: AlertTriangle, color: '#f05252', unit: '' },
+    OFFLINE:            { label: 'Hors ligne',             icon: WifiOff,       color: '#f05252', unit: 'min' },
+    VPD:                { label: 'Stress hydrique (VPD)',  icon: Wind,          color: '#f5a623', unit: 'kPa' },
+    VPD_LOW:            { label: 'VPD trop bas',           icon: Droplets,      color: '#4d9de0', unit: 'kPa' },
+    RADIATION:          { label: 'Radiation instantanée',  icon: Sun,           color: '#f5e642', unit: 'W/m²' },
+    RADIATION_SUM:      { label: 'Radiation cumulée',      icon: Sun,           color: '#ef9f27', unit: 'J/cm²' },
+    ECPH_STATUS:        { label: 'Alarme EC/pH contrôleur',icon: FlaskConical,  color: '#f05252', unit: '' },
+    HOUSE_DISCONNECTED: { label: 'Serre déconnectée',      icon: WifiOff,       color: '#f05252', unit: '' },
+    FERT_SILENT:        { label: 'Injecteur silencieux',   icon: Gauge,         color: '#f5a623', unit: '' },
 }
 
 const SEVERITY_CONFIG = {
@@ -669,15 +670,15 @@ function AlertCard({ alert, expanded, onToggle, onResolve, C, dark, isMobile }) 
 
     // Ajouter après ALERT_CONFIG
     const ALARM_CODES_FR = {
-        1: "Court-circuit sonde température interne",
-        2: "Coupure câble sonde température interne",
-        3: "Défaillance sonde température interne",
-        4: "Court-circuit sonde température extérieure",
-        5: "Coupure câble sonde température extérieure",
-        6: "Défaillance sonde température extérieure",
-        7: "Défaillance carte relais",
-        8: "Défaillance entrée analogique",
-        9: "Défaillance entrée digitale",
+        1:  "Court-circuit sonde température interne",
+        2:  "Coupure câble sonde température interne",
+        3:  "Défaillance sonde température interne",
+        4:  "Court-circuit sonde température extérieure",
+        5:  "Coupure câble sonde température extérieure",
+        6:  "Défaillance sonde température extérieure",
+        7:  "Défaillance carte relais",
+        8:  "Défaillance entrée analogique",
+        9:  "Défaillance entrée digitale",
         10: "Défaillance horloge interne",
         11: "Défaillance carte CPU",
         12: "Défaillance mémoire",
@@ -689,14 +690,17 @@ function AlertCard({ alert, expanded, onToggle, onResolve, C, dark, isMobile }) 
         18: "Fuite canal de dosage",
         19: "Défaut canal de dosage",
         20: "Pause externe activée",
-        21: "Défaut pression différentielle",
-        22: "EC trop élevé",
-        23: "EC trop bas",
-        24: "pH trop élevé",
-        25: "pH trop bas",
+        21: "Encrassement filtre — rinçage requis",
+        22: "EC trop élevé (contrôleur)",
+        23: "EC trop bas (contrôleur)",
+        24: "pH trop élevé (contrôleur)",
+        25: "pH trop bas (contrôleur)",
         26: "Absence de débit",
         27: "Alarme débit",
         28: "Court-circuit sortie",
+        29: "Défaut communication 4G/réseau",
+        30: "Batterie faible",
+        31: "Coupure secteur — batterie en cours",
     }
 
     return (
