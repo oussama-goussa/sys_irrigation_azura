@@ -224,21 +224,45 @@ def calculer_tours_journee(
             if not irr_rows:
                 continue
 
-            # Vérifier que toutes les lectures du chunk ont flow > 0.
-            # Si on trouve un flow = 0 quelque part → tour incomplet → ignorer.
-            flow_zero_found = any(sr.flow == 0 for sr, ic in irr_rows)
+            # ── BUG FIX 1 : chercher flow=0 dans TOUT le chunk (pas seulement irr_rows)
+            # Les lignes Pause (flow=0) entre deux Irrigation étaient invisibles car
+            # irr_rows ne contient que ec_ph_status == 'Irrigation'.
+            # On cherche une pause avec flow=0 qui se trouve ENTRE deux lectures Irrigation.
+            # Une pause en début ou fin de chunk (transition normale) est ignorée.
+            first_irr_ts = irr_rows[0][0].timestamp
+            last_irr_ts  = irr_rows[-1][0].timestamp
+            flow_zero_found = any(
+                sr.flow == 0
+                for sr, ic in chunk
+                if sr.timestamp > first_irr_ts and sr.timestamp < last_irr_ts
+                and sr.flow is not None
+            )
             if flow_zero_found:
                 logger.debug(
-                    f"Tour ignoré (flow=0 détecté) : "
+                    f"Tour ignoré (flow=0 entre lectures Irrigation) : "
                     f"{device.farm_name} H{device.house_number} "
                     f"chunk début {irr_rows[0][0].timestamp}"
                 )
                 continue
 
-            # Toutes les lectures ont flow > 0 → vrai début = lecture avec
-            # water_act_time le plus petit (plus proche du démarrage réel).
+            # ── BUG FIX 2 : trouver le vrai début depuis la DERNIÈRE séquence continue
+            # sans interruption de flow=0.
+            # Cas réel : 07:55 flow=12 → 08:00 Pause/flow=0 → 08:10 flow=3 → 08:15 flow=146
+            # Le min(water_act_time) prenait 07:55 comme début alors que le vrai tour
+            # repart à 08:10. On remonte depuis la fin jusqu'au premier flow=0 ou manquant.
+            continuous_irr = []
+            for row in reversed(irr_rows):
+                sr_r, ic_r = row
+                if sr_r.flow is not None and sr_r.flow > 0:
+                    continuous_irr.insert(0, row)
+                else:
+                    break  # premier flow=0 trouvé en remontant → on s'arrête
+
+            if not continuous_irr:
+                continue
+
             earliest_irr = min(
-                irr_rows,
+                continuous_irr,
                 key=lambda x: time_to_seconds(x[1].water_act_time)
             )
             earliest_irr_sr, earliest_irr_ic = earliest_irr
