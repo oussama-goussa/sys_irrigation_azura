@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import { useWindowWidth } from '../components/DashboardShell.jsx'
 
-import { getDeviceAlerts, getDashboard, resolveDeviceAlert } from '../api/client.js'
+import { getDeviceAlerts, getDashboard } from '../api/client.js'
 
 // ── Toast context — exporté pour usage global ─────────────────
 export const ToastContext = createContext(null)
@@ -84,9 +84,13 @@ function fmtOfflineMessage(alerts) {
 }
 
 async function resolveAlert(token, alertId, deviceId) {
+    // Note: si l'API n'a pas de route PATCH, on fait un fallback silencieux
     try {
-        await resolveDeviceAlert(token, deviceId, alertId)
-        return true
+        const res = await fetch(`/api/devices/${deviceId}/alerts/${alertId}/resolve`, {
+            method: 'PATCH',
+            headers: { Authorization: `Bearer ${token}` }
+        })
+        return res.ok
     } catch { return false }
 }
 
