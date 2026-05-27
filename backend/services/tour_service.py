@@ -364,18 +364,13 @@ def calculer_tours_journee(
         else:
             cumul = None
 
-        # ── repos_apres_min : calculé par rapport au tour SUIVANT ──
-        # On ne peut pas le calculer ici (le suivant n'est pas encore validé).
-        # On le laisse à None ; upsert_tours le remplira quand le suivant apparaît.
-        repos_apres = None
-
         result.append({
             'tour_num'        : tour_num,
             'debut'           : debut_tour,
             'fin'             : fin_estimee,
             'duree_min'       : duree_complete,
             'prg_time_min'    : t['prg_time_min'],
-            'repos_apres_min' : repos_apres,   # mis à jour dans upsert
+            'repos_apres_min' : None,   # calculé ci-dessous une fois result complet
             'is_complete'     : is_complete,
             'v_apport'        : round((t['prg_time_min'] * 1000) / 60, 1),
             'ec_apport'       : t.get('ec_apport'),
@@ -384,6 +379,15 @@ def calculer_tours_journee(
             'cumul_radiation' : cumul,
         })
         tour_num += 1
+
+    # ── Calcul repos_apres_min sur la liste complète ──────────
+    # repos_apres du tour N = debut_(N+1) - fin_N
+    for j in range(len(result) - 1):
+        fin_n    = result[j]['fin']
+        debut_n1 = result[j + 1]['debut']
+        repos    = round((debut_n1 - fin_n).total_seconds() / 60)
+        result[j]['repos_apres_min'] = max(0, repos)
+    # Dernier tour : repos_apres_min reste None (pas de tour suivant connu)
 
     return result
 
@@ -398,17 +402,13 @@ def upsert_tours(
 ):
     """
     Insère ou met à jour les tours calculés en base.
-
-    LOGIQUE repos_apres_min :
-    Quand on insère/met à jour le tour N, on calcule et met à jour
-    repos_apres_min du tour N-1 (on connaît le debut_N).
-
+    repos_apres_min est déjà calculé dans la liste par calculer_tours_journee.
     Utilise UNIQUE (device_id, date, tour_num).
     """
     if not tours:
         return
 
-    for idx, t in enumerate(tours):
+    for t in tours:
         existing = (
             db.query(IrrigationTour)
             .filter(
@@ -424,6 +424,7 @@ def upsert_tours(
                 existing.fin              = t['fin']
                 existing.duree_min        = t['duree_min']
                 existing.prg_time_min     = t['prg_time_min']
+                existing.repos_apres_min  = t['repos_apres_min']
                 existing.is_complete      = t['is_complete']
                 existing.v_apport         = t.get('v_apport')
                 existing.ec_apport        = t.get('ec_apport')
@@ -431,7 +432,11 @@ def upsert_tours(
                 existing.radiation_sum    = t.get('radiation_sum')
                 existing.cumul_radiation  = t.get('cumul_radiation')
                 existing.updated_at       = datetime.utcnow()
-                # repos_apres_min : mis à jour ci-dessous depuis le tour suivant
+            else:
+                # Tour déjà complet : mettre à jour repos_apres_min si on l'a maintenant
+                if existing.repos_apres_min is None and t['repos_apres_min'] is not None:
+                    existing.repos_apres_min = t['repos_apres_min']
+                    existing.updated_at      = datetime.utcnow()
         else:
             tour = IrrigationTour(
                 device_id       = device.id,
@@ -442,7 +447,7 @@ def upsert_tours(
                 house_number    = device.house_number,
                 duree_min       = t['duree_min'],
                 prg_time_min    = t['prg_time_min'],
-                repos_apres_min = None,   # rempli quand le suivant arrive
+                repos_apres_min = t['repos_apres_min'],
                 is_complete     = t['is_complete'],
                 v_apport        = t.get('v_apport'),
                 ec_apport       = t.get('ec_apport'),
@@ -451,27 +456,6 @@ def upsert_tours(
                 cumul_radiation = t.get('cumul_radiation'),
             )
             db.add(tour)
-
-        # ── Mettre à jour repos_apres_min du tour PRÉCÉDENT ──
-        # Le repos après le tour N-1 = debut_N - fin_(N-1)
-        if idx > 0:
-            prev_t       = tours[idx - 1]
-            prev_existing = (
-                db.query(IrrigationTour)
-                .filter(
-                    IrrigationTour.device_id == device.id,
-                    IrrigationTour.date      == target_date,
-                    IrrigationTour.tour_num  == prev_t['tour_num'],
-                )
-                .first()
-            )
-            if prev_existing:
-                fin_prev  = prev_existing.fin
-                debut_cur = t['debut']
-                repos     = round((debut_cur - fin_prev).total_seconds() / 60)
-                if repos >= 0:
-                    prev_existing.repos_apres_min = repos
-                    prev_existing.updated_at      = datetime.utcnow()
 
     try:
         db.commit()
