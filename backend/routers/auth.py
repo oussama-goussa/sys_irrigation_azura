@@ -68,15 +68,15 @@ def login(
     db     : Session = Depends(get_db)
 ):
     user = get_user(db, form.username)
-
+    
     if not user or not verify_password(form.password, user.password):
-        logger.warning(f"Connexion échouée : {form.username}")
-        # Log tentative échouée
         log_action(db, form.username, "LOGIN_FAILED", ip=request.client.host)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Identifiants incorrects")
+        raise HTTPException(status_code=401, detail="Identifiants incorrects")
 
+    # Vérifier actif APRÈS verify_password mais avec le même message générique
     if not user.actif:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Compte désactivé")
+        log_action(db, form.username, "LOGIN_BLOCKED", ip=request.client.host)
+        raise HTTPException(status_code=401, detail="Identifiants incorrects")
 
     # Mettre à jour last_login + audit
     update_last_login(db, user.username)
@@ -98,7 +98,11 @@ def login(
 @router.post("/refresh")
 @limiter.limit("60/minute")
 def refresh(request: Request, body: RefreshRequest):
+    from core.security import est_revoque
+    if est_revoque(body.refresh_token):
+        raise HTTPException(status_code=401, detail="Token révoqué")
     payload = decode_token(body.refresh_token)
+
     if payload.get("type") != "refresh":
         raise HTTPException(status_code=401, detail="Token invalide")
     new_access = create_access_token({"sub": payload["sub"], "role": payload["role"], "farm_names": payload.get("farm_names", [])})
@@ -224,3 +228,9 @@ def export_csv(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=liste_utilisateurs.xlsx"}
     )
+
+@router.post("/logout")
+def logout(body: RefreshRequest, current_user: dict = Depends(get_current_user)):
+    from core.security import revoquer_refresh_token
+    revoquer_refresh_token(body.refresh_token)
+    return {"message": "Déconnecté ✅"}

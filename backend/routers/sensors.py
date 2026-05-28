@@ -63,7 +63,7 @@ def verify_api_key(x_api_key: Optional[str] = Header(None)):
             detail="SENSOR_API_KEY non configurée dans .env"
         )
     if x_api_key != SENSOR_API_KEY:
-        logger.warning(f"Tentative accès /ingest avec clé invalide : {x_api_key}")
+        logger.warning(f"Tentative accès /ingest avec clé invalide (premiers chars: {str(x_api_key)[:4]}...)")
         raise HTTPException(
             status_code=403,
             detail="Clé API invalide — accès refusé"

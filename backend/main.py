@@ -25,6 +25,9 @@ from routers.weight import router as weight_router
 
 from routers.export_sensor import router as export_sensor_router 
 
+from fastapi import Request
+from starlette.middleware.base import BaseHTTPMiddleware
+
 from models.sensor_model import (
     Device, SensorReading, IrrigationCycle,
     FertigationState, Alert, AlertThreshold,
@@ -161,7 +164,11 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # ── CORS ──────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins     = ["http://localhost:5173", "http://localhost:3000", "*"],
+    allow_origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://votre-domaine.com",  # votre vrai domaine
+    ],
     allow_credentials = True,
     allow_methods     = ["*"],
     allow_headers     = ["*"],
@@ -224,3 +231,27 @@ async def health():
 @app.get("/ping")
 async def ping():
     return {"ping": "pong"}
+
+class LimitRequestSizeMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if request.headers.get("content-length"):
+            if int(request.headers["content-length"]) > 5 * 1024 * 1024:  # 5 MB max
+                from fastapi.responses import JSONResponse
+                return JSONResponse({"detail": "Requête trop volumineuse"}, status_code=413)
+        return await call_next(request)
+
+app.add_middleware(LimitRequestSizeMiddleware)
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=()"
+        # En production avec HTTPS :
+        # response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)

@@ -10,6 +10,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+import redis
 
 # ── Configuration ─────────────────────────────────────────────
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -137,3 +138,12 @@ require_admin     = require_role(Role.ADMIN)
 require_agronome  = require_role(Role.ADMIN, Role.AGRONOME)
 require_operateur = require_role(Role.ADMIN, Role.AGRONOME, Role.OPERATEUR)
 require_any       = require_role(Role.ADMIN, Role.AGRONOME, Role.OPERATEUR, Role.AUDITEUR)
+
+_redis = redis.from_url(os.getenv("REDIS_URL", "redis://redis:6379/0"))
+
+def revoquer_refresh_token(token: str):
+    # Stocker pendant 7 jours (durée du refresh token)
+    _redis.setex(f"revoked:{token}", 7 * 24 * 3600, "1")
+
+def est_revoque(token: str) -> bool:
+    return _redis.exists(f"revoked:{token}") > 0
