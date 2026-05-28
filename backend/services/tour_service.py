@@ -208,12 +208,13 @@ def calculer_tours_journee(
             if prg_sec_check > 0 and duree_reelle_sec < (prg_sec_check * 0.3):
                 continue
 
-            # ── Trouver le vrai début = première lecture consécutive avec flow > 0 ──
-            # Problème : le contrôleur peut démarrer (07:09), s'arrêter 5 min (flow=0),
-            # puis relancer un vrai tour (07:15). Sans ce check, debut = 07:09 (faux).
-            # Logique : on cherche la dernière séquence CONTINUE de flow > 0 qui va
-            # jusqu'à la fin du chunk. On remonte depuis la fin jusqu'au 1er flow = 0,
-            # ce qui donne le vrai point de départ sans interruption.
+# REMPLACER les lignes 211-246 par ceci :
+
+            # ── Trouver le vrai début = dernière séquence continue de flow > 0 ──
+            # On travaille sur le chunk COMPLET (pas seulement irr_rows) pour
+            # détecter les interruptions Pause/flow=0 intercalées.
+            # Logique : trouver le dernier timestamp où flow=0 (ou Pause) dans le chunk.
+            # Tout ce qui est APRÈS ce point = la vraie séquence continue.
             irr_rows = [
                 (sr, ic) for sr, ic in chunk
                 if sr.ec_ph_status == 'Irrigation'
@@ -224,45 +225,49 @@ def calculer_tours_journee(
             if not irr_rows:
                 continue
 
-            # ── BUG FIX 1 : chercher flow=0 dans TOUT le chunk (pas seulement irr_rows)
-            # Les lignes Pause (flow=0) entre deux Irrigation étaient invisibles car
-            # irr_rows ne contient que ec_ph_status == 'Irrigation'.
-            # On cherche une pause avec flow=0 qui se trouve ENTRE deux lectures Irrigation.
-            # Une pause en début ou fin de chunk (transition normale) est ignorée.
+            # Trouver le dernier moment d'interruption dans le chunk complet
+            # (flow=0 OU status != Irrigation), entre la 1ère et dernière Irrigation
             first_irr_ts = irr_rows[0][0].timestamp
             last_irr_ts  = irr_rows[-1][0].timestamp
-            flow_zero_found = any(
-                sr.flow == 0
-                for sr, ic in chunk
-                if sr.timestamp > first_irr_ts and sr.timestamp < last_irr_ts
-                and sr.flow is not None
-            )
-            if flow_zero_found:
-                logger.debug(
-                    f"Tour ignoré (flow=0 entre lectures Irrigation) : "
-                    f"{device.farm_name} H{device.house_number} "
-                    f"chunk début {irr_rows[0][0].timestamp}"
+
+            last_interruption_ts = None
+            for sr, ic in chunk:
+                if sr.timestamp < first_irr_ts or sr.timestamp > last_irr_ts:
+                    continue
+                if (sr.flow is None or sr.flow == 0) or sr.ec_ph_status != 'Irrigation':
+                    last_interruption_ts = sr.timestamp
+
+            if last_interruption_ts is not None:
+                # Il y a eu une interruption → garder seulement les irr_rows APRÈS
+                irr_rows_continuous = [
+                    (sr, ic) for sr, ic in irr_rows
+                    if sr.timestamp > last_interruption_ts
+                ]
+                if not irr_rows_continuous:
+                    logger.debug(
+                        f"Tour ignoré (interruption sans reprise) : "
+                        f"{device.farm_name} H{device.house_number} "
+                        f"chunk début {irr_rows[0][0].timestamp}"
+                    )
+                    continue
+                # Vérifier que la reprise est assez longue (≥ 30% de prg_time)
+                reprise_sec = max(
+                    (time_to_seconds(ic.water_act_time) for sr, ic in irr_rows_continuous),
+                    default=0
                 )
-                continue
+                prg_sec_cont = time_to_seconds(irr_rows_continuous[0][1].water_prg_time)
+                if prg_sec_cont > 0 and reprise_sec < (prg_sec_cont * 0.3):
+                    logger.debug(
+                        f"Tour ignoré (reprise trop courte après interruption) : "
+                        f"{device.farm_name} H{device.house_number} "
+                        f"chunk début {irr_rows[0][0].timestamp}"
+                    )
+                    continue
+                irr_rows = irr_rows_continuous
 
-            # ── BUG FIX 2 : trouver le vrai début depuis la DERNIÈRE séquence continue
-            # sans interruption de flow=0.
-            # Cas réel : 07:55 flow=12 → 08:00 Pause/flow=0 → 08:10 flow=3 → 08:15 flow=146
-            # Le min(water_act_time) prenait 07:55 comme début alors que le vrai tour
-            # repart à 08:10. On remonte depuis la fin jusqu'au premier flow=0 ou manquant.
-            continuous_irr = []
-            for row in reversed(irr_rows):
-                sr_r, ic_r = row
-                if sr_r.flow is not None and sr_r.flow > 0:
-                    continuous_irr.insert(0, row)
-                else:
-                    break  # premier flow=0 trouvé en remontant → on s'arrête
-
-            if not continuous_irr:
-                continue
-
+            # vrai début = min(water_act_time) sur la séquence continue finale
             earliest_irr = min(
-                continuous_irr,
+                irr_rows,
                 key=lambda x: time_to_seconds(x[1].water_act_time)
             )
             earliest_irr_sr, earliest_irr_ic = earliest_irr
