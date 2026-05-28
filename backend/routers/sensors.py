@@ -15,6 +15,9 @@ from loguru import logger
 from typing import Optional
 from core.utils import filter_by_farm
 
+from pydantic import BaseModel
+from typing import Any
+
 from core.database import get_db
 from models.sensor_model import (
     Device, SensorReading, IrrigationCycle,
@@ -670,14 +673,23 @@ def check_and_create_alerts(
             auto_resolve("ALARM")
 
 # ── ENDPOINT PRINCIPAL ────────────────────────────────────────
+class IngestPayload(BaseModel):
+    XMLExport: Any  
+
 @router.post("/ingest")
 async def ingest_sensor_data(
     request: Request,
     db: Session = Depends(get_db),
     api_key: str = Depends(verify_api_key),
 ):
-    request_body = await request.json(
-)
+    try:
+        request_body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="JSON invalide")
+
+    if not isinstance(request_body, (dict, list)):
+        raise HTTPException(status_code=400, detail="Format JSON attendu")    
+
     logger.info(f"TYPE recu : {type(request_body)}")
     if isinstance(request_body, list):
         request_body = request_body[0]

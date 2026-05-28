@@ -9,8 +9,13 @@ import { ToastProvider } from './pages/AlertsPage.jsx'
 
 export default function App() {
   const [auth, setAuth] = useState(() => {
-    const saved = sessionStorage.getItem('azura_auth')
-    return saved ? JSON.parse(saved) : null
+      try {
+          const saved = sessionStorage.getItem('azura_auth')
+          return saved ? JSON.parse(saved) : null
+      } catch {
+          sessionStorage.removeItem('azura_auth')
+          return null
+      }
   })
 
   useEffect(() => {

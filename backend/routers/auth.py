@@ -96,7 +96,7 @@ def login(
 
 # ── POST /api/auth/refresh ────────────────────────────────────
 @router.post("/refresh")
-@limiter.limit("60/minute")
+@limiter.limit("30/minute")
 def refresh(request: Request, body: RefreshRequest):
     from core.security import est_revoque
     if est_revoque(body.refresh_token):
@@ -111,7 +111,8 @@ def refresh(request: Request, body: RefreshRequest):
 
 # ── GET /api/auth/me ──────────────────────────────────────────
 @router.get("/me")
-def get_me(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+@limiter.limit("60/minute")
+def get_me(request: Request, current_user=Depends(get_current_user), db=Depends(get_db)):
     user = get_user(db, current_user["username"])
     if not user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
@@ -229,8 +230,10 @@ def export_csv(
         headers={"Content-Disposition": "attachment; filename=liste_utilisateurs.xlsx"}
     )
 
+# ── GET /api/auth/logout ───────────────────
 @router.post("/logout")
-def logout(body: RefreshRequest, current_user: dict = Depends(get_current_user)):
+@limiter.limit("30/minute")
+def logout(request: Request, body: RefreshRequest, current_user=Depends(get_current_user)):
     from core.security import revoquer_refresh_token
     revoquer_refresh_token(body.refresh_token)
     return {"message": "Déconnecté ✅"}

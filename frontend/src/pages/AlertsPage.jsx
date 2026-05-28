@@ -404,11 +404,16 @@ export default function AlertsPage({ token, auth, C, dark }) {
     const load = useCallback(async (silent = false) => {
         if (!silent) setLoading(true)
         else setRefreshing(true)
-        const data = await fetchAlerts(token, null, showResolved)
-        fmtOfflineMessage(data)
-        setAlerts(data)
-        setLoading(false)
-        setRefreshing(false)
+        try {
+            const data = await fetchAlerts(token, null, showResolved)
+            fmtOfflineMessage(data)
+            setAlerts(data)
+        } catch {
+            // garder les alertes précédentes en cas d'erreur réseau
+        } finally {
+            setLoading(false)
+            setRefreshing(false)
+        }
     }, [token, showResolved])
 
     useEffect(() => { load() }, [load])
@@ -971,7 +976,7 @@ export function AlertWatcher({ token }) {
         }
         }
         check()
-        const iv = setInterval(check, 60_000) // ← 60s instead of 30s
+        const iv = setInterval(check, 120_000) // ← 60s instead of 30s
         return () => clearInterval(iv)        
     }, [token])
 

@@ -699,10 +699,16 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
   const totalVDrain     = tours.reduce((s, t) => s + (Number(t.vDrain) || 0), 0)
   // Durée totale = somme des durées seulement
   const dureeTotal      = tours.reduce((s, t) => s + (Number(t.duree) || 0), 0)
-  const ecMoyApport     = tours.length ? (tours.reduce((s, t) => s + (Number(t.ecApport) || 0), 0) / tours.filter(t => t.ecApport).length || null) : null
-  const phMoyApport     = tours.length ? (tours.reduce((s, t) => s + (Number(t.phApport) || 0), 0) / tours.filter(t => t.phApport).length || null) : null
-  const ecMoyDrain      = tours.length ? (tours.reduce((s, t) => s + (Number(t.ecDrain) || 0), 0) / tours.filter(t => t.ecDrain).length || null) : null
-  const phMoyDrain      = tours.length ? (tours.reduce((s, t) => s + (Number(t.phDrain) || 0), 0) / tours.filter(t => t.phDrain).length || null) : null
+  const _avg = (field) => {
+    const filled = tours.filter(t => t[field] !== '' && t[field] !== null && t[field] !== undefined)
+    if (!filled.length) return null
+    return filled.reduce((s, t) => s + Number(t[field]), 0) / filled.length
+  }
+  const ecMoyApport = _avg('ecApport')
+  const phMoyApport = _avg('phApport')
+  const ecMoyDrain  = _avg('ecDrain')
+  const phMoyDrain  = _avg('phDrain')
+  
   const moyDrainFinale  = lastTour?.moyPctDrain ?? null
 
   const ccBras = totalVApport && moyDrainFinale !== null && nbrGoutteurs && nbrBras && Number(nbrBras) > 0

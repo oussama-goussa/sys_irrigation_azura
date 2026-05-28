@@ -883,16 +883,28 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
       return () => clearInterval(iv)
     }, [tourDate, deviceId])
 
+  // 1. Refresh live uniquement — interval stable, dépend seulement de loadLive
   useEffect(() => {
     loadLive()
-    loadChartData()
+    const iv = setInterval(() => loadLive(), 30_000)
+    return () => clearInterval(iv)
+  }, [loadLive])  // loadLive change seulement si token ou deviceId changent
+
+  // 2. Refresh chart/historique quand la page est active et aujourd'hui
+  const pageRef = useRef(page)
+  useEffect(() => { pageRef.current = page }, [page])
+
+  const isHistoryTodayRef = useRef(isHistoryToday)
+  useEffect(() => { isHistoryTodayRef.current = isHistoryToday }, [isHistoryToday])
+
+  useEffect(() => {
+    if (!isToday) return  // pas de refresh auto si période passée
     const iv = setInterval(() => {
-      loadLive()
-      if (isToday && !isZoomedRef.current) loadChartData()
-      if (isHistoryToday) loadHistory(page)
+      if (!isZoomedRef.current) loadChartData()
+      if (isHistoryTodayRef.current) loadHistory(pageRef.current)
     }, 30_000)
     return () => clearInterval(iv)
-  }, [loadLive, chartDateFrom, chartDateTo, dateFrom, dateTo, page])
+  }, [isToday, loadChartData, loadHistory])
 
   useEffect(() => {
     loadHistory(1)

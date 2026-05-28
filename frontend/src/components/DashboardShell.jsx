@@ -19,7 +19,7 @@ import HistoriquePage from '../pages/HistoriquePage.jsx'
 import DashboardPage  from '../pages/DashboardPage.jsx'
 import ZonePage       from '../pages/ZonePage.jsx'
 import AgentIAPage from '../pages/AgentIAPage.jsx'
-import AlertsPage, { AlertWatcher, AlertBell } from '../pages/AlertsPage.jsx'
+import AlertsPage, { AlertWatcher } from '../pages/AlertsPage.jsx'
 
 // ── Breakpoints ───────────────────────────────────────────────
 const BP_MOBILE = 640
@@ -331,8 +331,13 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
   })
 
   const [selectedDevice, setSelectedDevice] = useState(() => {
-    const saved = sessionStorage.getItem('azura_device')
-    return saved ? JSON.parse(saved) : null
+      try {
+          const saved = sessionStorage.getItem('azura_device')
+          return saved ? JSON.parse(saved) : null
+      } catch {
+          sessionStorage.removeItem('azura_device')
+          return null
+      }
   })
   const [farms,          setFarms]          = useState([])
   const [loadingFarms, setLoadingFarms]     = useState(farms.length === 0)

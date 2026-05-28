@@ -153,12 +153,6 @@ def create_saisie(
     log_action(db, user["username"], "CREATE_SAISIE",
             detail=f"Saisie {saisie.id} — {body.ferme} {body.date} — {len(body.tours)} tours")
 
-    log_action(db, user["username"], "DELETE_SAISIE",
-            detail=f"Saisie {saisie.id} — {saisie.farm_name} {saisie.date}")
-
-    log_action(db, user["username"], "UPDATE_SAISIE",
-            detail=f"Saisie {saisie.id} — {body.ferme} {body.date} — {len(body.tours)} tours")
-
     logger.success(
         f"Saisie enregistrée : {body.ferme} {body.date} "
         f"— {len(body.tours)} tours — par {user['username']}"
@@ -279,22 +273,22 @@ def get_saisie(
 
 # ── DELETE /api/saisie/{id} — Supprimer une saisie ───────────
 @router.delete("/{saisie_id}")
-def delete_saisie(
-    saisie_id : int,
-    db        : Session = Depends(get_db),
-    user      : dict    = Depends(require_operateur),
-):
-    """
-    Supprime une saisie et tous ses tours (CASCADE).
-    """
+def delete_saisie(saisie_id, db, user=Depends(require_operateur)):
     saisie = db.query(SaisieJournaliere).filter(SaisieJournaliere.id == saisie_id).first()
     if not saisie:
-        raise HTTPException(status_code=404, detail="Saisie non trouvée")
+        raise HTTPException(404, "Saisie non trouvée")
+
+    # ← AJOUTER : vérifier que l'user a accès à cette ferme
+    if user["role"] != "admin":
+        user_db = get_user(db, user["username"])
+        allowed = user_db.farm_names if user_db and user_db.farm_names else []
+        if saisie.farm_name not in allowed:
+            raise HTTPException(403, "Accès refusé à cette saisie")
 
     db.delete(saisie)
     db.commit()
-
-    logger.info(f"Saisie {saisie_id} supprimée par {user['username']}")
+    log_action(db, user["username"], "DELETE_SAISIE",
+               detail=f"Saisie {saisie_id} — {saisie.farm_name} {saisie.date}")
     return {"message": f"Saisie {saisie_id} supprimée ✅"}
 
 

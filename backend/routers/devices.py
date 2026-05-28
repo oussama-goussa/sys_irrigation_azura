@@ -391,6 +391,7 @@ def get_latest(
             d[f"fert_flow{i}"] = getattr(f, f"fert_flow{i}")
         return d
 
+    delta_min = None   # ← initialiser avant le if
     online = False
     if last_sr and last_sr.timestamp:
         ts = last_sr.timestamp.replace(tzinfo=None) if last_sr.timestamp.tzinfo else last_sr.timestamp
@@ -408,7 +409,7 @@ def get_latest(
             "hum"  : delta(last_sr, prev_sr, "humidity"),
         },
         "thresholds": thresholds,
-        "last_seen_min": int(delta_min) if last_sr else None,
+        "last_seen_min": int(delta_min) if delta_min is not None else None,
         "cycle"     : cycle_dict(last_cycle),
         "fertigation": fert_dict(last_fert),
     }

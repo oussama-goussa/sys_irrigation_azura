@@ -10,6 +10,8 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from routers.auth import limiter
 
+import os
+
 from core.database import Base, engine, SessionLocal
 from models.user_model import User, AuditLog
 from services.user_service import init_default_users
@@ -162,16 +164,14 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ── CORS ──────────────────────────────────────────────────────
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins = [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "https://votre-domaine.com",  # votre vrai domaine
-    ],
-    allow_credentials = True,
-    allow_methods     = ["*"],
-    allow_headers     = ["*"],
+    allow_origins=ALLOWED_ORIGINS,   # ← depuis .env uniquement
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],  
+    allow_headers=["Authorization", "Content-Type"],          
 )
 
 # ── Startup ───────────────────────────────────────────────────

@@ -1424,7 +1424,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
   // Elle reçoit allowedFarms en paramètre direct
   
   const load = async (p = 1) => {
-    const currentAllowedFarms = auth?.role === 'admin' ? null : (auth?.farm_names ?? undefined)
+    const currentAllowedFarms = allowedFarmsRef.current
     if (currentAllowedFarms === undefined) { setLoading(false); return }
 
     setLoading(true)
@@ -1487,13 +1487,16 @@ export default function HistoriquePage({ token, auth, C, dark }) {
     })
   }
 
+  const pageRef = useRef(page)
+  useEffect(() => { pageRef.current = page }, [page])
+
   const handleDelete = async () => {
-    if (!confirmDelete) return
-    try {
-      await deleteSaisie(token, confirmDelete.id)
-      setConfirmDelete(null)
-      load(page)
-    } catch (e) { alert(e.message) }
+      if (!confirmDelete) return
+      try {
+          await deleteSaisie(token, confirmDelete.id)
+          setConfirmDelete(null)
+          load(pageRef.current)   // ← toujours la page courante
+      } catch (e) { alert(e.message) }
   }
 
   // Dériver options pour filtres
