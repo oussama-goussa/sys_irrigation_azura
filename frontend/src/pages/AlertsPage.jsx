@@ -51,14 +51,12 @@ async function fetchAlerts(token, deviceId = null, resolved = false, limit = 200
         }
         return allAlerts
             .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-            // Déduplication : on ne garde que la plus récente par (device_id + type)
-            // Si l'alarme passe du code 1 au code 2, on ne garde que le 2.
             .filter((alert, index, arr) => {
                 const type = alert.alert_type?.toUpperCase()
-                if (type !== 'OFFLINE' && type !== 'ALARM') return true
-
-                const firstIndex = arr.findIndex(a => 
-                    a.device_id === alert.device_id && 
+                // Pour chaque combinaison device_id + alert_type, ne garder que la première
+                // occurrence dans le tableau (déjà trié par timestamp DESC → c'est la plus récente)
+                const firstIndex = arr.findIndex(a =>
+                    a.device_id === alert.device_id &&
                     a.alert_type?.toUpperCase() === type
                 )
                 return firstIndex === index
