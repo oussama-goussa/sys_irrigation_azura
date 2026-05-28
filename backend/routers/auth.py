@@ -96,7 +96,7 @@ def login(
 
 # ── POST /api/auth/refresh ────────────────────────────────────
 @router.post("/refresh")
-@limiter.limit("10/minute")
+@limiter.limit("60/minute")
 def refresh(request: Request, body: RefreshRequest):
     payload = decode_token(body.refresh_token)
     if payload.get("type") != "refresh":

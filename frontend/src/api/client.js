@@ -6,8 +6,24 @@ const BASE = ''
 
 // ── Auto refresh token ────────────────────────────────────────
 let refreshPromise = null
+let isRefreshing = false
 
 async function fetchWithRefresh(url, options = {}) {
+  // Toujours lire le token frais depuis sessionStorage (pas depuis la closure)
+  const getToken = () => {
+    const auth = JSON.parse(sessionStorage.getItem('azura_auth') || '{}')
+    return auth.access_token
+  }
+
+  // Injecter le token courant si Authorization manquant
+  const freshToken = getToken()
+  if (freshToken && !options.headers?.Authorization) {
+    options = {
+      ...options,
+      headers: { ...options.headers, Authorization: `Bearer ${freshToken}` }
+    }
+  }
+
   let res = await fetch(url, options)
 
   if (res.status === 401) {
@@ -17,30 +33,48 @@ async function fetchWithRefresh(url, options = {}) {
       throw new Error('Session expirée')
     }
 
-    // Si un refresh est déjà en cours, attendre le même
-    if (!refreshPromise) {
-      refreshPromise = fetch('/api/auth/refresh', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: auth.refresh_token }),
-      }).finally(() => { refreshPromise = null }) // libérer après
+    // Si un refresh est déjà en cours, attendre qu'il se termine
+    if (isRefreshing && refreshPromise) {
+      try {
+        await refreshPromise
+        // Retry avec le nouveau token
+        const newToken = getToken()
+        options = { ...options, headers: { ...options.headers, Authorization: `Bearer ${newToken}` } }
+        return fetch(url, options)
+      } catch {
+        window.dispatchEvent(new Event('azura_logout'))
+        throw new Error('Session expirée')
+      }
     }
 
-    const refreshRes = await refreshPromise
+    // Lancer le refresh une seule fois
+    isRefreshing = true
+    refreshPromise = fetch('/api/auth/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: auth.refresh_token }),
+    })
+      .then(async (r) => {
+        if (!r.ok) throw new Error('Refresh failed')
+        const { access_token } = await r.json()
+        const newAuth = { ...auth, access_token }
+        sessionStorage.setItem('azura_auth', JSON.stringify(newAuth))
+        window.dispatchEvent(new CustomEvent('azura_token_refresh', { detail: { access_token } }))
+        return access_token
+      })
+      .finally(() => {
+        isRefreshing = false
+        refreshPromise = null
+      })
 
-    if (!refreshRes.ok) {
+    try {
+      const newAccessToken = await refreshPromise
+      options = { ...options, headers: { ...options.headers, Authorization: `Bearer ${newAccessToken}` } }
+      res = await fetch(url, options)
+    } catch {
       window.dispatchEvent(new Event('azura_logout'))
       throw new Error('Session expirée')
     }
-
-    const { access_token } = await refreshRes.clone().json()
-
-    const newAuth = { ...auth, access_token }
-    sessionStorage.setItem('azura_auth', JSON.stringify(newAuth))
-    window.dispatchEvent(new CustomEvent('azura_token_refresh', { detail: { access_token } }))
-
-    options.headers = { ...options.headers, Authorization: `Bearer ${access_token}` }
-    res = await fetch(url, options)
   }
 
   return res

@@ -36,7 +36,7 @@ export default function App() {
       }
     }
 
-    const interval = setInterval(doRefresh, 13 * 60 * 1000) // toutes les 13 min
+    const interval = setInterval(doRefresh, 12 * 60 * 1000)
     return () => clearInterval(interval)
   }, [auth?.refresh_token])
 
