@@ -10,7 +10,7 @@ import {
   Plus, Save, AlertCircle, Check, Droplets, FlaskConical,
   BarChart2, ClipboardList, Eye,
 } from 'lucide-react'
-import { getSaisies, getSaisie, updateSaisie, deleteSaisie, getDevices, getMe } from '../api/client.js'
+import { getSaisies, getSaisie, updateSaisie, deleteSaisie, getDevices, getMe, getAccessToken } from '../api/client.js'
 import ExportModal from '../components/ExportModal.jsx'
 
 // ── helpers ───────────────────────────────────────────────────
@@ -762,7 +762,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark, readOnly =
   }
 
   useEffect(() => {
-    getSaisie(token, saisie.id).then(data => {
+    getSaisie(getAccessToken(), saisie.id).then(data => {
       const t = (data.tours || []).map((t, i) => ({
         id: Date.now() + i,
         num: t.num_tour,
@@ -887,7 +887,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark, readOnly =
           ccBras       : ccBras        != null ? Number(ccBras)       : null,
         },
       }
-      await updateSaisie(token, saisie.id, payload)
+      await updateSaisie(getAccessToken(), saisie.id, payload)
       onSaved()
       onClose()
     } catch (e) {
@@ -1261,7 +1261,7 @@ function ToursTable({ saisieId, token, C, dark }) {
   const [tours, setTours] = useState(null)
 
   useEffect(() => {
-    getSaisie(token, saisieId).then(d => setTours(d.tours || [])).catch(() => setTours([]))
+    getSaisie(getAccessToken(), saisieId).then(d => setTours(d.tours || [])).catch(() => setTours([]))
   }, [saisieId])
 
   if (tours === null) return (
@@ -1392,7 +1392,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
     fNbrBras || fNbrGoutt || fPoidsMat || fHeureMat || fPoidsSoir || fHeureSoir || fBassin)
 
   useEffect(() => {
-    getDevices(token).then(setFarms).catch(() => {})
+    getDevices(getAccessToken()).then(setFarms).catch(() => {})
   }, [token])
 
   // Fermes autorisées — toujours fetch /me pour avoir les farm_names frais
@@ -1404,7 +1404,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
 
   useEffect(() => {
     if (!auth) return
-    getMe(token)
+    getMe(getAccessToken())
       .then(me => {
         if ((me.role || auth.role) === 'admin') {
           setAllowedFarms(null)
@@ -1453,7 +1453,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
         params.farmName = currentAllowedFarms[0]
       }
 
-      const data = await getSaisies(token, params)
+      const data = await getSaisies(getAccessToken(), params)
       let rows = data.data || []
 
       // Sécurité client : toujours re-filtrer selon les fermes autorisées
@@ -1493,7 +1493,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
   const handleDelete = async () => {
       if (!confirmDelete) return
       try {
-          await deleteSaisie(token, confirmDelete.id)
+          await deleteSaisie(getAccessToken(), confirmDelete.id)
           setConfirmDelete(null)
           load(pageRef.current)   // ← toujours la page courante
       } catch (e) { alert(e.message) }

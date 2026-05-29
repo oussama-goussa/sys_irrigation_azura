@@ -12,7 +12,7 @@ import {
 
 import { ROLES, ROLE_OPTIONS, ROLE_CONFIG } from '../theme.js'
 import { Card, Btn, Input, Badge, Spinner, StatCard, Alert, SZ } from '../components/ui.jsx'
-import { getUsers, createUser, editUser, changeRole, toggleUser, getAuditLogs, exportCSV, getFarms } from '../api/client.js'
+import { getUsers, createUser, editUser, changeRole, toggleUser, getAuditLogs, exportCSV, getFarms, getAccessToken } from '../api/client.js'
 import { useWindowWidth } from '../components/DashboardShell.jsx'
 import { createPortal } from 'react-dom'
 
@@ -273,7 +273,7 @@ function AuditPanel({ token, filterUser, C, dark, onClose, isMobile }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getAuditLogs(token, filterUser || null, 100)
+    getAuditLogs(getAccessToken(), filterUser || null, 100)
       .then(setLogs)
       .catch(() => setLogs([]))
       .finally(() => setLoading(false))
@@ -403,7 +403,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
 
   const load = async (refresh = false) => {
     if (refresh) setRefreshing(true)
-    try { setUsers(await getUsers(token)) }
+    try { setUsers(await getUsers(getAccessToken())) }
     catch { setUsers([]) }
     finally { setLoading(false); setRefreshing(false) }
   }
@@ -411,7 +411,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
   useEffect(() => {
     if (!canAccess) { setLoading(false); return }
     load()
-    getFarms(token).then(data => setFarms(data.map(f => f.farm_name))).catch(() => setFarms([]))   // ← ajouter
+    getFarms(getAccessToken()).then(data => setFarms(data.map(f => f.farm_name))).catch(() => setFarms([]))   // ← ajouter
   }, [])
 
   useEffect(() => {
@@ -452,7 +452,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
     }
     setCreating(true); setCreateError('')
     try {
-      const res = await createUser(token, newUser)
+      const res = await createUser(getAccessToken(), newUser)
       setUsers(prev => [...prev, res.user || { ...newUser, actif: true, created_at: new Date().toISOString() }])
       setShowCreate(false)
       setNewUser({ username: '', password: '', role: 'operateur', nom: '', email: '' })
@@ -462,25 +462,25 @@ export default function UsersPage({ token, userRole, C, dark }) {
 
   const handleToggleConfirm = async () => {
     if (!confirmUser) return
-    await toggleUser(token, confirmUser.username)
+    await toggleUser(getAccessToken(), confirmUser.username)
     setUsers(prev => prev.map(u => u.username === confirmUser.username ? { ...u, actif: !u.actif } : u))
     setConfirmUser(null)
   }
 
   const handleEdit = async (username, payload) => {
-    const res = await editUser(token, username, payload)
+    const res = await editUser(getAccessToken(), username, payload)
     setUsers(prev => prev.map(u => u.username === username ? { ...u, ...res.user } : u))
   }
 
   const handleRoleChange = async (username, new_role) => {
-    await changeRole(token, username, new_role)
+    await changeRole(getAccessToken(), username, new_role)
     setUsers(prev => prev.map(u => u.username === username ? { ...u, role: new_role } : u))
     setEditingRole(null)
   }
 
   const handleExport = async () => {
     setExporting(true)
-    try { await exportCSV(token) }
+    try { await exportCSV(getAccessToken()) }
     catch (e) { alert(e.message) }
     finally { setExporting(false) }
   }
