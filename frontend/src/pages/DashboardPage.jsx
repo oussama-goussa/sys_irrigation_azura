@@ -209,9 +209,7 @@ export default function DashboardPage({ token, onSelectDevice, initialFarms, C, 
     else setRefreshing(true)
     setError(null)
     try {
-      console.log('token:', getAccessToken())          // ← ajouter
       const data = await getDashboard(getAccessToken())
-      console.log('data:', data)                       // ← ajouter
       setFarms(data?.farms || [])
       if (data?.stats?.readings_24h !== undefined) setReadings24h(data.stats.readings_24h)
     } catch (e) {
