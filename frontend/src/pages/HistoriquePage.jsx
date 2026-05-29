@@ -686,7 +686,7 @@ function ConfirmModal({ saisie, onConfirm, onCancel, C }) {
 }
 
 // ── Edit Modal ────────────────────────────────────────────────
-function EditModal({ saisie, token, farms, onSaved, onClose, C, dark, readOnly = false }) {
+function EditModal({ saisie, farms, onSaved, onClose, C, dark, readOnly = false }) {
   const [ferme, setFerme]         = useState(saisie.farm_name || '')
   const [station, setStation]     = useState(saisie.station || '')
   const [serre, setSerre]         = useState(saisie.serre || '')
@@ -1257,7 +1257,7 @@ function EditModal({ saisie, token, farms, onSaved, onClose, C, dark, readOnly =
 }
 
 // ── Tours expand table ────────────────────────────────────────
-function ToursTable({ saisieId, token, C, dark }) {
+function ToursTable({ saisieId, C, dark }) {
   const [tours, setTours] = useState(null)
 
   useEffect(() => {
@@ -1354,7 +1354,7 @@ function ToursTable({ saisieId, token, C, dark }) {
 import { useWindowWidth } from '../components/DashboardShell.jsx'
 
 // ── Main HistoriquePage ───────────────────────────────────────
-export default function HistoriquePage({ token, auth, C, dark }) {
+export default function HistoriquePage({ auth, C, dark }) {
   const [saisies, setSaisies]     = useState([])
   const [total, setTotal]         = useState(0)
   const [pages, setPages]         = useState(1)

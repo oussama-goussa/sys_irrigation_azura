@@ -182,7 +182,7 @@ function HouseCard({ house, onSelectDevice, C, dark, accentColor, isMobile }) {
   )
 }
 
-export default function DashboardPage({ token, onSelectDevice, initialFarms, C, dark, isMobile = false, isTablet = false }) {
+export default function DashboardPage({ onSelectDevice, initialFarms, C, dark, isMobile = false, isTablet = false }) {
   const [farms, setFarms] = useState(initialFarms || [])
   const [loading, setLoading] = useState(!initialFarms) // skip loading if parent provided data
   const fetchingRef = useRef(false)
@@ -226,7 +226,7 @@ export default function DashboardPage({ token, onSelectDevice, initialFarms, C, 
     loadFarms()
     const interval = setInterval(() => loadFarms(true), 30_000)
     return () => clearInterval(interval)
-  }, [token])
+  }, [getAccessToken()])
 
   useEffect(() => {
     const id = 'az-keyframes'

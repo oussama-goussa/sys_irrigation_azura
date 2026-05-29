@@ -268,7 +268,7 @@ function EditModal({ user, farms, onSave, onClose, C, dark, isMobile }) {
 }
 
 // ── Audit logs panel ──────────────────────────────────────────
-function AuditPanel({ token, filterUser, C, dark, onClose, isMobile }) {
+function AuditPanel({ filterUser, C, dark, onClose, isMobile }) {
   const [logs, setLogs]     = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -364,7 +364,7 @@ function AuditPanel({ token, filterUser, C, dark, onClose, isMobile }) {
 }
 
 // ── Main page ─────────────────────────────────────────────────
-export default function UsersPage({ token, userRole, C, dark }) {
+export default function UsersPage({ userRole, C, dark }) {
   const [users, setUsers]           = useState([])
   const [loading, setLoading]       = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -498,7 +498,7 @@ export default function UsersPage({ token, userRole, C, dark }) {
       {/* Modals */}
       {confirmUser && <ConfirmModal user={confirmUser} onConfirm={handleToggleConfirm} onCancel={() => setConfirmUser(null)} C={C} dark={dark} isMobile={isMobile} />}
       {editingUser && <EditModal user={editingUser} farms={farms} onSave={handleEdit} onClose={() => setEditingUser(null)} C={C} dark={dark} isMobile={isMobile} />}
-      {showLogs && <AuditPanel token={token} filterUser={logsUser} C={C} dark={dark} onClose={() => { setShowLogs(false); setLogsUser(null) }} isMobile={isMobile} />}
+      {showLogs && <AuditPanel token={getAccessToken()} filterUser={logsUser} C={C} dark={dark} onClose={() => { setShowLogs(false); setLogsUser(null) }} isMobile={isMobile} />}
 
       {/* Header */}
       <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'flex-start', marginBottom: 28, gap: isMobile ? 12 : 0 }}>
