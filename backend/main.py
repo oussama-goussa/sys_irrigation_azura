@@ -199,29 +199,46 @@ def startup():
     finally:
         db.close()
 
-class LimitRequestSizeMiddleware(BaseHTTPMiddleware):
+class LimitRequestSizeMiddleware:
+    """Middleware ASGI pur — compatible avec le body form-data."""
     MAX_SIZE = 5 * 1024 * 1024  # 5 MB
 
-    async def dispatch(self, request: Request, call_next):
-        cl = request.headers.get("content-length")
-        try:
-            if cl and int(cl) > self.MAX_SIZE:
-                return JSONResponse({"detail": "Requête trop volumineuse"}, status_code=413)
-        except (ValueError, TypeError):
-            pass
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        headers = dict(scope.get("headers", []))
+        cl = headers.get(b"content-length")
+        if cl:
+            try:
+                if int(cl) > self.MAX_SIZE:
+                    from fastapi.responses import JSONResponse
+                    response = JSONResponse({"detail": "Requete trop volumineuse"}, status_code=413)
+                    await response(scope, receive, send)
+                    return
+            except (ValueError, TypeError):
+                pass
 
         body = b""
-        async for chunk in request.stream():
-            body += chunk
+        more_body = True
+        while more_body:
+            message = await receive()
+            body += message.get("body", b"")
+            more_body = message.get("more_body", False)
             if len(body) > self.MAX_SIZE:
-                return JSONResponse({"detail": "Requête trop volumineuse"}, status_code=413)
+                from fastapi.responses import JSONResponse
+                response = JSONResponse({"detail": "Requete trop volumineuse"}, status_code=413)
+                await response(scope, receive, send)
+                return
 
-        async def receive() -> dict:
+        async def receive_buffered():
             return {"type": "http.request", "body": body, "more_body": False}
 
-        request = Request(request.scope, receive)   # ← recréer la Request avec le bon receive
-        return await call_next(request)
-
+        await self.app(scope, receive_buffered, send)
 app.add_middleware(LimitRequestSizeMiddleware)
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):

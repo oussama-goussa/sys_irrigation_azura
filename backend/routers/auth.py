@@ -191,7 +191,7 @@ def login(
         secure   = _is_production and _use_https,  # False si HTTP en prod temporaire
         samesite = "lax" if not (_is_production and _use_https) else "strict",      # bloque CSRF cross-origin
         max_age  = 7 * 24 * 3600,        # 7 jours
-        path     = "/api/auth/refresh",  # cookie envoyé uniquement sur ce path
+        path     = "/",  # cookie envoyé sur tous les paths
     )    
 
     return response
@@ -199,7 +199,7 @@ def login(
 
 # ── POST /api/auth/refresh ────────────────────────────────────
 @router.post("/refresh")
-@limiter.limit("10/minute")
+@limiter.limit("60/minute")
 async def refresh(request: Request, db: Session = Depends(get_db)):
     """
     Lit le refresh_token depuis le cookie HttpOnly (pas du body).
