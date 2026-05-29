@@ -1393,7 +1393,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
 
   useEffect(() => {
     getDevices(getAccessToken()).then(setFarms).catch(() => {})
-  }, [token])
+  }, [getAccessToken()])
 
   // Fermes autorisées — toujours fetch /me pour avoir les farm_names frais
   // null  = admin (voit tout)
@@ -1418,7 +1418,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
         if (auth.role === 'admin') { setAllowedFarms(null); allowedFarmsRef.current = null }
         else { const fb = Array.isArray(auth.farm_names) ? auth.farm_names : []; setAllowedFarms(fb); allowedFarmsRef.current = fb }
       })
-  }, [token])
+  }, [getAccessToken()])
 
   // load est une fonction normale (pas useCallback) pour éviter les stale closures
   // Elle reçoit allowedFarms en paramètre direct
@@ -1541,11 +1541,11 @@ export default function HistoriquePage({ token, auth, C, dark }) {
           onCancel={() => setConfirmDelete(null)} C={C} />
       )}
       {showExport && (
-        <ExportModal token={token} auth={auth} farms={farms}
+        <ExportModal token={getAccessToken()} auth={auth} farms={farms}
           C={C} dark={dark} onClose={() => setShowExport(false)} isMobile={isMobile} isTablet={isTablet} />
       )}
       {editingSaisie && (
-        <EditModal saisie={editingSaisie} token={token} farms={farms}
+        <EditModal saisie={editingSaisie} token={getAccessToken()} farms={farms}
           onSaved={() => load(page)} onClose={() => setEditingSaisie(null)} 
           C={C} dark={dark}
           readOnly={auth?.role === 'auditeur'}
@@ -1781,7 +1781,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
                         </td>
                       </tr>
                       {expanded && (
-                        <ToursTable saisieId={s.id} token={token} C={C} dark={dark} />
+                        <ToursTable saisieId={s.id} token={getAccessToken()} C={C} dark={dark} />
                       )}
                     </React.Fragment>
                   )
