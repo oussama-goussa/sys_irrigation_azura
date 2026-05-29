@@ -11,11 +11,11 @@ import {
     X, RefreshCw, Filter, ChevronDown, ChevronUp,
     Droplets, Thermometer, Activity, Wind, Gauge,
     Check, Eye, EyeOff, Wifi, WifiOff, Clock,
-    CircleSlash, Zap, FlaskConical, Sun,  // ← ajouter Sun
+    CircleSlash, Zap, FlaskConical, Sun,
 } from 'lucide-react'
 import { useWindowWidth } from '../components/DashboardShell.jsx'
 
-import { getDeviceAlerts, getDashboard } from '../api/client.js'
+import { getDeviceAlerts, getDashboard, getAccessToken, resolveDeviceAlert } from '../api/client.js'
 
 // ── Toast context — exporté pour usage global ─────────────────
 export const ToastContext = createContext(null)
@@ -23,43 +23,42 @@ export function useToasts() { return useContext(ToastContext) }
 
 // ── Helpers ───────────────────────────────────────────────────
 async function fetchAlerts(token, deviceId = null, resolved = false, limit = 200) {
-    if (!token) {
-        const auth = JSON.parse(sessionStorage.getItem('azura_auth') || '{}')
-        token = auth.access_token
-    }
-    if (!token) return []
+    // ← Utiliser getAccessToken() (mémoire) au lieu de sessionStorage
+    const effectiveToken = token || getAccessToken()
+    if (!effectiveToken) return []
 
     try {
         if (deviceId) {
-            return await getDeviceAlerts(token, deviceId, resolved)
+            return await getDeviceAlerts(effectiveToken, deviceId, resolved)
         }
-        // Global : dashboard puis chaque device
-        const dash = await getDashboard(token)
+        const dash = await getDashboard(effectiveToken)
         const farms = dash.farms || []
         const allAlerts = []
-        for (const farm of farms) {
-            for (const house of (farm.houses || [])) {
-                try {
-                    const arr = await getDeviceAlerts(token, house.id, resolved)
+
+        // ← A2 fix inclus : requêtes parallèles au lieu de séquentielles
+        const results = await Promise.allSettled(
+            farms.flatMap(farm =>
+                (farm.houses || []).map(async house => {
+                    const arr = await getDeviceAlerts(effectiveToken, house.id, resolved)
                     arr.forEach(a => {
                         a._farm_name = farm.farm_name
                         a._house_number = house.house_number
                     })
-                    allAlerts.push(...arr)
-                } catch { /* device inaccessible, skip */ }
-            }
-        }
+                    return arr
+                })
+            )
+        )
+
+        results.forEach(r => { if (r.status === 'fulfilled') allAlerts.push(...r.value) })
+
         return allAlerts
             .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
             .filter((alert, index, arr) => {
                 const type = alert.alert_type?.toUpperCase()
-                // Pour chaque combinaison device_id + alert_type, ne garder que la première
-                // occurrence dans le tableau (déjà trié par timestamp DESC → c'est la plus récente)
-                const firstIndex = arr.findIndex(a =>
+                return arr.findIndex(a =>
                     a.device_id === alert.device_id &&
                     a.alert_type?.toUpperCase() === type
-                )
-                return firstIndex === index
+                ) === index
             })
     } catch { return [] }
 }
@@ -82,13 +81,9 @@ function fmtOfflineMessage(alerts) {
 }
 
 async function resolveAlert(token, alertId, deviceId) {
-    // Note: si l'API n'a pas de route PATCH, on fait un fallback silencieux
     try {
-        const res = await fetch(`/api/devices/${deviceId}/alerts/${alertId}/resolve`, {
-            method: 'PATCH',
-            headers: { Authorization: `Bearer ${token}` }
-        })
-        return res.ok
+        await resolveDeviceAlert(token, deviceId, alertId)
+        return true
     } catch { return false }
 }
 

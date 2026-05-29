@@ -9,6 +9,7 @@ from loguru import logger
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from routers.auth import limiter
+from fastapi.responses import JSONResponse
 
 import os
 
@@ -143,35 +144,43 @@ run_migrations()
 Base.metadata.create_all(bind=engine)
 
 # ── Application ───────────────────────────────────────────────
+import os
+_ENV = os.getenv("ENVIRONMENT", "production")
+
 app = FastAPI(
     title       = "Azura Irrigation IA",
-    description = """
-## Système intelligent d'aide à la décision — Azura Group
-
-### Authentification
-Utilisez `/api/auth/login` pour obtenir un token JWT.
-Cliquez sur **Authorize** 🔒 et entrez : `Bearer <votre_token>`
-
-### Comptes de test
-| Username | Password | Role |
-|---|---|---|
-| admin | Admin@2026 | Admin |
-| operateur | Operateur@2026 | Opérateur |
-    """,
-    version = "1.0.0",
+    description = "Système intelligent d'aide à la décision — Azura Group",
+    version     = "1.0.0",
+    # Désactiver Swagger/ReDoc en production
+    docs_url    = "/docs" if _ENV != "production" else None,
+    redoc_url   = "/redoc" if _ENV != "production" else None,
+    openapi_url = "/openapi.json" if _ENV != "production" else None,
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ── CORS ──────────────────────────────────────────────────────
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+ALLOWED_ORIGINS_RAW = os.getenv("ALLOWED_ORIGINS", "")
+# Filtrer les valeurs vides issues d'un split sur chaîne vide
+ALLOWED_ORIGINS = [o.strip() for o in ALLOWED_ORIGINS_RAW.split(",") if o.strip()]
+
+if not ALLOWED_ORIGINS:
+    _ENV = os.getenv("ENVIRONMENT", "production")
+    if _ENV == "production":
+        raise RuntimeError(
+            "ALLOWED_ORIGINS doit être défini en production. "
+            "Exemple : ALLOWED_ORIGINS=https://votre-domaine.com"
+        )
+    else:
+        ALLOWED_ORIGINS = ["http://localhost:5173", "http://localhost:5174"]
+        logger.warning(f"CORS dev : {ALLOWED_ORIGINS}")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,   # ← depuis .env uniquement
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],  
-    allow_headers=["Authorization", "Content-Type"],          
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # ── Startup ───────────────────────────────────────────────────
@@ -189,6 +198,54 @@ def startup():
         logger.success("Application Azura démarrée ✅")
     finally:
         db.close()
+
+class LimitRequestSizeMiddleware(BaseHTTPMiddleware):
+    MAX_SIZE = 5 * 1024 * 1024  # 5 MB
+
+    async def dispatch(self, request: Request, call_next):
+        cl = request.headers.get("content-length")
+        try:
+            if cl and int(cl) > self.MAX_SIZE:
+                return JSONResponse({"detail": "Requête trop volumineuse"}, status_code=413)
+        except (ValueError, TypeError):
+            pass  # header malformé → laisser passer, le streaming détectera
+
+        body = b""
+        overflow = False
+        async for chunk in request.stream():
+            body += chunk
+            if len(body) > self.MAX_SIZE:
+                return JSONResponse({"detail": "Requête trop volumineuse"}, status_code=413)
+
+        async def receive():
+            return {"type": "http.request", "body": body, "more_body": False}
+        
+        request._receive = receive
+        return await call_next(request)
+
+app.add_middleware(LimitRequestSizeMiddleware)
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=()"
+        # CSP corrigée : autorise les fonts Google et CDN utilisés par le frontend
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com data:; "
+            "img-src 'self' data: blob:; "
+            "connect-src 'self'; "
+            "frame-ancestors 'none';"
+        )
+        return response   
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 # ── Routers ───────────────────────────────────────────────────
 app.include_router(auth_router)
@@ -221,37 +278,8 @@ def root():
 
 @app.get("/health", tags=["General"])
 async def health():
-    logger.info("❤️ Health endpoint appelé")
-
-    return {
-        "statut": "ok",
-        "service": "azura-backend"
-    }
+    return {"statut": "ok", "service": "azura-backend"}
 
 @app.get("/ping")
 async def ping():
     return {"ping": "pong"}
-
-class LimitRequestSizeMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        if request.headers.get("content-length"):
-            if int(request.headers["content-length"]) > 5 * 1024 * 1024:  # 5 MB max
-                from fastapi.responses import JSONResponse
-                return JSONResponse({"detail": "Requête trop volumineuse"}, status_code=413)
-        return await call_next(request)
-
-app.add_middleware(LimitRequestSizeMiddleware)
-
-class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request, call_next):
-        response = await call_next(request)
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
-        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = "geolocation=(), microphone=()"
-        # En production avec HTTPS :
-        # response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-        return response
-
-app.add_middleware(SecurityHeadersMiddleware)

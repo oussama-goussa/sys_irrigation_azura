@@ -14,6 +14,13 @@ from sqlalchemy.exc import IntegrityError
 from loguru import logger
 from typing import Optional
 from core.utils import filter_by_farm
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from pydantic import BaseModel, Field, field_validator
+from typing import Optional, List
+
+import hmac
 
 from pydantic import BaseModel
 from typing import Any
@@ -28,6 +35,12 @@ router = APIRouter(prefix="/api/sensors", tags=["Capteurs Netafim"])
 
 # ── Clé API depuis .env ───────────────────────────────────────
 SENSOR_API_KEY = os.getenv("SENSOR_API_KEY")
+
+def safe_str(value, max_len=10) -> Optional[str]:
+    if value is None:
+        return "0"
+    s = str(value).strip()
+    return s[:max_len] if s else "0"
 
 # ── Helpers temps restant ─────────────────────────────────────
 def parse_time_to_seconds(t: str) -> int:
@@ -61,16 +74,13 @@ def calc_water_left(prg_time: str, act_time: str) -> str:
 # ── Vérification clé API ──────────────────────────────────────
 def verify_api_key(x_api_key: Optional[str] = Header(None)):
     if not SENSOR_API_KEY:
-        raise HTTPException(
-            status_code=500,
-            detail="SENSOR_API_KEY non configurée dans .env"
-        )
-    if x_api_key != SENSOR_API_KEY:
-        logger.warning(f"Tentative accès /ingest avec clé invalide (premiers chars: {str(x_api_key)[:4]}...)")
-        raise HTTPException(
-            status_code=403,
-            detail="Clé API invalide — accès refusé"
-        )
+        raise HTTPException(status_code=500, detail="SENSOR_API_KEY non configurée")
+    if not x_api_key:
+        raise HTTPException(status_code=403, detail="Clé API manquante")
+    # Comparaison en temps constant — résistant aux timing attacks
+    if not hmac.compare_digest(x_api_key.encode(), SENSOR_API_KEY.encode()):
+        logger.warning("Tentative accès /ingest avec clé invalide")
+        raise HTTPException(status_code=403, detail="Clé API invalide")
     return x_api_key
 
 
@@ -133,63 +143,78 @@ def parse_timestamp(ts_str: str) -> datetime:
         except ValueError:
             raise ValueError(f"Format timestamp invalide : {ts_str}")
 
+import re as _re
+
+_FARM_NAME_RE = _re.compile(r'^[a-zA-Z0-9_\- ]{1,50}$')
 
 def get_or_create_device(db: Session, headers: dict) -> Device:
-    """
-    Récupère le device existant ou le crée automatiquement
-    Clé unique : farm_name + house_number + room_number
-    """
-    farm_name    = headers.get("FarmName", "").strip()
-    house_number = headers.get("HouseNumber", "0").strip()
-    room_number  = headers.get("RoomNumber", "0").strip()
+    farm_name    = headers.get("FarmName", "").strip()[:50]
+    house_number = headers.get("HouseNumber", "0").strip()[:10]
+    room_number  = headers.get("RoomNumber", "0").strip()[:10]
 
-    # Chercher device existant
+    if not farm_name:
+        raise ValueError("FarmName manquant dans les headers")
+    if not _FARM_NAME_RE.match(farm_name):
+        raise ValueError(f"FarmName invalide : {farm_name!r}")
+    if not _re.match(r'^[a-zA-Z0-9_\-]{1,10}$', house_number):
+        raise ValueError(f"HouseNumber invalide : {house_number!r}")
+    
+    # Essayer d'abord un SELECT (cas le plus courant)
+    device = db.query(Device).filter(
+        Device.farm_name    == farm_name,
+        Device.house_number == house_number,
+        Device.room_number  == room_number,
+    ).first()
+    
+    if device:
+        return device
+
+    # INSERT avec gestion de la race condition
+    try:
+        stmt = pg_insert(Device).values(
+            farm_name          = farm_name,
+            house_number       = house_number,
+            room_number        = room_number,
+            controller_type    = (headers.get("ControllerType") or "")[:50],
+            controller_version = (headers.get("ControllerVersion") or "")[:20],
+            device_id          = (headers.get("DeviceId") or "").strip()[:50] or None,
+            is_active          = True,
+        ).on_conflict_do_nothing(
+            index_elements=["farm_name", "house_number", "room_number"]
+        )
+        db.execute(stmt)
+        db.flush()
+    except IntegrityError:
+        db.rollback()  # ← rollback sur conflict
+
     device = db.query(Device).filter(
         Device.farm_name    == farm_name,
         Device.house_number == house_number,
         Device.room_number  == room_number,
     ).first()
 
-    if device:
-        return device
+    if not device:
+        raise RuntimeError("Impossible de récupérer le device après upsert")
 
-    # Créer nouveau device automatiquement
-    device = Device(
-        farm_name           = farm_name,
-        house_number        = house_number,
-        room_number         = room_number,
-        controller_type     = headers.get("ControllerType"),
-        controller_version  = headers.get("ControllerVersion"),
-        device_id           = headers.get("DeviceId"),
-        mtech_device_id     = headers.get("MTechDeviceId") or None,
-        source              = headers.get("Source"),
-        controller_type_id  = headers.get("ControllerTypeId"),
-        export_data_version = headers.get("ExportDataVersion"),
-        is_active           = True,
-    )
-    db.add(device)
-    db.flush()  # Obtenir l'ID sans commit
+    # Créer les seuils si absents
+    existing_thresholds = db.query(AlertThreshold).filter(
+        AlertThreshold.device_id == device.id
+    ).count()
 
-    # Créer seuils par défaut pour ce nouveau device
-    default_thresholds = [
-        {"parameter": "ec_actual",  "min": 2.5,  "max": 5.0,  "severity": "WARNING"},  # tomate cerise coco
-        {"parameter": "ph_actual",  "min": 5.5,  "max": 6.3,  "severity": "WARNING"},  # max abaissé (carence Fe)
-        {"parameter": "avg_temp",   "min": 14.0, "max": 30.0, "severity": "WARNING"},  # max 30°C pollinisation
-        {"parameter": "humidity",   "min": 60.0, "max": 82.0, "severity": "WARNING"},  # botrytis tomate cerise
-        {"parameter": "flow",       "min": 0.0,  "max": None, "severity": "WARNING"},
-    ]
-    for t in default_thresholds:
-        threshold = AlertThreshold(
-            device_id     = device.id,
-            parameter     = t["parameter"],
-            threshold_min = t["min"],
-            threshold_max = t["max"],
-            severity      = t["severity"],
-            is_active     = True,
-        )
-        db.add(threshold)
+    if existing_thresholds == 0:
+        for t in [
+            {"parameter": "ec_actual",  "min": 2.5,  "max": 5.0,  "severity": "WARNING"},
+            {"parameter": "ph_actual",  "min": 5.5,  "max": 6.3,  "severity": "WARNING"},
+            {"parameter": "avg_temp",   "min": 14.0, "max": 30.0, "severity": "WARNING"},
+            {"parameter": "humidity",   "min": 60.0, "max": 82.0, "severity": "WARNING"},
+            {"parameter": "flow",       "min": 0.0,  "max": None, "severity": "WARNING"},
+        ]:
+            db.add(AlertThreshold(
+                device_id=device.id, parameter=t["parameter"],
+                threshold_min=t["min"], threshold_max=t["max"],
+                severity=t["severity"], is_active=True,
+            ))
 
-    logger.success(f"Nouveau device créé : {farm_name} / House {house_number}")
     return device
 
 def check_and_create_alerts(
@@ -673,15 +698,18 @@ def check_and_create_alerts(
             auto_resolve("ALARM")
 
 # ── ENDPOINT PRINCIPAL ────────────────────────────────────────
-class IngestPayload(BaseModel):
-    XMLExport: Any  
+_limiter = Limiter(key_func=get_remote_address)
 
 @router.post("/ingest")
+@_limiter.limit("120/minute")   # max 1 requête toutes les 0.5s par IP
 async def ingest_sensor_data(
     request: Request,
     db: Session = Depends(get_db),
     api_key: str = Depends(verify_api_key),
 ):
+    device = None
+    timestamp = None
+    
     try:
         request_body = await request.json()
     except Exception:
@@ -872,13 +900,13 @@ async def ingest_sensor_data(
             uncompressed_prog = safe_int(sensor_data.get("UncompProg")),
 
             # DigitalOut
-            irrigation_active = str(digital_data.get("Irrigation", {}).get("Active", "0")),
-            fert_active       = str(digital_data.get("Fert", {}).get("Active", "0")),
-            booster_active    = str(digital_data.get("Booster", {}).get("Active", "0")),
-            misting_active    = str(digital_data.get("Misting", {}).get("Active", "0")),
-            cooling_active    = str(digital_data.get("Cooling_Status", {}).get("Active", "0")),
-            flushing_status   = str(digital_data.get("Flushing_Status", {}).get("Active", "0")),
-            flushing_active   = str(digital_data.get("Flushing_Active", {}).get("Active", "0")),
+            irrigation_active = safe_str(digital_data.get("Irrigation", {}).get("Active", "0")),
+            fert_active       = safe_str(digital_data.get("Fert", {}).get("Active", "0")),
+            booster_active    = safe_str(digital_data.get("Booster", {}).get("Active", "0")),
+            misting_active    = safe_str(digital_data.get("Misting", {}).get("Active", "0")),
+            cooling_active    = safe_str(digital_data.get("Cooling_Status", {}).get("Active", "0")),
+            flushing_status   = safe_str(digital_data.get("Flushing_Status", {}).get("Active", "0")),
+            flushing_active   = safe_str(digital_data.get("Flushing_Active", {}).get("Active", "0")),
 
             # Eau
             water_mode        = safe_int(sensor_data.get("WaterMode")),
@@ -1000,17 +1028,18 @@ async def ingest_sensor_data(
         return {
             "status"    : "duplicate",
             "message"   : "Données déjà présentes en base",
-            "device"    : device.to_dict(),   # device est déjà résolu avant le try
-            "timestamp" : str(timestamp),
+            "device"    : device.to_dict() if device else None,
+            "timestamp" : str(timestamp) if timestamp else None,
         }
 
     except ValueError as e:
         db.rollback()
         logger.error(f"Erreur format données : {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Format de données invalide")
+
 
     except Exception as e:
         db.rollback()
         logger.error(f"Erreur ingest : {e}")
-        raise HTTPException(status_code=500, detail=f"Erreur serveur : {str(e)}")
+        raise HTTPException(status_code=500, detail="Erreur interne du serveur")
 

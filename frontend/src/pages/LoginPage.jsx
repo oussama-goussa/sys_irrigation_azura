@@ -254,49 +254,25 @@ export default function LoginPage({ onLogin, dark, toggleDark }) {
           </button>
 
           {/* Quick accounts */}
-          <div style={{ marginTop: 28 }}>
-            <div style={{
-              color: C.textDim,
-              fontSize: 10,
-              fontWeight: 630,
-              textTransform: 'uppercase',
-              letterSpacing: '0.1em',
-              marginBottom: 10,
-              textAlign: 'center',
-            }}>
-              Comptes de démonstration
+          {import.meta.env.DEV && (
+            <div style={{ marginTop: 28 }}>
+              <div style={{ color: C.textDim, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10, textAlign: 'center' }}>
+                Comptes de démonstration
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {[
+                  { u: 'admin',     p: import.meta.env.VITE_DEMO_ADMIN_PASS || '',     label: 'Admin' },
+                  { u: 'operateur', p: import.meta.env.VITE_DEMO_OP_PASS    || '',     label: 'Opérateur' },
+                ].map(({ u, p, label }) => (
+                  <button key={u} onClick={() => { setUsername(u); setPassword(p) }}
+                    style={{ flex: 1, background: C.surface, border: `1.5px solid ${C.border}`, borderRadius: 9, padding: '8px 10px', color: C.textMuted, fontSize: 12, fontWeight: 630, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                    <User size={11} strokeWidth={2.5} />
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {[
-                { u: 'admin',     p: 'Admin@2026',     label: 'Admin' },
-                { u: 'operateur', p: 'Operateur@2026', label: 'Opérateur' },
-              ].map(({ u, p, label }) => (
-                <button
-                  key={u}
-                  onClick={() => { setUsername(u); setPassword(p) }}
-                  style={{
-                    flex: 1,
-                    background: C.surface,
-                    border: `1.5px solid ${C.border}`,
-                    borderRadius: 9,
-                    padding: '8px 10px',
-                    color: C.textMuted,
-                    fontSize: 12,
-                    fontWeight: 630,
-                    fontFamily: 'inherit',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 5,
-                  }}
-                >
-                  <User size={11} strokeWidth={2.5} />
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Footer */}

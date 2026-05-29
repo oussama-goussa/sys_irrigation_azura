@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import { getColors } from '../theme.js'
 import { Badge, Spinner, SZ } from './ui.jsx'
-import { getDevices } from '../api/client.js'
+import { getDevices, getAccessToken } from '../api/client.js'
 
 import UsersPage      from '../pages/UsersPage.jsx'
 import SaisiePage     from '../pages/SaisiePage.jsx'
@@ -356,29 +356,22 @@ export default function DashboardShell({ auth, dark, toggleDark, onLogout }) {
     return () => { document.body.style.overflow = '' }
   }, [mobileOpen])
 
-  const tokenRef = useRef(null)
   const fetchingRef = useRef(false)
   
   useEffect(() => {
-    // Already have farms for this token → skip
-    if (farms.length > 0 && tokenRef.current === auth.access_token) return
-    // Another fetch already in flight → skip
-    if (fetchingRef.current) return
+      if (fetchingRef.current) return
+      fetchingRef.current = true
 
-    fetchingRef.current = true
-    tokenRef.current = auth.access_token
+      if (farms.length === 0) setLoadingFarms(true)
 
-    // Only show spinner if no farms yet (don't flash on token refresh)
-    if (farms.length === 0) setLoadingFarms(true)
-
-    getDevices(auth.access_token)
-      .then(data => setFarms(Array.isArray(data) ? data : []))
-      .catch(() => setFarms([]))
-      .finally(() => {
-        setLoadingFarms(false)
-        fetchingRef.current = false
-      })
-  }, [auth.access_token])
+      getDevices(getAccessToken()) 
+        .then(data => setFarms(Array.isArray(data) ? data : []))
+        .catch(() => setFarms([]))
+        .finally(() => {
+          setLoadingFarms(false)
+          fetchingRef.current = false
+        })
+  }, [auth.username]) // ← déclencher seulement quand l'utilisateur connecté change
 
   const handleSelectDevice = (device) => {
     setSelectedDevice(device); setPage('zone'); setMobileOpen(false)

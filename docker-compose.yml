@@ -3,6 +3,10 @@
 # Avec Frontend React ajouté
 # ============================================================
 
+networks:
+  azura_internal:
+    driver: bridge
+
 services:
 
   # ── 1. PostgreSQL + TimescaleDB ──────────────────────────
@@ -17,26 +21,28 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
-    ports:
-      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U azura_user -d azura_irrigation"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - azura_internal
     restart: unless-stopped
 
   # ── 2. Redis ─────────────────────────────────────────────
   redis:
     image: redis:7-alpine
-    container_name: azura_redis
-    ports:
-      - "6379:6379"
+    container_name: redis-server --requirepass ${REDIS_PASSWORD}
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    networks:
+      - azura_internal
     restart: unless-stopped
 
   # ── 3. Backend FastAPI ───────────────────────────────────
@@ -49,6 +55,8 @@ services:
       REDIS_URL: redis://redis:6379/0
     volumes:
       - ./backend:/app
+    networks:
+      - azura_internal
     ports:
       - "8000:8000"
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload --timeout-keep-alive 120
@@ -70,6 +78,8 @@ services:
       - ./frontend:/app
       # Exclure node_modules du volume (utiliser celui du container)
       - /app/node_modules
+    networks:
+      - azura_internal
     ports:
       - "5173:5173"
     depends_on:
@@ -91,6 +101,8 @@ services:
       - backend
       - redis
       - db
+    networks:
+      - azura_internal
     restart: unless-stopped
 
   # ── 6. Celery Beat ───────────────────────────────────────
@@ -103,6 +115,8 @@ services:
       - ./backend:/app
     depends_on:
       - celery_worker
+    networks:
+      - azura_internal
     restart: unless-stopped
 
   # ── 7. Grafana ───────────────────────────────────────────
@@ -115,10 +129,10 @@ services:
       GF_SECURITY_ADMIN_USER:     ${GRAFANA_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
       # Désactiver la page de login (accès direct depuis React iFrame)
-      GF_AUTH_ANONYMOUS_ENABLED:  "true"
+      GF_AUTH_ANONYMOUS_ENABLED:  "false"
       GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
       # Autoriser l'embed dans des iFrames
-      GF_SECURITY_ALLOW_EMBEDDING: "true"
+      GF_SECURITY_ALLOW_EMBEDDING: "false"
       # Désactiver le X-Frame-Options restrictif
       GF_SECURITY_COOKIE_SAMESITE: "none"
       # URL publique utilisée par React pour construire les iFrames
@@ -128,6 +142,8 @@ services:
       - grafana_data:/var/lib/grafana
       # Provisioning automatique datasource TimescaleDB
       - ./grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - azura_internal
     ports:
       - "3000:3000"
     depends_on:

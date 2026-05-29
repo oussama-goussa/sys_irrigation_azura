@@ -425,7 +425,7 @@ def calculer_tours_journee(
             'prg_time_min'   : t['prg_time_min'],
             'repos_apres_min': repos,
             'is_complete'    : is_complete,
-            'v_apport'       : round((t['prg_time_min'] * 1000) / 60, 1),
+            'v_apport'       : round((t['prg_time_min'] * 1000) / 60, 1) if t['prg_time_min'] > 0 else None,
             'ec_apport'      : t.get('ec_apport'),
             'ph_apport'      : t.get('ph_apport'),
             'radiation_sum'  : t.get('radiation_sum'), 
@@ -531,20 +531,38 @@ def calculer_historique_complet(db: Session, device: Device):
 
     current = start_date
     while current <= end_date:
-        # Vérifier si ce jour a déjà des tours complets
-        logger.info(f"Calcul historique {device.farm_name} H{device.house_number} {current}")
         tours = calculer_tours_journee(db, device, current)
         if tours:
-            # Supprimer les anciens tours de ce jour avant upsert
-            db.query(IrrigationTour).filter(
-                IrrigationTour.device_id == device.id,
-                IrrigationTour.date      == current,
-            ).delete()
-            db.commit()
-            upsert_tours(db, device, current, tours)
-
+            try:
+                db.query(IrrigationTour).filter(
+                    IrrigationTour.device_id == device.id,
+                    IrrigationTour.date      == current,
+                ).delete()
+                # Ne pas commiter ici — upsert_tours commitera tout ensemble
+                for t in tours:
+                    tour = IrrigationTour(
+                        device_id       = device.id,
+                        tour_num        = t['tour_num'],
+                        date            = current,
+                        debut           = t['debut'],
+                        fin             = t['fin'],
+                        house_number    = device.house_number,
+                        duree_min       = t['duree_min'],
+                        prg_time_min    = t['prg_time_min'],
+                        repos_apres_min = t['repos_apres_min'],
+                        is_complete     = t['is_complete'],
+                        v_apport        = t.get('v_apport'),
+                        ec_apport       = t.get('ec_apport'),
+                        ph_apport       = t.get('ph_apport'),
+                        radiation_sum   = t.get('radiation_sum'),
+                        cumul_radiation = t.get('cumul_radiation'),
+                    )
+                    db.add(tour)
+                db.commit()   # ← un seul commit atomique
+            except Exception as e:
+                db.rollback()
+                logger.error(f"Erreur historique {current} : {e}")
         current += timedelta(days=1)
-
 
 # ── Calculer le jour en cours ─────────────────────────────────
 

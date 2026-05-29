@@ -4,93 +4,109 @@
 
 const BASE = ''
 
+// ── Token en mémoire uniquement (pas sessionStorage → résistant XSS) ──
+let _memoryToken = null
+export function setAccessToken(token)  { _memoryToken = token }
+export function getAccessToken()       { return _memoryToken }
+export function clearAccessToken()     { _memoryToken = null }
+
 // ── Auto refresh token ────────────────────────────────────────
 let refreshPromise = null
 let isRefreshing = false
 
-async function fetchWithRefresh(url, options = {}) {
-  // Toujours lire le token frais depuis sessionStorage (pas depuis la closure)
-  const getToken = () => {
-    const auth = JSON.parse(sessionStorage.getItem('azura_auth') || '{}')
-    return auth.access_token
-  }
+async function fetchWithRefresh(url, options = {}, _retryCount = 0) {
+    const getToken = () => _memoryToken
 
-  // Injecter le token courant si Authorization manquant
-  const freshToken = getToken()
-  if (freshToken && !options.headers?.Authorization) {
-    options = {
-      ...options,
-      headers: { ...options.headers, Authorization: `Bearer ${freshToken}` }
+    const freshToken = getToken()
+    if (freshToken && !options.headers?.Authorization) {
+        options = {
+            ...options,
+            headers: { ...options.headers, Authorization: `Bearer ${freshToken}` },
+        }
     }
-  }
+    // Toujours envoyer les cookies avec chaque requête
+    options = { ...options, credentials: 'include' }
 
-  let res = await fetch(url, options)
+    let res = await fetch(url, options)
 
-  if (res.status === 401) {
-    const auth = JSON.parse(sessionStorage.getItem('azura_auth') || '{}')
-    if (!auth.refresh_token) {
-      window.dispatchEvent(new Event('azura_logout'))
-      throw new Error('Session expirée')
+    if (res.status === 401) {
+        if (_retryCount >= 1) {
+            // Éviter la boucle infinie : on a déjà retryé une fois
+            window.dispatchEvent(new Event('azura_logout'))
+            throw new Error('Session expirée')
+        }
+
+        // Tenter un refresh — le cookie HttpOnly est envoyé automatiquement
+        if (isRefreshing && refreshPromise) {
+            try {
+                await refreshPromise
+                const newToken = getToken()
+                options = { ...options, headers: { ...options.headers, Authorization: `Bearer ${newToken}` } }
+                return fetch(url, options)
+            } catch {
+                window.dispatchEvent(new Event('azura_logout'))
+                throw new Error('Session expirée')
+            }
+        }
+
+        isRefreshing    = true
+        refreshPromise  = fetch('/api/auth/refresh', {
+            method      : 'POST',
+            credentials : 'include',  // ← le cookie refresh_token est envoyé automatiquement
+            // plus besoin d'envoyer refresh_token dans le body
+        })
+            .then(async (r) => {
+                if (!r.ok) throw new Error('Refresh failed')
+                const { access_token } = await r.json()
+                _memoryToken = access_token   // stocker en mémoire uniquement
+                window.dispatchEvent(new CustomEvent('azura_token_refresh', { detail: { access_token } }))
+                return access_token
+            })
+            .finally(() => {
+                isRefreshing   = false
+                refreshPromise = null
+            })
+
+        try {
+            const newAccessToken = await refreshPromise
+            options = { ...options, headers: { ...options.headers, Authorization: `Bearer ${newAccessToken}` } }
+            res = await fetch(url, options)
+        } catch {
+            window.dispatchEvent(new Event('azura_logout'))
+            throw new Error('Session expirée')
+        }
     }
 
-    // Si un refresh est déjà en cours, attendre qu'il se termine
-    if (isRefreshing && refreshPromise) {
-      try {
-        await refreshPromise
-        // Retry avec le nouveau token
-        const newToken = getToken()
-        options = { ...options, headers: { ...options.headers, Authorization: `Bearer ${newToken}` } }
-        return fetch(url, options)
-      } catch {
-        window.dispatchEvent(new Event('azura_logout'))
-        throw new Error('Session expirée')
-      }
-    }
-
-    // Lancer le refresh une seule fois
-    isRefreshing = true
-    refreshPromise = fetch('/api/auth/refresh', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: auth.refresh_token }),
-    })
-      .then(async (r) => {
-        if (!r.ok) throw new Error('Refresh failed')
-        const { access_token } = await r.json()
-        const newAuth = { ...auth, access_token }
-        sessionStorage.setItem('azura_auth', JSON.stringify(newAuth))
-        window.dispatchEvent(new CustomEvent('azura_token_refresh', { detail: { access_token } }))
-        return access_token
-      })
-      .finally(() => {
-        isRefreshing = false
-        refreshPromise = null
-      })
-
-    try {
-      const newAccessToken = await refreshPromise
-      options = { ...options, headers: { ...options.headers, Authorization: `Bearer ${newAccessToken}` } }
-      res = await fetch(url, options)
-    } catch {
-      window.dispatchEvent(new Event('azura_logout'))
-      throw new Error('Session expirée')
-    }
-  }
-
-  return res
+    return res
 }
 
 // ── Auth ──────────────────────────────────────────────────────
 export async function login(username, password) {
-  const fd = new FormData()
-  fd.append('username', username)
-  fd.append('password', password)
-  const res = await fetch(`${BASE}/api/auth/login`, { method: 'POST', body: fd })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.detail || 'Identifiants incorrects')
-  }
-  return res.json()
+    const fd = new FormData()
+    fd.append('username', username)
+    fd.append('password', password)
+    const res = await fetch(`${BASE}/api/auth/login`, {
+        method      : 'POST',
+        body        : fd,
+        credentials : 'include',   // ← envoie/reçoit les cookies
+    })
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.detail || 'Identifiants incorrects')
+    }
+    // La réponse ne contient plus refresh_token (c'est un cookie HttpOnly)
+    // Elle contient : access_token, role, username, farm_names
+    return res.json()
+}
+
+export async function logout(token) {
+    await fetch(`${BASE}/api/auth/logout`, {
+        method      : 'POST',
+        headers     : { Authorization: `Bearer ${token}` },
+        credentials : 'include',  // ← le cookie est supprimé côté serveur
+    })
+    sessionStorage.removeItem('azura_auth')
+    _memoryToken = null
 }
 
 export async function getMe(token) {

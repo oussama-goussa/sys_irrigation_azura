@@ -12,6 +12,8 @@ import {
 } from 'lucide-react'
 import { ROLE_CONFIG } from '../theme.js'
 
+import React, { useState } from 'react'
+
 // ── Icon size constants ───────────────────────────────────────
 export const SZ = { xs: 12, sm: 14, md: 16, lg: 20, xl: 24 }
 
@@ -144,9 +146,6 @@ export function Input({ label, value, onChange, type = 'text', options, C, place
     </div>
   )
 }
-
-// Need React import for useState in Input
-import React from 'react'
 
 // ── Role Badge ────────────────────────────────────────────────
 export function Badge({ role, dark }) {

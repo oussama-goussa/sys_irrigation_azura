@@ -296,7 +296,6 @@ def task_historique_tours(self):
     """
     try:
         from core.database import SessionLocal
-        from services.tour_service import calculer_historique_complet
         from models.sensor_model import Device
 
         db = SessionLocal()
@@ -527,7 +526,6 @@ def task_check_offline_stations():
                     .first()
                 )
                 if not last or last.timestamp < cutoff_offline:
-                    # Vérifier pas d'alerte OFFLINE récente
                     existing = db.query(Alert).filter(
                         Alert.device_id  == device.id,
                         Alert.alert_type == "OFFLINE",
@@ -535,23 +533,30 @@ def task_check_offline_stations():
                         Alert.timestamp  >= cutoff_alert,
                     ).first()
                     if not existing:
-                        minutes_ago = int((datetime.utcnow() - last.timestamp).total_seconds() / 60) if last else None
-                        msg = (
-                            f"Station hors ligne depuis {minutes_ago} min — "
-                            f"{device.farm_name} Station {device.house_number}"
-                            if minutes_ago else
-                            f"Station jamais connectée — {device.farm_name} Station {device.house_number}"
-                        )
+                        if last is not None:
+                            minutes_ago = int((datetime.utcnow() - last.timestamp).total_seconds() / 60)
+                            d, h, m = minutes_ago // 1440, (minutes_ago % 1440) // 60, minutes_ago % 60
+                            if d > 0:
+                                duration_str = f"{d}j {h}h" if h else f"{d}j"
+                            elif h > 0:
+                                duration_str = f"{h}h {m}min" if m else f"{h}h"
+                            else:
+                                duration_str = f"{minutes_ago} min"
+                            msg = f"Station hors ligne depuis {duration_str} — {device.farm_name} Station {device.house_number}"
+                        else:
+                            minutes_ago = None
+                            msg = f"Station jamais connectée — {device.farm_name} Station {device.house_number}"
+                        
                         alert = Alert(
                             device_id      = device.id,
                             timestamp      = datetime.utcnow(),
                             alert_type     = "OFFLINE",
-                            value_detected = minutes_ago,
+                            value_detected = float(minutes_ago) if minutes_ago is not None else None,
                             severity       = "CRITICAL",
                             message        = msg,
                         )
                         db.add(alert)
-                        logger.warning(f"⚠️ OFFLINE : {msg}")
+                        logger.warning(f"⚠️ OFFLINE : {msg}")                
                 else:
                     # Station revenue en ligne → résoudre les alertes OFFLINE
                     db.query(Alert).filter(

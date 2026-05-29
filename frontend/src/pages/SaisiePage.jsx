@@ -9,7 +9,7 @@ import {
   FlaskConical, BarChart2, Trash2, AlertCircle, Check, X,
   ClipboardList, RefreshCw,
 } from 'lucide-react'
-import { getDevices, saveSaisie } from '../api/client.js'
+import { getDevices, saveSaisie, updateSaisie, getSaisies, getSaisie, deleteSaisie } from '../api/client.js'
 
 // ── helpers ───────────────────────────────────────────────────
 const today = () => new Date().toISOString().split('T')[0]

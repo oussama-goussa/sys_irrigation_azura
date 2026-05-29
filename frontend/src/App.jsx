@@ -2,56 +2,95 @@
 // frontend/src/App.jsx
 // ============================================================
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import LoginPage from './pages/LoginPage.jsx'
 import DashboardShell from './components/DashboardShell.jsx'
 import { ToastProvider } from './pages/AlertsPage.jsx'
+import { setAccessToken, clearAccessToken, getAccessToken, logout } from './api/client.js'
 
 export default function App() {
   const [auth, setAuth] = useState(() => {
-      try {
-          const saved = sessionStorage.getItem('azura_auth')
-          return saved ? JSON.parse(saved) : null
-      } catch {
-          sessionStorage.removeItem('azura_auth')
-          return null
-      }
+    try {
+      const saved = sessionStorage.getItem('azura_auth')
+      if (!saved) return null
+      const parsed = JSON.parse(saved)
+      // Retourner null — le refresh token re-hydratera les données complètes
+      return parsed.username ? { username: parsed.username, role: null, farm_names: [] } : null
+    } catch {
+      sessionStorage.removeItem('azura_auth')
+      return null
+    }
   })
 
   useEffect(() => {
-    if (auth) sessionStorage.setItem('azura_auth', JSON.stringify(auth))
+    if (auth) {
+        const { access_token, ...safeAuth } = auth
+        sessionStorage.setItem('azura_auth', JSON.stringify(safeAuth))
+    }
     else sessionStorage.removeItem('azura_auth')
   }, [auth])
 
   useEffect(() => {
-    if (!auth?.refresh_token) return
-
-    const doRefresh = async () => {
-      try {
-        const res = await fetch('/api/auth/refresh', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refresh_token: auth.refresh_token }),
-        })
-        if (!res.ok) return
-        const { access_token } = await res.json()
-        setAuth(a => ({ ...a, access_token }))
-      } catch (e) {
-        console.warn('Refresh silencieux échoué:', e)
-      }
+    if (auth) {
+      // Stocker UNIQUEMENT le username pour la restauration de session
+      // NE PAS stocker le rôle — il vient toujours du token JWT vérifié côté serveur
+      sessionStorage.setItem('azura_auth', JSON.stringify({
+        username: auth.username
+        // role et farm_names intentionnellement exclus
+      }))
+    } else {
+      sessionStorage.removeItem('azura_auth')
     }
-
-    const interval = setInterval(doRefresh, 12 * 60 * 1000)
-    return () => clearInterval(interval)
-  }, [auth?.refresh_token])
+  }, [auth])
 
   useEffect(() => {
-    const onLogout = () => setAuth(null)
-    const onRefresh = (e) => setAuth(a => ({ ...a, access_token: e.detail.access_token }))
-    window.addEventListener('azura_logout', onLogout)
+      if (!auth?.username) return
+
+      const doRefresh = async () => {
+          try {
+              const res = await fetch('/api/auth/refresh', {
+                  method      : 'POST',
+                  credentials : 'include',
+              })
+              if (!res.ok) return
+              const { access_token } = await res.json()
+              setAccessToken(access_token)
+          } catch (e) {
+              console.warn('Refresh silencieux échoué:', e)
+          }
+      }
+
+      const interval = setInterval(doRefresh, 12 * 60 * 1000)
+      return () => clearInterval(interval)
+  }, [auth?.username])
+
+  // ── Fonction de déconnexion — appelle l'API pour révoquer le cookie ──
+  const handleLogout = useCallback(async () => {
+    try {
+      // getAccessToken() lit le token depuis la mémoire (_memoryToken)
+      // logout() envoie POST /api/auth/logout avec credentials:'include'
+      // → le serveur supprime le cookie refresh_token HttpOnly
+      await logout(getAccessToken())
+    } catch {
+      // Si le serveur est inaccessible, on déconnecte quand même localement
+    } finally {
+      // Dans tous les cas : vider le token mémoire + vider l'état React
+      clearAccessToken()
+      setAuth(null)
+    }
+  }, [])
+
+  useEffect(() => {
+    // Déconnexion déclenchée par client.js (ex: token expiré non renouvelable)
+    const onLogoutEvent = () => {
+      clearAccessToken()
+      setAuth(null)
+    }
+    const onRefresh = (e) => setAccessToken(e.detail.access_token)
+    window.addEventListener('azura_logout', onLogoutEvent)
     window.addEventListener('azura_token_refresh', onRefresh)
     return () => {
-      window.removeEventListener('azura_logout', onLogout)
+      window.removeEventListener('azura_logout', onLogoutEvent)
       window.removeEventListener('azura_token_refresh', onRefresh)
     }
   }, [])
@@ -61,7 +100,15 @@ export default function App() {
   if (!auth) {
     return (
       <ToastProvider dark={dark}>
-        <LoginPage onLogin={setAuth} dark={dark} toggleDark={() => setDark(d => !d)} />
+        <LoginPage
+          onLogin={(data) => {
+              const { access_token, ...sessionData } = data
+              setAccessToken(access_token)
+              setAuth(sessionData)
+          }}
+          dark={dark}
+          toggleDark={() => setDark(d => !d)}
+        />
       </ToastProvider>
     )
   }
@@ -72,7 +119,7 @@ export default function App() {
         auth={auth}
         dark={dark}
         toggleDark={() => setDark(d => !d)}
-        onLogout={() => setAuth(null)}
+        onLogout={handleLogout}
       />
     </ToastProvider>
   )

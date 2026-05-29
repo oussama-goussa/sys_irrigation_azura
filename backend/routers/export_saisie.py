@@ -13,6 +13,8 @@ import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
+from models.saisie_model import SaisieJournaliere
+
 from core.database import get_db
 from routers.auth import get_current_user
 
@@ -282,9 +284,19 @@ async def export_saisie_excel(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    farms = [f.strip() for f in farm_names.split(",") if f.strip()]
-    if not farms:
+    import re
+
+    farms_raw = [f.strip() for f in farm_names.split(",") if f.strip()]
+    if not farms_raw:
         raise HTTPException(400, "Aucune ferme spécifiée")
+    
+    # Validation stricte du format farm_name
+    FARM_NAME_RE = re.compile(r'^[a-zA-Z0-9_\- ]{1,50}$')
+    farms = [f for f in farms_raw if FARM_NAME_RE.match(f)]
+    if not farms:
+        raise HTTPException(400, "Format de nom de ferme invalide")
+    if len(farms) > 20:
+        raise HTTPException(400, "Trop de fermes demandées (max 20)")
 
     # Sécurité : opérateur ne peut exporter que ses fermes
     if current_user["role"] != "admin":
@@ -292,21 +304,36 @@ async def export_saisie_excel(
         farms = [f for f in farms if f in allowed]
         if not farms:
             raise HTTPException(403, "Accès refusé aux fermes demandées")
-
+    
     try:
         date_from_d = datetime.strptime(date_from, "%Y-%m-%d").date()
         date_to_d   = datetime.strptime(date_to,   "%Y-%m-%d").date()
     except ValueError:
         raise HTTPException(400, "Format de date invalide (YYYY-MM-DD)")
+    
+    # Limiter la plage à 1 an
+    from datetime import timedelta
+    if (date_to_d - date_from_d).days > 366:
+        raise HTTPException(400, "Plage de dates limitée à 1 an")
+    if date_from_d > date_to_d:
+        raise HTTPException(400, "date_from doit être avant date_to")
 
-    # ── Fetch saisies ────────────────────────────────────────
-    result = db.execute(text("""
-        SELECT * FROM saisie_journaliere
-        WHERE farm_name = ANY(:farms)
-          AND date BETWEEN :date_from AND :date_to
-        ORDER BY farm_name, date, station, serre, vanne
-    """), {"farms": farms, "date_from": date_from_d, "date_to": date_to_d})
-    saisies = [dict(r._mapping) for r in result]
+    saisies_query = (
+        db.query(SaisieJournaliere)
+        .filter(
+            SaisieJournaliere.farm_name.in_(farms),
+            SaisieJournaliere.date.between(date_from_d, date_to_d)
+        )
+        .order_by(
+            SaisieJournaliere.farm_name,
+            SaisieJournaliere.date,
+            SaisieJournaliere.station,
+            SaisieJournaliere.serre,
+            SaisieJournaliere.vanne,
+        )
+        .all()
+    )
+    saisies = [dict(s.__dict__) for s in saisies_query]
 
     if not saisies:
         raise HTTPException(404, "Aucune donnée pour les critères sélectionnés")

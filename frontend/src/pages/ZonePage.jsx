@@ -881,7 +881,9 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
       if (tourDate !== today()) return
       const iv = setInterval(() => loadTours(tourDate, false), 30_000)  // ← refresh silencieux
       return () => clearInterval(iv)
-    }, [tourDate, deviceId])
+  }, [tourDate, deviceId, loadTours])  // ← ajouter loadTours
+  // loadTours est stable car défini avec useCallback([token, deviceId, tourDate])
+  // → se recrée seulement quand ces valeurs changent, évite les boucles infinies
 
   // 1. Refresh live uniquement — interval stable, dépend seulement de loadLive
   useEffect(() => {

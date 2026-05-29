@@ -21,6 +21,10 @@ from loguru import logger
 
 from core.database import get_db
 from core.security import require_any, require_operateur
+
+from sqlalchemy import func, case
+from datetime import datetime, timedelta
+
 from models.sensor_model import (
     Device, SensorReading, IrrigationCycle,
     FertigationState, Alert, AlertThreshold
@@ -28,7 +32,114 @@ from models.sensor_model import (
 
 router = APIRouter(prefix="/api/devices", tags=["Devices & Capteurs"])
 
+# Précharger les données en bulk avant la boucle
+def _build_dashboard_bulk(devices: list, db: Session) -> list:
+    if not devices:
+        return []
+    
+    device_ids = [d.id for d in devices]
+    since_24h  = datetime.utcnow() - timedelta(hours=24)
+    
+    # 1. Dernière lecture par device (une seule requête)
+    subq = (
+        db.query(
+            SensorReading.device_id,
+            func.max(SensorReading.timestamp).label("max_ts")
+        )
+        .filter(SensorReading.device_id.in_(device_ids))
+        .group_by(SensorReading.device_id)
+        .subquery()
+    )
+    last_readings = {
+        sr.device_id: sr
+        for sr in db.query(SensorReading)
+        .join(subq, (SensorReading.device_id == subq.c.device_id) &
+                    (SensorReading.timestamp  == subq.c.max_ts))
+        .all()
+    }
+    
+    # 2. Alertes actives par device (une seule requête)
+    alert_counts = dict(
+        db.query(Alert.device_id, func.count(Alert.id))
+        .filter(Alert.device_id.in_(device_ids), Alert.resolved_at == None)
+        .group_by(Alert.device_id)
+        .all()
+    )
+    
+    # 3. Lectures 24h par device (une seule requête)
+    readings_24h = dict(
+        db.query(SensorReading.device_id, func.count(SensorReading.id))
+        .filter(SensorReading.device_id.in_(device_ids),
+                SensorReading.timestamp >= since_24h)
+        .group_by(SensorReading.device_id)
+        .all()
+    )
+    
+    # 4. Seuils par device (une seule requête)
+    all_thresholds: dict[int, dict] = {}
+    for t in db.query(AlertThreshold).filter(
+        AlertThreshold.device_id.in_(device_ids),
+        AlertThreshold.is_active == True
+    ).all():
+        all_thresholds.setdefault(t.device_id, {})[t.parameter] = t
+    
+    # Construire les summaries sans requêtes supplémentaires
+    result = []
+    for d in devices:
+        last = last_readings.get(d.id)
+        thresholds = all_thresholds.get(d.id, {})
+        
+        online = False
+        last_seen_min = None
+        if last and last.timestamp:
+            delta = (datetime.utcnow() - last.timestamp).total_seconds() / 60
+            last_seen_min = int(delta)
+            online = delta < 15
+        
+        def get_thresh(param):
+            t = thresholds.get(param)
+            return (t.threshold_min if t else None, t.threshold_max if t else None)
+        
+        metrics = {}
+        if last:
+            for key, attr, p in [
+                ("ec",   "ec_actual",  "ec_actual"),
+                ("ph",   "ph_actual",  "ph_actual"),
+                ("temp", "avg_temp",   "avg_temp"),
+                ("hum",  "humidity",   "humidity"),
+            ]:
+                val = getattr(last, attr, None)
+                mn, mx = get_thresh(p)
+                metrics[key] = {"value": val, "min": mn, "max": mx,
+                                 "status": _status_color(val, mn, mx)}
+            metrics["rad"]  = {"value": last.radiation,  "status": "ok"}
+            metrics["flow"] = {"value": last.flow,        "status": "ok"}
+        
+        result.append({
+            "id": d.id, "farm_name": d.farm_name, "house_number": d.house_number,
+            "room_number": d.room_number, "device_id": d.device_id,
+            "is_active": d.is_active, "online": online,
+            "last_seen_min": last_seen_min,
+            "last_timestamp": str(last.timestamp) if last else None,
+            "metrics": metrics,
+            "irrigation_active": False,
+            "active_alerts": alert_counts.get(d.id, 0),
+            "readings_24h": readings_24h.get(d.id, 0),
+        })
+    
+    return result
 
+def _check_device_access(device: Device, user: dict):
+    """Lève 403 si l'utilisateur n'a pas accès à ce device."""
+    if user["role"] == "admin":
+        return
+    allowed = user.get("farm_names", [])
+    if device.farm_name not in allowed:
+        raise HTTPException(
+            status_code=403,
+            detail="Accès refusé à ce device"
+        )
+    
 # ── helpers ───────────────────────────────────────────────────
 
 def _status_color(value, tmin, tmax):
@@ -218,15 +329,13 @@ def dashboard_summary(
     total_alerts  = 0
     total_readings_24h = 0
 
-    for d in devices:
-        summary = _build_device_summary(d, db)
+    summaries = _build_dashboard_bulk(devices, db)
 
-        if summary["online"]:
-            total_online += 1
-        total_alerts += summary["active_alerts"]
-        total_readings_24h += summary["readings_24h"]
-
-        farm = d.farm_name
+    for summary in summaries:
+        if summary["online"]:     total_online += 1
+        total_alerts              += summary["active_alerts"]
+        total_readings_24h        += summary["readings_24h"]
+        farm = summary["farm_name"]
         if farm not in farms:
             farms[farm] = {"farm_name": farm, "houses": []}
         farms[farm]["houses"].append(summary)
@@ -265,6 +374,7 @@ def get_latest(
     device = db.query(Device).filter(Device.id == device_id).first()
     if not device:
         raise HTTPException(status_code=404, detail="Device non trouvé")
+    _check_device_access(device, user)
 
     last_sr = (
         db.query(SensorReading)
@@ -419,10 +529,10 @@ def get_latest(
 @router.get("/{device_id}/history")
 def get_history(
     device_id : int,
-    date_from : Optional[str] = Query(None, description="YYYY-MM-DD"),
-    date_to   : Optional[str] = Query(None, description="YYYY-MM-DD"),
-    page      : int = Query(1, ge=1),
-    per_page  : int = Query(50, ge=10, le=5000),
+    date_from : Optional[str] = Query(None, regex=r'^\d{4}-\d{2}-\d{2}$'),
+    date_to   : Optional[str] = Query(None, regex=r'^\d{4}-\d{2}-\d{2}$'),
+    page      : int = Query(1, ge=1, le=1000),
+    per_page  : int = Query(50, ge=10, le=500),   # max 500 au lieu de 5000
     db        : Session = Depends(get_db),
     user               = Depends(require_any)
 ):
@@ -432,6 +542,7 @@ def get_history(
     device = db.query(Device).filter(Device.id == device_id).first()
     if not device:
         raise HTTPException(status_code=404, detail="Device non trouvé")
+    _check_device_access(device, user)
 
     # Période par défaut : aujourd'hui
     if not date_from:
@@ -444,6 +555,10 @@ def get_history(
         dt_to   = datetime.strptime(date_to,   "%Y-%m-%d").replace(hour=23, minute=59, second=59)
     except ValueError:
         raise HTTPException(status_code=400, detail="Format date invalide (YYYY-MM-DD)")
+    
+    # Limiter la plage à 90 jours
+    if (dt_to - dt_from).days > 90:
+        raise HTTPException(status_code=400, detail="Plage limitée à 90 jours")
 
     q = (
         db.query(SensorReading)
@@ -510,6 +625,7 @@ def export_history_excel(
     device = db.query(Device).filter(Device.id == device_id).first()
     if not device:
         raise HTTPException(status_code=404, detail="Device non trouvé")
+    _check_device_access(device, user)
 
     if not date_from:
         date_from = date.today().isoformat()
@@ -598,6 +714,11 @@ def get_alerts(
     db       : Session = Depends(get_db),
     user             = Depends(require_any)
 ):
+    device = db.query(Device).filter(Device.id == device_id).first()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device non trouvé")
+    _check_device_access(device, user)    
+    
     q = db.query(Alert).filter(Alert.device_id == device_id)
     if not resolved:
         q = q.filter(Alert.resolved_at == None)
@@ -631,6 +752,11 @@ def get_thresholds(
     db       : Session = Depends(get_db),
     user             = Depends(require_any)
 ):
+    device = db.query(Device).filter(Device.id == device_id).first()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device non trouvé")
+    _check_device_access(device, user)
+
     """Retourne les seuils d'alerte configurés pour un device."""
     thresholds = (
         db.query(AlertThreshold)
@@ -668,6 +794,7 @@ def get_tours(
     device = db.query(Device).filter(Device.id == device_id).first()
     if not device:
         raise HTTPException(status_code=404, detail="Device non trouvé")
+    _check_device_access(device, user)
 
     tours = (
         db.query(IrrigationTour)
@@ -732,6 +859,11 @@ def resolve_alert(
     db: Session = Depends(get_db),
     user = Depends(require_any)
 ):
+    device = db.query(Device).filter(Device.id == device_id).first()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device non trouvé")
+    _check_device_access(device, user)
+
     from datetime import datetime
     alert = db.query(Alert).filter(
         Alert.id == alert_id,
@@ -755,95 +887,112 @@ def check_offline_stations(
     si aucune donnée depuis plus de 20 minutes.
     Appelé automatiquement par le frontend toutes les 5 min.
     """
-    from datetime import timedelta
+    from core.security import _redis   # réutiliser le client Redis existant
+    
+    # Verrou distribué : un seul check à la fois (expire en 60s)
+    lock_key = "lock:check_offline"
+    if _redis and not _redis.set(lock_key, "1", nx=True, ex=60):
+        return {"status": "skipped", "reason": "already_running"}
+    
+    try:
+        from datetime import timedelta
 
-    cutoff_offline = datetime.utcnow() - timedelta(minutes=20)
-    cutoff_alert   = datetime.utcnow() - timedelta(minutes=25)
+        cutoff_offline = datetime.utcnow() - timedelta(minutes=20)
+        cutoff_alert   = datetime.utcnow() - timedelta(minutes=25)
 
-    devices = db.query(Device).filter(Device.is_active == True).all()
-    created = 0
-    resolved = 0
+        devices = db.query(Device).filter(Device.is_active == True).all()
 
-    for device in devices:
-        last = (
-            db.query(SensorReading)
-            .filter(SensorReading.device_id == device.id)
-            .order_by(desc(SensorReading.timestamp))
-            .first()
-        )
+        if user["role"] != "admin":
+            allowed = user.get("farm_names", [])
+            devices = [d for d in devices if d.farm_name in allowed]
 
-        is_offline = (last is None) or (last.timestamp < cutoff_offline)
+        created = 0
+        resolved = 0
 
-        if is_offline:
-            # Pas d'alerte OFFLINE non résolue récente ?
-            existing = db.query(Alert).filter(
-                Alert.device_id  == device.id,
-                Alert.alert_type == "OFFLINE",
-                Alert.resolved_at == None,
-                Alert.timestamp  >= cutoff_alert,
-            ).first()
+        for device in devices:
+            last = (
+                db.query(SensorReading)
+                .filter(SensorReading.device_id == device.id)
+                .order_by(desc(SensorReading.timestamp))
+                .first()
+            )
 
-            if existing:
-                if last:
-                    minutes_ago = int((datetime.utcnow() - last.timestamp).total_seconds() / 60)
-                    d, h, m = minutes_ago // 1440, (minutes_ago % 1440) // 60, minutes_ago % 60
-                    if d > 0:
-                        duration_str = f"{d}j {h}h" if h else f"{d}j"
-                    elif h > 0:
-                        duration_str = f"{h}h {m}min" if m else f"{h}h"
-                    else:
-                        duration_str = f"{minutes_ago} min"
-                    existing.message = (
-                        f"Station hors ligne depuis {duration_str} — "
-                        f"{device.farm_name} Station {device.house_number}"
-                    )
-                    existing.value_detected = float(minutes_ago)
-            else:
-                if last:
-                    minutes_ago = int((datetime.utcnow() - last.timestamp).total_seconds() / 60)
-                    d, h, m = minutes_ago // 1440, (minutes_ago % 1440) // 60, minutes_ago % 60
-                    if d > 0:
-                        duration_str = f"{d}j {h}h" if h else f"{d}j"
-                    elif h > 0:
-                        duration_str = f"{h}h {m}min" if m else f"{h}h"
-                    else:
-                        duration_str = f"{minutes_ago} min"
-                    msg = (
-                        f"Station hors ligne depuis {duration_str} — "
-                        f"{device.farm_name} Station {device.house_number}"
-                    )
+            is_offline = (last is None) or (last.timestamp < cutoff_offline)
+
+            if is_offline:
+                # Pas d'alerte OFFLINE non résolue récente ?
+                existing = db.query(Alert).filter(
+                    Alert.device_id  == device.id,
+                    Alert.alert_type == "OFFLINE",
+                    Alert.resolved_at == None,
+                    Alert.timestamp  >= cutoff_alert,
+                ).first()
+
+                if existing:
+                    if last:
+                        minutes_ago = int((datetime.utcnow() - last.timestamp).total_seconds() / 60)
+                        d, h, m = minutes_ago // 1440, (minutes_ago % 1440) // 60, minutes_ago % 60
+                        if d > 0:
+                            duration_str = f"{d}j {h}h" if h else f"{d}j"
+                        elif h > 0:
+                            duration_str = f"{h}h {m}min" if m else f"{h}h"
+                        else:
+                            duration_str = f"{minutes_ago} min"
+                        existing.message = (
+                            f"Station hors ligne depuis {duration_str} — "
+                            f"{device.farm_name} Station {device.house_number}"
+                        )
+                        existing.value_detected = float(minutes_ago)
                 else:
-                    minutes_ago = None
-                    msg = f"Station jamais connectée — {device.farm_name} Station {device.house_number}"
+                    if last:
+                        minutes_ago = int((datetime.utcnow() - last.timestamp).total_seconds() / 60)
+                        d, h, m = minutes_ago // 1440, (minutes_ago % 1440) // 60, minutes_ago % 60
+                        if d > 0:
+                            duration_str = f"{d}j {h}h" if h else f"{d}j"
+                        elif h > 0:
+                            duration_str = f"{h}h {m}min" if m else f"{h}h"
+                        else:
+                            duration_str = f"{minutes_ago} min"
+                        msg = (
+                            f"Station hors ligne depuis {duration_str} — "
+                            f"{device.farm_name} Station {device.house_number}"
+                        )
+                    else:
+                        minutes_ago = None
+                        msg = f"Station jamais connectée — {device.farm_name} Station {device.house_number}"
 
-                alert = Alert(
-                    device_id      = device.id,
-                    timestamp      = datetime.utcnow(),
-                    alert_type     = "OFFLINE",
-                    value_detected = float(minutes_ago) if minutes_ago else None,
-                    threshold_min  = None,
-                    threshold_max  = 20.0,
-                    severity       = "CRITICAL",
-                    message        = msg,
-                )
-                db.add(alert)
-                created += 1
-                logger.warning(f"⚠️ OFFLINE : {msg}")
-        else:
-            # Station revenue en ligne → résoudre alertes OFFLINE existantes
-            nb = db.query(Alert).filter(
-                Alert.device_id  == device.id,
-                Alert.alert_type == "OFFLINE",
-                Alert.resolved_at == None,
-            ).update({
-                "resolved_at": datetime.utcnow(),
-                "resolved_by": "auto-recover",
-            })
-            resolved += nb
+                    alert = Alert(
+                        device_id      = device.id,
+                        timestamp      = datetime.utcnow(),
+                        alert_type     = "OFFLINE",
+                        value_detected = float(minutes_ago) if minutes_ago else None,
+                        threshold_min  = None,
+                        threshold_max  = 20.0,
+                        severity       = "CRITICAL",
+                        message        = msg,
+                    )
+                    db.add(alert)
+                    created += 1
+                    logger.warning(f"⚠️ OFFLINE : {msg}")
+            else:
+                # Station revenue en ligne → résoudre alertes OFFLINE existantes
+                nb = db.query(Alert).filter(
+                    Alert.device_id  == device.id,
+                    Alert.alert_type == "OFFLINE",
+                    Alert.resolved_at == None,
+                ).update({
+                    "resolved_at": datetime.utcnow(),
+                    "resolved_by": "auto-recover",
+                })
+                resolved += nb
 
-    db.commit()
-    return {
-        "checked" : len(devices),
-        "offline_alerts_created": created,
-        "auto_resolved": resolved,
-    }
+        db.commit()
+        return {
+            "checked" : len(devices),
+            "offline_alerts_created": created,
+            "auto_resolved": resolved,
+        }
+        pass
+    finally:
+        if _redis:
+            _redis.delete(lock_key)

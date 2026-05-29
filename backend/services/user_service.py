@@ -172,13 +172,26 @@ def export_users_excel(db: Session) -> bytes:
 
 
 # ── Init default users ────────────────────────────────────────
+import os
+
 def init_default_users(db: Session):
     if db.query(User).count() > 0:
         logger.info("Users déjà initialisés")
         return
+
+    admin_pwd = os.getenv("DEFAULT_ADMIN_PASSWORD")
+    op_pwd    = os.getenv("DEFAULT_OPERATEUR_PASSWORD")
+
+    if not admin_pwd or not op_pwd:
+        raise RuntimeError(
+            "DEFAULT_ADMIN_PASSWORD et DEFAULT_OPERATEUR_PASSWORD "
+            "doivent être définis dans .env avant le premier démarrage"
+        )
+
     for u in [
-        {"username": "admin",     "password": "Admin@2026",     "role": Role.ADMIN,     "nom": "Administrateur Azura"},
-        {"username": "operateur", "password": "Operateur@2026", "role": Role.OPERATEUR, "nom": "Opérateur Terrain Azura"},
+        {"username": "admin",     "password": admin_pwd, "role": Role.ADMIN,     "nom": "Administrateur Azura"},
+        {"username": "operateur", "password": op_pwd,    "role": Role.OPERATEUR, "nom": "Opérateur Terrain Azura"},
     ]:
         create_user(db, u["username"], u["password"], u["role"], u["nom"])
     logger.success("Users par défaut créés ✅")
+    # NE PAS logger les mots de passe

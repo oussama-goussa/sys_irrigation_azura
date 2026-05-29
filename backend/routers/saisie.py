@@ -5,7 +5,6 @@
 # ============================================================
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
 from typing import Optional, List
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, String
@@ -19,61 +18,110 @@ from models.saisie_model import SaisieJournaliere, SaisieTour
 
 from services.user_service import log_action
 
+from pydantic import BaseModel, Field, field_validator, model_validator
+from typing import Optional, List, Annotated
+import re as _re
+from datetime import date as date_type, timedelta
+
 router = APIRouter(prefix="/api/saisie", tags=["Saisie journalière"])
 
+_FARM_NAME_RE = _re.compile(r'^[a-zA-Z0-9_\- ]{1,50}$')
 
 # ── Schemas Pydantic ──────────────────────────────────────────
 
 class TourIn(BaseModel):
-    num_tour     : int
-    rad          : Optional[float] = None
-    cumul_rad    : Optional[float] = None
-    heure        : Optional[str]   = None
-    duree_min    : Optional[float] = None
-    temps_repos  : Optional[float] = None
-    v_apport     : Optional[float] = None
-    ec_apport    : Optional[float] = None
-    ph_apport    : Optional[float] = None
-    v_drain      : Optional[float] = None
-    ec_drain     : Optional[float] = None
-    ph_drain     : Optional[float] = None
-    pct_drain    : Optional[float] = None
-    moy_pct_drain: Optional[float] = None
+    num_tour     : int = Field(..., ge=1, le=50)
+    rad          : Optional[float] = Field(None, ge=0, le=5000)
+    cumul_rad    : Optional[float] = Field(None, ge=0, le=99999)
+    heure        : Optional[str]   = Field(None, pattern=r'^\d{2}:\d{2}$')
+    duree_min    : Optional[float] = Field(None, ge=0, le=1440)
+    temps_repos  : Optional[float] = Field(None, ge=0, le=1440)
+    v_apport     : Optional[float] = Field(None, ge=0, le=100000)
+    ec_apport    : Optional[float] = Field(None, ge=0, le=20)
+    ph_apport    : Optional[float] = Field(None, ge=0, le=14)
+    v_drain      : Optional[float] = Field(None, ge=0, le=100000)
+    ec_drain     : Optional[float] = Field(None, ge=0, le=20)
+    ph_drain     : Optional[float] = Field(None, ge=0, le=14)
+    pct_drain    : Optional[float] = Field(None, ge=0, le=100)
+    moy_pct_drain: Optional[float] = Field(None, ge=0, le=100)
 
 
 class ConstantesIn(BaseModel):
-    nbrBras       : Optional[float] = None
-    nbrGoutteurs  : Optional[float] = None
-    poidsMatin    : Optional[float] = None
-    heureMatin    : Optional[str]   = None
-    poidsSoir     : Optional[float] = None
-    heureSoir     : Optional[str]   = None
-    bassinEC      : Optional[float] = None
-    pctRessuyage  : Optional[float] = None
+    nbrBras       : Optional[float] = Field(None, ge=0, le=10000)
+    nbrGoutteurs  : Optional[float] = Field(None, ge=0, le=100000)
+    poidsMatin    : Optional[float] = Field(None, ge=0, le=10000)
+    heureMatin    : Optional[str]   = Field(None, pattern=r'^\d{2}:\d{2}$')
+    poidsSoir     : Optional[float] = Field(None, ge=0, le=10000)
+    heureSoir     : Optional[str]   = Field(None, pattern=r'^\d{2}:\d{2}$')
+    bassinEC      : Optional[float] = Field(None, ge=0, le=20)
+    pctRessuyage  : Optional[float] = Field(None, ge=0, le=100)
 
 
 class BilanIn(BaseModel):
-    nbrTours       : Optional[int]   = None
-    dureeTotal     : Optional[str]   = None  # HH:MM:SS
-    totalVApport   : Optional[float] = None
-    totalVDrain    : Optional[float] = None
-    ecMoyApport    : Optional[float] = None
-    phMoyApport    : Optional[float] = None
-    ecMoyDrain     : Optional[float] = None
-    phMoyDrain     : Optional[float] = None
-    moyDrainFinale : Optional[float] = None
-    ccBras         : Optional[float] = None
+    nbrTours       : Optional[int]   = Field(None, ge=0, le=50)
+    dureeTotal     : Optional[str]   = Field(None, pattern=r'^\d{2}:\d{2}:\d{2}$')
+    totalVApport   : Optional[float] = Field(None, ge=0, le=10_000_000)
+    totalVDrain    : Optional[float] = Field(None, ge=0, le=10_000_000)
+    ecMoyApport    : Optional[float] = Field(None, ge=0, le=20)
+    phMoyApport    : Optional[float] = Field(None, ge=0, le=14)
+    ecMoyDrain     : Optional[float] = Field(None, ge=0, le=20)
+    phMoyDrain     : Optional[float] = Field(None, ge=0, le=14)
+    moyDrainFinale : Optional[float] = Field(None, ge=0, le=100)
+    ccBras         : Optional[float] = Field(None, ge=0, le=100_000)
 
 
 class SaisieIn(BaseModel):
-    ferme      : str
-    station    : Optional[str] = None
-    serre      : Optional[str] = None
-    vanne      : Optional[str] = None
-    date       : str                    # YYYY-MM-DD
+    ferme      : str                    = Field(..., min_length=1, max_length=50)
+    station    : Optional[str]          = Field(None, max_length=20)
+    serre      : Optional[str]          = Field(None, max_length=20)
+    vanne      : Optional[str]          = Field(None, max_length=20)
+    date       : str                    = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$')
     constantes : Optional[ConstantesIn] = None
-    tours      : List[TourIn] = []
+    tours      : List[TourIn]           = Field(default_factory=list, max_length=50)
     bilan      : Optional[BilanIn]      = None
+
+    @field_validator('ferme')
+    @classmethod
+    def ferme_valide(cls, v: str) -> str:
+        if not _FARM_NAME_RE.match(v):
+            raise ValueError('Nom de ferme invalide (alphanumérique, tirets, espaces uniquement)')
+        return v
+
+    @field_validator('station', 'serre', 'vanne', mode='before')
+    @classmethod
+    def sanitize_short_strings(cls, v):
+        if v is None:
+            return v
+        # Supprimer les caractères de contrôle
+        v = str(v).strip()
+        if not _re.match(r'^[a-zA-Z0-9_\- /]{0,20}$', v):
+            raise ValueError('Caractères invalides dans le champ')
+        return v
+
+    @field_validator('date')
+    @classmethod
+    def date_valide(cls, v: str) -> str:
+        try:
+            d = date_type.fromisoformat(v)
+        except ValueError:
+            raise ValueError('Format date invalide (YYYY-MM-DD)')
+        today = date_type.today()
+        if d > today + timedelta(days=1):
+            raise ValueError('Date dans le futur non autorisée')
+        if d < today - timedelta(days=365 * 2):
+            raise ValueError('Date trop ancienne (max 2 ans)')
+        return v
+
+    @model_validator(mode='after')
+    def coherence_bilan_tours(self) -> 'SaisieIn':
+        """Vérifier que le bilan est cohérent avec les tours."""
+        if self.bilan and self.bilan.nbrTours is not None:
+            if self.bilan.nbrTours != len(self.tours):
+                raise ValueError(
+                    f'bilan.nbrTours ({self.bilan.nbrTours}) '
+                    f'ne correspond pas au nombre de tours ({len(self.tours)})'
+                )
+        return self
 
 
 # ── POST /api/saisie — Créer une saisie ──────────────────────
@@ -165,21 +213,24 @@ def create_saisie(
     }
 
 # ── GET /api/saisie — Liste des saisies ──────────────────────
+def _escape_like(s: str) -> str:
+    return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
 @router.get("")
 def list_saisies(
     farm_name    : Optional[str] = Query(None),
     date_from    : Optional[str] = Query(None),
     date_to      : Optional[str]   = Query(None),
-    station      : Optional[str]   = Query(None),
-    serre        : Optional[str]   = Query(None),
-    vanne        : Optional[str]   = Query(None),
-    nbr_bras     : Optional[str]   = Query(None),
-    nbr_goutteurs: Optional[str]   = Query(None),
-    poids_matin  : Optional[str]   = Query(None),
-    heure_matin  : Optional[str]   = Query(None),
-    poids_soir   : Optional[str]   = Query(None),
-    heure_soir   : Optional[str]   = Query(None),
-    bassin_ec    : Optional[str]   = Query(None),
+    station      : Optional[str] = Query(None, max_length=20),
+    serre        : Optional[str] = Query(None, max_length=20),
+    vanne        : Optional[str] = Query(None, max_length=20),
+    nbr_bras     : Optional[str] = Query(None, max_length=6),
+    nbr_goutteurs: Optional[str] = Query(None, max_length=8),
+    poids_matin  : Optional[str] = Query(None, max_length=10),
+    heure_matin  : Optional[str] = Query(None, max_length=5),
+    poids_soir   : Optional[str] = Query(None, max_length=10),
+    heure_soir   : Optional[str] = Query(None, max_length=5),
+    bassin_ec    : Optional[str] = Query(None, max_length=8),
     page         : int             = Query(1, ge=1),
     per_page     : int           = Query(20, ge=1, le=100),
     db           : Session       = Depends(get_db),
@@ -212,11 +263,11 @@ def list_saisies(
     if date_to:
         q = q.filter(SaisieJournaliere.date <= date_type.fromisoformat(date_to))
     if station:
-        q = q.filter(SaisieJournaliere.station.ilike(f"%{station}%"))
+        q = q.filter(SaisieJournaliere.station.ilike(f"%{_escape_like(station)}%"))
     if serre:
-        q = q.filter(SaisieJournaliere.serre.ilike(f"%{serre}%"))
+        q = q.filter(SaisieJournaliere.serre.ilike(f"%{_escape_like(serre)}%"))
     if vanne:
-        q = q.filter(SaisieJournaliere.vanne.ilike(f"%{vanne}%"))
+        q = q.filter(SaisieJournaliere.vanne.ilike(f"%{_escape_like(vanne)}%"))
     if nbr_bras:
         q = q.filter(SaisieJournaliere.nbr_bras == int(nbr_bras))
     if nbr_goutteurs:
@@ -224,11 +275,11 @@ def list_saisies(
     if poids_matin:
         q = q.filter(SaisieJournaliere.poids_matin.cast(String).ilike(f"%{poids_matin}%"))
     if heure_matin:
-        q = q.filter(SaisieJournaliere.heure_matin.ilike(f"%{heure_matin}%"))
+        q = q.filter(SaisieJournaliere.heure_matin.ilike(f"%{_escape_like(heure_matin)}%"))
     if poids_soir:
         q = q.filter(SaisieJournaliere.poids_soir.cast(String).ilike(f"%{poids_soir}%"))
     if heure_soir:
-        q = q.filter(SaisieJournaliere.heure_soir.ilike(f"%{heure_soir}%"))
+        q = q.filter(SaisieJournaliere.heure_soir.ilike(f"%{_escape_like(heure_soir)}%"))
     if bassin_ec:
         q = q.filter(SaisieJournaliere.bassin_ec.cast(String).ilike(f"%{bassin_ec}%"))
 
@@ -258,6 +309,13 @@ def get_saisie(
     if not saisie:
         raise HTTPException(status_code=404, detail="Saisie non trouvée")
 
+    # vérification accès ferme
+    if user["role"] != "admin":
+        user_db = get_user(db, user["username"])
+        allowed = user_db.farm_names if user_db and user_db.farm_names else []
+        if saisie.farm_name not in allowed:
+            raise HTTPException(status_code=403, detail="Accès refusé à cette saisie")
+
     tours = (
         db.query(SaisieTour)
         .filter(SaisieTour.saisie_id == saisie_id)
@@ -272,8 +330,13 @@ def get_saisie(
 
 
 # ── DELETE /api/saisie/{id} — Supprimer une saisie ───────────
+# ✅ APRÈS
 @router.delete("/{saisie_id}")
-def delete_saisie(saisie_id, db, user=Depends(require_operateur)):
+def delete_saisie(
+    saisie_id : int,
+    db        : Session = Depends(get_db),
+    user      : dict    = Depends(require_operateur),
+):
     saisie = db.query(SaisieJournaliere).filter(SaisieJournaliere.id == saisie_id).first()
     if not saisie:
         raise HTTPException(404, "Saisie non trouvée")
@@ -306,6 +369,13 @@ def update_saisie(
     saisie = db.query(SaisieJournaliere).filter(SaisieJournaliere.id == saisie_id).first()
     if not saisie:
         raise HTTPException(status_code=404, detail="Saisie non trouvée")
+
+    # Vérification accès ferme (même logique que DELETE)
+    if user["role"] != "admin":
+        user_db = get_user(db, user["username"])
+        allowed = user_db.farm_names if user_db and user_db.farm_names else []
+        if saisie.farm_name not in allowed:
+            raise HTTPException(status_code=403, detail="Accès refusé à cette saisie")
 
     try:
         date_obj = date_type.fromisoformat(body.date)
