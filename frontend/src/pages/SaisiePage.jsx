@@ -9,7 +9,7 @@ import {
   FlaskConical, BarChart2, Trash2, AlertCircle, Check, X,
   ClipboardList, RefreshCw,
 } from 'lucide-react'
-import { getDevices, saveSaisie, updateSaisie, getSaisies, getSaisie, deleteSaisie } from '../api/client.js'
+import { getDevices, saveSaisie, updateSaisie, getSaisies, getSaisie, deleteSaisie, getAccessToken } from '../api/client.js'
 
 // ── helpers ───────────────────────────────────────────────────
 const today = () => new Date().toISOString().split('T')[0]
@@ -614,7 +614,7 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
   const tableBottomRef = useRef(null)
 
   useEffect(() => {
-    getDevices(token).then(setFarms).catch(() => setFarms([]))
+    getDevices(getAccessToken()).then(setFarms).catch(() => setFarms([]))
   }, [token])
 
   // ── Options dérivées ──
@@ -767,7 +767,7 @@ export default function SaisiePage({ token, auth, C, dark, isMobile, isTablet })
           ccBras        : ccBras        != null ? Number(ccBras)        : null,
         },
       }
-      const result = await saveSaisie(token, payload)
+      const result = await saveSaisie(getAccessToken(), payload)
       setSaved(true)
       setSavedId(result.saisie_id)
       setTimeout(() => setSaved(false), 5000)
