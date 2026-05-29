@@ -33,16 +33,23 @@ services:
   # ── 2. Redis ─────────────────────────────────────────────
   redis:
     image: redis:7-alpine
-    container_name: redis-server --requirepass ${REDIS_PASSWORD}
+    container_name: azura_redis
+
+    command: >
+      redis-server --requirepass ${REDIS_PASSWORD}
+
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+
     networks:
       - azura_internal
+
     restart: unless-stopped
 
   # ── 3. Backend FastAPI ───────────────────────────────────
