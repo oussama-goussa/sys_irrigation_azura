@@ -203,16 +203,19 @@ export default function DashboardPage({ token, onSelectDevice, initialFarms, C, 
 
   const loadFarms = async (silent = false) => {
     if (fetchingRef.current) return
-    if (!token) return
+    if (!getAccessToken()) return
     fetchingRef.current = true
     if (!silent) setLoading(true)
     else setRefreshing(true)
     setError(null)
     try {
+      console.log('token:', getAccessToken())          // ← ajouter
       const data = await getDashboard(getAccessToken())
+      console.log('data:', data)                       // ← ajouter
       setFarms(data?.farms || [])
       if (data?.stats?.readings_24h !== undefined) setReadings24h(data.stats.readings_24h)
     } catch (e) {
+      console.error('loadFarms error:', e)             // ← changer setError en console.error aussi
       setError('Impossible de charger les fermes.')
     } finally {
       setLoading(false)
