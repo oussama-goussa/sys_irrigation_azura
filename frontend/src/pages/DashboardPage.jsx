@@ -202,7 +202,8 @@ export default function DashboardPage({ token, onSelectDevice, initialFarms, C, 
   }, [])
 
   const loadFarms = async (silent = false) => {
-    if (fetchingRef.current) return   // ← guard
+    if (fetchingRef.current) return
+    if (!token) return
     fetchingRef.current = true
     if (!silent) setLoading(true)
     else setRefreshing(true)
