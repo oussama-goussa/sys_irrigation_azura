@@ -2,7 +2,6 @@
 // frontend/src/App.jsx
 // ============================================================
 
-import { useState, useEffect, useCallback } from 'react'
 import LoginPage from './pages/LoginPage.jsx'
 import DashboardShell from './components/DashboardShell.jsx'
 import { ToastProvider } from './pages/AlertsPage.jsx'
