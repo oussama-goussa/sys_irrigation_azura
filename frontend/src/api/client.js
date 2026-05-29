@@ -133,7 +133,10 @@ export async function createUser(token, payload) {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(err.detail || 'Erreur lors de la création')
+    const detail = Array.isArray(err.detail)
+      ? err.detail.map(d => `${(d.loc || []).slice(1).join('.')} : ${d.msg}`).join(' | ')
+      : err.detail || 'Erreur lors de la création'
+    throw new Error(detail)
   }
   return res.json()
 }
