@@ -4,6 +4,7 @@
 // ============================================================
 
 import React, { useState, useEffect, useRef } from "react";
+import { getAccessToken } from '../api/client.js'
 
 import { createPortal } from "react-dom";
 import {
@@ -483,7 +484,7 @@ export function RangeCalendar({
 }
 
 // ── Main ExportModal ──────────────────────────────────────────
-export default function ExportModal({ token, auth, farms, C, dark, onClose, isMobile, isTablet }) {
+export default function ExportModal({ auth, farms, C, dark, onClose, isMobile, isTablet }) {
   const [selectedFarms, setSelectedFarms] = useState([]);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -554,7 +555,7 @@ export default function ExportModal({ token, auth, farms, C, dark, onClose, isMo
         date_to: dateTo,
       });
       const res = await fetch(`/api/export/saisie?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${getAccessToken()}` },
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));

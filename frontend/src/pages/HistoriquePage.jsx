@@ -1392,7 +1392,7 @@ export default function HistoriquePage({ token, auth, C, dark }) {
     fNbrBras || fNbrGoutt || fPoidsMat || fHeureMat || fPoidsSoir || fHeureSoir || fBassin)
 
   useEffect(() => {
-    getDevices(getAccessToken()).then(setFarms).catch(() => {})
+    getDevices(getAccessToken()).then(setFarms).catch(() => {}) 
   }, [getAccessToken()])
 
   // Fermes autorisées — toujours fetch /me pour avoir les farm_names frais
