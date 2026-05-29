@@ -439,7 +439,7 @@ async def logout(
 
     response = JSONResponse(content={"message": "Déconnecté ✅"})
     response.delete_cookie(
-        key="refresh_token", path="/api/auth/refresh",
+        key="refresh_token", path="/",
         httponly=True, secure=True, samesite="strict",
     )
     return response
