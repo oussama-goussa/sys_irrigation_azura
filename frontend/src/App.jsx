@@ -8,6 +8,8 @@ import DashboardShell from './components/DashboardShell.jsx'
 import { ToastProvider } from './pages/AlertsPage.jsx'
 import { setAccessToken, clearAccessToken, getAccessToken, logout } from './api/client.js'
 
+import { useState, useEffect, useCallback, useRef } from 'react'
+
 export default function App() {
   const [auth, setAuth] = useState(() => {
     try {
@@ -20,6 +22,13 @@ export default function App() {
       sessionStorage.removeItem('azura_auth')
       return null
     }
+  })
+
+  const [isHydrating, setIsHydrating] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('azura_auth')
+      return !!(saved && JSON.parse(saved).username)
+    } catch { return false }
   })
 
   useEffect(() => {
@@ -44,24 +53,32 @@ export default function App() {
   }, [auth])
 
   useEffect(() => {
-      if (!auth?.username) return
+    if (!auth?.username) return
 
-      const doRefresh = async () => {
-          try {
-              const res = await fetch('/api/auth/refresh', {
-                  method      : 'POST',
-                  credentials : 'include',
-              })
-              if (!res.ok) return
-              const { access_token } = await res.json()
-              setAccessToken(access_token)
-          } catch (e) {
-              console.warn('Refresh silencieux échoué:', e)
-          }
+    const doRefresh = async () => {
+      try {
+        const res = await fetch('/api/auth/refresh', {
+          method: 'POST',
+          credentials: 'include',
+        })
+        if (!res.ok) {
+          clearAccessToken()
+          setAuth(null)
+          return
+        }
+        const { access_token } = await res.json()
+        setAccessToken(access_token)
+      } catch (e) {
+        console.warn('Refresh silencieux échoué:', e)
+      } finally {
+        setIsHydrating(false)   // ← débloquer le rendu dans tous les cas
       }
+    }
 
-      const interval = setInterval(doRefresh, 12 * 60 * 1000)
-      return () => clearInterval(interval)
+    doRefresh()   // ← appel immédiat au montage
+
+    const interval = setInterval(doRefresh, 12 * 60 * 1000)
+    return () => clearInterval(interval)
   }, [auth?.username])
 
   // ── Fonction de déconnexion — appelle l'API pour révoquer le cookie ──
@@ -112,6 +129,8 @@ export default function App() {
       </ToastProvider>
     )
   }
+
+  if (isHydrating) return null
 
   return (
     <ToastProvider dark={dark}>
