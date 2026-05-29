@@ -864,26 +864,29 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
     }
   }, [token, deviceInfo.farm_name, chartDateFrom, chartDateTo])
 
-  const loadTours = useCallback(async (d = tourDate, showLoading = false) => {
-      if (showLoading) setLoadingTours(true)   // ← seulement si explicitement demandé
+  const loadTours = useCallback(async (d, showLoading = false) => {
+      if (showLoading) setLoadingTours(true)
       try {
         const data = await getDeviceTours(getAccessToken(), deviceId, d)
         setTours(data)
       } catch (e) {
-        console.error(e)
+        // silencieux — NetworkError normal si composant démonté
       } finally {
         setLoadingTours(false)
       }
-    }, [token, deviceId, tourDate])
+  }, [deviceId])
 
   useEffect(() => {
-      loadTours(tourDate, true)   // ← premier chargement = affiche le spinner
+      let cancelled = false
+      const run = async () => {
+        if (cancelled) return
+        await loadTours(tourDate, true)
+      }
+      run()
       if (tourDate !== today()) return
-      const iv = setInterval(() => loadTours(tourDate, false), 30_000)  // ← refresh silencieux
-      return () => clearInterval(iv)
-  }, [tourDate, deviceId, loadTours])  // ← ajouter loadTours
-  // loadTours est stable car défini avec useCallback([token, deviceId, tourDate])
-  // → se recrée seulement quand ces valeurs changent, évite les boucles infinies
+      const iv = setInterval(() => { if (!cancelled) loadTours(tourDate, false) }, 30_000)
+      return () => { cancelled = true; clearInterval(iv) }
+  }, [tourDate, deviceId])
 
   // 1. Refresh live uniquement — interval stable, dépend seulement de loadLive
   useEffect(() => {
