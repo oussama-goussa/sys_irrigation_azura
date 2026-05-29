@@ -22,8 +22,8 @@ router = APIRouter(prefix="/api/weight", tags=["Capteurs Poids"])
 
 SENSOR_API_KEY = os.getenv("SENSOR_API_KEY")
 
-_FARM_RE    = re.compile(r'^[a-zA-Z0-9_\-]{1,50}$')
-_CAPTEUR_RE = re.compile(r'^[a-zA-Z0-9_\-]{1,50}$')
+_FARM_RE = re.compile(r'^[a-zA-Z0-9_\- ]{1,50}$')
+_CAPTEUR_RE = re.compile(r'^[a-zA-Z0-9_\- ]{1,50}$')
 
 
 # ── Schéma strict Pydantic V2 ─────────────────────────────────
