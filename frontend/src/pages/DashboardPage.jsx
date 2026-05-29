@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { RefreshCw, WifiOff, Server, Layers, BookOpen } from 'lucide-react'
-import { getDevices, getDashboard } from '../api/client.js'
+import { getDevices, getDashboard, getAccessToken } from '../api/client.js'
 
 const pad = n => (n < 10 ? '0' + n : n)
 const FARM_COLORS = ['#34d96f', '#4d9de0', '#f5a623', '#b197fc', '#f5e642']
@@ -209,7 +209,7 @@ export default function DashboardPage({ token, onSelectDevice, initialFarms, C, 
     else setRefreshing(true)
     setError(null)
     try {
-      const data = await getDashboard(token)
+      const data = await getDashboard(getAccessToken())
       setFarms(data?.farms || [])
       if (data?.stats?.readings_24h !== undefined) setReadings24h(data.stats.readings_24h)
     } catch (e) {
