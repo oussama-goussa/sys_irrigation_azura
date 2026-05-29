@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 
 import { Spinner } from '../components/ui.jsx'
-import { getDeviceLatest, getDeviceHistory, exportDeviceCSV, getDeviceTours, getWeightHistory } from '../api/client.js'
+import { getDeviceLatest, getDeviceHistory, exportDeviceCSV, getDeviceTours, getWeightHistory, getAccessToken } from '../api/client.js'
 
 // ── helpers ───────────────────────────────────────────────────
 function fmt(v, dec = 2) {
@@ -805,7 +805,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
   const loadLive = useCallback(async () => {
       setRefreshing(true)
       try {
-        const d = await getDeviceLatest(token, deviceId)
+        const d = await getDeviceLatest(getAccessToken(), deviceId)
         setLive(d)
         setErrorL('')
       } catch (e) {
@@ -820,7 +820,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
   const loadHistory = useCallback(async (p = 1) => {
     setLoadingH(true)
     try {
-      const d = await getDeviceHistory(token, deviceId, {
+      const d = await getDeviceHistory(getAccessToken(), deviceId, {
         dateFrom, dateTo, page: p, perPage: 15,
       })
       setHistory(d)
@@ -837,7 +837,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
   const loadChartData = useCallback(async () => {
     setLoadingChart(true)
     try {
-      const d = await getDeviceHistory(token, deviceId, {
+      const d = await getDeviceHistory(getAccessToken(), deviceId, {
         dateFrom: chartDateFrom, dateTo: chartDateTo, page: 1, perPage: 5000,
       })
       setChartData(d)
@@ -853,7 +853,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
   const loadWeightData = useCallback(async () => {
     setLoadingWeight(true)
     try {
-      const d = await getWeightHistory(token, deviceInfo.farm_name, {
+      const d = await getWeightHistory(getAccessToken(), deviceInfo.farm_name, {
         dateFrom: chartDateFrom, dateTo: chartDateTo, page: 1, perPage: 500,
       })
       setWeightData(d?.data || [])
@@ -867,7 +867,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
   const loadTours = useCallback(async (d = tourDate, showLoading = false) => {
       if (showLoading) setLoadingTours(true)   // ← seulement si explicitement demandé
       try {
-        const data = await getDeviceTours(token, deviceId, d)
+        const data = await getDeviceTours(getAccessToken(), deviceId, d)
         setTours(data)
       } catch (e) {
         console.error(e)
@@ -983,7 +983,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
     setExporting(true)
     try {
       await exportDeviceCSV(
-        token, deviceId, dateFrom, dateTo,
+        getAccessToken(), deviceId, dateFrom, dateTo,
         `${deviceInfo.farm_name}_Station${deviceInfo.house_number}_${dateFrom}_${dateTo}.xlsx`
       )
     } finally {
