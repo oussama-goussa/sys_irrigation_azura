@@ -208,19 +208,18 @@ class LimitRequestSizeMiddleware(BaseHTTPMiddleware):
             if cl and int(cl) > self.MAX_SIZE:
                 return JSONResponse({"detail": "Requête trop volumineuse"}, status_code=413)
         except (ValueError, TypeError):
-            pass  # header malformé → laisser passer, le streaming détectera
+            pass
 
         body = b""
-        overflow = False
         async for chunk in request.stream():
             body += chunk
             if len(body) > self.MAX_SIZE:
                 return JSONResponse({"detail": "Requête trop volumineuse"}, status_code=413)
 
-        async def receive():
+        async def receive() -> dict:
             return {"type": "http.request", "body": body, "more_body": False}
-        
-        request._receive = receive
+
+        request = Request(request.scope, receive)   # ← recréer la Request avec le bon receive
         return await call_next(request)
 
 app.add_middleware(LimitRequestSizeMiddleware)
