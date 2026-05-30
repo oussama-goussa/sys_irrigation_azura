@@ -67,6 +67,15 @@ export default function App() {
         }
         const { access_token } = await res.json()
         setAccessToken(access_token)
+
+        // ── Décoder le token pour récupérer role + farm_names ──
+        const payload = JSON.parse(atob(access_token.split('.')[1]))
+        setAuth(prev => ({
+          ...prev,
+          role      : payload.role       || prev.role,
+          farm_names: payload.farm_names || prev.farm_names || [],
+        }))        
+
       } catch (e) {
         console.warn('Refresh silencieux échoué:', e)
         clearAccessToken()
