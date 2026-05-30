@@ -69,6 +69,8 @@ export default function App() {
         setAccessToken(access_token)
       } catch (e) {
         console.warn('Refresh silencieux échoué:', e)
+        clearAccessToken()
+        setAuth(null)     // ← ajouter ça dans le catch aussi
       } finally {
         setIsHydrating(false)   // ← débloquer le rendu dans tous les cas
       }

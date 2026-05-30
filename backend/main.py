@@ -244,22 +244,27 @@ app.add_middleware(LimitRequestSizeMiddleware)
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         response = await call_next(request)
-        response.headers["X-Content-Type-Options"] = "nosniff"
+        
+        # Ne pas appliquer les headers restrictifs sur les exports
+        is_export = "/export" in request.url.path
+        
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=()"
-        # CSP corrigée : autorise les fonts Google et CDN utilisés par le frontend
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-            "font-src 'self' https://fonts.gstatic.com data:; "
-            "img-src 'self' data: blob:; "
-            "connect-src 'self'; "
-            "frame-ancestors 'none';"
-        )
-        return response   
+        
+        if not is_export:
+            response.headers["X-Content-Type-Options"] = "nosniff"
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                "font-src 'self' https://fonts.gstatic.com data:; "
+                "img-src 'self' data: blob:; "
+                "connect-src 'self'; "
+                "frame-ancestors 'none';"
+            )
+        return response  
 
 app.add_middleware(SecurityHeadersMiddleware)
 

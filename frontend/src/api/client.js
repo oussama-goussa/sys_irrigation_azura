@@ -191,8 +191,13 @@ export async function exportCSV(token) {
   const a = document.createElement('a')
   a.href = url
   a.download = 'liste_utilisateurs.xlsx'
+  a.style.display = 'none'
+  document.body.appendChild(a)
   a.click()
-  URL.revokeObjectURL(url)
+  setTimeout(() => {
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }, 1000)
 }
 
 // ── Devices ───────────────────────────────────────────────────
@@ -242,16 +247,21 @@ export async function exportDeviceCSV(token, deviceId, dateFrom, dateTo, filenam
   if (dateFrom) params.append('date_from', dateFrom)
   if (dateTo)   params.append('date_to',   dateTo)
   const res = await fetchWithRefresh(`${BASE}/api/devices/${deviceId}/export?${params}`, {
-    headers: { Authorization: `Bearer ${getAccessToken()}` },
+    headers: { Authorization: `Bearer ${token}` },
   })
-  if (!res.ok) throw new Error('Erreur export CSV')
+  if (!res.ok) throw new Error('Erreur export')
   const blob = await res.blob()
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
   a.download = filename
+  a.style.display = 'none'
+  document.body.appendChild(a)
   a.click()
-  URL.revokeObjectURL(url)
+  setTimeout(() => {
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }, 1000)
 }
 
 /** Alertes actives d'un device */

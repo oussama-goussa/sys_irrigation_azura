@@ -556,6 +556,7 @@ export default function ExportModal({ auth, farms, C, dark, onClose, isMobile, i
       });
       const res = await fetch(`/api/export/saisie?${params}`, {
         headers: { Authorization: `Bearer ${getAccessToken()}` },
+        credentials: 'include',
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -566,8 +567,13 @@ export default function ExportModal({ auth, farms, C, dark, onClose, isMobile, i
       const a = document.createElement("a");
       a.href = url;
       a.download = `suivi_irrigation_${dateFrom}_${dateTo}.xlsx`;
+      a.style.display = 'none';
+      document.body.appendChild(a);   // ← dans le DOM
       a.click();
-      URL.revokeObjectURL(url);
+      setTimeout(() => {               // ← délai avant revoke
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 1000);
       onClose();
     } catch (e) {
       setError(e.message);
