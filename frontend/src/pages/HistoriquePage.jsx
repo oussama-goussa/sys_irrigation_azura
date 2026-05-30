@@ -1546,7 +1546,7 @@ export default function HistoriquePage({ auth, C, dark }) {
       )}
       {editingSaisie && (
         <EditModal saisie={editingSaisie} token={getAccessToken()} farms={farms}
-          onSaved={() => load(pageRef.current)} onClose={() => setEditingSaisie(null)} 
+          onSaved={() => load(page)} onClose={() => setEditingSaisie(null)} 
           C={C} dark={dark}
           readOnly={auth?.role === 'auditeur'}
         />

@@ -436,7 +436,8 @@ def update_saisie(
     db.commit()
     db.refresh(saisie)
 
-    logger.info(f"Saisie {saisie_id} mise à jour par {user['username']}")
+    log_action(db, user["username"], "UPDATE_SAISIE",
+            detail=f"Saisie {saisie_id} — {saisie.farm_name} {saisie.date} — {len(body.tours)} tours")
     return {
         "message"  : f"Saisie {saisie_id} mise à jour ✅",
         "saisie_id": saisie.id,
