@@ -19,7 +19,14 @@ from models.sensor_model import (
 )
 
 # ── Configuration Celery ─────────────────────────────────────
-REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+import urllib.parse
+
+_redis_password = os.getenv("REDIS_PASSWORD", "")
+if _redis_password:
+    _pwd = urllib.parse.quote(_redis_password, safe="")
+    REDIS_URL = os.getenv("REDIS_URL", f"redis://:{_pwd}@redis:6379/0")
+else:
+    REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 
 app = Celery(
     "azura_tasks",
