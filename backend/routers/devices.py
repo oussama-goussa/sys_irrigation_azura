@@ -696,13 +696,17 @@ def export_history_excel(
 
     output = BytesIO()
     wb.save(output)
-    output.seek(0)
+    excel_bytes = output.getvalue()
 
     filename = f"{device.farm_name}_Station{device.house_number}_{date_from}_{date_to}.xlsx"
-    return StreamingResponse(
-        output,
+    from fastapi.responses import Response
+    return Response(
+        content=excel_bytes,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": str(len(excel_bytes)),
+        },
     )
 
 # ── GET /api/devices/{id}/alerts — Alertes actives ───────────

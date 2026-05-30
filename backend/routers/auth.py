@@ -391,13 +391,16 @@ def export_csv(
     current_user: dict    = Depends(require_admin),
     db          : Session = Depends(get_db)
 ):
-    from io import BytesIO
     data = export_users_excel(db)
     log_action(db, current_user["username"], "EXPORT_CSV", ip=req.client.host)
-    return StreamingResponse(
-        BytesIO(data),
-        media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers    = {"Content-Disposition": "attachment; filename=liste_utilisateurs.xlsx"}
+    from fastapi.responses import Response
+    return Response(
+        content=data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": "attachment; filename=liste_utilisateurs.xlsx",
+            "Content-Length": str(len(data)),
+        },
     )
 
 
