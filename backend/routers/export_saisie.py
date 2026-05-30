@@ -218,7 +218,7 @@ def build_excel(saisies_with_tours: list) -> BytesIO:
             for col, val in enumerate([date_val, saisie["farm_name"], saisie["station"],
                                         saisie["serre"], saisie["vanne"]], start=1):
                 sz = 11 if col <= 5 else 10
-                _set(ws, r, col, val, bold=True, size=sz)
+                _set(ws, r, col, val, bold=True, size=sz, border=_border_thin())
                 if col == 1 and isinstance(val, (date, datetime)):
                     ws.cell(r, col).number_format = "dd/mm/yyyy"
 
@@ -250,7 +250,7 @@ def build_excel(saisies_with_tours: list) -> BytesIO:
                     if ti < len(tours):
                         val = tour_value(idx, tours[ti])
                     cell = _set(ws, r, col, val, fill_hex=data_fill, bold=True, size=10,
-                                border=_border_thin() if data_fill else None)
+                                border=_border_thin())
                     if val is not None:
                         if is_time:
                             ws.cell(r, col).number_format = "hh:mm"
@@ -263,7 +263,7 @@ def build_excel(saisies_with_tours: list) -> BytesIO:
             if aa_label:
                 # AA label
                 _set(ws, r, 27, aa_label, fill_hex=ORANGE, bold=True, size=11,
-                     border=_border_thin())
+                     border=_border_label())
                 # AB value
                 ab_val = sum_map.get(aa_label)
                 ab_fmt = None
