@@ -4,7 +4,7 @@
 // ============================================================
 
 import React, { useState, useEffect, useRef } from "react";
-import { getAccessToken } from '../api/client.js'
+import { getAccessToken, exportSaisieExcel } from '../api/client.js'
 
 import { createPortal } from "react-dom";
 import {
@@ -549,34 +549,10 @@ export default function ExportModal({ auth, farms, C, dark, onClose, isMobile, i
     setExporting(true);
     setError("");
     try {
-      const params = new URLSearchParams({
-        farm_names: selectedFarms.join(","),
-        date_from: dateFrom,
-        date_to: dateTo,
-      });
-      const res = await fetch(`/api/export/saisie?${params}`, {
-        headers: { Authorization: `Bearer ${getAccessToken()}` },
-        credentials: 'include',
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `Erreur ${res.status}`);
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `suivi_irrigation_${dateFrom}_${dateTo}.xlsx`;
-      a.style.display = 'none';
-      document.body.appendChild(a);   // ← dans le DOM
-      a.click();
-      setTimeout(() => {               // ← délai avant revoke
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 1000);
+      await exportSaisieExcel(selectedFarms, dateFrom, dateTo);
       onClose();
     } catch (e) {
-      setError(e.message);
+      setError(e.message || "Erreur lors de l'export");
     } finally {
       setExporting(false);
     }

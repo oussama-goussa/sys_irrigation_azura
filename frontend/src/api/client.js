@@ -412,3 +412,55 @@ export async function resolveDeviceAlert(token, deviceId, alertId) {
     if (!res.ok) throw new Error('Erreur résolution alerte')
     return res.json()
 }
+// ── Helper téléchargement blob ────────────────────────────────
+function _triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.style.display = 'none'
+  document.body.appendChild(a)
+  a.click()
+  setTimeout(() => {
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }, 1500)
+}
+
+// ── Export saisie Excel (centralisé, avec refresh auto) ───────
+export async function exportSaisieExcel(farmNames, dateFrom, dateTo) {
+  const params = new URLSearchParams({
+    farm_names: farmNames.join(','),
+    date_from: dateFrom,
+    date_to: dateTo,
+  })
+
+  // AbortController pour timeout de 60 secondes
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 60000)
+
+  let res
+  try {
+    res = await fetchWithRefresh(`${BASE}/api/export/saisie?${params}`, {
+      headers: { Authorization: `Bearer ${_memoryToken}` },
+      signal: controller.signal,
+    })
+  } finally {
+    clearTimeout(timeoutId)
+  }
+
+  if (!res.ok) {
+    // Essayer de lire le message d'erreur JSON
+    let detail = `Erreur ${res.status}`
+    try {
+      const err = await res.json()
+      detail = err.detail || detail
+    } catch { /* body pas JSON */ }
+    throw new Error(detail)
+  }
+
+  const blob = await res.blob()
+  if (blob.size === 0) throw new Error('Fichier vide reçu du serveur')
+
+  _triggerDownload(blob, `suivi_irrigation_${dateFrom}_${dateTo}.xlsx`)
+}

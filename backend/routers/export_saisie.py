@@ -356,12 +356,33 @@ async def export_saisie_excel(
         for s in saisies
     ]
 
-    # ── Build and stream ─────────────────────────────────────
-    excel_buffer = build_excel(saisies_with_tours)
+    # ── Build Excel dans un thread (openpyxl bloque l'event loop) ──
+    import asyncio
+    from functools import partial
+    from loguru import logger
+
+    loop = asyncio.get_event_loop()
+    try:
+        excel_buffer = await loop.run_in_executor(
+            None, partial(build_excel, saisies_with_tours)
+        )
+    except Exception as e:
+        logger.error(f"Erreur build_excel : {e}")
+        raise HTTPException(500, f"Erreur génération Excel : {str(e)}")
+
     filename = f"suivi_irrigation_{date_from}_{date_to}.xlsx"
 
-    return StreamingResponse(
-        excel_buffer,
+    # Lire tout le contenu en bytes pour éviter les problèmes de streaming
+    excel_bytes = excel_buffer.read()
+    if not excel_bytes:
+        raise HTTPException(500, "Fichier Excel vide généré")
+
+    from fastapi.responses import Response
+    return Response(
+        content=excel_bytes,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": str(len(excel_bytes)),
+        },
     )
