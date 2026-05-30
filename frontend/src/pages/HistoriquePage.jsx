@@ -888,8 +888,8 @@ function EditModal({ saisie, farms, onSaved, onClose, C, dark, readOnly = false 
         },
       }
       await updateSaisie(getAccessToken(), saisie.id, payload)
-      onSaved()
       onClose()
+      onSaved()
     } catch (e) {
       try {
         const parsed = JSON.parse(e.message)
@@ -1418,7 +1418,7 @@ export default function HistoriquePage({ auth, C, dark }) {
         if (auth.role === 'admin') { setAllowedFarms(null); allowedFarmsRef.current = null }
         else { const fb = Array.isArray(auth.farm_names) ? auth.farm_names : []; setAllowedFarms(fb); allowedFarmsRef.current = fb }
       })
-  }, [getAccessToken()])
+  }, [auth?.username])
 
   // load est une fonction normale (pas useCallback) pour éviter les stale closures
   // Elle reçoit allowedFarms en paramètre direct
@@ -1546,7 +1546,7 @@ export default function HistoriquePage({ auth, C, dark }) {
       )}
       {editingSaisie && (
         <EditModal saisie={editingSaisie} token={getAccessToken()} farms={farms}
-          onSaved={() => load(page)} onClose={() => setEditingSaisie(null)} 
+          onSaved={() => load(pageRef.current)} onClose={() => setEditingSaisie(null)} 
           C={C} dark={dark}
           readOnly={auth?.role === 'auditeur'}
         />
