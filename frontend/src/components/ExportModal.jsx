@@ -4,7 +4,7 @@
 // ============================================================
 
 import React, { useState, useEffect, useRef } from "react";
-import { getAccessToken, exportSaisieExcel } from '../api/client.js'
+import { getAccessToken } from '../api/client.js'
 
 import { createPortal } from "react-dom";
 import {
@@ -521,11 +521,23 @@ export default function ExportModal({ auth, farms, C, dark, onClose, isMobile, i
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Fermes autorisées
+  // Charger les fermes si le prop farms est vide
+  const [loadedFarms, setLoadedFarms] = useState(farms || []);
+  useEffect(() => {
+    if (!farms || farms.length === 0) {
+      getFarms(getAccessToken())
+        .then(data => setLoadedFarms(Array.isArray(data) ? data : []))
+        .catch(() => setLoadedFarms([]));
+    } else {
+      setLoadedFarms(farms);
+    }
+  }, [farms]);
+
+  // Fermes autorisées — robuste si farms vide ou undefined
   const isAdmin = auth?.role === "admin";
   const allowedFarms = isAdmin
-    ? farms.map((f) => f.farm_name)
-    : auth?.farm_names || [];
+    ? (loadedFarms || []).filter(Boolean).map((f) => f?.farm_name || f).filter(Boolean)
+    : (auth?.farm_names || []);
 
   const toggleFarm = (name) => {
     setSelectedFarms((prev) =>
@@ -549,10 +561,34 @@ export default function ExportModal({ auth, farms, C, dark, onClose, isMobile, i
     setExporting(true);
     setError("");
     try {
-      await exportSaisieExcel(selectedFarms, dateFrom, dateTo);
+      const params = new URLSearchParams({
+        farm_names: selectedFarms.join(","),
+        date_from: dateFrom,
+        date_to: dateTo,
+      });
+      const res = await fetch(`/api/export/saisie?${params}`, {
+        headers: { Authorization: `Bearer ${getAccessToken()}` },
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Erreur ${res.status}`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `suivi_irrigation_${dateFrom}_${dateTo}.xlsx`;
+      a.style.display = 'none';
+      document.body.appendChild(a);   // ← dans le DOM
+      a.click();
+      setTimeout(() => {               // ← délai avant revoke
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 1000);
       onClose();
     } catch (e) {
-      setError(e.message || "Erreur lors de l'export");
+      setError(e.message);
     } finally {
       setExporting(false);
     }
