@@ -101,7 +101,7 @@ def build_excel(saisies_with_tours: list) -> BytesIO:
 
     # ── Header row ───────────────────────────────────────────
     header_fill   = _fill(DARK_HEADER)
-    header_font   = _font(bold=True, size=11, color="FFFFFFFF")
+    header_font   = _font(bold=True, size=10, color="FFFFFFFF")
     header_border = _border_thin()
 
     for col, label in enumerate(["Date", "Ferme", "Station", "Serre", "Vanne"], start=1):
