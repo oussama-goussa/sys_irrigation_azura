@@ -16,7 +16,7 @@ from openpyxl.utils import get_column_letter
 from models.saisie_model import SaisieJournaliere
 
 from core.database import get_db
-from routers.auth import get_current_user
+from core.security import get_current_user
 
 router = APIRouter(prefix="/api/export", tags=["Export"])
 
