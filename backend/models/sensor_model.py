@@ -278,7 +278,6 @@ class Alert(Base):
             "severity"      : self.severity,
             "message"       : self.message,
             "resolved_at"   : str(self.resolved_at) if self.resolved_at else None,
-            "resolved_by"   : self.resolved_by,
         }
 
 # ── TABLE 6 : alert_thresholds ───────────────────────────────
