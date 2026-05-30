@@ -91,7 +91,7 @@ def build_excel(saisies_with_tours: list) -> BytesIO:
     ws.column_dimensions["A"].width = 20.0
     ws.column_dimensions["B"].width = 9.66
     ws.column_dimensions["C"].width = 9.0
-    ws.column_dimensions["D"].width = 9.0
+    ws.column_dimensions["D"].width = 13.0
     ws.column_dimensions["E"].width = 9.22
     ws.column_dimensions["F"].width = 25.11
     for i in range(7, 27):   # G to Z
@@ -127,32 +127,29 @@ def build_excel(saisies_with_tours: list) -> BytesIO:
     ws.row_dimensions[1].height = 18
 
     # ── Row layout definition ─────────────────────────────────
-    # (label, label_fill, data_fill, aa_label, is_time, is_pct)
+    # (idx, label, label_fill, data_fill, aa_label, is_time, is_pct, saisie_only)
+    # saisie_only=True → valeur écrite uniquement en col G (pas répétée sur les tours)
     ROW_DEF = [
-        # idx, label,              label_fill,  data_fill,  aa_label,               is_time, is_pct
-        (0,  "Radiation",          GREEN_LIGHT, GREEN_LIGHT, None,                   False, False),
-        (1,  "Cumul Radiation",    GREEN_LIGHT, GREEN_LIGHT, None,                   False, False),
-        (2,  "Heure",              GREEN_MED,   None,        "Nombre De Bras",       True,  False),
-        (3,  "Durée (min)",        GREEN_MED,   None,        "Nombre de Goutteurs",  True,  False),
-        (4,  "Temps Repos (min)",  GREEN_MED,   None,        "Durée totale",         True,  False),
-        (5,  "V Apport (cc)",      GREEN_MED,   None,        "EC Bassin",            False, False),
-        (6,  "EC Apport",          GREEN_MED,   None,        "Total V Apport",       False, False),
-        (7,  "pH Apport",          GREEN_MED,   None,        "EC cumul apport",      False, False),
-        (8,  "V Drainage (cc)",    GREEN_MED,   None,        "PH cumul apport",      False, False),
-        (9,  "% Drainage",         GREEN_MED,   ORANGE,      "Total V Drainage",     False, True),
-        (10, "Moyenne % Drainage", GREEN_MED,   ORANGE,      "Moyenne % drainage",   False, True),
-        (11, "EC Drainage",        GREEN_MED,   None,        "EC cumul drainage",    False, False),
-        (12, "pH Drainage",        GREEN_MED,   None,        "PH cumul Drainage",    False, False),
-        (13, "Heure Matin",        ORANGE,      ORANGE,      "CC/bras consommé",     True,  False),
-        (14, "Heure Soir",         ORANGE,      ORANGE,      "Nombre des tours",     True,  False),
-        (15, "% Ressuyage",        ORANGE,      ORANGE,      None,                   False, True),
-        (16, "Poids Matin (Kg)",   ORANGE,      ORANGE,      None,                   False, False),
-        (17, "Poids Soir (Kg)",    ORANGE,      ORANGE,      None,                   False, False),
-        (18, "EC Bassin",          ORANGE,      ORANGE,      None,                   False, False),
+        (0,  "Radiation",          GREEN_LIGHT, GREEN_LIGHT, "Nombre De Bras",       False, False, False),
+        (1,  "Cumul Radiation",    GREEN_LIGHT, GREEN_LIGHT, "Nombre de Goutteurs",  False, False, False),
+        (2,  "Heure",              GREEN_MED,   None,        "Durée totale",         True,  False, False),
+        (3,  "Durée (min)",        GREEN_MED,   None,        "EC Bassin",            True,  False, False),
+        (4,  "Temps Repos (min)",  GREEN_MED,   None,        "Total V Apport",       True,  False, False),
+        (5,  "V Apport (cc)",      GREEN_MED,   None,        "EC cumul apport",      False, False, False),
+        (6,  "EC Apport",          GREEN_MED,   None,        "PH cumul apport",      False, False, False),
+        (7,  "pH Apport",          GREEN_MED,   None,        "Total V Drainage",     False, False, False),
+        (8,  "V Drainage (cc)",    GREEN_MED,   None,        "Moyenne % drainage",   False, False, False),
+        (9,  "% Drainage",         GREEN_MED,   None,        "EC cumul drainage",    False, True,  False),
+        (10, "Moyenne % Drainage", GREEN_MED,   None,        "PH cumul Drainage",    False, True,  False),
+        (11, "EC Drainage",        GREEN_MED,   None,        "CC/bras consommé",     False, False, False),
+        (12, "pH Drainage",        GREEN_MED,   None,        "Nombre des tours",     False, False, False),
+        (13, "Heure Matin",        ORANGE,      ORANGE,      None,                   True,  False, True),
+        (14, "Heure Soir",         ORANGE,      ORANGE,      None,                   True,  False, True),
+        (15, "% Ressuyage",        ORANGE,      ORANGE,      None,                   False, True,  True),
+        (16, "Poids Matin (Kg)",   ORANGE,      ORANGE,      None,                   False, False, True),
+        (17, "Poids Soir (Kg)",    ORANGE,      ORANGE,      None,                   False, False, True),
+        (18, "EC Bassin",          ORANGE,      ORANGE,      None,                   False, False, True),
     ]
-
-    # Summary labels order (rows 2→4, 5→13 of each block mapped to AA/AB)
-    # AA label appears only when aa_label is set in ROW_DEF above
 
     current_row = 2
 
@@ -205,7 +202,7 @@ def build_excel(saisies_with_tours: list) -> BytesIO:
             return m.get(row_idx)
 
         for rd in ROW_DEF:
-            idx, label, label_fill, data_fill, aa_label, is_time, is_pct = rd
+            idx, label, label_fill, data_fill, aa_label, is_time, is_pct, saisie_only = rd
             r = current_row + idx
 
             ws.row_dimensions[r].height = 15
@@ -223,28 +220,44 @@ def build_excel(saisies_with_tours: list) -> BytesIO:
                 sz = 11 if col <= 5 else 10
                 _set(ws, r, col, val, bold=True, size=sz)
                 if col == 1 and isinstance(val, (date, datetime)):
-                    ws.cell(r, col).number_format = "DD/MM/YYYY"
+                    ws.cell(r, col).number_format = "dd/mm/yyyy"
 
             # F: label
             _set(ws, r, 6, label, fill_hex=label_fill, bold=True, size=10,
                  border=_border_label())
 
             # G-Z: tour data
-            time_fmt = "HH:MM" if is_time else ("0%" if is_pct else "0.00")
-            for ti in range(20):
-                col = 7 + ti
-                val = None
-                if ti < len(tours):
-                    val = tour_value(idx, tours[ti])
-                cell = _set(ws, r, col, val, fill_hex=data_fill, bold=True, size=10,
+            if saisie_only:
+                # Écrire uniquement en col G (valeur de la saisie, pas par tour)
+                val = tour_value(idx, tours[0] if tours else {})
+                cell = _set(ws, r, 7, val, fill_hex=data_fill, bold=True, size=10,
                             border=_border_thin() if data_fill else None)
                 if val is not None:
                     if is_time:
-                        ws.cell(r, col).number_format = "HH:MM"
+                        ws.cell(r, 7).number_format = "hh:mm"
                     elif is_pct:
-                        ws.cell(r, col).number_format = "0%"
+                        ws.cell(r, 7).number_format = "0%"
                     else:
-                        ws.cell(r, col).number_format = "0.00"
+                        ws.cell(r, 7).number_format = "0.00"
+                # Cols H-Z vides mais avec fill si data_fill
+                for ti in range(1, 20):
+                    col = 7 + ti
+                    _set(ws, r, col, None, fill_hex=None, bold=True, size=10)
+            else:
+                for ti in range(20):
+                    col = 7 + ti
+                    val = None
+                    if ti < len(tours):
+                        val = tour_value(idx, tours[ti])
+                    cell = _set(ws, r, col, val, fill_hex=data_fill, bold=True, size=10,
+                                border=_border_thin() if data_fill else None)
+                    if val is not None:
+                        if is_time:
+                            ws.cell(r, col).number_format = "hh:mm"
+                        elif is_pct:
+                            ws.cell(r, col).number_format = "0%"
+                        else:
+                            ws.cell(r, col).number_format = "0.00"
 
             # AA / AB: summary
             if aa_label:
@@ -255,7 +268,7 @@ def build_excel(saisies_with_tours: list) -> BytesIO:
                 ab_val = sum_map.get(aa_label)
                 ab_fmt = None
                 if aa_label == "Durée totale" and isinstance(ab_val, type(datetime.now().time())):
-                    ab_fmt = "HH:MM"
+                    ab_fmt = "hh:mm"
                 elif aa_label == "Moyenne % drainage" and ab_val is not None:
                     ab_fmt = "0%"
                 c = _set(ws, r, 28, ab_val, fill_hex=None, bold=True, size=11,
