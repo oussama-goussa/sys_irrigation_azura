@@ -139,7 +139,7 @@ class UpdateRoleRequest(BaseModel):
 
 # ── POST /api/auth/login ──────────────────────────────────────
 @router.post("/login", response_model=TokenResponse)
-@limiter.limit("5/minute")
+@limiter.limit("15/minute")
 def login(
     request : Request,
     form    : OAuth2PasswordRequestForm = Depends(),

@@ -61,8 +61,10 @@ export default function App() {
           credentials: 'include',
         })
         if (!res.ok) {
-          clearAccessToken()
-          setAuth(null)
+          if (res.status === 401 || res.status === 403) {
+            clearAccessToken()
+            setAuth(null)
+          }
           return
         }
         const { access_token } = await res.json()
