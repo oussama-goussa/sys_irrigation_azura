@@ -216,7 +216,7 @@ def build_excel(saisies_with_tours: list) -> BytesIO:
 
             for col, val in enumerate([date_val, saisie["farm_name"], saisie["station"],
                                         saisie["serre"], saisie["vanne"]], start=1):
-                sz = 11 if col <= 5 else 10
+                sz = 10
                 _set(ws, r, col, val, bold=True, size=sz, border=_border_thin())
                 if col == 1 and isinstance(val, (date, datetime)):
                     ws.cell(r, col).number_format = "dd/mm/yyyy"
@@ -268,7 +268,7 @@ def build_excel(saisies_with_tours: list) -> BytesIO:
                 else:
                     aa_border = _border_label()
                     ab_border = _border_thin()
-                _set(ws, r, 27, aa_label, fill_hex=ORANGE, bold=True, size=11,
+                _set(ws, r, 27, aa_label, fill_hex=ORANGE, bold=True, size=10,
                      border=aa_border)
                 # idx=10 (PH cumul Drainage): AA border = T+R seulement (pas B)
                 if idx == 10:
@@ -281,7 +281,7 @@ def build_excel(saisies_with_tours: list) -> BytesIO:
                     ab_fmt = "hh:mm"
                 elif aa_label == "Moyenne % drainage" and ab_val is not None:
                     ab_fmt = "0%"
-                c = _set(ws, r, 28, ab_val, fill_hex=None, bold=True, size=11,
+                c = _set(ws, r, 28, ab_val, fill_hex=None, bold=True, size=10,
                          border=ab_border)
                 if ab_fmt:
                     c.number_format = ab_fmt
