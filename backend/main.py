@@ -133,6 +133,26 @@ def run_migrations():
                 AND resolved_at IS NULL
                 AND value_detected < 1200
             """))
+            conn.execute(text("""
+                UPDATE alerts SET threshold_max = 2000
+                WHERE alert_type = 'RADIATION_SUM' AND severity = 'WARNING'
+                AND threshold_max IS NULL
+            """))
+            conn.execute(text("""
+                UPDATE alerts SET threshold_max = 3000
+                WHERE alert_type = 'RADIATION_SUM' AND severity = 'CRITICAL'
+                AND threshold_max IS NULL
+            """))
+            conn.execute(text("""
+                UPDATE alerts SET threshold_max = 900
+                WHERE alert_type = 'RADIATION' AND severity = 'WARNING'
+                AND threshold_max IS NULL
+            """))
+            conn.execute(text("""
+                UPDATE alerts SET threshold_max = 700
+                WHERE alert_type = 'RADIATION' AND severity = 'INFO'
+                AND threshold_max IS NULL
+            """))
             conn.commit()
         logger.success("Migrations appliquées ✅")
     except Exception as e:

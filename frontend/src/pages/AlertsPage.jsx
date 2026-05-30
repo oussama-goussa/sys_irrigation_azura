@@ -826,7 +826,7 @@ function AlertCard({ alert, expanded, onToggle, onResolve, C, dark, isMobile }) 
                                     : '—', 
                                 color: sev.color 
                             },
-                            ...(['OFFLINE', 'ALARM'].includes(alert.alert_type?.toUpperCase()) ? [] : [
+                            ...(['OFFLINE', 'ALARM', 'FERT_SILENT'].includes(alert.alert_type?.toUpperCase()) ? [] : [
                                 { label: 'Seuil min', value: alert.threshold_min != null ? `${alert.threshold_min} ${cfg.unit}` : '—' },
                                 { label: 'Seuil max', value: alert.threshold_max != null ? `${alert.threshold_max} ${cfg.unit}` : '—' },
                             ]),
