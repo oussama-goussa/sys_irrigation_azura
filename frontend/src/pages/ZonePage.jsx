@@ -907,9 +907,10 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
     const iv = setInterval(() => {
       if (!isZoomedRef.current) loadChartData()
       if (isHistoryTodayRef.current) loadHistory(pageRef.current)
+      loadWeightData()
     }, 30_000)
     return () => clearInterval(iv)
-  }, [isToday, loadChartData, loadHistory])
+  }, [isToday, loadChartData, loadHistory, loadWeightData])
 
   useEffect(() => {
     loadHistory(1)
