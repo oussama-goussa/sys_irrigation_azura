@@ -273,9 +273,12 @@ class Alert(Base):
             "timestamp"     : str(self.timestamp),
             "alert_type"    : self.alert_type,
             "value_detected": self.value_detected,
+            "threshold_min" : self.threshold_min,
+            "threshold_max" : self.threshold_max,
             "severity"      : self.severity,
             "message"       : self.message,
             "resolved_at"   : str(self.resolved_at) if self.resolved_at else None,
+            "resolved_by"   : self.resolved_by,
         }
 
 # ── TABLE 6 : alert_thresholds ───────────────────────────────
