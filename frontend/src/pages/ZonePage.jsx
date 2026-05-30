@@ -989,6 +989,8 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
         getAccessToken(), deviceId, dateFrom, dateTo,
         `${deviceInfo.farm_name}_Station${deviceInfo.house_number}_${dateFrom}_${dateTo}.xlsx`
       )
+    } catch (e) {
+      console.error('Export error:', e)
     } finally {
       setExporting(false)
     }

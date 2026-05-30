@@ -15,9 +15,7 @@ let refreshPromise = null
 let isRefreshing = false
 
 async function fetchWithRefresh(url, options = {}, _retryCount = 0) {
-    const getToken = () => _memoryToken
-
-    const freshToken = getToken()
+    const freshToken = _memoryToken
     if (freshToken && !options.headers?.Authorization) {
         options = {
             ...options,
@@ -40,7 +38,7 @@ async function fetchWithRefresh(url, options = {}, _retryCount = 0) {
         if (isRefreshing && refreshPromise) {
             try {
                 await refreshPromise
-                const newToken = getToken()
+                const newToken = _memoryToken
                 options = { ...options, headers: { ...options.headers, Authorization: `Bearer ${newToken}` } }
                 return fetch(url, options)
             } catch {
@@ -185,7 +183,7 @@ export async function getAuditLogs(token, username = null, limit = 100) {
 
 export async function exportCSV(token) {
   const res = await fetchWithRefresh(`${BASE}/api/auth/users/export`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${getAccessToken()}` },
   })
   if (!res.ok) throw new Error('Erreur export CSV')
   const blob = await res.blob()
@@ -244,7 +242,7 @@ export async function exportDeviceCSV(token, deviceId, dateFrom, dateTo, filenam
   if (dateFrom) params.append('date_from', dateFrom)
   if (dateTo)   params.append('date_to',   dateTo)
   const res = await fetchWithRefresh(`${BASE}/api/devices/${deviceId}/export?${params}`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${getAccessToken()}` },
   })
   if (!res.ok) throw new Error('Erreur export CSV')
   const blob = await res.blob()
