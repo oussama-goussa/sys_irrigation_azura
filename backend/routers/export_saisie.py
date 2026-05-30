@@ -119,10 +119,9 @@ def build_excel(saisies_with_tours: list) -> BytesIO:
         c.font = _font(bold=True, size=10, color="FFFFFFFF")
         c.fill = header_fill; c.alignment = _align(); c.border = header_border
 
-    # Empty AA/AB header
+    # AA/AB header: vides, sans fill ni border (comme le template)
     for col in [27, 28]:
-        c = ws.cell(row=1, column=col, value="")
-        c.fill = header_fill; c.border = header_border
+        ws.cell(row=1, column=col, value="")
 
     ws.row_dimensions[1].height = 18
 
@@ -261,10 +260,21 @@ def build_excel(saisies_with_tours: list) -> BytesIO:
 
             # AA / AB: summary
             if aa_label:
-                # AA label
+                # Rows 11-12 (CC/bras, Nombre des tours): AA=4 côtés, AB=T+B+R
+                # Rows 0-10: AA=T+B+R (pas L), AB=4 côtés
+                if idx in (11, 12):
+                    aa_border = _border_thin()
+                    ab_border = _border_label()
+                else:
+                    aa_border = _border_label()
+                    ab_border = _border_thin()
                 _set(ws, r, 27, aa_label, fill_hex=ORANGE, bold=True, size=11,
-                     border=_border_label())
-                # AB value
+                     border=aa_border)
+                # idx=10 (PH cumul Drainage): AA border = T+R seulement (pas B)
+                if idx == 10:
+                    from openpyxl.styles import Border, Side
+                    s = Side(border_style="thin", color="FF000000")
+                    ws.cell(r, 27).border = Border(top=s, right=s)
                 ab_val = sum_map.get(aa_label)
                 ab_fmt = None
                 if aa_label == "Durée totale" and isinstance(ab_val, type(datetime.now().time())):
@@ -272,13 +282,12 @@ def build_excel(saisies_with_tours: list) -> BytesIO:
                 elif aa_label == "Moyenne % drainage" and ab_val is not None:
                     ab_fmt = "0%"
                 c = _set(ws, r, 28, ab_val, fill_hex=None, bold=True, size=11,
-                         border=_border_thin())
+                         border=ab_border)
                 if ab_fmt:
                     c.number_format = ab_fmt
             else:
-                # Empty AA/AB
-                for col in [27, 28]:
-                    ws.cell(r, col).border = _border_thin()
+                # Rows saisie_only (15-20): AA/AB vides, sans border ni fill
+                pass
 
         current_row += 19
 
