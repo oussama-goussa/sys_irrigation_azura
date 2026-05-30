@@ -585,10 +585,10 @@ def check_and_create_alerts(
             # récupérer depuis FertigationState n'est pas dispo ici,
             # mais ECPreProcess est dans SensorReading
         ]
-        if sr.ec_pre_process is not None and sr.ec_pre_process == 0.0 and flow > 0:
+        if sr.ec_actual is not None and sr.ec_actual == 0.0 and flow > 0:
             create_alert(
                 "FERT_SILENT", 0.0, None, None, "WARNING",
-                f"ECPreProcess = 0 pendant irrigation (débit {flow:.0f} L/h) → injecteurs silencieux ? — {farm_info}",
+                f"EC actual = 0 pendant irrigation (débit {flow:.0f} L/h) → injecteurs silencieux ? — {farm_info}",
                 window_min=15,
             )
         else:
