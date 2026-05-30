@@ -461,11 +461,6 @@ export default function AlertsPage({ token, auth, C, dark }) {
 
     return (
         <div style={{ animation: 'az-fade-up 0.3s ease both' }}>
-            {/* CSS keyframes for toast progress */}
-            <style>{`
-        @keyframes toast-shrink { from { width: 100%; } to { width: 0%; } }
-        @keyframes az-slide-in { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:translateX(0); } }
-      `}</style>
 
             {/* ── Header ──────────────────────────────────────────── */}
             <div style={{
