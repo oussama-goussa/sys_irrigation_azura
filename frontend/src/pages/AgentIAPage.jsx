@@ -43,30 +43,6 @@ export default function AgentIAPage({ dark }) {
             Page en développement — structure vide
           </p>
         </div>
-
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={() => setMode('empty')}
-            style={btnStyle(C)}
-          >
-            Empty
-          </button>
-
-          <button
-            onClick={() => setMode('mock')}
-            style={btnStyle(C)}
-          >
-            Mock
-          </button>
-
-          <button style={btnStyle(C)}>
-            <RefreshCw size={12} />
-          </button>
-
-          <button style={btnStyle(C)}>
-            <Settings size={12} />
-          </button>
-        </div>
       </div>
 
       {/* CONTENT AREA */}
@@ -112,7 +88,6 @@ export default function AgentIAPage({ dark }) {
         fontSize: 11,
         color: C.textDim
       }}>
-        AZ106 · Agent IA irrigation · dev scaffold
       </div>
 
     </div>
