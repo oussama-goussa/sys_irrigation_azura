@@ -6,8 +6,8 @@ import { useState, useEffect } from 'react'
 import {
   Users, UserPlus, Search, X, Check, ShieldCheck,
   UserCheck, UserX, CircleSlash, CircleCheck, Pencil,
-  RefreshCw, Download, History, Mail, Phone,
-  AlertTriangle, Clock, Save, ChevronDown, ChevronUp,  // ← ajouter
+  RefreshCw, Download, History, Mail, Phone, UserRoundPen,
+  AlertTriangle, Clock, Save, ChevronDown, ChevronUp,
 } from 'lucide-react'
 
 import { ROLES, ROLE_OPTIONS, ROLE_CONFIG } from '../theme.js'
@@ -958,7 +958,7 @@ export default function UsersPage({ userRole, C, dark }) {
                       {/* Actions */}
                       <td style={{ padding: '13px 14px', fontFamily: 'inherit' }}>
                         <div style={{ display: 'flex', gap: 6 }}>
-                          <Btn onClick={(e) => { e.stopPropagation(); setEditingUser(u) }} style={{ border: `1px solid ${dark ? '#1c2e22' : '#c0d8c8'}`, background: C.toggleBg }} size={14} variant="ghost" C={C} icon={Pencil}>
+                          <Btn onClick={(e) => { e.stopPropagation(); setEditingUser(u) }} style={{ border: `1px solid ${dark ? '#1c2e22' : '#c0d8c8'}`, background: C.toggleBg }} size={14} variant="ghost" C={C} icon={UserRoundPen}>
                             Modifier
                           </Btn>
                           <Btn onClick={() => { setLogsUser(u.username); setShowLogs(true) }} size={14} variant="ghost" style={{ border: `1px solid ${dark ? '#1c2e22' : '#c0d8c8'}`, background: C.toggleBg }} C={C} icon={History} />
