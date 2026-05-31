@@ -16,7 +16,7 @@ export default function AgentIAPage({ dark }) {
   const [mode, setMode] = useState('empty') // dev switch
 
   return (
-    <div style={{ padding: 20 }}>
+    <div>
 
       {/* HEADER */}
       <div style={{
@@ -36,16 +36,11 @@ export default function AgentIAPage({ dark }) {
             gap: 10
           }}>
             <Brain size={18} color={C.green} />
-            Agent IA Irrigation (DEV)
+            Agent IA Irrigation [DEV]
           </h1>
-
-          <p style={{ fontSize: 12, color: C.textDim }}>
-            Page en développement — structure vide
-          </p>
         </div>
       </div>
 
-      {/* CONTENT AREA */}
       <div style={{
         border: `1px dashed ${C.border}`,
         borderRadius: 12,
@@ -54,58 +49,16 @@ export default function AgentIAPage({ dark }) {
         color: C.textDim,
         minHeight: 300
       }}>
-        
-        {mode === 'empty' && (
-          <>
-            <Brain size={32} color={C.green} />
-            <div style={{ marginTop: 10, fontWeight: 700 }}>
-              Zone IA vide
-            </div>
-            <div style={{ fontSize: 12, marginTop: 5 }}>
-              Ici viendront les cartes : PRT, tours, NPK, recommandations…
-            </div>
-          </>
-        )}
-
-        {mode === 'mock' && (
-          <>
-            <div style={{ fontWeight: 800, marginBottom: 10 }}>
-              Mode MOCK activé
-            </div>
-            <div style={{ fontSize: 12 }}>
-              - PRT: --% <br />
-              - Tours: 0 <br />
-              - Recommandation: en attente <br />
-            </div>
-          </>
-        )}
-
+        <div>
+          <Brain size={32} color={C.green} />
+          <div style={{ marginTop: 10, fontWeight: 700 }}>
+            Zone IA vide
+          </div>
+          <div style={{ fontSize: 12, marginTop: 5 }}>
+            Page en développement...
+          </div>
+        </div>
       </div>
-
-      {/* FOOTER INFO */}
-      <div style={{
-        marginTop: 20,
-        fontSize: 11,
-        color: C.textDim
-      }}>
-      </div>
-
     </div>
   )
-}
-
-// ─── STYLE BUTTON ───────────────────────────────
-function btnStyle(C) {
-  return {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 6,
-    padding: '7px 12px',
-    borderRadius: 8,
-    border: `1px solid ${C.border}`,
-    background: C.toggleBg,
-    color: C.textMuted,
-    fontSize: 12,
-    cursor: 'pointer'
-  }
 }
