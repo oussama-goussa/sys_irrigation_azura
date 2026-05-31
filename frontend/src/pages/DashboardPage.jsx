@@ -106,6 +106,7 @@ function HouseCard({ house, onSelectDevice, C, dark, accentColor, isMobile }) {
         transition: 'border-color 0.2s, transform 0.2s',
         transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
         height: '100%', boxSizing: 'border-box',
+        display: 'flex', flexDirection: 'column',
       }}
     >
       <Sparkline color={accentColor} />
@@ -122,40 +123,41 @@ function HouseCard({ house, onSelectDevice, C, dark, accentColor, isMobile }) {
         <OnlineBadge online={isOnline} dark={dark} C={C} />
       </div>
 
-      {!isOnline ? (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          padding: '14px 0', marginBottom: 16,
-          color: dark ? '#3a5a44' : '#8aaa96', fontSize: 12,
-        }}>
-          <WifiOff size={15} strokeWidth={1.8} color={dark ? '#3a5a44' : '#aac4b4'} />
-          <span>Aucune donnée depuis {lastSeenLabel(house.last_seen_min ?? house.minutes_since_last ?? null, house.last_sync ?? house.updated_at ?? house.last_timestamp ?? null)}</span>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-          {[
-            { label: 'EC Apport', value: ec, unit: 'mS/cm', color: '#34d96f' },
-            { label: 'pH Apport', value: ph, unit: '', color: '#4d9de0' },
-            { label: 'Temp Serre', value: temp, unit: '°C', color: '#f5a623' },
-            { label: 'Hum Serre', value: hum, unit: '%', color: '#b197fc' },
-          ].map(m => (
-            <div key={m.label} style={{
-              background: dark ? '#0d1610' : '#f0f8f3',
-              border: `1px solid ${dark ? '#162418' : '#c0deca'}`,
-              borderRadius: 10, padding: isMobile ? '10px 12px' : '14px 16px',
-            }}>
-              <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.12em', color: dark ? '#3a5a44' : '#4a7a5a', marginBottom: 4 }}>
-                {m.label}
+      <div style={{ flex: 1 }}>
+        {!isOnline ? (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '14px 0', marginBottom: 16,
+            color: dark ? '#3a5a44' : '#8aaa96', fontSize: 12,
+          }}>
+            <WifiOff size={15} strokeWidth={1.8} color={dark ? '#3a5a44' : '#aac4b4'} />
+            <span>Aucune donnée depuis {lastSeenLabel(house.last_seen_min ?? house.minutes_since_last ?? null, house.last_sync ?? house.updated_at ?? house.last_timestamp ?? null)}</span>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+            {[
+              { label: 'EC Apport', value: ec, unit: 'mS/cm', color: '#34d96f' },
+              { label: 'pH Apport', value: ph, unit: '', color: '#4d9de0' },
+              { label: 'Temp Serre', value: temp, unit: '°C', color: '#f5a623' },
+              { label: 'Hum Serre', value: hum, unit: '%', color: '#b197fc' },
+            ].map(m => (
+              <div key={m.label} style={{
+                background: dark ? '#0d1610' : '#f0f8f3',
+                border: `1px solid ${dark ? '#162418' : '#c0deca'}`,
+                borderRadius: 10, padding: isMobile ? '10px 12px' : '14px 16px',
+              }}>
+                <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.12em', color: dark ? '#3a5a44' : '#4a7a5a', marginBottom: 4 }}>
+                  {m.label}
+                </div>
+                <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 630, letterSpacing: '-0.02em', color: m.color }}>
+                  {m.value}
+                  {m.unit && <span style={{ fontSize: 11, fontWeight: 400, color: C.textDim, marginLeft: 3 }}>{m.unit}</span>}
+                </div>
               </div>
-              <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 630, letterSpacing: '-0.02em', color: m.color }}>
-                {m.value}
-                {m.unit && <span style={{ fontSize: 11, fontWeight: 400, color: C.textDim, marginLeft: 3 }}>{m.unit}</span>}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
+            ))}
+          </div>
+        )}
+      </div>
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         paddingTop: 14, borderTop: `1px solid ${dark ? '#162418' : '#e0ece4'}`,
