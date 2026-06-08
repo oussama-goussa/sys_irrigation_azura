@@ -28,6 +28,7 @@ from models.sensor_model import Device, SensorReading
 from models.ai_recommendation_model import (
     AIRecommandation, AIConfigDevice, AIDecisionTour
 )
+from agent.decision_agent import FEATURES_MATIN, predict_matin, predict_tour
 
 # ════════════════════════════════════════════════════════════════
 # CONSTANTES
@@ -38,18 +39,6 @@ MODELS_DIR = Path(__file__).resolve().parent.parent / "models_xgboost"
 # Coordonnées Agadir (par défaut)
 DEFAULT_LAT = 30.4202
 DEFAULT_LON = -9.5981
-
-# Features du modèle Matin (21 features)
-FEATURES_MATIN = [
-    "meteo_T_max_C", "meteo_T_min_C", "meteo_T_mean_C",
-    "meteo_HR_max_pct", "meteo_HR_min_pct", "meteo_HR_mean_pct",
-    "meteo_VPD_max_kPa", "meteo_ET0_mm_jour",
-    "meteo_shortwave_radiation_sum", "meteo_pluie_mm_jour",
-    "meteo_vent_max_kmh", "meteo_rs_wm2_max_jour",
-    "opt_Kc", "opt_jours_depuis_plantation", "opt_FL",
-    "ec_bassin", "moy_pct_drainage", "ec_cumul_drainage",
-    "alerte_chergui", "alerte_pluie", "alerte_brouillard", "alerte_vpd_stress",
-]
 
 # ════════════════════════════════════════════════════════════════
 # SINGLETON — Modèles chargés en mémoire
@@ -892,7 +881,6 @@ def generer_recommandation_matin(
         modeles_matin, enc_matin, _, _ = _get_modeles()
 
         # Construire le DataFrame d'entrée
-        from agent.decision_agent import FEATURES_MATIN, predict_matin
         df_pred = pd.DataFrame([features])
         for col in FEATURES_MATIN:
             if col not in df_pred.columns:
@@ -1230,7 +1218,6 @@ def generer_recommandation_historique_device(
 
                 # Prédire
                 modeles_matin, enc_matin, _, _ = _get_modeles()
-                from agent.decision_agent import predict_matin
                 consignes = predict_matin(
                     donnees       = features,
                     modeles_matin = modeles_matin,
@@ -1526,8 +1513,6 @@ def generer_decision_tour(
 
         # Si drainage dispo → prédire
         _, _, modeles_tour, enc_tour = _get_modeles()
-        from agent.decision_agent import predict_tour
-
         decision = predict_tour(donnees_tour, modeles_tour, enc_tour)
 
         # Sauvegarder
