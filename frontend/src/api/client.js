@@ -464,3 +464,17 @@ export async function exportSaisieExcel(farmNames, dateFrom, dateTo) {
 
   _triggerDownload(blob, `suivi_irrigation_${dateFrom}_${dateTo}.xlsx`)
 }
+
+// ── Agent IA ──────────────────────────────────────────────────
+
+/** Recommandation IA pour un device à une date donnée */
+export async function getRecommandation(token, deviceId, dateStr) {
+  const params = dateStr ? `?date_str=${dateStr}` : ''
+  const res = await fetchWithRefresh(`${BASE}/api/ai/recommandations/${deviceId}${params}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error(`Erreur API: ${res.status}`)
+  const data = await res.json()
+  return data.recommandation || data
+}

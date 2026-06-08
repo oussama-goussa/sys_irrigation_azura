@@ -23,7 +23,8 @@ from routers.saisie       import router as saisie_router
 from routers.export_saisie import router as export_router
 from routers.weight import router as weight_router
 
-from routers.export_sensor import router as export_sensor_router 
+from routers.export_sensor import router as export_sensor_router
+from routers.ai_agent import router as ai_agent_router
 
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -32,6 +33,9 @@ from models.sensor_model import (
     Device, SensorReading, IrrigationCycle,
     FertigationState, Alert, AlertThreshold,
     IrrigationTour
+)
+from models.ai_recommendation_model import (
+    AIRecommandation, AIConfigDevice, AIDecisionTour
 )
 
 # ── Migrations automatiques AVANT create_all ─────────────────
@@ -155,6 +159,15 @@ def startup():
     db = SessionLocal()
     try:
         init_default_users(db)
+
+        # Charger les modèles IA XGBoost en mémoire
+        try:
+            from services.ai_service import charger_modeles
+            charger_modeles()
+            logger.success("Modèles IA chargés en mémoire ✅")
+        except Exception as e:
+            logger.warning(f"Modèles IA non chargés (premier boot ?) : {e}")
+
         try:
             from core.celery_app import task_historique_tours, task_tours_jour_en_cours
             task_historique_tours.delay()
@@ -242,7 +255,8 @@ app.include_router(saisie_router)
 app.include_router(export_router)
 app.include_router(weight_router)
 
-app.include_router(export_sensor_router) 
+app.include_router(export_sensor_router)
+app.include_router(ai_agent_router)
 
 # ── Endpoints publics ─────────────────────────────────────────
 @app.get("/", tags=["General"])

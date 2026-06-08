@@ -351,62 +351,88 @@ def task_generer_recommandations_matin():
     """
     Génère les recommandations IA du matin pour tous les devices actifs.
     Planifiée à 06h00 chaque matin.
+    Utilise generer_recommandation_tous_devices() pour la boucle auto-discovery.
     """
     try:
+        from services.ai_service import generer_recommandation_tous_devices, sauvegarder_recommandation
         from core.database import SessionLocal
-        from models.sensor_model import Device
-        from models.ai_recommendation_model import AIRecommandation, AIConfigDevice
-        from services.ai_service import generer_recommandation_matin
-        from routers.ai_agent import _sauvegarder_recommandation
+        from models.ai_recommandation_model import AIRecommandation
         from datetime import date
 
+        today = date.today().isoformat()
+
+        # Vérifier si déjà générées aujourd'hui
         db = SessionLocal()
         try:
-            today = date.today().isoformat()
-            devices = db.query(Device).filter(Device.is_active == True).all()
-            configs = {
-                c.device_id: c
-                for c in db.query(AIConfigDevice).filter(AIConfigDevice.actif == True).all()
-            }
-
-            generated = 0
-            for device in devices:
-                # Vérifier si déjà générée
-                exists = db.query(AIRecommandation).filter(
-                    AIRecommandation.device_id == device.id,
-                    AIRecommandation.date      == today,
-                ).first()
-                if exists:
-                    continue
-
-                cfg = configs.get(device.id)
-                if cfg is None:
-                    # Créer config par défaut
-                    cfg = AIConfigDevice(device_id=device.id, ec_eau_brute=0.8,
-                                         methode_decision="hybride", actif=True)
-                    db.add(cfg)
-                    db.commit()
-
-                try:
-                    result = generer_recommandation_matin(
-                        device_id       = device.id,
-                        date_str        = today,
-                        ec_bassin       = cfg.ec_eau_brute or 0.8,
-                        date_plantation = str(cfg.date_plantation) if cfg.date_plantation else None,
-                        methode         = cfg.methode_decision or "hybride",
-                    )
-                    _sauvegarder_recommandation(db, result)
-                    generated += 1
-                    logger.success(f"Recommandation IA générée : {device.farm_name} H{device.house_number}")
-                except Exception as e:
-                    logger.error(f"Erreur device {device.id} : {e}")
-
-            logger.info(f"Recommandations générées : {generated}/{len(devices)}")
-            return {"statut": "ok", "generated": generated}
+            existing_count = db.query(AIRecommandation).filter(
+                AIRecommandation.date == today
+            ).count()
+            if existing_count > 0:
+                logger.info(f"Recommandations déjà générées aujourd'hui ({existing_count}) — skip")
+                return {"statut": "ok", "generated": 0, "message": "Déjà générées"}
         finally:
             db.close()
+
+        # Générer pour tous les devices
+        resultat = generer_recommandation_tous_devices(today)
+
+        # Sauvegarder en BDD
+        db = SessionLocal()
+        try:
+            generated = 0
+            for r in resultat.get("recommandations", []):
+                try:
+                    sauvegarder_recommandation(db, r)
+                    generated += 1
+                except Exception as e:
+                    logger.error(f"Erreur sauvegarde recommandation : {e}")
+
+            logger.success(f"Recommandations générées : {generated} devices")
+            return {"statut": "ok", "generated": generated, "total": resultat.get("total_devices", 0)}
+        finally:
+            db.close()
+
     except Exception as e:
         logger.error(f"Erreur tâche recommandations matin : {e}")
+        return {"statut": "erreur", "message": str(e)}
+
+
+# ── TÂCHE : Backfill historique des recommandations ───────────
+@app.task(name="core.celery_app.task_backfill_recommandations", bind=True)
+def task_backfill_recommandations(self, device_id: int = None):
+    """
+    Tâche Celery pour générer les recommandations historiques.
+    Non planifiée automatiquement — à appeler manuellement.
+    Appel: task_backfill_recommandations.delay() ou .delay(device_id=1)
+    """
+    try:
+        from services.ai_service import (
+            generer_recommandation_historique_tous_devices,
+            generer_recommandation_historique_device,
+        )
+        from core.database import SessionLocal
+        from models.sensor_model import Device
+        from datetime import date
+
+        if device_id:
+            db = SessionLocal()
+            try:
+                device = db.query(Device).filter(Device.id == device_id).first()
+                if device is None:
+                    return {"statut": "erreur", "message": f"Device {device_id} introuvable"}
+                date_debut = device.created_at.date().isoformat() if device.created_at else date.today().isoformat()
+                date_fin = date.today().isoformat()
+            finally:
+                db.close()
+
+            resultat = generer_recommandation_historique_device(device_id, date_debut, date_fin)
+        else:
+            resultat = generer_recommandation_historique_tous_devices()
+
+        return {"statut": "ok", **resultat}
+
+    except Exception as e:
+        logger.error(f"Erreur backfill historique : {e}")
         return {"statut": "erreur", "message": str(e)}
 
 
@@ -417,11 +443,12 @@ def task_ajustement_inter_tours():
     Déclenché toutes les 5 minutes pendant la journée.
     Détecte les tours qui viennent de se terminer dans irrigation_tours
     et génère automatiquement l'ajustement IA pour le prochain.
+    Mode dégradé : sans données drainage → règles simples.
     """
     try:
         from core.database import SessionLocal
         from models.sensor_model import Device, IrrigationTour
-        from models.ai_recommendation_model import AIRecommandation
+        from models.ai_recommendation_model import AIRecommandation, AIDecisionTour
         from services.ai_service import ajuster_apres_tour
         from datetime import date, datetime, timedelta
 
@@ -447,44 +474,55 @@ def task_ajustement_inter_tours():
                     AIRecommandation.date      == today,
                 ).first()
 
-                if not rec or rec.statut == "arrete":
+                if not rec or rec.statut in ("rejected",):
                     continue
 
                 # Vérifier si cet ajustement a déjà été fait
-                ajustements = rec.ajustements or []
-                deja_fait = any(a["tour"] == tour.tour_num for a in ajustements)
+                deja_fait = db.query(AIDecisionTour).filter(
+                    AIDecisionTour.device_id == tour.device_id,
+                    AIDecisionTour.date      == today,
+                    AIDecisionTour.num_tour  == tour.tour_num,
+                ).first()
+
                 if deja_fait:
                     continue
 
-                # Récupérer l'état précédent
-                etat_precedent = ajustements[-1].get("nouveau_etat", {}) if ajustements else {}
-
-                recommandation_dict = rec.to_dict()
-                recommandation_dict["_etat"] = etat_precedent if etat_precedent else {
-                    "repos_courant_min": rec.repos_initial_min or 8,
-                    "duree_t3p_courant": rec.duree_t3p_min or 8,
-                    "surveillance"     : False,
-                    "depassement_reel" : False,
-                    "dernier_drainage" : 0.0,
+                # Mode dégradé : pas de drainage → règles simples
+                recommandation_dict = {
+                    "_etat": {
+                        "duree_t3p_courant": rec.duree_min or 8,
+                        "dernier_drainage"  : 0.0,
+                    }
                 }
 
-                # Pas de drainage pour l'instant (sera null) → mode dégradé
                 ajustement = ajuster_apres_tour(
                     recommandation = recommandation_dict,
-                    drainage_reel  = None,   # pas de capteur encore
+                    drainage_reel  = None,
                     num_tour       = tour.tour_num,
-                    tours_restants = max(1, (rec.nb_tours_prevu or 10) - tour.tour_num),
+                    tours_restants = max(1, (rec.nb_tours or 10) - tour.tour_num),
                 )
 
-                rec.ajustements  = ajustements + [ajustement]
-                rec.nb_tours_reel = tour.tour_num
-                if ajustement["stop"]:
-                    rec.statut = "arrete"
+                # Sauvegarder l'ajustement
+                decision = AIDecisionTour(
+                    device_id     = tour.device_id,
+                    date          = today,
+                    num_tour      = tour.tour_num,
+                    decision      = ajustement.get("action", "CONTINUER"),
+                    raison        = ajustement.get("raison", "CONTINUER"),
+                    duree_suivant = ajustement.get("duree_suivant"),
+                    donnees_entree= ajustement,
+                    disponible    = False,  # mode dégradé
+                )
+                db.add(decision)
+
+                # Mettre à jour le statut si STOP
+                if ajustement.get("stop"):
+                    rec.statut = "approved"  # l'IA a décidé de s'arrêter
 
                 db.commit()
                 logger.info(
                     f"Ajustement auto : device {tour.device_id} "
-                    f"tour {tour.tour_num} → {ajustement['action']}"
+                    f"tour {tour.tour_num} → {ajustement.get('action', 'CONTINUER')}"
                 )
 
             return {"statut": "ok"}
