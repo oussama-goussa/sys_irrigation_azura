@@ -216,27 +216,21 @@ def backfill_recommandations(
         return {"message": "Backfill historique terminé ✅", "resultat": resultat}
 
 
-@router.get("/recommandations/{device_id}", summary="Recommandation du jour pour 1 device")
+@router.get("/recommandations/{device_id}")
 def get_recommandation_device(
     device_id: int,
-    date_str: Optional[str] = Query(None, description="Date (YYYY-MM-DD), défaut = aujourd'hui"),
+    date_str: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     user: dict = Depends(require_any),
 ):
-    """
-    Retourne la recommandation IA du matin pour UN device spécifique.
-    Si aucune n'existe pour aujourd'hui, la génère automatiquement.
-    Filtrage par farm_names (sauf admin).
-    """
     today = date_str or date.today().isoformat()
 
-    # Vérifier accès au device (même logique que devices.py)
     device = db.query(Device).filter(Device.id == device_id).first()
     if device is None:
         raise HTTPException(status_code=404, detail=f"Device {device_id} introuvable")
     _check_device_access(device, user)
 
-    # Vérifier si déjà en BDD
+    # Chercher en cache BDD d'abord
     existing = db.query(AIRecommandation).filter(
         AIRecommandation.device_id == device_id,
         AIRecommandation.date == today,
@@ -244,37 +238,12 @@ def get_recommandation_device(
 
     if existing:
         d = existing.to_dict()
-        d["farm_name"]    = device.farm_name    if device else None
-        d["house_number"] = device.house_number if device else None
+        d["farm_name"]    = device.farm_name
+        d["house_number"] = device.house_number
         return {"source": "cache", "recommandation": d}
 
-    # Générer
-    cfg = get_or_create_config(db, device_id)
-    resultat = generer_recommandation_matin(
-        device_id       = device_id,
-        date_str        = today,
-        ec_bassin       = cfg.ec_eau_brute or 0.8,
-        date_plantation = str(cfg.date_plantation) if cfg.date_plantation else None,
-        lat             = cfg.latitude or 30.4202,
-        lon             = cfg.longitude or -9.5981,
-    )
-
-    if "erreur" in resultat:
-        raise HTTPException(status_code=500, detail=resultat["erreur"])
-
-    # Sauvegarder
-    try:
-        rec_db = sauvegarder_recommandation(db, resultat)
-        d = rec_db.to_dict()
-        d["farm_name"]    = resultat.get("farm_name")
-        d["house_number"] = resultat.get("house_number")
-    except Exception:
-        d = resultat.get("consignes", {})
-        d["farm_name"]    = resultat.get("farm_name")
-        d["house_number"] = resultat.get("house_number")
-
-    return {"source": "generated", "recommandation": d}
-
+    # Pas de reco en cache → retourner 404 au lieu de tenter la génération qui crash
+    raise HTTPException(status_code=404, detail="Aucune recommandation disponible")
 
 @router.get("/recommandations/{device_id}/historique", summary="Historique des recommandations")
 def get_historique_recommandations(
