@@ -28,7 +28,7 @@ from models.sensor_model import Device, SensorReading
 from models.ai_recommendation_model import (
     AIRecommandation, AIConfigDevice, AIDecisionTour
 )
-from agent.decision_agent import FEATURES_MATIN, predict_matin, predict_tour
+# predict_matin et predict_tour sont définis localement ci-dessous (copiés de decision_agent.py)
 
 # ════════════════════════════════════════════════════════════════
 # CONSTANTES
@@ -1661,3 +1661,185 @@ def ajuster_apres_tour(
             "stop"    : False,
             "erreur"  : str(e),
         }
+
+
+# ════════════════════════════════════════════════════════════════
+# PRÉDICTIONS ML — Copié de decision_agent.py
+# (pour éliminer la dépendance à decision_agent.py en production)
+# ════════════════════════════════════════════════════════════════
+
+def _preparer_features(df, features_list, encoders=None, fit=True):
+    """Sélectionne, encode et remplit les features."""
+    from sklearn.preprocessing import LabelEncoder
+    cols_dispo = [c for c in features_list if c in df.columns]
+    X = df[cols_dispo].copy()
+    if encoders is None:
+        encoders = {}
+    for col in X.select_dtypes(include=["object"]).columns:
+        if fit:
+            le = LabelEncoder()
+            X[col] = le.fit_transform(X[col].fillna("INCONNU").astype(str))
+            encoders[col] = le
+        else:
+            le = encoders.get(col)
+            if le:
+                def safe_transform(val, _le=le):
+                    val = str(val) if not pd.isna(val) else "INCONNU"
+                    return _le.transform([val])[0] if val in _le.classes_ else -1
+                X[col] = X[col].fillna("INCONNU").apply(safe_transform)
+            else:
+                X[col] = 0
+    for col in features_list:
+        if col not in X.columns:
+            X[col] = 0.0
+    X = X[features_list] if all(c in X.columns for c in features_list) else X
+    X = X.fillna(X.median(numeric_only=True))
+    return X, encoders, cols_dispo
+
+
+def predict_matin(donnees, modeles_matin, enc_matin, ec_bassin=0.9,
+                  volume_cycle_L=1.33, stade="Floraison",
+                  ph_bassin=7.2, volume_m3=0.133):
+    """Génère les consignes opérationnelles du matin."""
+    FEATURES = [
+        "meteo_T_max_C", "meteo_T_min_C", "meteo_T_mean_C",
+        "meteo_HR_max_pct", "meteo_HR_min_pct", "meteo_HR_mean_pct",
+        "meteo_VPD_max_kPa", "meteo_ET0_mm_jour",
+        "meteo_shortwave_radiation_sum", "meteo_pluie_mm_jour",
+        "meteo_vent_max_kmh", "meteo_rs_wm2_max_jour",
+        "opt_Kc", "opt_jours_depuis_plantation", "opt_FL",
+        "ec_bassin", "moy_pct_drainage", "ec_cumul_drainage",
+        "alerte_chergui", "alerte_pluie", "alerte_brouillard", "alerte_vpd_stress",
+    ]
+    TARGETS_REG = ["opt_nb_cycles", "opt_apport_total_mm", "opt_EC_cible_dSm",
+                   "opt_pH_cible", "opt_duree_min"]
+    TARGETS_CLF = ["opt_heure_demarrage", "scenario_meteo",
+                   "opt_alerte_chergui", "opt_alerte_pluie", "opt_alerte_brouillard"]
+
+    df_pred = pd.DataFrame([donnees])
+    for col in FEATURES:
+        if col not in df_pred.columns:
+            df_pred[col] = 0.0
+
+    X, _, _ = _preparer_features(df_pred, FEATURES,
+                                  encoders=enc_matin.get("features", {}), fit=False)
+
+    resultats = {}
+    for target in TARGETS_REG:
+        key = f"reg_{target}"
+        if key in modeles_matin:
+            resultats[target] = float(modeles_matin[key].predict(X)[0])
+
+    enc_cibles = enc_matin.get("cibles", {})
+    for target in TARGETS_CLF:
+        key = f"clf_{target}"
+        if key in modeles_matin and target in enc_cibles:
+            idx = int(modeles_matin[key].predict(X)[0])
+            resultats[target] = enc_cibles[target].classes_[idx]
+
+    duree_float = resultats.get("opt_duree_min", 10.0)
+    duree_int = int(round(max(4.0, min(14.0, duree_float))))
+    scenario = resultats.get("scenario_meteo", "2_ENSOLEILLE")
+
+    ac = resultats.get("opt_alerte_chergui", 0)
+    ap = resultats.get("opt_alerte_pluie", 0)
+    ab = resultats.get("opt_alerte_brouillard", 0)
+    if ac in (1, "1"): alerte = "CHERGUI"
+    elif ap in (1, "1"): alerte = "PLUIE_STOP"
+    elif ab in (1, "1"): alerte = "BROUILLARD"
+    else: alerte = "NORMAL"
+
+    apport_mm = round(resultats.get("opt_apport_total_mm", 3.5), 1)
+    duree_ml = int(round(max(4.0, min(14.0, resultats.get("opt_duree_min", 10.0)))))
+    volume_cc_goutteur = round(apport_mm * 150.0)
+
+    return {
+        "ec_cible_dSm":       round(resultats.get("opt_EC_cible_dSm", 2.3), 1),
+        "ph_cible":           round(float(resultats.get("opt_pH_cible", 6.0)), 1),
+        "nbr_tour":           max(1, int(round(resultats.get("opt_nb_cycles", 5)))),
+        "heure_debut_ml":     resultats.get("opt_heure_demarrage", "08:00"),
+        "scenario_meteo":     scenario,
+        "alerte":             alerte,
+        "quantite_eau_mm":    apport_mm,
+        "volume_total_Lha":   round(apport_mm * 10_000, 0),
+        "volume_cc_goutteur": volume_cc_goutteur,
+        "duree_min":          duree_ml,
+    }
+
+
+def _repos_pattern_fallback():
+    """Fallback si le CSV irrigation_meteo_optimise.csv n'existe pas."""
+    return {
+        'by_drain_and_tour': {},
+        'by_drain':   {'<10': 20, '10-20': 17, '20-30': 15, '30-50': 12, '>50': 10},
+        'by_tour':    {},
+        'global_median': 15,
+    }
+
+
+def predict_tour(donnees, modeles_tour, enc_tour):
+    """Après chaque cycle d'irrigation : continuer ou stopper ?"""
+    if 'opt_vol_cumule_L' in donnees and 'opt_vol_jour_cible_L' in donnees:
+        vc = donnees['opt_vol_cumule_L']
+        vj = donnees['opt_vol_jour_cible_L']
+        if vj > 0:
+            vol_cycle = donnees.get('opt_volume_cycle_corrige_L', donnees.get('opt_volume_cycle_L', 0.0)) or 0.0
+            vol_avant = max(0.0, vc - vol_cycle)
+            donnees['opt_vol_ratio'] = vol_avant / vj
+            donnees['opt_vol_restant_L'] = max(0.0, vj - vol_avant)
+        else:
+            donnees['opt_vol_ratio'] = 0.0
+            donnees['opt_vol_restant_L'] = 0.0
+
+    if "drain_zone" not in donnees:
+        dp = float(donnees.get("_pct_drain_prev", donnees.get("pct_drainage_lag1", 0.0)) or 0.0)
+        if dp <= 0: donnees["drain_zone"] = 2.0
+        elif dp <= 25.0: donnees["drain_zone"] = 1.0
+        else: donnees["drain_zone"] = 0.0
+
+    for _col in ["heure_debut", "heure_soir", "heure_matin"]:
+        _min_col = f"{_col}_min"
+        if _col in donnees and _min_col not in donnees:
+            try:
+                parts = str(donnees[_col]).split(":")
+                donnees[_min_col] = int(parts[0]) * 60 + int(parts[1])
+            except (ValueError, IndexError):
+                donnees[_min_col] = 0
+
+    FEATURES_TOUR = [
+        "pct_drainage", "ec_drainage", "ph_drainage", "num_tour", "v_apport",
+        "_pct_drain_prev", "pct_drainage_lag1", "pct_drainage_lag2", "pct_drainage_lag3",
+        "ec_drainage_lag1", "ec_drainage_lag2",
+        "opt_vol_cumule_L", "opt_vol_jour_cible_L", "opt_vol_ratio", "opt_vol_restant_L",
+        "opt_EC_drain_cible_dSm", "opt_nb_cycles", "opt_max_cycles_stade",
+        "meteo_T_max_C", "meteo_VPD_max_kPa", "meteo_ET0_mm_jour",
+        "alerte_chergui", "alerte_pluie", "alerte_brouillard",
+        "ec_bassin", "ec_apport", "ph_apport", "drain_zone", "scenario_meteo",
+    ]
+
+    df_pred = pd.DataFrame([donnees])
+    for col in FEATURES_TOUR:
+        if col not in df_pred.columns:
+            df_pred[col] = 0.0
+
+    X, _, _ = _preparer_features(df_pred, FEATURES_TOUR,
+                                  encoders=enc_tour.get("features", {}), fit=False)
+
+    continuer = int(modeles_tour["clf_opt_continuer"].predict(X)[0])
+
+    le_seq = enc_tour.get("opt_label_sequentiel")
+    idx_seq = int(modeles_tour["clf_opt_label_sequentiel"].predict(X)[0])
+    raison = le_seq.classes_[idx_seq] if le_seq else "INCONNU"
+
+    duree_float = float(modeles_tour["reg_opt_duree_min"].predict(X)[0])
+    duree_int = int(round(max(4.0, min(14.0, duree_float))))
+    duree_prec = int(donnees.get("duree_tour_precedent_min", 0) or 0)
+    if duree_prec > 0 and duree_int > duree_prec:
+        duree_int = duree_prec
+
+    return {
+        "decision":               "CONTINUER" if continuer == 1 else "STOP",
+        "continuer":              continuer,
+        "raison":                 raison,
+        "duree_tour_suivant_min": duree_int,
+    }
