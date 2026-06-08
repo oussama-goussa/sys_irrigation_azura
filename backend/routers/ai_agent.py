@@ -216,10 +216,10 @@ def backfill_recommandations(
         return {"message": "Backfill historique terminé ✅", "resultat": resultat}
 
 
-@router.get("/recommandations/{device_id}")
+@router.get("/recommandations/{device_id}", summary="Recommandation du jour pour 1 device")
 def get_recommandation_device(
     device_id: int,
-    date_str: Optional[str] = Query(None),
+    date_str: Optional[str] = Query(None, description="Date (YYYY-MM-DD), défaut = aujourd'hui"),
     db: Session = Depends(get_db),
     user: dict = Depends(require_any),
 ):
@@ -230,7 +230,7 @@ def get_recommandation_device(
         raise HTTPException(status_code=404, detail=f"Device {device_id} introuvable")
     _check_device_access(device, user)
 
-    # Chercher en cache BDD d'abord
+    # Vérifier si déjà en BDD
     existing = db.query(AIRecommandation).filter(
         AIRecommandation.device_id == device_id,
         AIRecommandation.date == today,
@@ -242,8 +242,33 @@ def get_recommandation_device(
         d["house_number"] = device.house_number
         return {"source": "cache", "recommandation": d}
 
-    # Pas de reco en cache → retourner 404 au lieu de tenter la génération qui crash
-    raise HTTPException(status_code=404, detail="Aucune recommandation disponible")
+    # Tenter la génération — si les modèles ML ne sont pas dispo → 404
+    try:
+        cfg = get_or_create_config(db, device_id)
+        resultat = generer_recommandation_matin(
+            device_id       = device_id,
+            date_str        = today,
+            ec_bassin       = cfg.ec_eau_brute or 0.8,
+            date_plantation = str(cfg.date_plantation) if cfg.date_plantation else None,
+            lat             = cfg.latitude or 30.4202,
+            lon             = cfg.longitude or -9.5981,
+        )
+
+        if "erreur" in resultat:
+            # Modèles ML non disponibles → retourner 404 proprement
+            raise HTTPException(status_code=404, detail="Aucune recommandation disponible")
+
+        rec_db = sauvegarder_recommandation(db, resultat)
+        d = rec_db.to_dict()
+        d["farm_name"]    = resultat.get("farm_name")
+        d["house_number"] = resultat.get("house_number")
+        return {"source": "generated", "recommandation": d}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur génération recommandation device {device_id}: {e}")
+        raise HTTPException(status_code=404, detail="Aucune recommandation disponible")
 
 @router.get("/recommandations/{device_id}/historique", summary="Historique des recommandations")
 def get_historique_recommandations(
