@@ -7,8 +7,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Brain, RefreshCw, Calendar, Sun, Droplets, Thermometer,
-  Gauge, Clock, ChevronDown, ChevronRight, WifiOff, AlertTriangle,
-  CheckCircle2, XCircle, ArrowRight, Eye
+  Gauge, Clock, ChevronDown, ChevronRight, ChevronLeft, WifiOff,
+  AlertTriangle, CheckCircle2, XCircle, ArrowRight, Eye
 } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { getColors } from '../theme.js'
