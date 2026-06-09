@@ -1334,146 +1334,264 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             </div>
 
             {/* Grille des métriques */}
+            
             {loadingStats ? (
               <div style={{
-                display:'flex', alignItems:'center', gap:10,
-                padding:'28px 0', color:C.textDim, fontSize:12,
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '28px 0', color: C.textDim, fontSize: 12,
               }}>
-                <RefreshCw size={14} style={{ animation:'az-spin 0.8s linear infinite' }} />
+                <RefreshCw size={14} style={{ animation: 'az-spin 0.8s linear infinite' }} />
                 Chargement des statistiques…
               </div>
             ) : !dailyStats || dailyStats.count === 0 ? (
               <div style={{
-                background:C.card, border:`1.5px solid ${C.border}`,
-                borderRadius:14, padding:'32px',
-                textAlign:'center', color:C.textDim, fontSize:12,
-                marginBottom:16,
+                background: C.card, border: `1.5px solid ${C.border}`,
+                borderRadius: 14, padding: '32px',
+                textAlign: 'center', color: C.textDim, fontSize: 12,
+                marginBottom: 16,
               }}>
                 Aucune donnée pour le {fmtDisplay(statsDate)}
               </div>
-            ) : (
-              <div style={{
-                background: C.card,
-                border: `1.5px solid ${C.border}`,
-                borderRadius: 14,
-                overflow: 'hidden',
-                marginBottom: 24,
-              }}>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit' }}>
-                    <thead>
-                      <tr style={{ background: dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
-                        <th style={{
-                          padding: '11px 18px', textAlign: 'left', whiteSpace: 'nowrap',
-                          fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
-                          letterSpacing: '0.08em', color: C.textDim,
-                          borderBottom: `1.5px solid ${C.border}`, width: 160,
-                        }}>Métrique</th>
-                        {METRICS.filter(m => s[m.key] != null).map(m => (
-                          <th key={m.key} style={{
-                            padding: '11px 16px', textAlign: 'center', whiteSpace: 'nowrap',
-                            fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
-                            letterSpacing: '0.08em', color: C.textDim,
-                            borderBottom: `1.5px solid ${C.border}`,
-                            borderLeft: `1px solid ${C.border}`,
-                          }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                              <div style={{
-                                width: 24, height: 3, borderRadius: 2,
-                                background: m.color, opacity: 0.85,
-                              }} />
-                              <span>{m.label}</span>
-                              {m.unit && (
-                                <span style={{ fontSize: 9, fontWeight: 500, opacity: 0.55, textTransform: 'none', letterSpacing: 0 }}>
-                                  {m.unit}
-                                </span>
-                              )}
-                            </div>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { rowKey: 'min',    label: 'Min',     labelKey: null,     textColor: (m) => dark ? '#93c5fd' : '#1d4ed8' },
-                        { rowKey: 'max',    label: 'Max',     labelKey: 'labelMax', textColor: (m) => m.color },
-                        { rowKey: 'avg',    label: 'Moyenne', labelKey: null,     textColor: (m) => C.textMuted },
-                      ].map(({ rowKey, label, labelKey, textColor }, ri) => (
-                        <tr
-                          key={rowKey}
-                          style={{ borderBottom: `1px solid ${C.border}` }}
-                          onMouseEnter={e => e.currentTarget.style.background = dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                        >
-                          <td style={{
-                            padding: '12px 18px', fontSize: 11, fontWeight: 700,
-                            textTransform: 'uppercase', letterSpacing: '0.08em',
-                            color: C.textDim, whiteSpace: 'nowrap',
-                            borderRight: `1.5px solid ${C.border}`,
-                          }}>
-                            {label}
-                          </td>
-                          {METRICS.filter(m => s[m.key] != null).map(m => {
-                            const ms = s[m.key]
-                            const displayLabel = labelKey && m[labelKey] ? m[labelKey] : null
-                            const val = ms?.[rowKey]
-                            const show = m.fields.includes(rowKey)
-                            return (
-                              <td key={m.key} style={{
-                                padding: '12px 16px', textAlign: 'center',
-                                borderLeft: `1px solid ${C.border}`,
-                                fontVariantNumeric: 'tabular-nums',
-                              }}>
-                                {show && val != null ? (
-                                  <span style={{
-                                    fontSize: rowKey === 'avg' ? 13 : 15,
-                                    fontWeight: rowKey === 'avg' ? 600 : 800,
-                                    color: textColor(m),
-                                    letterSpacing: '-0.01em',
-                                  }}>
-                                    {displayLabel
-                                      ? <span style={{ fontSize: 10, fontWeight: 600, color: C.textDim, marginRight: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{displayLabel}</span>
-                                      : null}
-                                    {fv(val, m.dec)}
-                                  </span>
-                                ) : (
-                                  <span style={{ color: C.border, fontSize: 13 }}>—</span>
-                                )}
-                              </td>
-                            )
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+            ) : (() => {
+              const GROUPS = [
+                {
+                  label: 'Solution nutritive & climat serre',
+                  metrics: [
+                    { key: 'ec_actual',  label: 'EC Apport',   unit: 'mS/cm', color: '#00c9a7', dec: 2 },
+                    { key: 'ph_actual',  label: 'pH Apport',   unit: '',      color: '#4d9de0', dec: 2 },
+                    { key: 'avg_temp',   label: 'Temp. Serre', unit: '°C',    color: '#f52e23', dec: 1 },
+                    { key: 'humidity',   label: 'Hum. Serre',  unit: '%',     color: '#b197fc', dec: 1 },
+                  ],
+                },
+                {
+                  label: 'Météo & irrigation',
+                  metrics: [
+                    ...(s['outside_temp']     ? [{ key: 'outside_temp',     label: 'Temp. Ext.',  unit: '°C',    color: '#f05252', dec: 1 }] : []),
+                    ...(s['outside_humidity'] ? [{ key: 'outside_humidity', label: 'Hum. Ext.',   unit: '%',     color: '#60a5fa', dec: 1 }] : []),
+                    { key: 'radiation',    label: 'Radiation',   unit: 'W/m²',  color: '#f5e642', dec: 0 },
+                    { key: 'radiation_sum',label: 'Cumul Rad.',  unit: 'J/cm²', color: '#f5a623', dec: 0, onlyMax: true },
+                    { key: 'flow',         label: 'Débit',       unit: 'L/h',   color: '#34d96f', dec: 0, noAvg: true },
+                  ],
+                },
+              ]
 
-                {/* Footer — count + live indicator */}
-                <div style={{
-                  padding: '10px 18px',
-                  borderTop: `1px solid ${C.border}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                }}>
-                  <span style={{ fontSize: 11, color: C.textDim }}>
-                    {dailyStats.count} lectures · {fmtDisplay(statsDate)}
-                  </span>
-                  {isStatsToday && (
-                    <span style={{
-                      fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
-                      color: C.green, textTransform: 'uppercase',
-                      display: 'flex', alignItems: 'center', gap: 5,
+              const StatCard = ({ m }) => {
+                const ms = s[m.key]
+                if (!ms) return null
+                const fv = (v) => v != null ? Number(v).toFixed(m.dec) : '—'
+
+                // Card spéciale : uniquement une grande valeur (Cumul Rad)
+                if (m.onlyMax) {
+                  return (
+                    <div style={{
+                      background: dark ? '#111a14' : '#ffffff',
+                      border: `1px solid ${dark ? '#1c2e22' : '#c8e0d0'}`,
+                      borderRadius: 14,
+                      padding: '18px 20px',
+                      display: 'flex', flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      minWidth: 130,
                     }}>
-                      <span style={{
-                        width: 6, height: 6, borderRadius: '50%',
-                        background: C.green, display: 'inline-block',
-                        animation: 'ripple 1.5s ease-out infinite',
-                      }} />
-                      Mise à jour 30s
+                      <div style={{
+                        fontSize: 10, fontWeight: 700,
+                        textTransform: 'uppercase', letterSpacing: '0.12em',
+                        color: dark ? '#3a5a44' : '#4a7a5a', marginBottom: 12,
+                      }}>
+                        {m.label}
+                        {m.unit && <span style={{ marginLeft: 4, opacity: 0.55, fontWeight: 500 }}>{m.unit}</span>}
+                      </div>
+                      <div>
+                        <div style={{
+                          fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
+                          letterSpacing: '0.10em', color: dark ? '#3a5a44' : '#4a7a5a',
+                          marginBottom: 4,
+                        }}>Fin de journée</div>
+                        <div style={{
+                          fontSize: 28, fontWeight: 900,
+                          color: m.color, letterSpacing: '-0.02em', lineHeight: 1,
+                        }}>
+                          {fv(ms.max)}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                }
+
+                // Card standard : MIN haut / MAX bas / MOY footer
+                const hasAvg = !m.noAvg && ms.avg != null
+                const range = (ms.min != null && ms.max != null) ? ms.max - ms.min : null
+
+                return (
+                  <div style={{
+                    background: dark ? '#111a14' : '#ffffff',
+                    border: `1px solid ${dark ? '#1c2e22' : '#c8e0d0'}`,
+                    borderRadius: 14,
+                    padding: '18px 20px',
+                    display: 'flex', flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    minWidth: 130,
+                  }}>
+                    {/* Label */}
+                    <div style={{
+                      fontSize: 10, fontWeight: 700,
+                      textTransform: 'uppercase', letterSpacing: '0.12em',
+                      color: dark ? '#3a5a44' : '#4a7a5a', marginBottom: 12,
+                    }}>
+                      {m.label}
+                      {m.unit && <span style={{ marginLeft: 4, opacity: 0.55, fontWeight: 500 }}>{m.unit}</span>}
+                    </div>
+
+                    {/* MIN / MAX */}
+                    <div style={{
+                      display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8,
+                      marginBottom: hasAvg ? 12 : 0,
+                    }}>
+                      {/* MIN */}
+                      <div style={{
+                        background: dark ? '#0d1610' : '#f0f8f3',
+                        border: `1px solid ${dark ? '#162418' : '#c0deca'}`,
+                        borderRadius: 9, padding: '10px 12px',
+                      }}>
+                        <div style={{
+                          fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
+                          letterSpacing: '0.10em', color: dark ? '#3a5a44' : '#4a7a5a',
+                          marginBottom: 5,
+                        }}>Min</div>
+                        <div style={{
+                          fontSize: 20, fontWeight: 900, letterSpacing: '-0.02em',
+                          color: dark ? '#93c5fd' : '#1d4ed8', lineHeight: 1,
+                        }}>
+                          {fv(ms.min)}
+                        </div>
+                      </div>
+                      {/* MAX */}
+                      <div style={{
+                        background: dark ? '#0d1610' : '#f0f8f3',
+                        border: `1px solid ${dark ? '#162418' : '#c0deca'}`,
+                        borderRadius: 9, padding: '10px 12px',
+                      }}>
+                        <div style={{
+                          fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
+                          letterSpacing: '0.10em', color: dark ? '#3a5a44' : '#4a7a5a',
+                          marginBottom: 5,
+                        }}>Max</div>
+                        <div style={{
+                          fontSize: 20, fontWeight: 900, letterSpacing: '-0.02em',
+                          color: m.color, lineHeight: 1,
+                        }}>
+                          {fv(ms.max)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* MOY + barre range */}
+                    {hasAvg && (
+                      <div style={{
+                        paddingTop: 10,
+                        borderTop: `1px solid ${dark ? '#162418' : '#c0deca'}`,
+                      }}>
+                        <div style={{
+                          display: 'flex', alignItems: 'center',
+                          justifyContent: 'space-between', marginBottom: 6,
+                        }}>
+                          <span style={{
+                            fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
+                            letterSpacing: '0.10em', color: dark ? '#3a5a44' : '#4a7a5a',
+                          }}>Moy</span>
+                          <span style={{
+                            fontSize: 13, fontWeight: 800,
+                            color: dark ? '#9ca3af' : '#6b7280',
+                            fontVariantNumeric: 'tabular-nums',
+                          }}>
+                            {fv(ms.avg)}
+                          </span>
+                        </div>
+                        {/* Barre min→max avec curseur moy */}
+                        {range > 0 && (() => {
+                          const pct = ((ms.avg - ms.min) / range) * 100
+                          return (
+                            <div style={{
+                              position: 'relative', height: 3,
+                              background: dark ? '#162418' : '#c0deca',
+                              borderRadius: 2,
+                            }}>
+                              <div style={{
+                                position: 'absolute', left: 0, top: 0, bottom: 0,
+                                width: `${Math.min(Math.max(pct, 2), 98)}%`,
+                                background: m.color, borderRadius: 2,
+                                opacity: 0.7,
+                              }} />
+                              <div style={{
+                                position: 'absolute',
+                                left: `${Math.min(Math.max(pct, 2), 96)}%`,
+                                top: '50%', transform: 'translate(-50%, -50%)',
+                                width: 7, height: 7, borderRadius: '50%',
+                                background: m.color,
+                                border: `2px solid ${dark ? '#111a14' : '#ffffff'}`,
+                              }} />
+                            </div>
+                          )
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                )
+              }
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 24 }}>
+                  {GROUPS.map((group, gi) => (
+                    <div key={gi}>
+                      {/* Sous-titre groupe */}
+                      <div style={{
+                        fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+                        letterSpacing: '0.12em', color: dark ? '#2a5a38' : '#2a7a48',
+                        marginBottom: 10,
+                        display: 'flex', alignItems: 'center', gap: 10,
+                      }}>
+                        {group.label}
+                        <span style={{ flex: 1, height: 1, background: dark ? '#162418' : '#c8dece' }} />
+                      </div>
+
+                      {/* Cards row */}
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: isMobile
+                          ? '1fr 1fr'
+                          : `repeat(${group.metrics.filter(m => s[m.key] != null).length}, 1fr)`,
+                        gap: isMobile ? 10 : 12,
+                      }}>
+                        {group.metrics.map(m => <StatCard key={m.key} m={m} />)}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Footer */}
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    paddingTop: 4,
+                  }}>
+                    <span style={{ fontSize: 11, color: C.textDim }}>
+                      {dailyStats.count} lectures · {fmtDisplay(statsDate)}
                     </span>
-                  )}
+                    {isStatsToday && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+                        color: C.green, textTransform: 'uppercase',
+                        display: 'flex', alignItems: 'center', gap: 5,
+                      }}>
+                        <span style={{
+                          width: 6, height: 6, borderRadius: '50%',
+                          background: C.green, display: 'inline-block',
+                          animation: 'ripple 1.5s ease-out infinite',
+                        }} />
+                        Mise à jour 30s
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )
+            })()}
           </>
         )
       })()}
