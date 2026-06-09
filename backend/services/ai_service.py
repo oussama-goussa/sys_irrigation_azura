@@ -756,29 +756,31 @@ def preparer_features_matin(
       2. Fallback Open-Meteo si données manquantes
       3. Calculer features agronomiques (Kc, FL, alertes)
     """
-    # 1. Météo capteurs
-    meteo = _recuperer_meteo_capteurs(db, device_id)
+    # 1. Météo Open-Meteo par défaut (modèle entraîné avec ces données)
+    meteo = recuperer_meteo_open_meteo(lat, lon, date_str)
 
-    # 2. Fallback Open-Meteo pour les features manquants
-    champs_meteo_requis = [
+    # 2. Compléter avec capteurs si données récentes et valides (< 3h)
+    meteo_capteurs = _recuperer_meteo_capteurs(db, device_id)
+    champs_capteurs_valides = [
         "meteo_T_max_C", "meteo_T_min_C", "meteo_T_mean_C",
         "meteo_HR_max_pct", "meteo_HR_min_pct", "meteo_HR_mean_pct",
-        "meteo_VPD_max_kPa", "meteo_ET0_mm_jour",
-        "meteo_shortwave_radiation_sum", "meteo_pluie_mm_jour",
-        "meteo_vent_max_kmh", "meteo_rs_wm2_max_jour",
+        "meteo_rs_wm2_max_jour", "meteo_shortwave_radiation_sum",
+        "meteo_pluie_mm_jour",
     ]
+    for champ in champs_capteurs_valides:
+        if champ in meteo_capteurs:
+            # Ne remplacer que si la valeur capteur est cohérente (pas 0 sauf pluie)
+            val = meteo_capteurs[champ]
+            if champ == "meteo_pluie_mm_jour" or val > 0:
+                meteo[champ] = val
 
-    manquants = [c for c in champs_meteo_requis if c not in meteo]
-    if manquants:
-        logger.info(f"Météo capteurs incomplète ({len(manquants)} champs manquants) → Open-Meteo fallback")
-        meteo_om = recuperer_meteo_open_meteo(lat, lon, date_str)
-        for champ in manquants:
-            if champ in meteo_om:
-                meteo[champ] = meteo_om[champ]
+    # 3. VPD et ET0 : toujours Open-Meteo (capteurs non fiables pour ces champs)
+    # Déjà fait à l'étape 1
 
-    # 3. Calcul ET0 si toujours manquant
-    if "meteo_ET0_mm_jour" not in meteo or meteo["meteo_ET0_mm_jour"] == 0:
-        meteo["meteo_ET0_mm_jour"] = _calculer_et0_penman_monteith(meteo)
+    logger.info(f"Météo utilisée: T={meteo.get('meteo_T_max_C')}/{meteo.get('meteo_T_min_C')} "
+                f"HR={meteo.get('meteo_HR_mean_pct'):.0f}% VPD={meteo.get('meteo_VPD_max_kPa')} "
+                f"ET0={meteo.get('meteo_ET0_mm_jour')} vent={meteo.get('meteo_vent_max_kmh')} "
+                f"source={'capteurs+OM' if meteo_capteurs else 'Open-Meteo'}")
 
     # 4. Stade phénologique et Kc
     if date_plantation:
