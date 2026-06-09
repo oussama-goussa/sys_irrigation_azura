@@ -46,7 +46,7 @@ class AIRecommandation(Base):
 
     # Résultat PRT
     ptr_pct               = Column(Float, nullable=True)   # % perte de poids ressuyage (PRT)
-    ptr_decision          = Column(String(20), nullable=True)  # ATTENDRE / DECLENCHER / STRESS_HYDRIQUE / PLUIE_STOP / FALLBACK_RECOMMANDATION
+    ptr_decision          = Column(String(50), nullable=True)  # ATTENDRE / DECLENCHER / STRESS_HYDRIQUE / PLUIE_STOP / FALLBACK_RECOMMANDATION
     ptr_seuil_bas         = Column(Float, nullable=True)   # Seuil bas du scénario (%)
     ptr_seuil_haut        = Column(Float, nullable=True)   # Seuil haut du scénario (%)
 

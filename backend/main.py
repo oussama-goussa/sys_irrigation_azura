@@ -103,6 +103,11 @@ def run_migrations():
                 WHERE alert_type = 'RADIATION' AND severity = 'INFO'
                 AND threshold_max IS NULL
             """))
+            # Migration: agrandir ptr_decision de varchar(20) à varchar(50)
+            conn.execute(text("""
+                ALTER TABLE ai_recommandations
+                ALTER COLUMN ptr_decision TYPE VARCHAR(50)
+            """))
             conn.commit()
         logger.success("Migrations appliquées ✅")
     except Exception as e:
