@@ -1730,6 +1730,10 @@ def predict_matin(donnees, modeles_matin, enc_matin, ec_bassin=0.9,
         else:
             resultats[target] = None
 
+    # DEBUG: log features et predictions brutes
+    logger.info(f"🔍 DEBUG predict_matin: features={dict(donnees)}")
+    logger.info(f"🔍 DEBUG predict_matin: predictions brutes={resultats}")
+
     # Vérifier qu'aucune cible n'est manquante — pas de fallback
     manquantes = [t for t in TARGETS_REG + TARGETS_CLF if resultats.get(t) is None]
     if manquantes:
