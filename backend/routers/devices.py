@@ -118,8 +118,8 @@ def _build_dashboard_bulk(devices: list, db: Session) -> list:
         result.append({
             "id": d.id, "farm_name": d.farm_name, "house_number": d.house_number,
             "room_number": d.room_number, "device_id": d.device_id,
-            "is_active": d.is_active, "online": online,
-            "last_seen_min": last_seen_min,
+            "is_active": d.is_active, "online": online, "controller_type": d.controller_type,
+            "last_seen_min": last_seen_min, "controller_version": d.controller_version,
             "last_timestamp": str(last.timestamp) if last else None,
             "metrics": metrics,
             "irrigation_active": False,
