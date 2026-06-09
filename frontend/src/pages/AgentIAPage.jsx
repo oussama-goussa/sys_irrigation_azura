@@ -198,7 +198,7 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
     width: '100%', padding: '8px 10px', borderRadius: 7,
     border: `1px solid ${C.border}`, background: dark ? '#0d1a12' : '#fff',
     color: C.text, fontSize: 13, fontFamily: 'inherit', outline: 'none',
-    boxSizing: 'border-box' as const,
+    boxSizing: 'border-box',
   }
 
   const labelStyle = { fontSize: 11, fontWeight: 700, color: C.textMuted, marginBottom: 4, display: 'block' }
