@@ -1753,13 +1753,13 @@ def predict_matin(donnees, modeles_matin, enc_matin, ec_bassin=0.9,
     else: alerte = "NORMAL"
 
     return {
-        "ec_cible_dSm":       round(ec_cible, 1) if ec_cible is not None else None,
-        "ph_cible":           round(float(ph_cible), 1) if ph_cible is not None else None,
-        "nbr_tour":           int(round(nb_cycles)) if nb_cycles is not None else None,
+        "ec_cible_dSm":       round(max(1.5, ec_cible), 1) if ec_cible is not None else None,
+        "ph_cible":           round(float(max(5.5, ph_cible)), 1) if ph_cible is not None else None,
+        "nbr_tour":           max(0, int(round(nb_cycles))) if nb_cycles is not None else None,
         "heure_debut_ml":     heure_debut,
         "scenario_meteo":     scenario,
         "alerte":             alerte,
-        "quantite_eau_mm":    round(apport_mm, 1) if apport_mm is not None else None,
+        "quantite_eau_mm":    round(max(0, apport_mm), 1) if apport_mm is not None else None,
         "volume_total_Lha":   round(apport_mm * 10_000, 0) if apport_mm is not None else None,
         "volume_cc_goutteur": round(apport_mm * 150.0) if apport_mm is not None else None,
         "duree_min":          int(round(max(4.0, min(14.0, duree_min)))) if duree_min is not None else None,
