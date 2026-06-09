@@ -1256,16 +1256,6 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                   {dailyStats.count} lectures
                 </span>
               )}
-              {isStatsToday && (
-                <span style={{
-                  fontSize:10, fontWeight:700, letterSpacing:'0.08em',
-                  color:C.green, background:`${C.green}15`,
-                  border:`1px solid ${C.green}30`, borderRadius:5,
-                  padding:'2px 8px', textTransform:'uppercase',
-                }}>
-                  live
-                </span>
-              )}
             </div>
 
             {/* Sélecteur date stats */}
@@ -1334,7 +1324,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             </div>
 
             {/* Grille des métriques */}
-            
+
             {loadingStats ? (
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 10,
@@ -1355,7 +1345,6 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             ) : (() => {
               const GROUPS = [
                 {
-                  label: 'Solution nutritive & climat serre',
                   metrics: [
                     { key: 'ec_actual',  label: 'EC Apport',   unit: 'mS/cm', color: '#00c9a7', dec: 2 },
                     { key: 'ph_actual',  label: 'pH Apport',   unit: '',      color: '#4d9de0', dec: 2 },
@@ -1364,7 +1353,6 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                   ],
                 },
                 {
-                  label: 'Météo & irrigation',
                   metrics: [
                     ...(s['outside_temp']     ? [{ key: 'outside_temp',     label: 'Temp. Ext.',  unit: '°C',    color: '#f05252', dec: 1 }] : []),
                     ...(s['outside_humidity'] ? [{ key: 'outside_humidity', label: 'Hum. Ext.',   unit: '%',     color: '#60a5fa', dec: 1 }] : []),
