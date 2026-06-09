@@ -29,8 +29,6 @@ function today() {
 const SCENARIO_LABELS = {
   '1_TRES_ENSOLEILLE':  '☀️ Très ensoleillé',
   '2_ENSOLEILLE':       '🌤️ Ensoleillé',
-  '3_NUAGEUX':          '☁️ Nuageux',
-  '4_TRES_NUAGEUX':     '🌥️ Très nuageux',
   '5_BROUILLARD_MATIN': '🌫️ Brouillard matin',
   '5b_FOG_CHAUD_VPD':   '🌫️ Fog chaud VPD',
   '5c_FOG_CHAUD_RS':    '🌫️ Fog chaud RS',

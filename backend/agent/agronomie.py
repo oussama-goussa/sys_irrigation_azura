@@ -421,11 +421,10 @@ def calc_FL(ec_bassin_dSm: float, scenario: str = "") -> float:
 # Source : Tableau 9 rapport Azura §4.2
 # ════════════════════════════════════════════════════════════════
 
+# v7.0: 3_NUAGEUX et 4_TRES_NUAGEUX supprimés — fusionnés dans 8_NUAGEUX_CHAUD
 SCENARIO_CYCLES = {
     "1_TRES_ENSOLEILLE":  13,
     "2_ENSOLEILLE":       11,
-    "3_NUAGEUX":           8,
-    "4_TRES_NUAGEUX":      5,
     # CORRECTION v4.1 : calibré sur données terrain CSV 4 saisons (2021-2025)
     # Avant : 3 cycles (valeur rapport Azura pour brouillard PERSISTANT toute la journée)
     # Après : 8 cycles (médiane terrain réelle — brouillard classique Agadir se dissipe
@@ -438,7 +437,8 @@ SCENARIO_CYCLES = {
     "5e_FOG_FROID":        4,   # persiste longtemps, HR haute → 4 cycles max (terrain: 8)
     "6_CHERGUI_URGENT":   12,   # Limiter saturation coco
     "7_PLUIE_STOP":        3,   # Serre coco : même sous pluie il faut maintien hydrique minimum
-    "8_NUAGEUX_CHAUD":     9,   # Rs modéré + chaleur + VPD — terrain médiane 9
+    "7b_PLUIE_LEGERE":    8,   # v7.0: added (précédemment absent de ce dict)
+    "8_NUAGEUX_CHAUD":     9,   # Rs modéré + chaleur + VPD — terrain médiane 9 (intègre ex 3+4)
     "9_NUIT_FROIDE_SOL":   7,   # nuit froide + racines froides — terrain médiane 7
 }
 
@@ -500,8 +500,6 @@ def get_max_cycles_vegetatif(jours: int) -> int:
 SCENARIO_HEURE = {
     "1_TRES_ENSOLEILLE":  "07:00",
     "2_ENSOLEILLE":       "08:00",
-    "3_NUAGEUX":          "09:00",
-    "4_TRES_NUAGEUX":     "09:30",
     "5_BROUILLARD_MATIN": "10:30",   # classique
     "5b_FOG_CHAUD_VPD":   "09:00",   # VPD monte vite → démarrer dès que T monte
     "5c_FOG_CHAUD_RS":    "09:20",   # attendre levée brouillard ~09h
@@ -509,7 +507,8 @@ SCENARIO_HEURE = {
     "5e_FOG_FROID":       "11:00",   # persiste → attendre 11h minimum
     "6_CHERGUI_URGENT":   "07:00_ALERTE",
     "7_PLUIE_STOP":       "STOP",
-    "8_NUAGEUX_CHAUD":   "08:30",   # VPD monte tôt → démarrer avant la chaleur
+    "7b_PLUIE_LEGERE":    "08:30",   # v7.0: added (précédemment absent de ce dict)
+    "8_NUAGEUX_CHAUD":   "08:30",   # VPD monte tôt → démarrer avant la chaleur (intègre ex 3+4)
     "9_NUIT_FROIDE_SOL": "09:30",   # attendre réchauffement sol/racines
 }
 
@@ -519,8 +518,6 @@ SCENARIO_EC_AJUST = {
     # Brouillard : EC augmentée (plante absorbe moins)
     "1_TRES_ENSOLEILLE":  0.90,
     "2_ENSOLEILLE":       0.95,
-    "3_NUAGEUX":          1.05,
-    "4_TRES_NUAGEUX":     1.10,
     "5_BROUILLARD_MATIN": 1.15,    # +15% EC classique
     "5b_FOG_CHAUD_VPD":   1.00,    # VPD fort → EC normale (transpiration forte l'après-midi)
     "5c_FOG_CHAUD_RS":    1.05,    # +5% léger
@@ -528,6 +525,7 @@ SCENARIO_EC_AJUST = {
     "5e_FOG_FROID":       1.20,    # +20% EC — transpiration très réduite toute la journée
     "6_CHERGUI_URGENT":   0.85,
     "7_PLUIE_STOP":       1.00,
+    "7b_PLUIE_LEGERE":    1.00,    # v7.0: added (précédemment absent)
     "8_NUAGEUX_CHAUD":   1.08,   # CORRECTION v5.0 : 1.15 → 1.08 (transpiration modérée = accumulation sels si EC trop haute)
     "9_NUIT_FROIDE_SOL": 0.85,   # CORRECTION v5.0 : 1.20 → 0.85 (racines froides = absorber MOINS → EC PLUS BASSE)
 }
@@ -806,7 +804,7 @@ def compute_drainage_cible_ajuste(
     # Ajustement scénario
     if scenario == "6_CHERGUI_URGENT":
         cible += 0.05
-    elif scenario in ("5_BROUILLARD_MATIN", "5e_FOG_FROID", "4_TRES_NUAGEUX"):
+    elif scenario in ("5_BROUILLARD_MATIN", "5e_FOG_FROID"):
         cible -= 0.05
 
     # Ajustement position (3 phases)
@@ -836,8 +834,6 @@ def compute_drainage_cible_ajuste(
 K_SCENARIO_VOLUME = {
     "1_TRES_ENSOLEILLE":  3.20,
     "2_ENSOLEILLE":        4.00,
-    "3_NUAGEUX":           3.70,
-    "4_TRES_NUAGEUX":      5.50,
     "5_BROUILLARD_MATIN":  4.00,
     "5b_FOG_CHAUD_VPD":    3.10,
     "5c_FOG_CHAUD_RS":     3.00,
@@ -846,7 +842,7 @@ K_SCENARIO_VOLUME = {
     "6_CHERGUI_URGENT":    3.80,
     "7_PLUIE_STOP":        4.00,  # humain K≈4.0-5.5 (nom trompeur, ne s'arrête jamais)
     "7b_PLUIE_LEGERE":     3.90,
-    "8_NUAGEUX_CHAUD":     3.70,
+    "8_NUAGEUX_CHAUD":     3.70,  # v7.0: intègre ex 3_NUAGEUX + 4_TRES_NUAGEUX
     "9_NUIT_FROIDE_SOL":   3.80,
 }
 
@@ -2230,11 +2226,10 @@ def calc_opt_duree(*args, **kwargs):
 # ════════════════════════════════════════════════════════════════
 
 # Seuils PRT par scénario (% dry-back)
+# v7.0: 3_NUAGEUX et 4_TRES_NUAGEUX fusionnés dans 8_NUAGEUX_CHAUD
 PRT_SEUILS = {
     "1_TRES_ENSOLEILLE":  (9.0,  11.0),
     "2_ENSOLEILLE":       (9.0,  11.0),
-    "3_NUAGEUX":          (9.0,  11.0),
-    "4_TRES_NUAGEUX":     (10.0, 12.0),
     "5_BROUILLARD_MATIN": (10.0, 12.0),
     "5b_FOG_CHAUD_VPD":   (8.5,  10.0),  # VPD fort → sec plus vite la nuit
     "5c_FOG_CHAUD_RS":    (9.0,  11.0),  # intermédiaire
@@ -2243,7 +2238,7 @@ PRT_SEUILS = {
     "6_CHERGUI_URGENT":   (8.0,   9.0),
     "7_PLUIE_STOP":       (None, None),
     "7b_PLUIE_LEGERE":    (9.0,  10.0),
-    "8_NUAGEUX_CHAUD":    (8.5,  10.0),  # VPD > 2 → substrat se sèche vite
+    "8_NUAGEUX_CHAUD":    (8.5,  10.0),  # VPD > 2 → substrat se sèche vite (intègre ex 3+4)
     "9_NUIT_FROIDE_SOL":  (10.0, 12.0),  # racines froides → absorption lente
 }
 
@@ -2350,8 +2345,7 @@ def calc_opt_PRT(
     if scenario in ("6_CHERGUI_URGENT", "5b_FOG_CHAUD_VPD", "8_NUAGEUX_CHAUD"):
         zone = "CHERGUI"        # stress thermique/VPD dominant
     elif scenario in ("5_BROUILLARD_MATIN", "5c_FOG_CHAUD_RS",
-                    "5d_FOG_RADIATION", "5e_FOG_FROID",
-                    "4_TRES_NUAGEUX", "3_NUAGEUX"):
+                    "5d_FOG_RADIATION", "5e_FOG_FROID"):
         zone = "BROUILLARD_NUAGEUX"
     elif scenario == "9_NUIT_FROIDE_SOL":
         zone = "NUIT_FROIDE"
@@ -2630,8 +2624,6 @@ def optimiser_ligne(row: pd.Series, date_plantation: pd.Timestamp) -> dict:
     FACTEUR_CYCLES_ADAPTATIF = {
         "1_TRES_ENSOLEILLE":  0.85,
         "2_ENSOLEILLE":       0.70,
-        "3_NUAGEUX":          0.60,
-        "4_TRES_NUAGEUX":     0.50,
         "5_BROUILLARD_MATIN": 0.55,
         "5b_FOG_CHAUD_VPD":   0.70,
         "5c_FOG_CHAUD_RS":    0.60,

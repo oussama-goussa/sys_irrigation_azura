@@ -344,8 +344,6 @@ PRT_SEUILS = {
     "7b_PLUIE_LEGERE":    (9.0, 10.0),
 
     # ── Zone BROUILLARD_NUAGEUX ──
-    "3_NUAGEUX":          (9.0, 11.0),
-    "4_TRES_NUAGEUX":     (10.0, 12.0),
     "5_BROUILLARD_MATIN": (10.0, 12.0),
     "5c_FOG_CHAUD_RS":    (9.0, 11.0),
     "5d_FOG_RADIATION":   (9.0, 10.5),
@@ -371,8 +369,6 @@ PRT_SEUILS = {
 HEURE_DEBUT_RECOMMANDEE = {
     "1_TRES_ENSOLEILLE":  "08:29",
     "2_ENSOLEILLE":       "09:54",
-    "3_NUAGEUX":          "10:00",
-    "4_TRES_NUAGEUX":     "10:00",
     "5_BROUILLARD_MATIN": "09:31",
     "5b_FOG_CHAUD_VPD":   "08:42",
     "5c_FOG_CHAUD_RS":    "08:48",
