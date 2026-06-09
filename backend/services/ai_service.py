@@ -1715,22 +1715,20 @@ def predict_matin(donnees, modeles_matin, enc_matin, ec_bassin=0.9,
 
     resultats = {}
     enc_cibles = enc_matin.get("cibles", {})
+
+    # ── Régression : valeur float directe — PAS d'inverse_transform ──
+    # Les targets de régression (EC, pH, nb_cycles, apport_mm, duree_min)
+    # sont des valeurs numériques continues, pas des labels encodés.
     for target in TARGETS_REG:
         key = f"reg_{target}"
         if key in modeles_matin:
-            pred_val = modeles_matin[key].predict(X)[0]
-            # Si un encodeur existe pour cette cible → inverse_transform (valeur encodée)
-            if target in enc_cibles:
-                try:
-                    idx_propre = int(round(float(pred_val)))
-                    resultats[target] = float(enc_cibles[target].inverse_transform([idx_propre])[0])
-                except Exception:
-                    resultats[target] = float(pred_val)
-            else:
-                resultats[target] = float(pred_val)
+            resultats[target] = float(modeles_matin[key].predict(X)[0])
         else:
             resultats[target] = None
-            
+
+    # ── Classification : inverse_transform avec LabelEncoder ──
+    # Les targets de classification (heure, scénario, alertes)
+    # sont des labels encodés → inverse_transform obligatoire.
     for target in TARGETS_CLF:
         key = f"clf_{target}"
         if key in modeles_matin and target in enc_cibles:
@@ -1739,43 +1737,42 @@ def predict_matin(donnees, modeles_matin, enc_matin, ec_bassin=0.9,
         else:
             resultats[target] = None
 
-    # DEBUG: log features et predictions brutes
-    logger.info(f"🔍 DEBUG predict_matin: features={dict(donnees)}")
-    logger.info(f"🔍 DEBUG predict_matin: predictions brutes={resultats}")
+    # DEBUG: log prédictions brutes
+    logger.info(f"🔍 predict_matin résultats bruts: {resultats}")
 
-    # Vérifier qu'aucune cible n'est manquante — pas de fallback
+    # Vérifier les cibles manquantes
     manquantes = [t for t in TARGETS_REG + TARGETS_CLF if resultats.get(t) is None]
     if manquantes:
-        logger.error(f"⚠ ML: cibles manquantes → {manquantes} — recommandation incomplète")
+        logger.error(f"⚠ ML: cibles manquantes → {manquantes}")
 
-    # Aucun fallback — si ML n'a pas prédit, la valeur reste None
-    ec_cible = resultats.get("opt_EC_cible_dSm")
-    ph_cible = resultats.get("opt_pH_cible")
+    ec_cible  = resultats.get("opt_EC_cible_dSm")
+    ph_cible  = resultats.get("opt_pH_cible")
     nb_cycles = resultats.get("opt_nb_cycles")
     heure_debut = resultats.get("opt_heure_demarrage")
-    scenario = resultats.get("scenario_meteo")
-    duree_min = resultats.get("opt_duree_min")
+    scenario  = resultats.get("scenario_meteo", "2_ENSOLEILLE")
+    duree_min = resultats.get("opt_duree_min", 10.0)
     apport_mm = resultats.get("opt_apport_total_mm")
 
+    # Alertes : comparer string "1" ET int 1 (LabelEncoder retourne string)
     ac = resultats.get("opt_alerte_chergui")
     ap = resultats.get("opt_alerte_pluie")
     ab = resultats.get("opt_alerte_brouillard")
-    if ac == 1: alerte = "CHERGUI"
-    elif ap == 1: alerte = "PLUIE_STOP"
-    elif ab == 1: alerte = "BROUILLARD"
-    else: alerte = "NORMAL"
+    if ac == 1 or ac == "1":   alerte = "CHERGUI"
+    elif ap == 1 or ap == "1": alerte = "PLUIE_STOP"
+    elif ab == 1 or ab == "1": alerte = "BROUILLARD"
+    else:                      alerte = "NORMAL"
 
     return {
         "ec_cible_dSm":       round(ec_cible, 1) if ec_cible is not None else None,
         "ph_cible":           round(float(ph_cible), 1) if ph_cible is not None else None,
-        "nbr_tour":           int(round(nb_cycles)) if nb_cycles is not None else None,
+        "nbr_tour":           max(1, int(round(nb_cycles))) if nb_cycles is not None else None,
         "heure_debut_ml":     heure_debut,
         "scenario_meteo":     scenario,
         "alerte":             alerte,
         "quantite_eau_mm":    round(apport_mm, 1) if apport_mm is not None else None,
         "volume_total_Lha":   round(apport_mm * 10_000, 0) if apport_mm is not None else None,
         "volume_cc_goutteur": round(apport_mm * 150.0) if apport_mm is not None else None,
-        "duree_min":          int(round(max(4.0, min(14.0, duree_min)))) if duree_min is not None else None,
+        "duree_min":          int(round(max(4.0, min(14.0, duree_min)))),
         "_ml_incomplete":     len(manquantes) > 0,
         "_ml_manquantes":     manquantes,
     }
