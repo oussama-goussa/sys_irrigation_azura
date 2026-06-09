@@ -172,7 +172,7 @@ def recuperer_meteo_open_meteo(lat: float, lon: float, date_str: str) -> dict:
             "meteo_vent_max_kmh"           : _safe("wind_speed_10m_max"),
             "meteo_ET0_mm_jour"            : _safe("et0_fao_evapotranspiration"),
             "meteo_VPD_max_kPa"            : _safe("vapor_pressure_deficit_max"),
-            "meteo_rs_wm2_max_jour"        : _safe("shortwave_radiation_sum") * 0.144,  # approx W/m²
+            "meteo_rs_wm2_max_jour"        : round((_safe("shortwave_radiation_sum") * 1_000_000) / 3600 / 5, 1),
         }
 
         logger.success(f"Météo Open-Meteo récupérée pour {date_str} ({lat}, {lon})")
@@ -1714,14 +1714,23 @@ def predict_matin(donnees, modeles_matin, enc_matin, ec_bassin=0.9,
                                   encoders=enc_matin.get("features", {}), fit=False)
 
     resultats = {}
+    enc_cibles = enc_matin.get("cibles", {})
     for target in TARGETS_REG:
         key = f"reg_{target}"
         if key in modeles_matin:
-            resultats[target] = float(modeles_matin[key].predict(X)[0])
+            pred_val = modeles_matin[key].predict(X)[0]
+            # Si un encodeur existe pour cette cible → inverse_transform (valeur encodée)
+            if target in enc_cibles:
+                try:
+                    idx_propre = int(round(float(pred_val)))
+                    resultats[target] = float(enc_cibles[target].inverse_transform([idx_propre])[0])
+                except Exception:
+                    resultats[target] = float(pred_val)
+            else:
+                resultats[target] = float(pred_val)
         else:
             resultats[target] = None
-
-    enc_cibles = enc_matin.get("cibles", {})
+            
     for target in TARGETS_CLF:
         key = f"clf_{target}"
         if key in modeles_matin and target in enc_cibles:
