@@ -8,12 +8,12 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Brain, RefreshCw, Calendar, Sun, Droplets, Thermometer,
   Gauge, Clock, ChevronDown, ChevronRight, ChevronLeft, WifiOff,
-  AlertTriangle, CheckCircle2, XCircle, ArrowRight, Eye
+  AlertTriangle, CheckCircle2, XCircle, ArrowRight, Eye, Settings, X
 } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { getColors } from '../theme.js'
 import { useWindowWidth } from '../components/DashboardShell.jsx'
-import { getDevices, getAccessToken, getRecommandation } from '../api/client.js'
+import { getDevices, getAccessToken, getRecommandation, getAIConfig, updateAIConfig } from '../api/client.js'
 
 // ── Helpers (même logique que ZonePage.jsx) ────────────────────
 function fmtDisplay(d) {
@@ -160,6 +160,148 @@ function TourCalendar({ value, onChange, C, dark }) {
         </button>
       </div>
     </div>
+  )
+}
+
+// ── ConfigModal — modal pour configurer date_plantation, EC bassin, etc. ──
+function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
+  const [config, setConfig] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+  const [success, setSuccess] = useState(false)
+
+  useEffect(() => {
+    getAIConfig(token, device.id).then(setConfig).catch(e => setError(e.message))
+  }, [token, device.id])
+
+  const handleSave = async () => {
+    setSaving(true)
+    setError(null)
+    try {
+      const result = await updateAIConfig(token, device.id, {
+        date_plantation: config.date_plantation || null,
+        ec_eau_brute: config.ec_eau_brute ? parseFloat(config.ec_eau_brute) : null,
+        latitude: config.latitude ? parseFloat(config.latitude) : null,
+        longitude: config.longitude ? parseFloat(config.longitude) : null,
+      })
+      setSuccess(true)
+      setTimeout(() => { onSaved && onSaved(); onClose() }, 800)
+    } catch (e) {
+      setError(e.message)
+    }
+    setSaving(false)
+  }
+
+  if (!config) return null
+
+  const inputStyle = {
+    width: '100%', padding: '8px 10px', borderRadius: 7,
+    border: `1px solid ${C.border}`, background: dark ? '#0d1a12' : '#fff',
+    color: C.text, fontSize: 13, fontFamily: 'inherit', outline: 'none',
+    boxSizing: 'border-box' as const,
+  }
+
+  const labelStyle = { fontSize: 11, fontWeight: 700, color: C.textMuted, marginBottom: 4, display: 'block' }
+
+  return createPortal(
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }} onClick={onClose}>
+      <div style={{
+        width: 420, maxWidth: '95vw', borderRadius: 14,
+        background: dark ? '#111d15' : '#fff', border: `1px solid ${C.border}`,
+        boxShadow: '0 20px 60px rgba(0,0,0,0.3)', padding: 24,
+      }} onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Settings size={16} color={C.green} />
+            <span style={{ fontWeight: 700, fontSize: 15, color: C.text }}>
+              Config · {device.farm_name} St.{device.house_number}
+            </span>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: 4 }}>
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Date de plantation */}
+        <div style={{ marginBottom: 14 }}>
+          <label style={labelStyle}>📅 Date de plantation</label>
+          <input
+            type="date"
+            value={config.date_plantation || ''}
+            onChange={e => setConfig(c => ({ ...c, date_plantation: e.target.value }))}
+            style={inputStyle}
+          />
+          {config.date_plantation && (
+            <div style={{ fontSize: 10, color: C.textDim, marginTop: 3 }}>
+              {Math.floor((Date.now() - new Date(config.date_plantation)) / 86400000)} jours depuis plantation
+            </div>
+          )}
+        </div>
+
+        {/* EC bassin */}
+        <div style={{ marginBottom: 14 }}>
+          <label style={labelStyle}>⚡ EC eau brute (dS/m)</label>
+          <input
+            type="number"
+            step="0.1"
+            min="0.1"
+            max="5"
+            value={config.ec_eau_brute || ''}
+            onChange={e => setConfig(c => ({ ...c, ec_eau_brute: e.target.value }))}
+            placeholder="0.8"
+            style={inputStyle}
+          />
+        </div>
+
+        {/* Coordonnées */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+          <div>
+            <label style={labelStyle}>📍 Latitude</label>
+            <input
+              type="number"
+              step="0.0001"
+              value={config.latitude || ''}
+              onChange={e => setConfig(c => ({ ...c, latitude: e.target.value }))}
+              placeholder="30.4202"
+              style={inputStyle}
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>📍 Longitude</label>
+            <input
+              type="number"
+              step="0.0001"
+              value={config.longitude || ''}
+              onChange={e => setConfig(c => ({ ...c, longitude: e.target.value }))}
+              placeholder="-9.5981"
+              style={inputStyle}
+            />
+          </div>
+        </div>
+
+        {/* Erreur / Succès */}
+        {error && <div style={{ color: '#e74c3c', fontSize: 12, marginBottom: 10 }}>❌ {error}</div>}
+        {success && <div style={{ color: C.green, fontSize: 12, marginBottom: 10 }}>✅ Sauvegardé !</div>}
+
+        {/* Boutons */}
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{
+            padding: '8px 16px', borderRadius: 7, border: `1px solid ${C.border}`,
+            background: 'none', color: C.textMuted, cursor: 'pointer', fontSize: 13,
+          }}>Annuler</button>
+          <button onClick={handleSave} disabled={saving} style={{
+            padding: '8px 16px', borderRadius: 7, border: 'none',
+            background: C.green, color: '#fff', cursor: saving ? 'wait' : 'pointer',
+            fontSize: 13, fontWeight: 700, opacity: saving ? 0.6 : 1,
+          }}>{saving ? 'Sauvegarde...' : '💾 Sauvegarder'}</button>
+        </div>
+      </div>
+    </div>,
+    document.body,
   )
 }
 
@@ -321,6 +463,16 @@ function HouseCard({ house, rec, C, dark }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           <MiniBadge icon={<Droplets size={10} />} value={`${rec.nbr_tour || '—'}`} label="tours" C={C} />
           <MiniBadge icon={<Gauge size={10} />} value={rec.ec_cible_dSm != null ? rec.ec_cible_dSm.toFixed(1) : '—'} label="EC" C={C} />
+          <button
+            onClick={(e) => { e.stopPropagation(); setConfigDevice(house) }}
+            title="Configuration"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', color: C.textDim,
+              padding: 4, display: 'flex', alignItems: 'center',
+            }}
+          >
+            <Settings size={13} />
+          </button>
           {expanded
             ? <ChevronDown size={12} color={C.textDim} />
             : <ChevronRight size={12} color={C.textDim} />}
@@ -452,6 +604,7 @@ export default function AgentIAPage({ dark, auth }) {
   const [dateStr, setDateStr] = useState(today())
   const [farms, setFarms] = useState([])
   const [loading, setLoading] = useState(true)
+  const [configDevice, setConfigDevice] = useState(null)
   const fetchingRef = useRef(false)
 
   // Calendar popup state (même pattern que ZonePage)
@@ -648,6 +801,18 @@ export default function AgentIAPage({ dark, auth }) {
           dark={dark}
         />
       ))}
+
+      {/* Modal config device */}
+      {configDevice && (
+        <ConfigModal
+          device={configDevice}
+          token={getAccessToken()}
+          C={C}
+          dark={dark}
+          onClose={() => setConfigDevice(null)}
+          onSaved={() => { loadFarms() }}
+        />
+      )}
     </div>
   )
 }

@@ -756,31 +756,28 @@ def preparer_features_matin(
       2. Fallback Open-Meteo si données manquantes
       3. Calculer features agronomiques (Kc, FL, alertes)
     """
-    # 1. Météo Open-Meteo par défaut (modèle entraîné avec ces données)
+    # 1. Météo Open-Meteo (modèle entraîné avec ces données — source unique fiable)
     meteo = recuperer_meteo_open_meteo(lat, lon, date_str)
 
-    # 2. Compléter avec capteurs si données récentes et valides (< 3h)
+    # 2. Capteurs UNIQUEMENT pour température/humidité si valeurs récentes ET cohérentes
+    #    (les capteurs VPD, ET0, vent, radiation sont souvent défaillants)
     meteo_capteurs = _recuperer_meteo_capteurs(db, device_id)
-    champs_capteurs_valides = [
-        "meteo_T_max_C", "meteo_T_min_C", "meteo_T_mean_C",
-        "meteo_HR_max_pct", "meteo_HR_min_pct", "meteo_HR_mean_pct",
-        "meteo_rs_wm2_max_jour", "meteo_shortwave_radiation_sum",
-        "meteo_pluie_mm_jour",
-    ]
-    for champ in champs_capteurs_valides:
+    for champ in ["meteo_T_max_C", "meteo_T_min_C", "meteo_T_mean_C",
+                  "meteo_HR_max_pct", "meteo_HR_min_pct", "meteo_HR_mean_pct"]:
         if champ in meteo_capteurs:
-            # Ne remplacer que si la valeur capteur est cohérente (pas 0 sauf pluie)
             val = meteo_capteurs[champ]
-            if champ == "meteo_pluie_mm_jour" or val > 0:
+            om_val = meteo.get(champ, 0)
+            # Remplacer seulement si capteur dans une plage raisonnable
+            if champ.startswith("meteo_T_") and -10 < val < 55:
+                meteo[champ] = val
+            elif champ.startswith("meteo_HR_") and 5 < val < 105:
                 meteo[champ] = val
 
-    # 3. VPD et ET0 : toujours Open-Meteo (capteurs non fiables pour ces champs)
-    # Déjà fait à l'étape 1
-
-    logger.info(f"Météo utilisée: T={meteo.get('meteo_T_max_C')}/{meteo.get('meteo_T_min_C')} "
+    logger.info(f"Météo: T={meteo.get('meteo_T_max_C')}/{meteo.get('meteo_T_min_C')} "
                 f"HR={meteo.get('meteo_HR_mean_pct'):.0f}% VPD={meteo.get('meteo_VPD_max_kPa')} "
                 f"ET0={meteo.get('meteo_ET0_mm_jour')} vent={meteo.get('meteo_vent_max_kmh')} "
-                f"source={'capteurs+OM' if meteo_capteurs else 'Open-Meteo'}")
+                f"rad={meteo.get('meteo_shortwave_radiation_sum')} "
+                f"(capteurs={'oui' if meteo_capteurs else 'non'})")
 
     # 4. Stade phénologique et Kc
     if date_plantation:
@@ -788,9 +785,9 @@ def preparer_features_matin(
             dp = datetime.strptime(date_plantation, "%Y-%m-%d").date()
             jours = (datetime.strptime(date_str, "%Y-%m-%d").date() - dp).days
         except (ValueError, TypeError):
-            jours = 75  # défaut : floraison
+            jours = 163  # moyenne données entraînement
     else:
-        jours = 75  # défaut : floraison
+        jours = 163  # moyenne données entraînement (pas 75)
 
     stade, kc = _calculer_stade_et_kc(jours)
 
@@ -801,14 +798,15 @@ def preparer_features_matin(
     alertes = _calculer_alertes(meteo)
 
     # 7. Assemblage des 21 features
+    # Valeurs par défaut alignées avec les données d'entraînement
     features = {
         **meteo,
-        "opt_Kc"                      : kc,
-        "opt_jours_depuis_plantation" : jours,
-        "opt_FL"                      : fl,
-        "ec_bassin"                   : ec_bassin,
-        "moy_pct_drainage"            : 20.0,    # défaut (pas de capteur)
-        "ec_cumul_drainage"           : 2.5,     # défaut (pas de capteur)
+        "opt_Kc"                      : kc if kc else 0.86,       # moyenne entraînement
+        "opt_jours_depuis_plantation" : jours if jours > 0 else 163,  # moyenne entraînement
+        "opt_FL"                      : fl if fl else 0.20,       # moyenne entraînement
+        "ec_bassin"                   : ec_bassin if ec_bassin > 0 else 0.80,
+        "moy_pct_drainage"            : 18.0,    # moyenne entraînement (pas 20)
+        "ec_cumul_drainage"           : 4.1,     # moyenne entraînement (pas 2.5)
         **alertes,
     }
 

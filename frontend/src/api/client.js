@@ -478,3 +478,24 @@ export async function getRecommandation(token, deviceId, dateStr) {
   const data = await res.json()
   return data.recommandation || data
 }
+
+/** Récupérer la configuration IA d'un device */
+export async function getAIConfig(token, deviceId) {
+  const res = await fetchWithRefresh(`${BASE}/api/ai/config/${deviceId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error(`Erreur API: ${res.status}`)
+  return res.json()
+}
+
+/** Mettre à jour la configuration IA d'un device */
+export async function updateAIConfig(token, deviceId, updates) {
+  const res = await fetchWithRefresh(`${BASE}/api/ai/config/${deviceId}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  })
+  if (!res.ok) throw new Error(`Erreur API: ${res.status}`)
+  return res.json()
+}
