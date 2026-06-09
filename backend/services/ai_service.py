@@ -123,36 +123,69 @@ def recuperer_meteo_open_meteo(lat: float, lon: float, date_str: str) -> dict:
     """
     try:
         url = "https://api.open-meteo.com/v1/forecast"
-        params = {
-            "latitude"       : lat,
-            "longitude"      : lon,
-            "daily"          : [
-                "temperature_2m_max",
-                "temperature_2m_min",
-                "temperature_2m_mean",
-                "relative_humidity_2m_max",
-                "relative_humidity_2m_min",
-                "relative_humidity_2m_mean",
-                "shortwave_radiation_sum",
-                "precipitation_sum",
-                "wind_speed_10m_max",
-                "et0_fao_evapotranspiration",
-                "vapor_pressure_deficit_max",
-            ],
-            "timezone"       : "Africa/Casablanca",
-            "forecast_days"  : 1,
-            "past_days"      : 1,
-        }
+        # Déterminer si la date est passée ou future/aujourd'hui
+        from datetime import date as _date
+        date_cible = datetime.strptime(date_str, "%Y-%m-%d").date()
+        today = _date.today()
+
+        if date_cible < today:
+            # Date passée → utiliser l'API archive Open-Meteo
+            url = "https://archive-api.open-meteo.com/v1/archive"
+            params = {
+                "latitude"   : lat,
+                "longitude"  : lon,
+                "start_date" : date_str,
+                "end_date"   : date_str,
+                "daily"      : [
+                    "temperature_2m_max",
+                    "temperature_2m_min",
+                    "temperature_2m_mean",
+                    "relative_humidity_2m_max",
+                    "relative_humidity_2m_min",
+                    "relative_humidity_2m_mean",
+                    "shortwave_radiation_sum",
+                    "precipitation_sum",
+                    "wind_speed_10m_max",
+                    "et0_fao_evapotranspiration",
+                    "vapor_pressure_deficit_max",
+                ],
+                "timezone"   : "Africa/Casablanca",
+            }
+        else:
+            # Aujourd'hui ou futur → utiliser le forecast
+            params = {
+                "latitude"       : lat,
+                "longitude"      : lon,
+                "daily"          : [
+                    "temperature_2m_max",
+                    "temperature_2m_min",
+                    "temperature_2m_mean",
+                    "relative_humidity_2m_max",
+                    "relative_humidity_2m_min",
+                    "relative_humidity_2m_mean",
+                    "shortwave_radiation_sum",
+                    "precipitation_sum",
+                    "wind_speed_10m_max",
+                    "et0_fao_evapotranspiration",
+                    "vapor_pressure_deficit_max",
+                ],
+                "timezone"       : "Africa/Casablanca",
+                "forecast_days"  : 1,
+                "past_days"      : 0,
+            }
 
         resp = requests.get(url, params=params, timeout=15)
         resp.raise_for_status()
         data = resp.json()
 
         daily = data.get("daily", {})
-        # Prendre le dernier jour disponible (aujourd'hui ou le plus récent)
-        idx = len(daily.get("time", [])) - 1
-        if idx < 0:
-            idx = 0
+        # Prendre l'index correspondant à la date demandée
+        times = daily.get("time", [])
+        idx = 0
+        if date_str in times:
+            idx = times.index(date_str)
+        elif times:
+            idx = len(times) - 1
 
         def _safe(key, default=0.0):
             vals = daily.get(key, [])
