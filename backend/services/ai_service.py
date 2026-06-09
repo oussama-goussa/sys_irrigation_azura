@@ -759,25 +759,17 @@ def preparer_features_matin(
     # 1. Météo Open-Meteo (modèle entraîné avec ces données — source unique fiable)
     meteo = recuperer_meteo_open_meteo(lat, lon, date_str)
 
-    # 2. Capteurs UNIQUEMENT pour température/humidité si valeurs récentes ET cohérentes
-    #    (les capteurs VPD, ET0, vent, radiation sont souvent défaillants)
-    meteo_capteurs = _recuperer_meteo_capteurs(db, device_id)
-    for champ in ["meteo_T_max_C", "meteo_T_min_C", "meteo_T_mean_C",
-                  "meteo_HR_max_pct", "meteo_HR_min_pct", "meteo_HR_mean_pct"]:
-        if champ in meteo_capteurs:
-            val = meteo_capteurs[champ]
-            om_val = meteo.get(champ, 0)
-            # Remplacer seulement si capteur dans une plage raisonnable
-            if champ.startswith("meteo_T_") and -10 < val < 55:
-                meteo[champ] = val
-            elif champ.startswith("meteo_HR_") and 5 < val < 105:
-                meteo[champ] = val
+    # 2. Open-Meteo est la source unique pour toutes les features météo.
+    #    Les capteurs BDD mesurent la température INTÉRIEURE de la serre
+    #    (toujours plus chaude que l'extérieur) — ne jamais les utiliser
+    #    pour les features météo entraînées sur données extérieures Open-Meteo.
+    meteo_capteurs = _recuperer_meteo_capteurs(db, device_id)  # log uniquement
 
-    logger.info(f"Météo: T={meteo.get('meteo_T_max_C')}/{meteo.get('meteo_T_min_C')} "
+    logger.info(f"Météo Open-Meteo: T={meteo.get('meteo_T_max_C')}/{meteo.get('meteo_T_min_C')} "
                 f"HR={meteo.get('meteo_HR_mean_pct'):.0f}% VPD={meteo.get('meteo_VPD_max_kPa')} "
                 f"ET0={meteo.get('meteo_ET0_mm_jour')} vent={meteo.get('meteo_vent_max_kmh')} "
                 f"rad={meteo.get('meteo_shortwave_radiation_sum')} "
-                f"(capteurs={'oui' if meteo_capteurs else 'non'})")
+                f"(capteurs serre ignorés: T_int={meteo_capteurs.get('meteo_T_max_C', 'N/A')}°C)")
 
     # 4. Stade phénologique et Kc
     if date_plantation:
@@ -1141,12 +1133,8 @@ def generer_recommandation_historique_device(
                 # Utiliser le cache météo historique
                 meteo = meteo_cache.get(date_str, {})
 
-                # Compléter avec les capteurs BDD si disponibles
-                meteo_capteurs = _recuperer_meteo_capteurs_date(db, device_id, current)
-                if meteo_capteurs:
-                    for k, v in meteo_capteurs.items():
-                        if k not in meteo or meteo[k] == 0:
-                            meteo[k] = v
+                # Capteurs ignorés — mesurent température intérieure serre,
+                # pas la météo extérieure utilisée à l'entraînement.
 
                 # Compléter les champs manquants avec Open-Meteo forecast (fallback)
                 champs_meteo_requis = [
@@ -1156,11 +1144,12 @@ def generer_recommandation_historique_device(
                     "meteo_shortwave_radiation_sum", "meteo_pluie_mm_jour",
                     "meteo_vent_max_kmh", "meteo_rs_wm2_max_jour",
                 ]
+
                 manquants = [c for c in champs_meteo_requis if c not in meteo or meteo[c] == 0]
-                if manquants:
+                if manquants or not meteo:
                     meteo_om = recuperer_meteo_open_meteo(lat, lon, date_str)
-                    for champ in manquants:
-                        if champ in meteo_om:
+                    for champ in champs_meteo_requis:
+                        if champ in meteo_om and (champ not in meteo or meteo.get(champ, 0) == 0):
                             meteo[champ] = meteo_om[champ]
 
                 # Calcul ET0 si toujours manquant
