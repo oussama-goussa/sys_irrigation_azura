@@ -746,11 +746,11 @@ def detecter_heure_matin_et_debut_tour(
         "heure_debut_tour1": None,
         "heure_matin"      : None,
         "prt_pct"          : None,
-        "decision"         : "FALLBACK_RECOMMANDATION",
+        "decision"         : "AUCUN_DECLENCHEMENT",
         "poids_soir_kg"    : ps,
         "poids_matin_kg"   : None,
         "fin_tour_soir"    : fin_tour,
-        "source"           : "recommandation",
+        "source"           : "ml",
     }
 
 
