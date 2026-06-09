@@ -1697,6 +1697,19 @@ def _preparer_features(df, features_list, encoders=None, fit=True):
     return X, encoders, cols_dispo
 
 
+# ── Features du modèle Matin (utilisées pour padding du DataFrame) ──
+FEATURES_MATIN = [
+    "meteo_T_max_C", "meteo_T_min_C", "meteo_T_mean_C",
+    "meteo_HR_max_pct", "meteo_HR_min_pct", "meteo_HR_mean_pct",
+    "meteo_VPD_max_kPa", "meteo_ET0_mm_jour",
+    "meteo_shortwave_radiation_sum", "meteo_pluie_mm_jour",
+    "meteo_vent_max_kmh", "meteo_rs_wm2_max_jour",
+    "opt_Kc", "opt_jours_depuis_plantation", "opt_FL",
+    "ec_bassin", "moy_pct_drainage", "ec_cumul_drainage",
+    "alerte_chergui", "alerte_pluie", "alerte_brouillard", "alerte_vpd_stress",
+]
+
+
 def predict_matin(donnees, modeles_matin, enc_matin, ec_bassin=0.9,
                   volume_cycle_L=1.33, stade="Floraison",
                   ph_bassin=7.2, volume_m3=0.133):
