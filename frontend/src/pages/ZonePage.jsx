@@ -1358,98 +1358,104 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                 gap: isMobile ? 10 : 12,
                 marginBottom:24,
               }}>
-                {METRICS.map(m => {
-                  const ms = s[m.key]
-                  if (!ms) return null
-                  return (
-                    <div key={m.key} style={{
-                      background: C.card,
-                      border:`1.5px solid ${C.border}`,
-                      borderTop:`3px solid ${m.color}`,
-                      borderRadius:12,
-                      padding: isMobile ? '14px 14px' : '16px 18px',
-                      display:'flex', flexDirection:'column', gap:10,
-                    }}>
-                      {/* Label */}
-                      <div style={{
-                        fontSize:10, fontWeight:700,
-                        textTransform:'uppercase', letterSpacing:'0.10em',
-                        color:C.textDim,
+                <div style={{
+                  display:'grid',
+                  gridTemplateColumns: isMobile ? '1fr 1fr' : isTablet ? 'repeat(3,1fr)' : 'repeat(4,1fr)',
+                  gap: isMobile ? 10 : 12,
+                  marginBottom:24,
+                }}>
+                  {METRICS.map(m => {
+                    const ms = s[m.key]
+                    if (!ms) return null
+                    return (
+                      <div key={m.key} style={{
+                        background: C.card,
+                        border:`1.5px solid ${C.border}`,
+                        borderLeft:`3px solid ${m.color}`,
+                        borderRadius:12,
+                        padding:'18px 20px',
+                        display:'flex', flexDirection:'column', gap:0,
                       }}>
-                        {m.label}
-                        {m.unit && <span style={{ marginLeft:4, opacity:0.7 }}>({m.unit})</span>}
-                      </div>
+                        {/* Label */}
+                        <div style={{
+                          fontSize:10, fontWeight:700,
+                          textTransform:'uppercase', letterSpacing:'0.12em',
+                          color:C.textDim, marginBottom:14,
+                        }}>
+                          {m.label}
+                          {m.unit && <span style={{ marginLeft:5, opacity:0.55, fontWeight:500 }}>{m.unit}</span>}
+                        </div>
 
-                      {/* MIN / MAX / AVG rows */}
-                      <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                        {m.fields.includes('min') && (
-                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                            <span style={{
-                              fontSize:10, fontWeight:700, color:C.textDim,
-                              textTransform:'uppercase', letterSpacing:'0.06em',
-                            }}>Min</span>
-                            <span style={{
-                              fontSize:16, fontWeight:900,
-                              color: dark ? '#60a5fa' : '#2563eb',
-                              fontVariantNumeric:'tabular-nums',
-                            }}>
-                              {fv(ms.min, m.dec)}
-                            </span>
-                          </div>
-                        )}
-                        {m.fields.includes('max') && (
-                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                            <span style={{
-                              fontSize:10, fontWeight:700, color:C.textDim,
-                              textTransform:'uppercase', letterSpacing:'0.06em',
-                            }}>
-                              {m.labelMax || 'Max'}
-                            </span>
-                            <span style={{
-                              fontSize:16, fontWeight:900, color:m.color,
-                              fontVariantNumeric:'tabular-nums',
-                            }}>
-                              {fv(ms.max, m.dec)}
-                            </span>
-                          </div>
-                        )}
-                        {m.fields.includes('avg') && ms.avg != null && (
-                          <div style={{
-                            display:'flex', alignItems:'center', justifyContent:'space-between',
-                            paddingTop:6, borderTop:`1px solid ${C.border}`,
-                          }}>
-                            <span style={{
-                              fontSize:10, fontWeight:700, color:C.textDim,
-                              textTransform:'uppercase', letterSpacing:'0.06em',
-                            }}>Moy</span>
-                            <span style={{
-                              fontSize:13, fontWeight:700, color:C.textMuted,
-                              fontVariantNumeric:'tabular-nums',
-                            }}>
-                              {fv(ms.avg, m.dec)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Barre visuelle MIN→MAX */}
-                      {m.fields.includes('min') && m.fields.includes('max') && ms.min != null && ms.max != null && ms.max > ms.min && ms.avg != null && (() => {
-                        const range = ms.max - ms.min
-                        const pct = range > 0 ? ((ms.avg - ms.min) / range) * 100 : 50
-                        return (
-                          <div style={{ position:'relative', height:4, background:C.border, borderRadius:2 }}>
+                        {/* Rows */}
+                        <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
+                          {m.fields.includes('min') && (
                             <div style={{
-                              position:'absolute', left:0, top:0, bottom:0,
-                              width:`${Math.min(Math.max(pct,2),98)}%`,
-                              background:`linear-gradient(90deg, ${dark ? '#2563eb' : '#60a5fa'}, ${m.color})`,
-                              borderRadius:2, transition:'width 0.6s cubic-bezier(0.22,1,0.36,1)',
-                            }} />
-                          </div>
-                        )
-                      })()}
-                    </div>
-                  )
-                })}
+                              display:'flex', alignItems:'center',
+                              justifyContent:'space-between',
+                              padding:'7px 0',
+                              borderBottom:`1px solid ${C.border}`,
+                            }}>
+                              <span style={{
+                                fontSize:11, fontWeight:600,
+                                color:C.textDim, letterSpacing:'0.04em',
+                              }}>Min</span>
+                              <span style={{
+                                fontSize:15, fontWeight:800,
+                                color: dark ? '#93c5fd' : '#1d4ed8',
+                                fontVariantNumeric:'tabular-nums',
+                                letterSpacing:'-0.01em',
+                              }}>
+                                {fv(ms.min, m.dec)}
+                              </span>
+                            </div>
+                          )}
+                          {m.fields.includes('max') && (
+                            <div style={{
+                              display:'flex', alignItems:'center',
+                              justifyContent:'space-between',
+                              padding:'7px 0',
+                              borderBottom: m.fields.includes('avg') && ms.avg != null ? `1px solid ${C.border}` : 'none',
+                            }}>
+                              <span style={{
+                                fontSize:11, fontWeight:600,
+                                color:C.textDim, letterSpacing:'0.04em',
+                              }}>
+                                {m.labelMax || 'Max'}
+                              </span>
+                              <span style={{
+                                fontSize:15, fontWeight:800,
+                                color:m.color,
+                                fontVariantNumeric:'tabular-nums',
+                                letterSpacing:'-0.01em',
+                              }}>
+                                {fv(ms.max, m.dec)}
+                              </span>
+                            </div>
+                          )}
+                          {m.fields.includes('avg') && ms.avg != null && (
+                            <div style={{
+                              display:'flex', alignItems:'center',
+                              justifyContent:'space-between',
+                              padding:'7px 0',
+                            }}>
+                              <span style={{
+                                fontSize:11, fontWeight:600,
+                                color:C.textDim, letterSpacing:'0.04em',
+                              }}>Moy</span>
+                              <span style={{
+                                fontSize:13, fontWeight:700,
+                                color:C.textMuted,
+                                fontVariantNumeric:'tabular-nums',
+                              }}>
+                                {fv(ms.avg, m.dec)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             )}
           </>
