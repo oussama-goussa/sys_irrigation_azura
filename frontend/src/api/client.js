@@ -499,3 +499,15 @@ export async function updateAIConfig(token, deviceId, updates) {
   if (!res.ok) throw new Error(`Erreur API: ${res.status}`)
   return res.json()
 }
+
+/** Statistiques journalières min/max/avg d'un device */
+export async function getDeviceDailyStats(token, deviceId, date = null) {
+  const params = new URLSearchParams()
+  if (date) params.append('date', date)
+  const res = await fetchWithRefresh(
+    `${BASE}/api/devices/${deviceId}/daily-stats?${params}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  )
+  if (!res.ok) throw new Error('Erreur chargement stats journalières')
+  return res.json()
+}

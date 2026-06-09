@@ -1000,3 +1000,118 @@ def check_offline_stations(
     finally:
         if _redis:
             _redis.delete(lock_key)
+
+# ── GET /api/devices/{id}/daily-stats ─────────────────────────
+@router.get("/{device_id}/daily-stats")
+def get_daily_stats(
+    device_id : int,
+    date      : Optional[str] = Query(None, description="YYYY-MM-DD"),
+    db        : Session = Depends(get_db),
+    user               = Depends(require_any)
+):
+    device = db.query(Device).filter(Device.id == device_id).first()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device non trouvé")
+    _check_device_access(device, user)
+
+    target_date = date if date else datetime.utcnow().date().isoformat()
+
+    try:
+        dt_from = datetime.strptime(target_date, "%Y-%m-%d")
+        dt_to   = dt_from.replace(hour=23, minute=59, second=59)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Format date invalide (YYYY-MM-DD)")
+
+    # Requête aggregat unique — MIN/MAX/AVG sur tous les champs
+    row = db.query(
+        func.count(SensorReading.id).label("count"),
+
+        func.min(func.nullif(SensorReading.ec_actual,  0)).label("ec_min"),
+        func.max(func.nullif(SensorReading.ec_actual,  0)).label("ec_max"),
+        func.avg(func.nullif(SensorReading.ec_actual,  0)).label("ec_avg"),
+
+        func.min(func.nullif(SensorReading.ph_actual,  0)).label("ph_min"),
+        func.max(func.nullif(SensorReading.ph_actual,  0)).label("ph_max"),
+        func.avg(func.nullif(SensorReading.ph_actual,  0)).label("ph_avg"),
+
+        func.min(SensorReading.avg_temp).label("temp_min"),
+        func.max(SensorReading.avg_temp).label("temp_max"),
+        func.avg(SensorReading.avg_temp).label("temp_avg"),
+
+        func.min(SensorReading.humidity).label("hum_min"),
+        func.max(SensorReading.humidity).label("hum_max"),
+        func.avg(SensorReading.humidity).label("hum_avg"),
+
+        func.min(SensorReading.outside_temp).label("out_temp_min"),
+        func.max(SensorReading.outside_temp).label("out_temp_max"),
+        func.avg(SensorReading.outside_temp).label("out_temp_avg"),
+
+        func.min(SensorReading.outside_humidity).label("out_hum_min"),
+        func.max(SensorReading.outside_humidity).label("out_hum_max"),
+        func.avg(SensorReading.outside_humidity).label("out_hum_avg"),
+
+        func.min(SensorReading.radiation).label("rad_min"),
+        func.max(SensorReading.radiation).label("rad_max"),
+        func.avg(SensorReading.radiation).label("rad_avg"),
+
+        func.max(SensorReading.radiation_sum).label("rad_sum_max"),
+
+        func.min(func.nullif(SensorReading.flow, 0)).label("flow_min"),
+        func.max(func.nullif(SensorReading.flow, 0)).label("flow_max"),
+
+    ).filter(
+        SensorReading.device_id == device_id,
+        SensorReading.timestamp >= dt_from,
+        SensorReading.timestamp <= dt_to,
+    ).first()
+
+    if not row or row.count == 0:
+        return {
+            "date": target_date, "device_id": device_id,
+            "count": 0, "stats": {}
+        }
+
+    def r(v, d=2):
+        return round(float(v), d) if v is not None else None
+
+    # Vérifier si données extérieures existent sur cette journée
+    has_outside = row.out_temp_min is not None or row.out_hum_min is not None
+
+    stats = {
+        "ec_actual": {
+            "min": r(row.ec_min), "max": r(row.ec_max), "avg": r(row.ec_avg)
+        },
+        "ph_actual": {
+            "min": r(row.ph_min, 2), "max": r(row.ph_max, 2), "avg": r(row.ph_avg, 2)
+        },
+        "avg_temp": {
+            "min": r(row.temp_min, 1), "max": r(row.temp_max, 1), "avg": r(row.temp_avg, 1)
+        },
+        "humidity": {
+            "min": r(row.hum_min, 1), "max": r(row.hum_max, 1), "avg": r(row.hum_avg, 1)
+        },
+        "radiation": {
+            "min": r(row.rad_min, 0), "max": r(row.rad_max, 0), "avg": r(row.rad_avg, 0)
+        },
+        "radiation_sum": {
+            "max": r(row.rad_sum_max, 0)
+        },
+        "flow": {
+            "min": r(row.flow_min, 0), "max": r(row.flow_max, 0)
+        },
+    }
+
+    if has_outside:
+        stats["outside_temp"] = {
+            "min": r(row.out_temp_min, 1), "max": r(row.out_temp_max, 1), "avg": r(row.out_temp_avg, 1)
+        }
+        stats["outside_humidity"] = {
+            "min": r(row.out_hum_min, 1), "max": r(row.out_hum_max, 1), "avg": r(row.out_hum_avg, 1)
+        }
+
+    return {
+        "date"     : target_date,
+        "device_id": device_id,
+        "count"    : row.count,
+        "stats"    : stats,
+    }

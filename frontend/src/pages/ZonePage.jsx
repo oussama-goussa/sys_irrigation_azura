@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 
 import { Spinner } from '../components/ui.jsx'
-import { getDeviceLatest, getDeviceHistory, exportDeviceCSV, getDeviceTours, getWeightHistory, getAccessToken } from '../api/client.js'
+import { getDeviceLatest, getDeviceHistory, exportDeviceCSV, getDeviceTours, getWeightHistory, getDeviceDailyStats, getAccessToken } from '../api/client.js'
 
 // ── helpers ───────────────────────────────────────────────────
 function fmt(v, dec = 2) {
@@ -783,6 +783,15 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
   const [loadingTours, setLoadingTours] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
+  // ── Stats journalières ──
+  const [statsDate,      setStatsDate]      = useState(today())
+  const [dailyStats,     setDailyStats]     = useState(null)
+  const [loadingStats,   setLoadingStats]   = useState(true)
+  const [showStatsCal,   setShowStatsCal]   = useState(false)
+  const [statsCalPos,    setStatsCalPos]    = useState({ top: 0, bottom: 'auto', left: 0 })
+  const statsCalTriggerRef = useRef(null)
+  const statsCalPortalRef  = useRef(null)
+
   // ── Calendrier graphiques ──
   const [showChartCal,    setShowChartCal]    = useState(false)
   const [chartCalPos,     setChartCalPos]     = useState({ top: 0, bottom: 'auto', left: 0 })
@@ -972,6 +981,44 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
       window.removeEventListener('scroll', onScroll, true)
     }
   }, [showTourCal])  
+
+  // ── load daily stats ──
+  const loadDailyStats = useCallback(async () => {
+    setLoadingStats(true)
+    try {
+      const d = await getDeviceDailyStats(getAccessToken(), deviceId, statsDate)
+      setDailyStats(d)
+    } catch {
+      setDailyStats(null)
+    } finally {
+      setLoadingStats(false)
+    }
+  }, [deviceId, statsDate])
+
+  useEffect(() => {
+    loadDailyStats()
+    if (statsDate !== today()) return
+    const iv = setInterval(loadDailyStats, 30_000)
+    return () => clearInterval(iv)
+  }, [statsDate, deviceId])
+
+  // Click-outside calendrier stats
+  useEffect(() => {
+    if (!showStatsCal) return
+    const close = (e) => {
+      if (
+        statsCalTriggerRef.current && !statsCalTriggerRef.current.contains(e.target) &&
+        statsCalPortalRef.current  && !statsCalPortalRef.current.contains(e.target)
+      ) setShowStatsCal(false)
+    }
+    const onScroll = () => setShowStatsCal(false)
+    document.addEventListener('mousedown', close)
+    window.addEventListener('scroll', onScroll, true)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      window.removeEventListener('scroll', onScroll, true)
+    }
+  }, [showStatsCal])
 
   // ── Period shortcut ──
   const applyPeriod = (p) => {
@@ -1177,6 +1224,236 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
               subLabel={online === false ? 'Hors ligne' : undefined} subLabelColor={C.red} />
           </div>
           )
+      })()}
+
+      {/* ── Statistiques journalières ───────────────────────── */}
+      {(() => {
+        const s = dailyStats?.stats || {}
+        const isStatsToday = statsDate === today()
+
+        const METRICS = [
+          { key: 'ec_actual',        label: 'EC Apport',      unit: 'mS/cm', color: '#00c9a7', dec: 2, fields: ['min','max','avg'] },
+          { key: 'ph_actual',        label: 'pH Apport',      unit: '',      color: '#4d9de0', dec: 2, fields: ['min','max','avg'] },
+          { key: 'avg_temp',         label: 'Temp. Serre',    unit: '°C',    color: '#f52e23', dec: 1, fields: ['min','max','avg'] },
+          { key: 'humidity',         label: 'Hum. Serre',     unit: '%',     color: '#b197fc', dec: 1, fields: ['min','max','avg'] },
+          { key: 'outside_temp',     label: 'Temp. Ext.',     unit: '°C',    color: '#f05252', dec: 1, fields: ['min','max','avg'], optional: true },
+          { key: 'outside_humidity', label: 'Hum. Ext.',      unit: '%',     color: '#60a5fa', dec: 1, fields: ['min','max','avg'], optional: true },
+          { key: 'radiation',        label: 'Radiation',      unit: 'W/m²',  color: '#f5e642', dec: 0, fields: ['min','max','avg'] },
+          { key: 'radiation_sum',    label: 'Cumul Rad.',     unit: 'J/cm²', color: '#f5a623', dec: 0, fields: ['max'], labelMax: 'fin jour' },
+          { key: 'flow',             label: 'Débit',          unit: 'L/h',   color: '#34d96f', dec: 0, fields: ['min','max'] },
+        ].filter(m => !m.optional || s[m.key] != null)
+
+        const fv = (v, dec) => v != null ? Number(v).toFixed(dec) : '—'
+
+        return (
+          <>
+            {/* Header section */}
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:28, marginBottom:14 }}>
+              <div style={{ width:3, height:18, background:C.green, borderRadius:2 }} />
+              <span style={{ color:C.text, fontSize:14, fontWeight:800 }}>Statistiques du jour</span>
+              {!loadingStats && dailyStats?.count > 0 && (
+                <span style={{ fontSize:11, color:C.textDim, marginLeft:4 }}>
+                  {dailyStats.count} lectures
+                </span>
+              )}
+              {isStatsToday && (
+                <span style={{
+                  fontSize:10, fontWeight:700, letterSpacing:'0.08em',
+                  color:C.green, background:`${C.green}15`,
+                  border:`1px solid ${C.green}30`, borderRadius:5,
+                  padding:'2px 8px', textTransform:'uppercase',
+                }}>
+                  live
+                </span>
+              )}
+            </div>
+
+            {/* Sélecteur date stats */}
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16 }}>
+              <div style={{ position:'relative' }}>
+                <div
+                  ref={statsCalTriggerRef}
+                  onClick={() => {
+                    const r = statsCalTriggerRef.current.getBoundingClientRect()
+                    const spaceBelow = window.innerHeight - r.bottom
+                    if (spaceBelow < 320)
+                      setStatsCalPos({ bottom: window.innerHeight - r.top + 6, top:'auto', left:r.left })
+                    else
+                      setStatsCalPos({ top: r.bottom + 6, bottom:'auto', left:r.left })
+                    setShowStatsCal(v => !v)
+                  }}
+                  style={{
+                    display:'flex', alignItems:'center', gap:10,
+                    padding:'7px 14px', borderRadius:8, minHeight:34, cursor:'pointer',
+                    border:`1.5px solid ${showStatsCal ? C.green : C.border}`,
+                    background:C.inputBg, transition:'border-color 0.15s', fontFamily:'inherit',
+                  }}
+                >
+                  <Calendar size={14} color={showStatsCal || statsDate !== today() ? C.green : C.textDim} strokeWidth={2} />
+                  <span style={{ fontSize:12, fontWeight:630, color:C.text }}>
+                    {fmtDisplay(statsDate)}
+                  </span>
+                </div>
+
+                {showStatsCal && createPortal(
+                  <div
+                    ref={statsCalPortalRef}
+                    style={{
+                      position:'fixed',
+                      top: statsCalPos.top !== 'auto' ? statsCalPos.top : 'auto',
+                      bottom: statsCalPos.bottom !== 'auto' ? statsCalPos.bottom : 'auto',
+                      left: statsCalPos.left, zIndex:99999,
+                      border:`1.5px solid ${C.border}`, borderRadius:12,
+                      padding:'12px 12px 10px',
+                      background: dark ? C.surface : '#fafcfb',
+                      boxShadow:'0 8px 32px rgba(0,0,0,0.35)',
+                      width:248, fontFamily:'inherit',
+                    }}
+                  >
+                    <TourCalendar
+                      value={statsDate}
+                      onChange={v => { if (v) { setStatsDate(v); setShowStatsCal(false) } }}
+                      C={C}
+                    />
+                  </div>,
+                  document.body
+                )}
+              </div>
+
+              {statsDate !== today() && (
+                <button
+                  onClick={() => setStatsDate(today())}
+                  style={{
+                    padding:'6px 10px', borderRadius:7,
+                    border:`1.5px solid ${C.border}`,
+                    background:C.inputBg, color:C.text,
+                    fontSize:12, fontFamily:'inherit', cursor:'pointer', outline:'none',
+                  }}
+                >Aujourd'hui</button>
+              )}
+            </div>
+
+            {/* Grille des métriques */}
+            {loadingStats ? (
+              <div style={{
+                display:'flex', alignItems:'center', gap:10,
+                padding:'28px 0', color:C.textDim, fontSize:12,
+              }}>
+                <RefreshCw size={14} style={{ animation:'az-spin 0.8s linear infinite' }} />
+                Chargement des statistiques…
+              </div>
+            ) : !dailyStats || dailyStats.count === 0 ? (
+              <div style={{
+                background:C.card, border:`1.5px solid ${C.border}`,
+                borderRadius:14, padding:'32px',
+                textAlign:'center', color:C.textDim, fontSize:12,
+                marginBottom:16,
+              }}>
+                Aucune donnée pour le {fmtDisplay(statsDate)}
+              </div>
+            ) : (
+              <div style={{
+                display:'grid',
+                gridTemplateColumns: isMobile ? '1fr 1fr' : isTablet ? 'repeat(3,1fr)' : 'repeat(4,1fr)',
+                gap: isMobile ? 10 : 12,
+                marginBottom:24,
+              }}>
+                {METRICS.map(m => {
+                  const ms = s[m.key]
+                  if (!ms) return null
+                  return (
+                    <div key={m.key} style={{
+                      background: C.card,
+                      border:`1.5px solid ${C.border}`,
+                      borderTop:`3px solid ${m.color}`,
+                      borderRadius:12,
+                      padding: isMobile ? '14px 14px' : '16px 18px',
+                      display:'flex', flexDirection:'column', gap:10,
+                    }}>
+                      {/* Label */}
+                      <div style={{
+                        fontSize:10, fontWeight:700,
+                        textTransform:'uppercase', letterSpacing:'0.10em',
+                        color:C.textDim,
+                      }}>
+                        {m.label}
+                        {m.unit && <span style={{ marginLeft:4, opacity:0.7 }}>({m.unit})</span>}
+                      </div>
+
+                      {/* MIN / MAX / AVG rows */}
+                      <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                        {m.fields.includes('min') && (
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                            <span style={{
+                              fontSize:10, fontWeight:700, color:C.textDim,
+                              textTransform:'uppercase', letterSpacing:'0.06em',
+                            }}>Min</span>
+                            <span style={{
+                              fontSize:16, fontWeight:900,
+                              color: dark ? '#60a5fa' : '#2563eb',
+                              fontVariantNumeric:'tabular-nums',
+                            }}>
+                              {fv(ms.min, m.dec)}
+                            </span>
+                          </div>
+                        )}
+                        {m.fields.includes('max') && (
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                            <span style={{
+                              fontSize:10, fontWeight:700, color:C.textDim,
+                              textTransform:'uppercase', letterSpacing:'0.06em',
+                            }}>
+                              {m.labelMax || 'Max'}
+                            </span>
+                            <span style={{
+                              fontSize:16, fontWeight:900, color:m.color,
+                              fontVariantNumeric:'tabular-nums',
+                            }}>
+                              {fv(ms.max, m.dec)}
+                            </span>
+                          </div>
+                        )}
+                        {m.fields.includes('avg') && ms.avg != null && (
+                          <div style={{
+                            display:'flex', alignItems:'center', justifyContent:'space-between',
+                            paddingTop:6, borderTop:`1px solid ${C.border}`,
+                          }}>
+                            <span style={{
+                              fontSize:10, fontWeight:700, color:C.textDim,
+                              textTransform:'uppercase', letterSpacing:'0.06em',
+                            }}>Moy</span>
+                            <span style={{
+                              fontSize:13, fontWeight:700, color:C.textMuted,
+                              fontVariantNumeric:'tabular-nums',
+                            }}>
+                              {fv(ms.avg, m.dec)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Barre visuelle MIN→MAX */}
+                      {m.fields.includes('min') && m.fields.includes('max') && ms.min != null && ms.max != null && ms.max > ms.min && ms.avg != null && (() => {
+                        const range = ms.max - ms.min
+                        const pct = range > 0 ? ((ms.avg - ms.min) / range) * 100 : 50
+                        return (
+                          <div style={{ position:'relative', height:4, background:C.border, borderRadius:2 }}>
+                            <div style={{
+                              position:'absolute', left:0, top:0, bottom:0,
+                              width:`${Math.min(Math.max(pct,2),98)}%`,
+                              background:`linear-gradient(90deg, ${dark ? '#2563eb' : '#60a5fa'}, ${m.color})`,
+                              borderRadius:2, transition:'width 0.6s cubic-bezier(0.22,1,0.36,1)',
+                            }} />
+                          </div>
+                        )
+                      })()}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </>
+        )
       })()}
 
       {/* ── État irrigation ─────────────────────────────────── */}
