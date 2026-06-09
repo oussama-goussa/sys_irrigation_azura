@@ -388,7 +388,7 @@ function FarmSection({ farm, token, dateStr, C, dark }) {
             </div>
           )}
           {!loading && (farm.houses || []).map(house => (
-            <HouseCard key={house.id} house={house} rec={recs[house.id]} C={C} dark={dark} />
+            <HouseCard key={house.id} house={house} rec={recs[house.id]} C={C} dark={dark} onConfig={onConfig} />
           ))}
         </div>
       )}
