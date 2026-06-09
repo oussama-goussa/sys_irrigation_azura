@@ -1353,108 +1353,124 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
               </div>
             ) : (
               <div style={{
-                display:'grid',
-                gridTemplateColumns: isMobile ? '1fr 1fr' : isTablet ? 'repeat(3,1fr)' : 'repeat(4,1fr)',
-                gap: isMobile ? 10 : 12,
-                marginBottom:24,
+                background: C.card,
+                border: `1.5px solid ${C.border}`,
+                borderRadius: 14,
+                overflow: 'hidden',
+                marginBottom: 24,
               }}>
-                <div style={{
-                  display:'grid',
-                  gridTemplateColumns: isMobile ? '1fr 1fr' : isTablet ? 'repeat(3,1fr)' : 'repeat(4,1fr)',
-                  gap: isMobile ? 10 : 12,
-                  marginBottom:24,
-                }}>
-                  {METRICS.map(m => {
-                    const ms = s[m.key]
-                    if (!ms) return null
-                    return (
-                      <div key={m.key} style={{
-                        background: C.card,
-                        border:`1.5px solid ${C.border}`,
-                        borderLeft:`3px solid ${m.color}`,
-                        borderRadius:12,
-                        padding:'18px 20px',
-                        display:'flex', flexDirection:'column', gap:0,
-                      }}>
-                        {/* Label */}
-                        <div style={{
-                          fontSize:10, fontWeight:700,
-                          textTransform:'uppercase', letterSpacing:'0.12em',
-                          color:C.textDim, marginBottom:14,
-                        }}>
-                          {m.label}
-                          {m.unit && <span style={{ marginLeft:5, opacity:0.55, fontWeight:500 }}>{m.unit}</span>}
-                        </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit' }}>
+                    <thead>
+                      <tr style={{ background: dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
+                        <th style={{
+                          padding: '11px 18px', textAlign: 'left', whiteSpace: 'nowrap',
+                          fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+                          letterSpacing: '0.08em', color: C.textDim,
+                          borderBottom: `1.5px solid ${C.border}`, width: 160,
+                        }}>Métrique</th>
+                        {METRICS.filter(m => s[m.key] != null).map(m => (
+                          <th key={m.key} style={{
+                            padding: '11px 16px', textAlign: 'center', whiteSpace: 'nowrap',
+                            fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+                            letterSpacing: '0.08em', color: C.textDim,
+                            borderBottom: `1.5px solid ${C.border}`,
+                            borderLeft: `1px solid ${C.border}`,
+                          }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                              <div style={{
+                                width: 24, height: 3, borderRadius: 2,
+                                background: m.color, opacity: 0.85,
+                              }} />
+                              <span>{m.label}</span>
+                              {m.unit && (
+                                <span style={{ fontSize: 9, fontWeight: 500, opacity: 0.55, textTransform: 'none', letterSpacing: 0 }}>
+                                  {m.unit}
+                                </span>
+                              )}
+                            </div>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { rowKey: 'min',    label: 'Min',     labelKey: null,     textColor: (m) => dark ? '#93c5fd' : '#1d4ed8' },
+                        { rowKey: 'max',    label: 'Max',     labelKey: 'labelMax', textColor: (m) => m.color },
+                        { rowKey: 'avg',    label: 'Moyenne', labelKey: null,     textColor: (m) => C.textMuted },
+                      ].map(({ rowKey, label, labelKey, textColor }, ri) => (
+                        <tr
+                          key={rowKey}
+                          style={{ borderBottom: `1px solid ${C.border}` }}
+                          onMouseEnter={e => e.currentTarget.style.background = dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <td style={{
+                            padding: '12px 18px', fontSize: 11, fontWeight: 700,
+                            textTransform: 'uppercase', letterSpacing: '0.08em',
+                            color: C.textDim, whiteSpace: 'nowrap',
+                            borderRight: `1.5px solid ${C.border}`,
+                          }}>
+                            {label}
+                          </td>
+                          {METRICS.filter(m => s[m.key] != null).map(m => {
+                            const ms = s[m.key]
+                            const displayLabel = labelKey && m[labelKey] ? m[labelKey] : null
+                            const val = ms?.[rowKey]
+                            const show = m.fields.includes(rowKey)
+                            return (
+                              <td key={m.key} style={{
+                                padding: '12px 16px', textAlign: 'center',
+                                borderLeft: `1px solid ${C.border}`,
+                                fontVariantNumeric: 'tabular-nums',
+                              }}>
+                                {show && val != null ? (
+                                  <span style={{
+                                    fontSize: rowKey === 'avg' ? 13 : 15,
+                                    fontWeight: rowKey === 'avg' ? 600 : 800,
+                                    color: textColor(m),
+                                    letterSpacing: '-0.01em',
+                                  }}>
+                                    {displayLabel
+                                      ? <span style={{ fontSize: 10, fontWeight: 600, color: C.textDim, marginRight: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{displayLabel}</span>
+                                      : null}
+                                    {fv(val, m.dec)}
+                                  </span>
+                                ) : (
+                                  <span style={{ color: C.border, fontSize: 13 }}>—</span>
+                                )}
+                              </td>
+                            )
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
-                        {/* Rows */}
-                        <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
-                          {m.fields.includes('min') && (
-                            <div style={{
-                              display:'flex', alignItems:'center',
-                              justifyContent:'space-between',
-                              padding:'7px 0',
-                              borderBottom:`1px solid ${C.border}`,
-                            }}>
-                              <span style={{
-                                fontSize:11, fontWeight:600,
-                                color:C.textDim, letterSpacing:'0.04em',
-                              }}>Min</span>
-                              <span style={{
-                                fontSize:15, fontWeight:800,
-                                color: dark ? '#93c5fd' : '#1d4ed8',
-                                fontVariantNumeric:'tabular-nums',
-                                letterSpacing:'-0.01em',
-                              }}>
-                                {fv(ms.min, m.dec)}
-                              </span>
-                            </div>
-                          )}
-                          {m.fields.includes('max') && (
-                            <div style={{
-                              display:'flex', alignItems:'center',
-                              justifyContent:'space-between',
-                              padding:'7px 0',
-                              borderBottom: m.fields.includes('avg') && ms.avg != null ? `1px solid ${C.border}` : 'none',
-                            }}>
-                              <span style={{
-                                fontSize:11, fontWeight:600,
-                                color:C.textDim, letterSpacing:'0.04em',
-                              }}>
-                                {m.labelMax || 'Max'}
-                              </span>
-                              <span style={{
-                                fontSize:15, fontWeight:800,
-                                color:m.color,
-                                fontVariantNumeric:'tabular-nums',
-                                letterSpacing:'-0.01em',
-                              }}>
-                                {fv(ms.max, m.dec)}
-                              </span>
-                            </div>
-                          )}
-                          {m.fields.includes('avg') && ms.avg != null && (
-                            <div style={{
-                              display:'flex', alignItems:'center',
-                              justifyContent:'space-between',
-                              padding:'7px 0',
-                            }}>
-                              <span style={{
-                                fontSize:11, fontWeight:600,
-                                color:C.textDim, letterSpacing:'0.04em',
-                              }}>Moy</span>
-                              <span style={{
-                                fontSize:13, fontWeight:700,
-                                color:C.textMuted,
-                                fontVariantNumeric:'tabular-nums',
-                              }}>
-                                {fv(ms.avg, m.dec)}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
+                {/* Footer — count + live indicator */}
+                <div style={{
+                  padding: '10px 18px',
+                  borderTop: `1px solid ${C.border}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                }}>
+                  <span style={{ fontSize: 11, color: C.textDim }}>
+                    {dailyStats.count} lectures · {fmtDisplay(statsDate)}
+                  </span>
+                  {isStatsToday && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+                      color: C.green, textTransform: 'uppercase',
+                      display: 'flex', alignItems: 'center', gap: 5,
+                    }}>
+                      <span style={{
+                        width: 6, height: 6, borderRadius: '50%',
+                        background: C.green, display: 'inline-block',
+                        animation: 'ripple 1.5s ease-out infinite',
+                      }} />
+                      Mise à jour 30s
+                    </span>
+                  )}
                 </div>
               </div>
             )}
