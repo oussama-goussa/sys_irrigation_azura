@@ -1767,14 +1767,65 @@ def predict_matin(donnees, modeles_matin, enc_matin, ec_bassin=0.9,
     }
 
 
-def _repos_pattern_fallback():
-    """Fallback si le CSV irrigation_meteo_optimise.csv n'existe pas."""
-    return {
-        'by_drain_and_tour': {},
-        'by_drain':   {'<10': 20, '10-20': 17, '20-30': 15, '30-50': 12, '>50': 10},
-        'by_tour':    {},
-        'global_median': 15,
-    }
+# ─── TABLE REPOS (extraite du CSV irrigation_meteo_complet.csv, 4 saisons) ──
+# Médiane de temps_repos_min par (tranche_drainage, num_tour)
+# Pas besoin de lire le CSV à chaque fois = table codée en dur
+
+REPOS_TABLE_2D = {
+    #                 T2   T3   T4   T5   T6   T7   T8   T9  T10  T11  T12  T13  T14  T15  T16  T17
+    '<10':    {2:15, 3:20, 4:15, 5:13, 6:10, 7:30, 8:20, 9:30, 10:32, 11:35, 12:32, 13:37, 15:27, 16:27, 17:32, 18:52},
+    '10-20':  {2:32, 3:25, 4:15, 5:15, 6:13, 7:13, 8:40, 9:37, 10:35, 11:32, 12:27, 13:27, 14:26, 15:30, 16:32, 17:52},
+    '20-30':  {2:22, 3:25, 4:20, 5:17, 6:15, 7:15, 8:32, 9:35, 10:30, 11:30, 12:27, 13:27, 14:22, 15:24, 16:25, 17:34},
+    '30-50':  {2:17, 3:29, 4:25, 5:22, 6:25, 7:27, 8:26, 9:25, 10:22, 11:20, 12:20, 13:17, 14:19, 15:24, 16:29, 17:31},
+    '>50':    {      3:30, 4:37, 5:30, 6:27, 7:22, 8:17, 9:14, 10:15, 11:10, 12:16, 13:21, 14:21, 15:21},
+}
+
+REPOS_BY_DRAIN = {
+    '<10':   15,
+    '10-20': 18,
+    '20-30': 22,
+    '30-50': 25,
+    '>50':   22,
+}
+
+REPOS_BY_TOUR = {
+    2:15, 3:20, 4:15, 5:18, 6:21, 7:25, 8:27, 9:27,
+    10:27, 11:27, 12:27, 13:27, 14:24, 15:24, 16:29, 17:32, 18:52,
+}
+
+REPOS_GLOBAL_MEDIAN = 20
+
+
+def get_repos_pattern(pct_drainage: float, num_tour: int) -> int:
+    """
+    Retourne le temps de repos (min) avant le tour suivant,
+    basé sur les vrais patterns humains du CSV Azura (4 saisons).
+
+    Logique:
+      1. Cherche dans table 2D (tranche_drainage x num_tour)
+      2. Fallback: tranche de drainage seulement
+      3. Fallback: num_tour seulement
+      4. Fallback final: médiane globale (20 min)
+    """
+    if pct_drainage < 10:   drain_bin = '<10'
+    elif pct_drainage < 20: drain_bin = '10-20'
+    elif pct_drainage < 30: drain_bin = '20-30'
+    elif pct_drainage < 50: drain_bin = '30-50'
+    else:                   drain_bin = '>50'
+
+    nt = max(2, min(18, int(num_tour)))
+
+    # 1. Table 2D
+    if drain_bin in REPOS_TABLE_2D and nt in REPOS_TABLE_2D[drain_bin]:
+        return REPOS_TABLE_2D[drain_bin][nt]
+    # 2. Fallback tranche
+    if drain_bin in REPOS_BY_DRAIN:
+        return REPOS_BY_DRAIN[drain_bin]
+    # 3. Fallback tour
+    if nt in REPOS_BY_TOUR:
+        return REPOS_BY_TOUR[nt]
+    # 4. Fallback global
+    return REPOS_GLOBAL_MEDIAN
 
 
 def predict_tour(donnees, modeles_tour, enc_tour):
@@ -1837,9 +1888,15 @@ def predict_tour(donnees, modeles_tour, enc_tour):
     if duree_prec > 0 and duree_int > duree_prec:
         duree_int = duree_prec
 
+    # Calculer le repos avant le tour suivant (table patterns humains)
+    pct_drain = float(donnees.get("pct_drainage", 0.0) or 0.0)
+    num_tour  = int(donnees.get("num_tour", 1) or 1)
+    repos_min = get_repos_pattern(pct_drain, num_tour)
+
     return {
         "decision":               "CONTINUER" if continuer == 1 else "STOP",
         "continuer":              continuer,
         "raison":                 raison,
         "duree_tour_suivant_min": duree_int,
+        "repos_min":              repos_min,
     }
