@@ -306,7 +306,7 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
 }
 
 // ── FarmSection — une ferme avec ses houses + recommandations ──
-function FarmSection({ farm, token, dateStr, C, dark }) {
+function FarmSection({ farm, token, dateStr, C, dark, onConfig }) {
   const [open, setOpen] = useState(true)
   const [recs, setRecs] = useState({})
   const [loading, setLoading] = useState(true)
@@ -397,7 +397,7 @@ function FarmSection({ farm, token, dateStr, C, dark }) {
 }
 
 // ── HouseCard — recommandation d'une house ─────────────────────
-function HouseCard({ house, rec, C, dark }) {
+function HouseCard({ house, rec, C, dark, onConfig }) {
   const [expanded, setExpanded] = useState(false)
 
   if (!rec) return null
@@ -464,7 +464,7 @@ function HouseCard({ house, rec, C, dark }) {
           <MiniBadge icon={<Droplets size={10} />} value={`${rec.nbr_tour || '—'}`} label="tours" C={C} />
           <MiniBadge icon={<Gauge size={10} />} value={rec.ec_cible_dSm != null ? rec.ec_cible_dSm.toFixed(1) : '—'} label="EC" C={C} />
           <button
-            onClick={(e) => { e.stopPropagation(); setConfigDevice(house) }}
+            onClick={(e) => { e.stopPropagation(); onConfig && onConfig(house) }}
             title="Configuration"
             style={{
               background: 'none', border: 'none', cursor: 'pointer', color: C.textDim,
@@ -799,6 +799,7 @@ export default function AgentIAPage({ dark, auth }) {
           dateStr={dateStr}
           C={C}
           dark={dark}
+          onConfig={setConfigDevice}
         />
       ))}
 
