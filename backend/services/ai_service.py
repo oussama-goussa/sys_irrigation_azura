@@ -637,7 +637,7 @@ def detecter_heure_matin_et_debut_tour(
 
     Si aucun poids ne déclenche DECLENCHER :
       - Si STRESS_HYDRIQUE atteint → déclencher quand même (urgence)
-      - Sinon → fallback sur heure recommandée par scénario
+      - Sinon → None (l'heure ML sera utilisée)
 
     Retourne
     --------
@@ -649,7 +649,7 @@ def detecter_heure_matin_et_debut_tour(
       poids_soir_kg      (float or None)
       poids_matin_kg     (float or None)
       fin_tour_soir      (str "HH:MM" or None) — heure fin du dernier tour hier
-      source             (str: PRT_DECLENCHER / PRT_STRESS / RECOMMANDATION / ML)
+      source             (str: PRT_DECLENCHER / PRT_STRESS / ML)
     """
     # 1. Poids soir (basé sur fin du dernier tour hier)
     poids_soir_data = _recuperer_poids_soir(db, device_id, date_str)
@@ -657,33 +657,32 @@ def detecter_heure_matin_et_debut_tour(
     fin_tour = poids_soir_data.get("fin_tour_soir")
 
     if ps is None:
-        # Pas de poids soir → fallback sur heure recommandée
-        heure_rec = HEURE_DEBUT_RECOMMANDEE.get(scenario_meteo, HEURE_DEBUT_RECOMMANDEE["default"])
+        # Pas de poids soir → pas de PRT, l'heure ML sera utilisée
         return {
-            "heure_debut_tour1": heure_rec,
+            "heure_debut_tour1": None,
             "heure_matin"      : None,
             "prt_pct"          : None,
-            "decision"         : "FALLBACK_RECOMMANDATION",
+            "decision"         : "NO_POIDS_SOIR",
             "poids_soir_kg"    : None,
             "poids_matin_kg"   : None,
             "fin_tour_soir"    : fin_tour,
-            "source"           : "recommandation",
+            "source"           : "ml",
         }
 
     # 2. Poids matins (tous, par ordre croissante)
     poids_matins = _recuperer_poids_matins(db, device_id, date_str)
 
     if not poids_matins:
-        heure_rec = HEURE_DEBUT_RECOMMANDEE.get(scenario_meteo, HEURE_DEBUT_RECOMMANDEE["default"])
+        # Pas de poids matin → pas de PRT, l'heure ML sera utilisée
         return {
-            "heure_debut_tour1": heure_rec,
+            "heure_debut_tour1": None,
             "heure_matin"      : None,
             "prt_pct"          : None,
-            "decision"         : "FALLBACK_RECOMMANDATION",
+            "decision"         : "NO_POIDS_MATIN",
             "poids_soir_kg"    : ps,
             "poids_matin_kg"   : None,
             "fin_tour_soir"    : fin_tour,
-            "source"           : "recommandation",
+            "source"           : "ml",
         }
 
     # 3. Simuler le calcul en continu : parcourir les poids un par un
@@ -742,10 +741,9 @@ def detecter_heure_matin_et_debut_tour(
             "source"           : source,
         }
 
-    # 5. Aucun seuil atteint → fallback (poids_soir existe mais pas de déclenchement)
-    heure_rec = HEURE_DEBUT_RECOMMANDEE.get(scenario_meteo, HEURE_DEBUT_RECOMMANDEE["default"])
+    # 5. Aucun seuil atteint → pas de PRT, l'heure ML sera utilisée
     return {
-        "heure_debut_tour1": heure_rec,
+        "heure_debut_tour1": None,
         "heure_matin"      : None,
         "prt_pct"          : None,
         "decision"         : "FALLBACK_RECOMMANDATION",
@@ -1738,6 +1736,8 @@ def predict_matin(donnees, modeles_matin, enc_matin, ec_bassin=0.9,
         key = f"reg_{target}"
         if key in modeles_matin:
             resultats[target] = float(modeles_matin[key].predict(X)[0])
+        else:
+            resultats[target] = None
 
     enc_cibles = enc_matin.get("cibles", {})
     for target in TARGETS_CLF:
@@ -1745,34 +1745,44 @@ def predict_matin(donnees, modeles_matin, enc_matin, ec_bassin=0.9,
         if key in modeles_matin and target in enc_cibles:
             idx = int(modeles_matin[key].predict(X)[0])
             resultats[target] = enc_cibles[target].classes_[idx]
+        else:
+            resultats[target] = None
 
-    duree_float = resultats.get("opt_duree_min", 10.0)
-    duree_int = int(round(max(4.0, min(14.0, duree_float))))
-    scenario = resultats.get("scenario_meteo", "2_ENSOLEILLE")
+    # Vérifier qu'aucune cible n'est manquante — pas de fallback
+    manquantes = [t for t in TARGETS_REG + TARGETS_CLF if resultats.get(t) is None]
+    if manquantes:
+        logger.error(f"⚠ ML: cibles manquantes → {manquantes} — recommandation incomplète")
 
-    ac = resultats.get("opt_alerte_chergui", 0)
-    ap = resultats.get("opt_alerte_pluie", 0)
-    ab = resultats.get("opt_alerte_brouillard", 0)
-    if ac in (1, "1"): alerte = "CHERGUI"
-    elif ap in (1, "1"): alerte = "PLUIE_STOP"
-    elif ab in (1, "1"): alerte = "BROUILLARD"
+    # Aucun fallback — si ML n'a pas prédit, la valeur reste None
+    ec_cible = resultats.get("opt_EC_cible_dSm")
+    ph_cible = resultats.get("opt_pH_cible")
+    nb_cycles = resultats.get("opt_nb_cycles")
+    heure_debut = resultats.get("opt_heure_demarrage")
+    scenario = resultats.get("scenario_meteo")
+    duree_min = resultats.get("opt_duree_min")
+    apport_mm = resultats.get("opt_apport_total_mm")
+
+    ac = resultats.get("opt_alerte_chergui")
+    ap = resultats.get("opt_alerte_pluie")
+    ab = resultats.get("opt_alerte_brouillard")
+    if ac == 1: alerte = "CHERGUI"
+    elif ap == 1: alerte = "PLUIE_STOP"
+    elif ab == 1: alerte = "BROUILLARD"
     else: alerte = "NORMAL"
 
-    apport_mm = round(resultats.get("opt_apport_total_mm", 3.5), 1)
-    duree_ml = int(round(max(4.0, min(14.0, resultats.get("opt_duree_min", 10.0)))))
-    volume_cc_goutteur = round(apport_mm * 150.0)
-
     return {
-        "ec_cible_dSm":       round(resultats.get("opt_EC_cible_dSm", 2.3), 1),
-        "ph_cible":           round(float(resultats.get("opt_pH_cible", 6.0)), 1),
-        "nbr_tour":           max(1, int(round(resultats.get("opt_nb_cycles", 5)))),
-        "heure_debut_ml":     resultats.get("opt_heure_demarrage", "08:00"),
+        "ec_cible_dSm":       round(ec_cible, 1) if ec_cible is not None else None,
+        "ph_cible":           round(float(ph_cible), 1) if ph_cible is not None else None,
+        "nbr_tour":           int(round(nb_cycles)) if nb_cycles is not None else None,
+        "heure_debut_ml":     heure_debut,
         "scenario_meteo":     scenario,
         "alerte":             alerte,
-        "quantite_eau_mm":    apport_mm,
-        "volume_total_Lha":   round(apport_mm * 10_000, 0),
-        "volume_cc_goutteur": volume_cc_goutteur,
-        "duree_min":          duree_ml,
+        "quantite_eau_mm":    round(apport_mm, 1) if apport_mm is not None else None,
+        "volume_total_Lha":   round(apport_mm * 10_000, 0) if apport_mm is not None else None,
+        "volume_cc_goutteur": round(apport_mm * 150.0) if apport_mm is not None else None,
+        "duree_min":          int(round(max(4.0, min(14.0, duree_min)))) if duree_min is not None else None,
+        "_ml_incomplete":     len(manquantes) > 0,
+        "_ml_manquantes":     manquantes,
     }
 
 
