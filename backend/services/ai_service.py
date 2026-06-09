@@ -364,24 +364,6 @@ PRT_SEUILS = {
     "default":            (9.0, 11.0),
 }
 
-# Heures de démarrage recommandées par scénario (moyenne opérateur)
-# Utilisé comme fallback si poids non disponible
-HEURE_DEBUT_RECOMMANDEE = {
-    "1_TRES_ENSOLEILLE":  "08:29",
-    "2_ENSOLEILLE":       "09:54",
-    "5_BROUILLARD_MATIN": "09:31",
-    "5b_FOG_CHAUD_VPD":   "08:42",
-    "5c_FOG_CHAUD_RS":    "08:48",
-    "5d_FOG_RADIATION":   "08:38",
-    "5e_FOG_FROID":       "09:26",
-    "6_CHERGUI_URGENT":   "08:38",
-    "7_PLUIE_STOP":       None,       # pas d'irrigation
-    "7b_PLUIE_LEGERE":    "09:06",
-    "8_NUAGEUX_CHAUD":    "09:47",
-    "9_NUIT_FROIDE_SOL":  "09:58",
-    "default":            "09:14",    # moyenne globale
-}
-
 # Gap fixe entre heure_matin (détection seuil PRT) et début tour 1
 # Source : 99.3% des cas = 10 min exactement
 GAP_HEURE_MATIN_TO_TOUR1_MIN = 10

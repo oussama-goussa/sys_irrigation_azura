@@ -38,7 +38,6 @@ from services.ai_service import (
     detecter_heure_matin_et_debut_tour,
     calculer_prt_decision,
     PRT_SEUILS,
-    HEURE_DEBUT_RECOMMANDEE,
     DEFAULT_LAT,
     DEFAULT_LON,
 )
@@ -608,6 +607,6 @@ def get_prt_seuils(
             "seuil_bas"         : bas,
             "seuil_haut"        : haut,
             "zone"              : zone,
-            "heure_recommandee" : HEURE_DEBUT_RECOMMANDEE.get(s),
+            "heure_recommandee" : None,
         }
     return zones
