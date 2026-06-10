@@ -643,6 +643,7 @@ def get_config(
         "actif"           : cfg.actif,
         "latitude"        : cfg.latitude,
         "longitude"       : cfg.longitude,
+        "nbr_goutteurs"   : cfg.nbr_goutteurs,
     }
 
 
@@ -685,6 +686,7 @@ def update_config(
             "actif"           : cfg.actif,
             "latitude"        : cfg.latitude,
             "longitude"       : cfg.longitude,
+            "nbr_goutteurs"   : cfg.nbr_goutteurs,
         },
     }
 
