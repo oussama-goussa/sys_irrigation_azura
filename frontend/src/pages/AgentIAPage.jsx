@@ -172,8 +172,8 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
-    getAIConfig(token, device.id).then(setConfig).catch(e => setError(e.message))
-  }, [token, device.id])
+    getAIConfig(getAccessToken(), device.id).then(setConfig).catch(e => setError(e.message))
+  }, [device.id])
 
   const handleSave = async () => {
     setSaving(true)
@@ -703,11 +703,13 @@ function HouseCard({ house, rec, C, dark, onConfig }) {
   const [showTourForm, setShowTourForm] = useState(false)
   const [tourData, setTourData] = useState(null)
   const [loadingTours, setLoadingTours] = useState(false)
+  const [config, setConfig] = useState(null)
   const fetchedRef = useRef(false)
 
-  const [config, setConfig] = useState(null)
   useEffect(() => {
-    getAIConfig(getAccessToken(), house.id).then(setConfig).catch(() => {})
+    getAIConfig(getAccessToken(), house.id)
+      .then(setConfig)
+      .catch(() => {})
   }, [house.id])
 
   // Charger décisions du jour quand on expand
