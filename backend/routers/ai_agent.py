@@ -366,6 +366,8 @@ def post_decision_tour(
 
     v_apport = tour_netafim.v_apport if tour_netafim and tour_netafim.v_apport else None
 
+    cfg = get_or_create_config(db, body.device_id)
+
     # ── Calculer % drainage (même logique que SaisiePage) ──
     pct_drainage = None
     if body.pct_drainage:
@@ -416,8 +418,6 @@ def post_decision_tour(
     if rec and rec.quantite_eau_mm:
         # mm → cc/goutteur : 1mm = 150cc/goutteur (formule Azura)
         vol_jour_cible = rec.quantite_eau_mm * 150.0
-
-    cfg = get_or_create_config(db, body.device_id)
 
     donnees_tour = {
         "pct_drainage"          : pct_drainage or 0.0,
