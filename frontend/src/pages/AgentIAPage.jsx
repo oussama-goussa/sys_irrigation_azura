@@ -412,7 +412,7 @@ function TourDecisionTable({ tourData, rec, C, dark }) {
 
 
 // ── TourDrainageForm ───────────────────────────────────────────
-function TourDrainageForm({ house, rec, tourData, C, dark, onSaved }) {
+function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, nbrGoutteurs = 1 }) {
   const tours = tourData?.tours_netafim || []
   const decisions = tourData?.decisions || []
   const decisionsMap = {}
