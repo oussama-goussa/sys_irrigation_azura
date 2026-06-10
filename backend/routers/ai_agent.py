@@ -103,6 +103,7 @@ class ConfigUpdateRequest(BaseModel):
     actif: Optional[bool] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    nbr_goutteurs: Optional[int] = None
 
 
 # ════════════════════════════════════════════════════════════════
@@ -370,7 +371,8 @@ def post_decision_tour(
     if body.pct_drainage:
         pct_drainage = body.pct_drainage  # fourni directement
     elif body.v_drainage and v_apport and v_apport > 0:
-        pct_drainage = (body.v_drainage / v_apport) * 100
+        nbr_goutteurs = cfg.nbr_goutteurs or 1
+        pct_drainage = (body.v_drainage / nbr_goutteurs / v_apport) * 100
 
     # ── Récupérer la recommandation matin pour context ──
     rec = db.query(AIRecommandation).filter(

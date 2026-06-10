@@ -103,6 +103,7 @@ def get_or_create_config(db: Session, device_id: int) -> AIConfigDevice:
             actif         = True,
             latitude      = DEFAULT_LAT,
             longitude     = DEFAULT_LON,
+            nbr_goutteurs = None,
         )
         db.add(cfg)
         db.commit()

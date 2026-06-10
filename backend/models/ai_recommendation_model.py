@@ -109,9 +109,10 @@ class AIConfigDevice(Base):
     actif             = Column(Boolean, default=True)
     latitude          = Column(Float, default=30.4202)     # Agadir par défaut
     longitude         = Column(Float, default=-9.5981)
+    nbr_goutteurs     = Column(Integer, nullable=True)
     created_at        = Column(DateTime(timezone=True), server_default=func.now())
     updated_at        = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
 
 # ── TABLE 3 : ai_decision_tour ────────────────────────────────
 class AIDecisionTour(Base):

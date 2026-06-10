@@ -172,8 +172,8 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
-    getAIConfig(token, device.id).then(setConfig).catch(e => setError(e.message))
-  }, [token, device.id])
+    getAIConfig(getAccessToken(), house.id).then(setConfig).catch(() => {})
+  }, [house.id])
 
   const handleSave = async () => {
     setSaving(true)
@@ -182,6 +182,7 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
       const result = await updateAIConfig(token, device.id, {
         date_plantation: config.date_plantation || null,
         ec_eau_brute: config.ec_eau_brute ? parseFloat(config.ec_eau_brute) : null,
+        nbr_goutteurs: config.nbr_goutteurs ? parseInt(config.nbr_goutteurs) : null,
         latitude: config.latitude ? parseFloat(config.latitude) : null,
         longitude: config.longitude ? parseFloat(config.longitude) : null,
       })
@@ -256,6 +257,23 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
             placeholder="0.8"
             style={inputStyle}
           />
+        </div>
+
+        {/* Nombre de goutteurs */}
+        <div style={{ marginBottom: 14 }}>
+          <label style={labelStyle}>💧 Nombre de goutteurs / bras</label>
+          <input
+            type="number"
+            step="1"
+            min="1"
+            value={config.nbr_goutteurs || ''}
+            onChange={e => setConfig(c => ({ ...c, nbr_goutteurs: e.target.value }))}
+            placeholder="ex: 4"
+            style={inputStyle}
+          />
+          <div style={{ fontSize: 10, color: C.textDim, marginTop: 3 }}>
+            Utilisé pour calculer % drainage (V.Drain ÷ nbr_goutteurs ÷ V.Apport)
+          </div>
         </div>
 
         {/* Coordonnées */}
@@ -394,7 +412,7 @@ function TourDecisionTable({ tourData, rec, C, dark }) {
 
 
 // ── TourDrainageForm ───────────────────────────────────────────
-function TourDrainageForm({ house, rec, tourData, C, dark, onSaved }) {
+function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, nbrGoutteurs = 1 }) {
   const tours = tourData?.tours_netafim || []
   const decisions = tourData?.decisions || []
   const decisionsMap = {}
@@ -416,7 +434,7 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved }) {
 
   // Calcul % drainage automatique (comme SaisiePage)
   const pctDrain = vDrain && vApport && vApport > 0
-    ? ((Number(vDrain) / vApport) * 100).toFixed(1)
+    ? ((Number(vDrain) / nbrGoutteurs / vApport) * 100).toFixed(1)
     : null
 
   const handleSubmit = async () => {
@@ -838,6 +856,7 @@ function HouseCard({ house, rec, C, dark, onConfig }) {
                 tourData={tourData}
                 C={C}
                 dark={dark}
+                nbrGoutteurs={config?.nbr_goutteurs || 1}
                 onSaved={() => { setShowTourForm(false); refreshTours() }}
               />
             )}

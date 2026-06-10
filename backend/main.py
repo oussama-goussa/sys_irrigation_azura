@@ -133,6 +133,10 @@ def run_migrations():
                 UPDATE ai_decision_tour SET disponible = TRUE
                 WHERE disponible IS NULL
             """))
+            conn.execute(text("""
+                ALTER TABLE ai_config_device
+                ADD COLUMN IF NOT EXISTS nbr_goutteurs INTEGER
+            """))
             conn.commit()
         logger.success("Migrations appliquées ✅")
     except Exception as e:
