@@ -88,7 +88,8 @@ class BackfillRequest(BaseModel):
 class DecisionTourRequest(BaseModel):
     device_id: int
     num_tour: int
-    pct_drainage: Optional[float] = None
+    v_drainage: Optional[float] = None          # Volume drainage saisi (cc)
+    pct_drainage: Optional[float] = None        # % drainage (calculé auto si v_drainage fourni)
     ec_drainage: Optional[float] = None
     ph_drainage: Optional[float] = None
     donnees_supplementaires: Optional[dict] = {}
@@ -333,36 +334,266 @@ def approve_recommandation(
     return {"message": f"Recommandation {rec_id} → {body.statut}", "data": rec.to_dict()}
 
 
-@router.post("/decision-tour", summary="Décision tour/tour (CONTINUER/POST)")
+@router.post("/decision-tour", summary="Saisie drainage + Décision tour/tour")
 def post_decision_tour(
     body: DecisionTourRequest,
     db: Session = Depends(get_db),
     user: dict = Depends(require_operateur),
 ):
     """
-    Après chaque cycle d'irrigation, demande à l'IA si on continue ou on stoppe.
-    **Actuellement indisponible** — les capteurs de drainage ne sont pas installés.
-    Filtrage par farm_names (sauf admin).
+    Reçoit la saisie drainage de l'opérateur après chaque tour.
+    Calcule le % drainage automatiquement depuis V apport du tour (irrigation_tours).
+    Lance predict_tour() et retourne la décision ML.
     """
+    from models.ai_recommendation_model import AIDecisionTour
+    from models.sensor_model import IrrigationTour
+    from datetime import date
+
     device = db.query(Device).filter(Device.id == body.device_id).first()
     if device is None:
         raise HTTPException(status_code=404, detail=f"Device {body.device_id} introuvable")
     _check_device_access(device, user)
 
+    today = date.today()
+
+    # ── Récupérer le tour depuis irrigation_tours pour avoir v_apport ──
+    tour_netafim = db.query(IrrigationTour).filter(
+        IrrigationTour.device_id == body.device_id,
+        IrrigationTour.date      == today,
+        IrrigationTour.tour_num  == body.num_tour,
+    ).first()
+
+    v_apport = tour_netafim.v_apport if tour_netafim and tour_netafim.v_apport else None
+
+    # ── Calculer % drainage (même logique que SaisiePage) ──
+    pct_drainage = None
+    if body.pct_drainage:
+        pct_drainage = body.pct_drainage  # fourni directement
+    elif body.v_drainage and v_apport and v_apport > 0:
+        pct_drainage = (body.v_drainage / v_apport) * 100
+
+    # ── Récupérer la recommandation matin pour context ──
+    rec = db.query(AIRecommandation).filter(
+        AIRecommandation.device_id == body.device_id,
+        AIRecommandation.date      == today,
+    ).first()
+
+    nb_tours_cible = rec.nb_tours if rec else 10
+    ec_cible       = rec.ec_cible if rec else 2.3
+
+    # ── Construire les données pour predict_tour ──
+    # Récupérer décisions précédentes pour les lags
+    decisions_prev = (
+        db.query(AIDecisionTour)
+        .filter(
+            AIDecisionTour.device_id == body.device_id,
+            AIDecisionTour.date      == today,
+            AIDecisionTour.num_tour  < body.num_tour,
+        )
+        .order_by(AIDecisionTour.num_tour.desc())
+        .limit(3)
+        .all()
+    )
+
+    pct_lag1 = decisions_prev[0].pct_drainage if len(decisions_prev) > 0 else 0.0
+    pct_lag2 = decisions_prev[1].pct_drainage if len(decisions_prev) > 1 else 0.0
+    pct_lag3 = decisions_prev[2].pct_drainage if len(decisions_prev) > 2 else 0.0
+    ec_lag1  = decisions_prev[0].ec_drainage  if len(decisions_prev) > 0 else 0.0
+    ec_lag2  = decisions_prev[1].ec_drainage  if len(decisions_prev) > 1 else 0.0
+
+    # Volume cumulé apporté jusqu'à ce tour
+    tours_passes = db.query(IrrigationTour).filter(
+        IrrigationTour.device_id == body.device_id,
+        IrrigationTour.date      == today,
+        IrrigationTour.tour_num  <= body.num_tour,
+    ).all()
+    vol_cumule = sum(t.v_apport for t in tours_passes if t.v_apport) if tours_passes else 0.0
+
+    # Volume journalier cible depuis recommandation matin
+    vol_jour_cible = 0.0
+    if rec and rec.quantite_eau_mm:
+        # mm → cc/goutteur : 1mm = 150cc/goutteur (formule Azura)
+        vol_jour_cible = rec.quantite_eau_mm * 150.0
+
+    cfg = get_or_create_config(db, body.device_id)
+
     donnees_tour = {
-        "num_tour"     : body.num_tour,
-        "pct_drainage" : body.pct_drainage or 0,
-        "ec_drainage"  : body.ec_drainage or 0,
-        "ph_drainage"  : body.ph_drainage or 0,
+        "pct_drainage"          : pct_drainage or 0.0,
+        "ec_drainage"           : body.ec_drainage or 0.0,
+        "ph_drainage"           : body.ph_drainage or 0.0,
+        "num_tour"              : body.num_tour,
+        "v_apport"              : v_apport or 0.0,
+        "_pct_drain_prev"       : pct_lag1 or 0.0,
+        "pct_drainage_lag1"     : pct_lag1 or 0.0,
+        "pct_drainage_lag2"     : pct_lag2 or 0.0,
+        "pct_drainage_lag3"     : pct_lag3 or 0.0,
+        "ec_drainage_lag1"      : ec_lag1 or 0.0,
+        "ec_drainage_lag2"      : ec_lag2 or 0.0,
+        "opt_vol_cumule_L"      : vol_cumule,
+        "opt_vol_jour_cible_L"  : vol_jour_cible,
+        "opt_EC_drain_cible_dSm": (ec_cible or 2.3) * 1.2,  # cible drain = EC apport * 1.2
+        "opt_nb_cycles"         : nb_tours_cible or 10,
+        "opt_max_cycles_stade"  : 14,
+        "ec_bassin"             : cfg.ec_eau_brute or 0.8,
+        "ec_apport"             : tour_netafim.ec_apport if tour_netafim else (ec_cible or 2.3),
+        "ph_apport"             : tour_netafim.ph_apport if tour_netafim else 6.0,
+        "meteo_T_max_C"         : 28.0,
+        "meteo_VPD_max_kPa"     : 1.8,
+        "meteo_ET0_mm_jour"     : 5.5,
+        "alerte_chergui"        : 1 if rec and rec.alerte == "CHERGUI" else 0,
+        "alerte_pluie"          : 1 if rec and rec.alerte == "PLUIE_STOP" else 0,
+        "alerte_brouillard"     : 1 if rec and rec.alerte == "BROUILLARD" else 0,
+        "scenario_meteo"        : rec.scenario_meteo if rec else "2_ENSOLEILLE",
         **body.donnees_supplementaires,
     }
 
     resultat = generer_decision_tour(body.device_id, donnees_tour)
 
-    if "erreur" in resultat:
+    if "erreur" in resultat and "disponible" not in resultat:
         raise HTTPException(status_code=500, detail=resultat["erreur"])
 
-    return resultat
+    # ── Upsert en BDD (créer ou mettre à jour) ──
+    existing = db.query(AIDecisionTour).filter(
+        AIDecisionTour.device_id == body.device_id,
+        AIDecisionTour.date      == today,
+        AIDecisionTour.num_tour  == body.num_tour,
+    ).first()
+
+    decision_ml = resultat.get("decision", {}) if isinstance(resultat.get("decision"), dict) else resultat
+
+    if existing:
+        existing.v_drainage   = body.v_drainage
+        existing.pct_drainage = pct_drainage
+        existing.ec_drainage  = body.ec_drainage
+        existing.ph_drainage  = body.ph_drainage
+        existing.decision     = decision_ml.get("decision", "CONTINUER")
+        existing.raison       = decision_ml.get("raison", "")
+        existing.duree_suivant= decision_ml.get("duree_tour_suivant_min")
+        existing.repos_suivant= decision_ml.get("repos_min")
+        existing.donnees_entree = donnees_tour
+        existing.disponible   = True
+        db.commit()
+        db.refresh(existing)
+        saved = existing
+    else:
+        saved = AIDecisionTour(
+            device_id     = body.device_id,
+            date          = today,
+            num_tour      = body.num_tour,
+            v_drainage    = body.v_drainage,
+            pct_drainage  = pct_drainage,
+            ec_drainage   = body.ec_drainage,
+            ph_drainage   = body.ph_drainage,
+            decision      = decision_ml.get("decision", "CONTINUER"),
+            raison        = decision_ml.get("raison", ""),
+            duree_suivant = decision_ml.get("duree_tour_suivant_min"),
+            repos_suivant = decision_ml.get("repos_min"),
+            donnees_entree= donnees_tour,
+            disponible    = True,
+        )
+        db.add(saved)
+        db.commit()
+        db.refresh(saved)
+
+    return {
+        "device_id"    : body.device_id,
+        "farm_name"    : device.farm_name,
+        "house_number" : device.house_number,
+        "num_tour"     : body.num_tour,
+        "v_apport"     : v_apport,
+        "v_drainage"   : body.v_drainage,
+        "pct_drainage" : pct_drainage,
+        "ec_drainage"  : body.ec_drainage,
+        "ph_drainage"  : body.ph_drainage,
+        "decision"     : saved.to_dict(),
+        "prediction"   : {
+            "action"        : decision_ml.get("decision", "CONTINUER"),
+            "raison"        : decision_ml.get("raison", ""),
+            "duree_suivant" : decision_ml.get("duree_tour_suivant_min"),
+            "repos_min"     : decision_ml.get("repos_min"),
+            "message"       : decision_ml.get("message_operateur", ""),
+        },
+    }
+
+
+@router.get("/decision-tour/{device_id}", summary="Décisions tour/tour du jour")
+def get_decisions_tour_jour(
+    device_id: int,
+    date_str: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    user: dict = Depends(require_any),
+):
+    """
+    Retourne toutes les décisions tour/tour d'un device pour une journée.
+    Enrichi avec les tours Netafim (v_apport).
+    """
+    from models.ai_recommendation_model import AIDecisionTour
+    from models.sensor_model import IrrigationTour
+    from datetime import date
+
+    device = db.query(Device).filter(Device.id == device_id).first()
+    if device is None:
+        raise HTTPException(status_code=404, detail=f"Device {device_id} introuvable")
+    _check_device_access(device, user)
+
+    target_date = date_str or date.today().isoformat()
+
+    decisions = (
+        db.query(AIDecisionTour)
+        .filter(
+            AIDecisionTour.device_id == device_id,
+            AIDecisionTour.date      == target_date,
+        )
+        .order_by(AIDecisionTour.num_tour.asc())
+        .all()
+    )
+
+    # Enrichir avec les tours Netafim
+    tours_netafim = (
+        db.query(IrrigationTour)
+        .filter(
+            IrrigationTour.device_id == device_id,
+            IrrigationTour.date      == target_date,
+        )
+        .order_by(IrrigationTour.tour_num.asc())
+        .all()
+    )
+
+    tours_map = {t.tour_num: t for t in tours_netafim}
+
+    result = []
+    for d in decisions:
+        tour = tours_map.get(d.num_tour)
+        item = d.to_dict()
+        item["v_apport"]  = tour.v_apport  if tour else None
+        item["ec_apport"] = tour.ec_apport if tour else None
+        item["ph_apport"] = tour.ph_apport if tour else None
+        item["debut"]     = tour.debut.strftime("%H:%M") if tour and tour.debut else None
+        item["fin"]       = tour.fin.strftime("%H:%M")   if tour and tour.fin   else None
+        result.append(item)
+
+    # Aussi retourner les tours Netafim sans décision (pour affichage)
+    tours_sans_decision = [
+        {
+            "num_tour"    : t.tour_num,
+            "v_apport"    : t.v_apport,
+            "ec_apport"   : t.ec_apport,
+            "ph_apport"   : t.ph_apport,
+            "debut"       : t.debut.strftime("%H:%M") if t.debut else None,
+            "fin"         : t.fin.strftime("%H:%M")   if t.fin   else None,
+            "has_decision": t.tour_num in {d.num_tour for d in decisions},
+        }
+        for t in tours_netafim
+    ]
+
+    return {
+        "device_id"   : device_id,
+        "farm_name"   : device.farm_name,
+        "house_number": device.house_number,
+        "date"        : target_date,
+        "decisions"   : result,
+        "tours_netafim": tours_sans_decision,
+    }
 
 
 @router.get("/comparaison/{device_id}", summary="Comparaison humain vs IA")

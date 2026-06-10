@@ -511,3 +511,27 @@ export async function getDeviceDailyStats(token, deviceId, date = null) {
   if (!res.ok) throw new Error('Erreur chargement stats journalières')
   return res.json()
 }
+
+/** Saisie drainage après un tour + décision ML */
+export async function postDecisionTour(token, payload) {
+  const res = await fetchWithRefresh(`${BASE}/api/ai/decision-tour`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || `Erreur ${res.status}`)
+  }
+  return res.json()
+}
+
+/** Décisions tour/tour d'un device pour une journée */
+export async function getDecisionsTour(token, deviceId, dateStr) {
+  const params = dateStr ? `?date_str=${dateStr}` : ''
+  const res = await fetchWithRefresh(`${BASE}/api/ai/decision-tour/${deviceId}${params}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error(`Erreur ${res.status}`)
+  return res.json()
+}

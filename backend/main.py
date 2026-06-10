@@ -108,6 +108,31 @@ def run_migrations():
                 ALTER TABLE ai_recommandations
                 ALTER COLUMN ptr_decision TYPE VARCHAR(50)
             """))
+            # Migration: colonnes drainage saisie dans ai_decision_tour
+            conn.execute(text("""
+                ALTER TABLE ai_decision_tour
+                ADD COLUMN IF NOT EXISTS v_drainage FLOAT
+            """))
+            conn.execute(text("""
+                ALTER TABLE ai_decision_tour
+                ADD COLUMN IF NOT EXISTS pct_drainage FLOAT
+            """))
+            conn.execute(text("""
+                ALTER TABLE ai_decision_tour
+                ADD COLUMN IF NOT EXISTS ec_drainage FLOAT
+            """))
+            conn.execute(text("""
+                ALTER TABLE ai_decision_tour
+                ADD COLUMN IF NOT EXISTS ph_drainage FLOAT
+            """))
+            conn.execute(text("""
+                ALTER TABLE ai_decision_tour
+                ADD COLUMN IF NOT EXISTS repos_suivant INTEGER
+            """))
+            conn.execute(text("""
+                UPDATE ai_decision_tour SET disponible = TRUE
+                WHERE disponible IS NULL
+            """))
             conn.commit()
         logger.success("Migrations appliquées ✅")
     except Exception as e:

@@ -14,6 +14,7 @@ import { createPortal } from 'react-dom'
 import { getColors } from '../theme.js'
 import { useWindowWidth } from '../components/DashboardShell.jsx'
 import { getDevices, getAccessToken, getRecommandation, getAIConfig, updateAIConfig } from '../api/client.js'
+import { postDecisionTour, getDecisionsTour } from '../api/client.js'
 
 // ── Helpers (même logique que ZonePage.jsx) ────────────────────
 function fmtDisplay(d) {
@@ -305,6 +306,288 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
   )
 }
 
+// ── TourDecisionTable ──────────────────────────────────────────
+function TourDecisionTable({ tourData, rec, C, dark }) {
+  const tours = tourData?.tours_netafim || []
+  const decisions = tourData?.decisions || []
+  const decisionsMap = {}
+  decisions.forEach(d => { decisionsMap[d.num_tour] = d })
+
+  if (tours.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: '12px 0', color: C.textDim, fontSize: 11 }}>
+        Aucun tour détecté aujourd'hui
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, fontFamily: 'inherit' }}>
+        <thead>
+          <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+            {['Tour', 'Heure', 'V.Apport', 'V.Drain', '%Drain', 'EC Drain', 'pH Drain', 'Décision', 'Durée suiv.', 'Repos'].map(h => (
+              <th key={h} style={{ padding: '5px 8px', textAlign: 'center', color: C.textDim, fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {tours.map(tour => {
+            const dec = decisionsMap[tour.num_tour]
+            const actionColor = !dec ? C.textDim
+              : dec.decision === 'CONTINUER' ? C.green
+              : C.red
+
+            return (
+              <tr key={tour.num_tour} style={{ borderBottom: `1px solid ${C.border}22` }}>
+                <td style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 800, color: C.green }}>{tour.num_tour}</td>
+                <td style={{ padding: '6px 8px', textAlign: 'center', color: C.textMuted, fontFamily: C.mono }}>{tour.debut || '—'}</td>
+                <td style={{ padding: '6px 8px', textAlign: 'center', color: C.text, fontFamily: C.mono }}>
+                  {tour.v_apport != null ? `${tour.v_apport.toFixed(0)}cc` : '—'}
+                </td>
+                <td style={{ padding: '6px 8px', textAlign: 'center', color: dec?.v_drainage != null ? C.text : C.textDim, fontFamily: C.mono }}>
+                  {dec?.v_drainage != null ? `${dec.v_drainage.toFixed(0)}cc` : '—'}
+                </td>
+                <td style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 700, fontFamily: C.mono,
+                  color: !dec?.pct_drainage ? C.textDim
+                    : dec.pct_drainage < 15 ? C.red
+                    : dec.pct_drainage > 35 ? C.amber
+                    : C.green
+                }}>
+                  {dec?.pct_drainage != null ? `${dec.pct_drainage.toFixed(1)}%` : '—'}
+                </td>
+                <td style={{ padding: '6px 8px', textAlign: 'center', color: C.textMuted, fontFamily: C.mono }}>
+                  {dec?.ec_drainage != null ? dec.ec_drainage.toFixed(2) : '—'}
+                </td>
+                <td style={{ padding: '6px 8px', textAlign: 'center', color: C.textMuted, fontFamily: C.mono }}>
+                  {dec?.ph_drainage != null ? dec.ph_drainage.toFixed(2) : '—'}
+                </td>
+                <td style={{ padding: '6px 8px', textAlign: 'center' }}>
+                  {dec ? (
+                    <span style={{
+                      padding: '2px 7px', borderRadius: 4, fontSize: 10, fontWeight: 800,
+                      background: dec.decision === 'CONTINUER' ? `${C.green}15` : `${C.red}15`,
+                      color: actionColor, border: `1px solid ${actionColor}30`,
+                    }}>
+                      {dec.decision === 'CONTINUER' ? '▶ CONT.' : '■ STOP'}
+                    </span>
+                  ) : (
+                    <span style={{ color: C.textDim, fontSize: 10 }}>—</span>
+                  )}
+                </td>
+                <td style={{ padding: '6px 8px', textAlign: 'center', color: C.textMuted, fontFamily: C.mono }}>
+                  {dec?.duree_suivant != null ? `${dec.duree_suivant}min` : '—'}
+                </td>
+                <td style={{ padding: '6px 8px', textAlign: 'center', color: C.textMuted, fontFamily: C.mono }}>
+                  {dec?.repos_suivant != null ? `${dec.repos_suivant}min` : '—'}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+
+// ── TourDrainageForm ───────────────────────────────────────────
+function TourDrainageForm({ house, rec, tourData, C, dark, onSaved }) {
+  const tours = tourData?.tours_netafim || []
+  const decisions = tourData?.decisions || []
+  const decisionsMap = {}
+  decisions.forEach(d => { decisionsMap[d.num_tour] = d })
+
+  // Trouver le prochain tour sans décision
+  const nextTour = tours.find(t => !decisionsMap[t.num_tour]) || (tours.length > 0 ? tours[tours.length - 1] : null)
+
+  const [numTour, setNumTour] = useState(nextTour?.num_tour || 1)
+  const [vDrain, setVDrain] = useState('')
+  const [ecDrain, setEcDrain] = useState('')
+  const [phDrain, setPhDrain] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [result, setResult] = useState(null)
+
+  const tourNetafim = tours.find(t => t.num_tour === numTour)
+  const vApport = tourNetafim?.v_apport || null
+
+  // Calcul % drainage automatique (comme SaisiePage)
+  const pctDrain = vDrain && vApport && vApport > 0
+    ? ((Number(vDrain) / vApport) * 100).toFixed(1)
+    : null
+
+  const handleSubmit = async () => {
+    if (!numTour) { setError('Numéro de tour requis'); return }
+    setSaving(true); setError(''); setResult(null)
+    try {
+      const res = await postDecisionTour(getAccessToken(), {
+        device_id  : house.id,
+        num_tour   : numTour,
+        v_drainage : vDrain !== '' ? Number(vDrain) : null,
+        ec_drainage: ecDrain !== '' ? Number(ecDrain) : null,
+        ph_drainage: phDrain !== '' ? Number(phDrain) : null,
+      })
+      setResult(res)
+      setTimeout(() => { onSaved && onSaved() }, 1500)
+    } catch (e) {
+      setError(e.message)
+    }
+    setSaving(false)
+  }
+
+  const inputStyle = {
+    width: '100%', padding: '6px 8px', borderRadius: 6,
+    border: `1px solid ${C.border}`, background: dark ? '#0d1a12' : '#fff',
+    color: C.text, fontSize: 12, fontFamily: 'inherit', outline: 'none',
+    boxSizing: 'border-box',
+  }
+  const labelStyle = { fontSize: 10, fontWeight: 700, color: C.textMuted, marginBottom: 3, display: 'block', textTransform: 'uppercase', letterSpacing: '0.04em' }
+
+  return (
+    <div style={{
+      marginBottom: 10, padding: 12, borderRadius: 8,
+      background: dark ? 'rgba(52,217,111,0.05)' : 'rgba(24,120,63,0.04)',
+      border: `1px solid ${C.green}30`,
+    }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.green, marginBottom: 10 }}>
+        Saisie drainage après tour
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 8, marginBottom: 10 }}>
+        {/* Numéro de tour */}
+        <div>
+          <label style={labelStyle}>N° Tour</label>
+          <select
+            value={numTour}
+            onChange={e => setNumTour(Number(e.target.value))}
+            style={{ ...inputStyle }}
+          >
+            {tours.length > 0
+              ? tours.map(t => (
+                  <option key={t.num_tour} value={t.num_tour}>
+                    Tour {t.num_tour}{decisionsMap[t.num_tour] ? ' ✓' : ''}
+                  </option>
+                ))
+              : Array.from({ length: rec?.nbr_tour || 10 }, (_, i) => (
+                  <option key={i+1} value={i+1}>Tour {i+1}</option>
+                ))
+            }
+          </select>
+        </div>
+
+        {/* V. Apport (lecture seule depuis Netafim) */}
+        <div>
+          <label style={labelStyle}>V. Apport (cc) — auto</label>
+          <input
+            readOnly
+            value={vApport != null ? `${vApport.toFixed(0)} cc` : '—'}
+            style={{ ...inputStyle, background: dark ? '#0a1208' : '#f0f4f1', color: C.textDim, cursor: 'default' }}
+          />
+        </div>
+
+        {/* V. Drainage saisi */}
+        <div>
+          <label style={labelStyle}>V. Drain (cc)</label>
+          <input
+            type="number" step="1" min="0"
+            value={vDrain}
+            onChange={e => setVDrain(e.target.value)}
+            placeholder="0"
+            style={inputStyle}
+          />
+        </div>
+
+        {/* % Drainage calculé auto */}
+        <div>
+          <label style={labelStyle}>% Drain — auto</label>
+          <input
+            readOnly
+            value={pctDrain != null ? `${pctDrain}%` : '—'}
+            style={{
+              ...inputStyle,
+              background: dark ? '#0a1208' : '#f0f4f1',
+              color: pctDrain != null
+                ? (Number(pctDrain) < 15 ? C.red : Number(pctDrain) > 35 ? C.amber : C.green)
+                : C.textDim,
+              fontWeight: 700, cursor: 'default',
+            }}
+          />
+        </div>
+
+        {/* EC Drainage */}
+        <div>
+          <label style={labelStyle}>EC Drain (dS/m)</label>
+          <input
+            type="number" step="0.01" min="0" max="20"
+            value={ecDrain}
+            onChange={e => setEcDrain(e.target.value)}
+            placeholder="0.00"
+            style={inputStyle}
+          />
+        </div>
+
+        {/* pH Drainage */}
+        <div>
+          <label style={labelStyle}>pH Drain</label>
+          <input
+            type="number" step="0.01" min="0" max="14"
+            value={phDrain}
+            onChange={e => setPhDrain(e.target.value)}
+            placeholder="0.00"
+            style={inputStyle}
+          />
+        </div>
+      </div>
+
+      {/* Erreur / Résultat */}
+      {error && (
+        <div style={{ color: C.red, fontSize: 11, marginBottom: 8 }}>❌ {error}</div>
+      )}
+      {result && (
+        <div style={{
+          padding: '8px 12px', borderRadius: 6, marginBottom: 8,
+          background: result.prediction?.action === 'CONTINUER'
+            ? (dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.07)')
+            : (dark ? 'rgba(239,68,68,0.10)' : 'rgba(239,68,68,0.07)'),
+          border: `1px solid ${result.prediction?.action === 'CONTINUER' ? C.green : C.red}30`,
+        }}>
+          <div style={{ fontWeight: 800, fontSize: 13, color: result.prediction?.action === 'CONTINUER' ? C.green : C.red }}>
+            {result.prediction?.action === 'CONTINUER' ? '▶ CONTINUER' : '■ STOP'}
+          </div>
+          {result.prediction?.duree_suivant && (
+            <div style={{ fontSize: 11, color: C.textMuted, marginTop: 3 }}>
+              Durée tour suivant : <strong style={{ color: C.text }}>{result.prediction.duree_suivant} min</strong>
+              {result.prediction?.repos_min && ` · Repos : ${result.prediction.repos_min} min`}
+            </div>
+          )}
+          {result.prediction?.message && (
+            <div style={{ fontSize: 10, color: C.textDim, marginTop: 2 }}>{result.prediction.message}</div>
+          )}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <button
+          onClick={handleSubmit}
+          disabled={saving}
+          style={{
+            padding: '7px 16px', borderRadius: 6, border: 'none',
+            background: saving ? C.toggleBg : C.green,
+            color: saving ? C.textDim : '#fff',
+            fontSize: 12, fontWeight: 700, cursor: saving ? 'wait' : 'pointer',
+            fontFamily: 'inherit',
+          }}
+        >
+          {saving ? 'Calcul...' : '⚡ Prédire'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── FarmSection — une ferme avec ses houses + recommandations ──
 function FarmSection({ farm, token, dateStr, C, dark, onConfig }) {
   const [open, setOpen] = useState(true)
@@ -399,6 +682,29 @@ function FarmSection({ farm, token, dateStr, C, dark, onConfig }) {
 // ── HouseCard — recommandation d'une house ─────────────────────
 function HouseCard({ house, rec, C, dark, onConfig }) {
   const [expanded, setExpanded] = useState(false)
+  const [showTourForm, setShowTourForm] = useState(false)
+  const [tourData, setTourData] = useState(null)
+  const [loadingTours, setLoadingTours] = useState(false)
+  const fetchedRef = useRef(false)
+
+  // Charger décisions du jour quand on expand
+  useEffect(() => {
+    if (!expanded || fetchedRef.current) return
+    fetchedRef.current = true
+    setLoadingTours(true)
+    getDecisionsTour(getAccessToken(), house.id, null)
+      .then(setTourData)
+      .catch(() => {})
+      .finally(() => setLoadingTours(false))
+  }, [expanded, house.id])
+
+  const refreshTours = () => {
+    setLoadingTours(true)
+    getDecisionsTour(getAccessToken(), house.id, null)
+      .then(setTourData)
+      .catch(() => {})
+      .finally(() => setLoadingTours(false))
+  }
 
   if (!rec) return null
 
@@ -415,11 +721,6 @@ function HouseCard({ house, rec, C, dark, onConfig }) {
     : decision === 'ATTENDRE' ? C.blue
     : decision === 'PLUIE_STOP' ? C.purple
     : C.textMuted
-  const decLabel = decision === 'DECLENCHER' ? 'Déclencher'
-    : decision === 'STRESS_HYDRIQUE' ? 'Stress'
-    : decision === 'ATTENDRE' ? 'Attendre'
-    : decision === 'PLUIE_STOP' ? 'Pluie'
-    : decision || '—'
 
   return (
     <div style={{ borderTop: `1px solid ${C.border}`, padding: '12px 14px' }}>
@@ -454,7 +755,7 @@ function HouseCard({ house, rec, C, dark, onConfig }) {
                 {sourcePRT ? 'PRT' : 'ML'}
               </span>
             </div>
-            <div style={{ fontSize: 10, color: C.textDim, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontSize: 10, color: C.textDim, marginTop: 2 }}>
               {scenarioLabel(rec.scenario_meteo)}
             </div>
           </div>
@@ -466,101 +767,94 @@ function HouseCard({ house, rec, C, dark, onConfig }) {
           <button
             onClick={(e) => { e.stopPropagation(); onConfig && onConfig(house) }}
             title="Configuration"
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer', color: C.textDim,
-              padding: 4, display: 'flex', alignItems: 'center',
-            }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textDim, padding: 4, display: 'flex', alignItems: 'center' }}
           >
             <Settings size={13} />
           </button>
-          {expanded
-            ? <ChevronDown size={12} color={C.textDim} />
-            : <ChevronRight size={12} color={C.textDim} />}
+          {expanded ? <ChevronDown size={12} color={C.textDim} /> : <ChevronRight size={12} color={C.textDim} />}
         </div>
       </div>
 
       {/* Détails expandés */}
       {expanded && (
-        <div style={{
-          marginTop: 12, padding: 12, borderRadius: 8,
-          background: dark ? '#0c1610' : '#f9fbfa',
-          border: `1px solid ${C.border}`,
-        }}>
-          {/* ML vs PRT */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 8, alignItems: 'center', marginBottom: 12 }}>
-            <div style={{
-              padding: '10px 12px', borderRadius: 8,
-              background: dark ? 'rgba(77,157,224,0.08)' : 'rgba(29,111,164,0.05)',
-              border: `1px solid ${dark ? 'rgba(77,157,224,0.15)' : 'rgba(29,111,164,0.12)'}`,
-              textAlign: 'center',
-            }}>
-              <div style={{ fontSize: 9, fontWeight: 700, color: C.blue, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>ML XGBoost</div>
-              <div style={{ fontSize: 22, fontWeight: 900, color: C.blue, fontFamily: C.mono }}>{heureML}</div>
+        <div style={{ marginTop: 12 }}>
+
+          {/* ── Recommandation matin (résumé compact) ── */}
+          <div style={{
+            padding: 12, borderRadius: 8, marginBottom: 10,
+            background: dark ? '#0c1610' : '#f9fbfa',
+            border: `1px solid ${C.border}`,
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+              Consignes matin
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-              <ArrowRight size={16} color={sourcePRT ? C.green : C.textDim} />
-              <span style={{
-                fontSize: 8, fontWeight: 700, padding: '1px 5px', borderRadius: 3,
-                background: sourcePRT ? (dark ? 'rgba(52,217,111,0.12)' : 'rgba(24,120,63,0.08)') : C.toggleBg,
-                color: sourcePRT ? C.green : C.textDim,
-              }}>{sourcePRT ? 'PRT' : 'ML'}</span>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(85px, 1fr))', gap: 6 }}>
+              <DetailPill label="EC cible" value={rec.ec_cible_dSm != null ? `${rec.ec_cible_dSm} dS/m` : '—'} C={C} />
+              <DetailPill label="pH cible" value={rec.ph_cible != null ? `${rec.ph_cible}` : '—'} C={C} />
+              <DetailPill label="Nb tours" value={`${rec.nbr_tour || '—'}`} C={C} />
+              <DetailPill label="Durée (min)" value={rec.duree_min != null ? `${rec.duree_min}` : '—'} C={C} />
+              <DetailPill label="Eau (mm)" value={rec.quantite_eau_mm != null ? `${rec.quantite_eau_mm}` : '—'} C={C} />
+              <DetailPill label="Volume cc" value={rec.volume_cc_goutteur != null ? `${rec.volume_cc_goutteur}` : '—'} C={C} />
             </div>
-            <div style={{
-              padding: '10px 12px', borderRadius: 8,
-              background: sourcePRT
-                ? (dark ? 'rgba(52,217,111,0.08)' : 'rgba(24,120,63,0.05)')
-                : (dark ? 'rgba(61,107,78,0.08)' : 'rgba(156,184,166,0.10)'),
-              border: `1px solid ${sourcePRT ? (dark ? 'rgba(52,217,111,0.2)' : 'rgba(24,120,63,0.15)') : C.border}`,
-              textAlign: 'center',
-            }}>
-              <div style={{ fontSize: 9, fontWeight: 700, color: sourcePRT ? C.green : C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>PRT Poids</div>
-              <div style={{ fontSize: 22, fontWeight: 900, fontFamily: C.mono, color: sourcePRT ? C.green : C.textDim }}>
-                {heurePRT || '—'}
+          </div>
+
+          {/* ── Section Décisions Tour/Tour ── */}
+          <div style={{
+            padding: 12, borderRadius: 8,
+            background: dark ? '#0c1610' : '#f9fbfa',
+            border: `1px solid ${C.border}`,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Décisions Tour/Tour — Drainage
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); refreshTours() }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textDim, padding: 4, display: 'flex', alignItems: 'center' }}
+                >
+                  <RefreshCw size={12} style={{ animation: loadingTours ? 'az-spin 1s linear infinite' : 'none' }} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowTourForm(v => !v) }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    padding: '4px 10px', borderRadius: 6,
+                    border: `1px solid ${C.green}40`,
+                    background: dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.06)',
+                    color: C.green, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                  }}
+                >
+                  + Saisir drainage
+                </button>
               </div>
             </div>
-          </div>
 
-          {/* PRT details */}
-          {sourcePRT && prt.ptr_pct != null && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 6, marginBottom: 10 }}>
-              <DetailPill label="PRT %" value={`${prt.ptr_pct.toFixed(1)}%`} color={decColor} C={C} />
-              <DetailPill label="Décision" value={decLabel} color={decColor} C={C} />
-              <DetailPill label="Seuils" value={`${prt.ptr_seuil_bas?.toFixed(1)} – ${prt.ptr_seuil_haut?.toFixed(1)}%`} C={C} />
-              <DetailPill label="Poids soir" value={prt.poids_soir_kg != null ? `${prt.poids_soir_kg.toFixed(2)} kg` : '—'} C={C} />
-              <DetailPill label="Poids matin" value={prt.poids_matin_kg != null ? `${prt.poids_matin_kg.toFixed(2)} kg` : '—'} C={C} />
-              <DetailPill label="Heure matin" value={prt.heure_matin || '—'} C={C} />
-              <DetailPill label="Fin tour soir" value={prt.fin_tour_soir || '—'} C={C} />
-            </div>
-          )}
+            {/* Formulaire saisie drainage */}
+            {showTourForm && (
+              <TourDrainageForm
+                house={house}
+                rec={rec}
+                tourData={tourData}
+                C={C}
+                dark={dark}
+                onSaved={() => { setShowTourForm(false); refreshTours() }}
+              />
+            )}
 
-          {/* Consignes */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: 6 }}>
-            <DetailPill label="EC cible" value={rec.ec_cible_dSm != null ? `${rec.ec_cible_dSm} dS/m` : '—'} C={C} />
-            <DetailPill label="pH cible" value={rec.ph_cible != null ? `${rec.ph_cible}` : '—'} C={C} />
-            <DetailPill label="Nb tours" value={`${rec.nbr_tour || '—'}`} C={C} />
-            <DetailPill label="Eau (mm)" value={rec.quantite_eau_mm != null ? `${rec.quantite_eau_mm}` : '—'} C={C} />
-            <DetailPill label="Volume cc" value={rec.volume_cc_goutteur != null ? `${rec.volume_cc_goutteur}` : '—'} C={C} />
-            <DetailPill label="Durée (min)" value={rec.duree_min != null ? `${rec.duree_min}` : '—'} C={C} />
-          </div>
-
-          {/* Alerte */}
-          {rec.alerte && rec.alerte !== 'none' && (
-            <div style={{
-              marginTop: 8, padding: '6px 10px', borderRadius: 6,
-              background: dark ? 'rgba(245,166,35,0.10)' : 'rgba(168,106,0,0.06)',
-              border: `1px solid ${dark ? 'rgba(245,166,35,0.2)' : 'rgba(168,106,0,0.15)'}`,
-              display: 'flex', alignItems: 'center', gap: 6,
-            }}>
-              <AlertTriangle size={12} color={C.amber} />
-              <span style={{ fontSize: 11, fontWeight: 600, color: C.amber }}>{rec.alerte}</span>
-            </div>
-          )}
-
-          {/* Statut */}
-          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-            {rec.statut === 'approved' && <><CheckCircle2 size={12} color={C.green} /><span style={{ fontSize: 11, color: C.green, fontWeight: 600 }}>Approuvée</span></>}
-            {rec.statut === 'rejected' && <><XCircle size={12} color={C.red} /><span style={{ fontSize: 11, color: C.red, fontWeight: 600 }}>Rejetée</span></>}
-            {rec.statut !== 'approved' && rec.statut !== 'rejected' && <><Clock size={12} color={C.textDim} /><span style={{ fontSize: 11, color: C.textDim }}>En attente</span></>}
+            {/* Liste des tours avec décisions */}
+            {loadingTours ? (
+              <div style={{ textAlign: 'center', padding: 12, color: C.textDim, fontSize: 11 }}>
+                <RefreshCw size={12} style={{ display: 'inline-block', animation: 'az-spin 1s linear infinite', marginRight: 4 }} />
+                Chargement...
+              </div>
+            ) : tourData ? (
+              <TourDecisionTable tourData={tourData} rec={rec} C={C} dark={dark} />
+            ) : (
+              <div style={{ textAlign: 'center', padding: 12, color: C.textDim, fontSize: 11 }}>
+                Aucune donnée tour
+              </div>
+            )}
           </div>
         </div>
       )}

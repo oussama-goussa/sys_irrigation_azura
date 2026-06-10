@@ -111,7 +111,7 @@ class AIConfigDevice(Base):
     longitude         = Column(Float, default=-9.5981)
     created_at        = Column(DateTime(timezone=True), server_default=func.now())
     updated_at        = Column(DateTime(timezone=True), onupdate=func.now())
-
+    
 
 # ── TABLE 3 : ai_decision_tour ────────────────────────────────
 class AIDecisionTour(Base):
@@ -121,14 +121,40 @@ class AIDecisionTour(Base):
     device_id         = Column(Integer, ForeignKey("devices.id"), nullable=False)
     date              = Column(Date, nullable=False)
     num_tour          = Column(Integer, nullable=False)
+
+    # ── Saisie drainage opérateur (manuelle, après chaque tour) ──
+    v_drainage        = Column(Float, nullable=True)    # Volume drainage saisi (cc ou mL)
+    pct_drainage      = Column(Float, nullable=True)    # % drainage calculé automatiquement
+    ec_drainage       = Column(Float, nullable=True)    # EC drainage saisi (dS/m)
+    ph_drainage       = Column(Float, nullable=True)    # pH drainage saisi
+
+    # ── Décision ML ──
     decision          = Column(String(20))   # CONTINUER / STOP
     raison            = Column(String(100))
     duree_suivant     = Column(Integer)
+    repos_suivant     = Column(Integer)      # Temps repos avant tour suivant (min)
     donnees_entree    = Column(JSONB)
-    disponible        = Column(Boolean, default=False)
+    disponible        = Column(Boolean, default=True)
     created_at        = Column(DateTime(timezone=True), server_default=func.now())
     updated_at        = Column(DateTime(timezone=True), onupdate=func.now())
 
     __table_args__ = (
         UniqueConstraint('device_id', 'date', 'num_tour', name='uq_decision_tour'),
     )
+
+    def to_dict(self):
+        return {
+            "id"           : self.id,
+            "device_id"    : self.device_id,
+            "date"         : str(self.date),
+            "num_tour"     : self.num_tour,
+            "v_drainage"   : self.v_drainage,
+            "pct_drainage" : self.pct_drainage,
+            "ec_drainage"  : self.ec_drainage,
+            "ph_drainage"  : self.ph_drainage,
+            "decision"     : self.decision,
+            "raison"       : self.raison,
+            "duree_suivant": self.duree_suivant,
+            "repos_suivant": self.repos_suivant,
+            "disponible"   : self.disponible,
+        }
