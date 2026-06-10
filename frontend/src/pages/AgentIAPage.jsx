@@ -172,8 +172,8 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
-    getAIConfig(getAccessToken(), house.id).then(setConfig).catch(() => {})
-  }, [house.id])
+    getAIConfig(token, device.id).then(setConfig).catch(e => setError(e.message))
+  }, [token, device.id])
 
   const handleSave = async () => {
     setSaving(true)
@@ -412,7 +412,7 @@ function TourDecisionTable({ tourData, rec, C, dark }) {
 
 
 // ── TourDrainageForm ───────────────────────────────────────────
-function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, nbrGoutteurs = 1 }) {
+function TourDrainageForm({ house, rec, tourData, C, dark, onSaved }) {
   const tours = tourData?.tours_netafim || []
   const decisions = tourData?.decisions || []
   const decisionsMap = {}
@@ -704,6 +704,11 @@ function HouseCard({ house, rec, C, dark, onConfig }) {
   const [tourData, setTourData] = useState(null)
   const [loadingTours, setLoadingTours] = useState(false)
   const fetchedRef = useRef(false)
+
+  const [config, setConfig] = useState(null)
+  useEffect(() => {
+    getAIConfig(getAccessToken(), house.id).then(setConfig).catch(() => {})
+  }, [house.id])
 
   // Charger décisions du jour quand on expand
   useEffect(() => {
