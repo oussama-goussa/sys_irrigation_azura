@@ -1501,15 +1501,6 @@ def generer_decision_tour(
 
         cfg = get_or_create_config(db, device_id)
 
-        if not cfg.drainage_dispo:
-            return {
-                "disponible": False,
-                "message": "Données drainage non disponibles — capteurs de drainage non installés",
-                "device_id": device_id,
-                "farm_name": device.farm_name,
-                "house_number": device.house_number,
-            }
-
         # Si drainage dispo → prédire
         _, _, modeles_tour, enc_tour = _get_modeles()
         decision = predict_tour(donnees_tour, modeles_tour, enc_tour)

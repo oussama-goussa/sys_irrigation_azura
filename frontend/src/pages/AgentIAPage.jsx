@@ -8,7 +8,10 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Brain, RefreshCw, Calendar, Sun, Droplets, Thermometer,
   Gauge, Clock, ChevronDown, ChevronRight, ChevronLeft, WifiOff,
-  AlertTriangle, CheckCircle2, XCircle, ArrowRight, Eye, Settings, X
+  AlertTriangle, CheckCircle2, XCircle, ArrowRight, Eye, Settings, X,
+  Zap, CloudRain, CloudFog, Flame, Cloud, CloudSnow, HelpCircle,
+  CalendarDays, MapPin, Save, Play, Square, Check, AlertCircle,
+  Cloudy, CloudSun
 } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { getColors } from '../theme.js'
@@ -27,23 +30,37 @@ function today() {
   return new Date().toISOString().split('T')[0]
 }
 
-const SCENARIO_LABELS = {
-  '1_TRES_ENSOLEILLE':  '☀️ Très ensoleillé',
-  '2_ENSOLEILLE':       '🌤️ Ensoleillé',
-  '5_BROUILLARD_MATIN': '🌫️ Brouillard matin',
-  '5b_FOG_CHAUD_VPD':   '🌫️ Fog chaud VPD',
-  '5c_FOG_CHAUD_RS':    '🌫️ Fog chaud RS',
-  '5d_FOG_RADIATION':   '🌫️ Fog radiation',
-  '5e_FOG_FROID':       '🌫️ Fog froid',
-  '6_CHERGUI_URGENT':   '🔥 Chergui urgent',
-  '7_PLUIE_STOP':       '🌧️ Pluie stop',
-  '7b_PLUIE_LEGERE':    '🌦️ Pluie légère',
-  '8_NUAGEUX_CHAUD':    '⛅ Nuageux chaud',
-  '9_NUIT_FROIDE_SOL':  '🌙 Nuit froide sol',
-  'default':            '❓ Défaut',
+const SCENARIO_ICONS = {
+  '1_TRES_ENSOLEILLE':  { icon: Sun,       label: 'Très ensoleillé',  color: '#f59e0b' },
+  '2_ENSOLEILLE':       { icon: CloudSun,  label: 'Ensoleillé',       color: '#f59e0b' },
+  '5_BROUILLARD_MATIN': { icon: CloudFog,  label: 'Brouillard matin', color: '#94a3b8' },
+  '5b_FOG_CHAUD_VPD':   { icon: CloudFog,  label: 'Fog chaud VPD',    color: '#94a3b8' },
+  '5c_FOG_CHAUD_RS':    { icon: CloudFog,  label: 'Fog chaud RS',     color: '#94a3b8' },
+  '5d_FOG_RADIATION':   { icon: CloudFog,  label: 'Fog radiation',    color: '#94a3b8' },
+  '5e_FOG_FROID':       { icon: CloudSnow, label: 'Fog froid',        color: '#7dd3fc' },
+  '6_CHERGUI_URGENT':   { icon: Flame,     label: 'Chergui urgent',   color: '#ef4444' },
+  '7_PLUIE_STOP':       { icon: CloudRain, label: 'Pluie stop',       color: '#3b82f6' },
+  '7b_PLUIE_LEGERE':    { icon: CloudRain, label: 'Pluie légère',     color: '#60a5fa' },
+  '8_NUAGEUX_CHAUD':    { icon: Cloud,     label: 'Nuageux chaud',    color: '#a78bfa' },
+  '9_NUIT_FROIDE_SOL':  { icon: CloudSnow, label: 'Nuit froide sol',  color: '#7dd3fc' },
+  'default':            { icon: HelpCircle,label: 'Défaut',           color: '#94a3b8' },
 }
 
-function scenarioLabel(s) { return SCENARIO_LABELS[s] || s || '—' }
+function ScenarioLabel({ s }) {
+  const cfg = SCENARIO_ICONS[s] || SCENARIO_ICONS['default']
+  const Icon = cfg.icon
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+      <Icon size={11} color={cfg.color} strokeWidth={2} />
+      <span>{cfg.label}</span>
+    </span>
+  )
+}
+
+function scenarioLabel(s) {
+  const cfg = SCENARIO_ICONS[s] || SCENARIO_ICONS['default']
+  return cfg.label
+}
 
 // ── TourCalendar — même composant que ZonePage.jsx ─────────────
 const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
@@ -230,7 +247,9 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
 
         {/* Date de plantation */}
         <div style={{ marginBottom: 14 }}>
-          <label style={labelStyle}>📅 Date de plantation</label>
+          <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <CalendarDays size={11} color={C.green} /> Date de plantation
+          </label>
           <input
             type="date"
             value={config.date_plantation || ''}
@@ -246,7 +265,9 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
 
         {/* EC bassin */}
         <div style={{ marginBottom: 14 }}>
-          <label style={labelStyle}>⚡ EC eau brute (dS/m)</label>
+          <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <Zap size={11} color={C.green} /> EC eau brute (dS/m)
+          </label>
           <input
             type="number"
             step="0.1"
@@ -261,7 +282,9 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
 
         {/* Nombre de goutteurs */}
         <div style={{ marginBottom: 14 }}>
-          <label style={labelStyle}>💧 Nombre de goutteurs / bras</label>
+          <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <Droplets size={11} color={C.green} /> Nombre de goutteurs / bras
+          </label>
           <input
             type="number"
             step="1"
@@ -279,7 +302,9 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
         {/* Coordonnées */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
           <div>
-            <label style={labelStyle}>📍 Latitude</label>
+            <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <MapPin size={11} color={C.green} /> Latitude
+            </label>
             <input
               type="number"
               step="0.0001"
@@ -290,7 +315,9 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
             />
           </div>
           <div>
-            <label style={labelStyle}>📍 Longitude</label>
+            <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <MapPin size={11} color={C.green} /> Longitude
+            </label>
             <input
               type="number"
               step="0.0001"
@@ -303,9 +330,16 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
         </div>
 
         {/* Erreur / Succès */}
-        {error && <div style={{ color: '#e74c3c', fontSize: 12, marginBottom: 10 }}>❌ {error}</div>}
-        {success && <div style={{ color: C.green, fontSize: 12, marginBottom: 10 }}>✅ Sauvegardé !</div>}
-
+        {error && (
+          <div style={{ color: '#e74c3c', fontSize: 12, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <AlertCircle size={13} color="#e74c3c" /> {error}
+          </div>
+        )}
+        {success && (
+          <div style={{ color: C.green, fontSize: 12, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <CheckCircle2 size={13} color={C.green} /> Sauvegardé !
+          </div>
+        )}
         {/* Boutons */}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
           <button onClick={onClose} style={{
@@ -316,7 +350,7 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
             padding: '8px 16px', borderRadius: 7, border: 'none',
             background: C.green, color: '#fff', cursor: saving ? 'wait' : 'pointer',
             fontSize: 13, fontWeight: 700, opacity: saving ? 0.6 : 1,
-          }}>{saving ? 'Sauvegarde...' : '💾 Sauvegarder'}</button>
+          }}>{saving ? 'Sauvegarde...' : <><Save size={12} style={{ marginRight: 5 }} />Sauvegarder</>}</button>
         </div>
       </div>
     </div>,
@@ -389,7 +423,11 @@ function TourDecisionTable({ tourData, rec, C, dark }) {
                       background: dec.decision === 'CONTINUER' ? `${C.green}15` : `${C.red}15`,
                       color: actionColor, border: `1px solid ${actionColor}30`,
                     }}>
-                      {dec.decision === 'CONTINUER' ? '▶ CONT.' : '■ STOP'}
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                        {dec.decision === 'CONTINUER'
+                          ? <><Play size={9} fill="currentColor" /> CONT.</>
+                          : <><Square size={9} fill="currentColor" /> STOP</>}
+                      </span>
                     </span>
                   ) : (
                     <span style={{ color: C.textDim, fontSize: 10 }}>—</span>
@@ -562,7 +600,9 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, nbrGoutteurs
 
       {/* Erreur / Résultat */}
       {error && (
-        <div style={{ color: C.red, fontSize: 11, marginBottom: 8 }}>❌ {error}</div>
+        <div style={{ color: C.red, fontSize: 11, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+          <AlertCircle size={13} color={C.red} /> {error}
+        </div>
       )}
       {result && (
         <div style={{
@@ -573,7 +613,11 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, nbrGoutteurs
           border: `1px solid ${result.prediction?.action === 'CONTINUER' ? C.green : C.red}30`,
         }}>
           <div style={{ fontWeight: 800, fontSize: 13, color: result.prediction?.action === 'CONTINUER' ? C.green : C.red }}>
-            {result.prediction?.action === 'CONTINUER' ? '▶ CONTINUER' : '■ STOP'}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              {result.prediction?.action === 'CONTINUER'
+                ? <><Play size={12} fill="currentColor" /> CONTINUER</>
+                : <><Square size={12} fill="currentColor" /> STOP</>}
+            </span>
           </div>
           {result.prediction?.duree_suivant && (
             <div style={{ fontSize: 11, color: C.textMuted, marginTop: 3 }}>
@@ -599,7 +643,7 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, nbrGoutteurs
             fontFamily: 'inherit',
           }}
         >
-          {saving ? 'Calcul...' : '⚡ Prédire'}
+          {saving ? 'Calcul...' : <><Zap size={12} style={{ marginRight: 5 }} />Prédire</>}
         </button>
       </div>
     </div>
@@ -781,7 +825,7 @@ function HouseCard({ house, rec, C, dark, onConfig }) {
               </span>
             </div>
             <div style={{ fontSize: 10, color: C.textDim, marginTop: 2 }}>
-              {scenarioLabel(rec.scenario_meteo)}
+              <ScenarioLabel s={rec.scenario_meteo} />
             </div>
           </div>
         </div>
@@ -850,7 +894,7 @@ function HouseCard({ house, rec, C, dark, onConfig }) {
                     color: C.green, fontSize: 11, fontWeight: 700, cursor: 'pointer',
                   }}
                 >
-                  + Saisir drainage
+                  <Droplets size={11} style={{ marginRight: 4 }} /> Saisir drainage
                 </button>
               </div>
             </div>
@@ -952,8 +996,7 @@ export default function AgentIAPage({ dark, auth }) {
   useEffect(() => { loadFarms() }, [loadFarms])
 
   // Filtrer par fermes de l'utilisateur
-  const userFarms = auth?.farm_names || []
-  const filteredFarms = farms.filter(f => userFarms.includes(f.farm_name))
+  const filteredFarms = farms
 
   const handleToday = () => { setDateStr(today()); setShowCal(false) }
 
@@ -1000,7 +1043,7 @@ export default function AgentIAPage({ dark, auth }) {
             Agent IA Irrigation
           </h1>
           <div style={{ fontSize: 11, color: C.textDim, marginTop: 2 }}>
-            Recommandations ML + PRT · {filteredFarms.length} ferme{filteredFarms.length > 1 ? 's' : ''}
+            Recommandations · {farms.length} ferme{farms.length > 1 ? 's' : ''}
           </div>
         </div>
 
