@@ -1047,7 +1047,7 @@ function HouseCard({ house, rec, C, dark, onConfig, dateStr }) {
               <DetailPill label="EC cible" value={rec.ec_cible_dSm != null ? `${rec.ec_cible_dSm} dS/m` : '—'} C={C} />
               <DetailPill label="pH cible" value={rec.ph_cible != null ? `${rec.ph_cible}` : '—'} C={C} />
               <DetailPill label="Nb tours" value={`${rec.nbr_tour || '—'}`} C={C} />
-              <DetailPill label="Durée (min)" value={rec.duree_min != null ? `${rec.duree_min}` : '—'} C={C} />
+              <DetailPill label="Durée de tour 1 (min)" value={rec.duree_min != null ? `${rec.duree_min}` : '—'} C={C} />
               <DetailPill label="Eau (mm)" value={rec.quantite_eau_mm != null ? `${rec.quantite_eau_mm}` : '—'} C={C} />
               <DetailPill label="Volume cc" value={rec.volume_cc_goutteur != null ? `${rec.volume_cc_goutteur}` : '—'} C={C} />
             </div>
