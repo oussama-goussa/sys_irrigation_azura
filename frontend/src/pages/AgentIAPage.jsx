@@ -600,7 +600,7 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, nbrGoutteurs
           <input
             readOnly
             value={vApport != null ? `${vApport.toFixed(0)} cc` : '—'}
-            style={{ ...inputStyle, border: '1.5px solid transparent', background: 'transparent', color: C.green, fontWeight: 630, cursor: 'default' }}
+            style={{ ...inputStyle, cursor: 'default' }}
           />
         </div>
 
@@ -624,8 +624,6 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, nbrGoutteurs
             value={pctDrain != null ? `${pctDrain}%` : '—'}
             style={{
               ...inputStyle,
-              border: '1.5px solid transparent',
-              background: 'transparent',
               color: pctDrain != null
                 ? (Number(pctDrain) < 15 ? C.red : Number(pctDrain) > 35 ? C.amber : C.green)
                 : C.textDim,
