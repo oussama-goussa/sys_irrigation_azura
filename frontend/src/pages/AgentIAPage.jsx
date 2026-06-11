@@ -6,10 +6,10 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
-  Brain, RefreshCw, Calendar, Sun, Droplets, Thermometer,
-  Gauge, Clock, ChevronDown, ChevronRight, ChevronLeft, WifiOff,
+  Brain, RefreshCw, Calendar, Sun, Droplets, Thermometer, WavesArrowDown,
+  Gauge, Clock, ChevronDown, ChevronRight, ChevronLeft, WifiOff, Pin,
   AlertTriangle, CheckCircle2, XCircle, ArrowRight, Eye, Settings, X,
-  Zap, CloudRain, CloudFog, Flame, Cloud, CloudSnow, HelpCircle,
+  Zap, CloudRain, CloudFog, Flame, Cloud, CloudSnow, HelpCircle, Droplet,
   CalendarDays, MapPin, Save, Play, Square, Check, AlertCircle,
   Cloudy, CloudSun
 } from 'lucide-react'
@@ -284,7 +284,7 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
         {/* Nombre de goutteurs */}
         <div style={{ marginBottom: 14 }}>
           <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 5 }}>
-            <Droplets size={11} color={C.green} /> Nombre de goutteurs / bras
+            <Droplet size={11} color={C.green} /> Nombre de goutteurs
           </label>
           <input
             type="number"
@@ -301,7 +301,7 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
           <div>
             <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 5 }}>
-              <MapPin size={11} color={C.green} /> Latitude
+              <Pin size={11} color={C.green} /> Latitude
             </label>
             <input
               type="number"
@@ -314,7 +314,7 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
           </div>
           <div>
             <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 5 }}>
-              <MapPin size={11} color={C.green} /> Longitude
+              <Pin size={11} color={C.green} /> Longitude
             </label>
             <input
               type="number"
@@ -978,7 +978,7 @@ function HouseCard({ house, rec, C, dark, onConfig, dateStr }) {
                     color: C.green, fontSize: 11, fontWeight: 700, cursor: 'pointer',
                   }}
                 >
-                  <Droplets size={11} style={{ marginRight: 4 }} /> Saisir drainage
+                  <WavesArrowDown size={12} style={{ marginRight: 4 }} /> Saisir drainage
                 </button>
               </div>
             </div>
