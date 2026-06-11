@@ -161,11 +161,11 @@ function TourCalendar({ value, onChange, C, dark }) {
       </div>
 
       {/* Today button */}
-      <div style={{ marginTop: 8, borderTop: `1px solid ${C.border}`, paddingTop: 8 }}>
+      <div style={{ marginTop: 12, borderTop: `1px solid ${C.border}`, paddingTop: 10, paddingBottom: 4 }}>
         <button
           onClick={() => { onChange(todayStr); setView(new Date()) }}
           style={{
-            width: '100%', padding: '6px 0', borderRadius: 7,
+            width: '100%', padding: '8px 0', borderRadius: 7,
             border: `1px solid ${C.border}`,
             background: dark ? '#112018' : '#f0f7f2',
             color: C.green, fontSize: 11, fontWeight: 700,
