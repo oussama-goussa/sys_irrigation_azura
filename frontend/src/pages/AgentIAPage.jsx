@@ -697,7 +697,7 @@ function FarmSection({ farm, token, dateStr, C, dark, onConfig }) {
           cursor: 'pointer', fontFamily: 'inherit',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}> 
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{
             width: 28, height: 28, borderRadius: 7,
             background: dark ? 'rgba(52,217,111,0.15)' : 'rgba(24,120,63,0.10)',
@@ -1038,7 +1038,7 @@ export default function AgentIAPage({ dark, auth }) {
   }, [showCal])
 
   return (
-    <div style={{ animation: 'az-fade-in 0.35s ease both'}}>
+    <div style={{ animation: 'az-fade-in 0.35s ease both' }}>
       {/* HEADER */}
       <div style={{
         display: 'flex', justifyContent: 'space-between',
