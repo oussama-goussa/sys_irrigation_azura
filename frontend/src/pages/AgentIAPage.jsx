@@ -546,7 +546,16 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, onClose, nbr
       setError('Veuillez remplir au moins un champ (V. Drain, EC ou pH)')
       return
     }
+    if (decisionsMap[numTour]) {
+      setError('Ce tour a déjà une prédiction enregistrée.')
+      return
+    }
     setSaving(true); setError(''); setResult(null)
+    if (decisionsMap[numTour]) {
+      setError('Ce tour a déjà une prédiction enregistrée.')
+      setSaving(false)
+      return
+    }
     try {
       const res = await postDecisionTour(getAccessToken(), {
         device_id  : house.id,
@@ -701,12 +710,7 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, onClose, nbr
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center' }}>
-        {error ? (
-          <div style={{ color: C.red, fontSize: 11, display: 'flex', alignItems: 'center', gap: 5 }}>
-            <AlertCircle size={13} color={C.red} /> {error}
-          </div>
-        ) : <span />}
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
         <button
           onClick={handleSubmit}
           disabled={saving}
