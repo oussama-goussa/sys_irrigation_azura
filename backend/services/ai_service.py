@@ -402,43 +402,16 @@ PRT_SEUILS = {
 # Source : 99.3% des cas = 10 min exactement
 GAP_HEURE_MATIN_TO_TOUR1_MIN = 10
 
-# Fenêtre de recherche du poids_soir (20 min après dernier tour)
-# Le dernier tour se termine typiquement entre 13h et 15h30
-# → poids_soir entre 13h20 et 16h00
-POIDS_SOIR_HEURE_DEBUT = 13   # 13h00
-POIDS_SOIR_HEURE_FIN   = 16   # 16h00
-
 # Fenêtre de surveillance matinale (poids arrivant toutes les 5 min)
 # Le ressuyage est détecté entre 7h et 11h (99.8% des cas)
 POIDS_MATIN_HEURE_DEBUT = 6   # 06h00
 POIDS_MATIN_HEURE_FIN   = 11  # 11h00
-
 
 def _recuperer_poids_soir(
     db: Session,
     device_id: int,
     date_str: str,
 ) -> dict:
-    """
-    Récupère le poids_soir = poids mesuré ~20 min après la fin du
-    dernier tour d'irrigation de la veille (jour - 1).
-
-    Logique (identique au endpoint /poids-soir existant) :
-      1. Trouver le dernier tour complété hier (IrrigationTour.fin)
-      2. Chercher le poids 20 min après cette fin de tour
-      3. Fallback : dernier poids entre 17h et 23h hier
-      4. Si toujours rien → poids_soir = None (pas de PRT possible)
-
-    Le poids_soir est cherché UNIQUEMENT dans jour - 1.
-    Si pas de données hier → pas de PRT, on fallback sur recommandation.
-
-    Retourne
-    --------
-    dict avec clés :
-      poids_soir_kg  (float or None)
-      heure_soir     (str "HH:MM" or None)
-      fin_tour_soir  (str "HH:MM" or None) — heure fin du dernier tour
-    """
     from models.weight_model import WeightReading as WR
     from models.sensor_model import IrrigationTour
 
@@ -448,10 +421,12 @@ def _recuperer_poids_soir(
     if device is None:
         return {"poids_soir_kg": None, "heure_soir": None, "fin_tour_soir": None}
 
-    date_cible = _dt.datetime.strptime(date_str, "%Y-%m-%d").date()
+    farm_name = device.farm_name
+
+    date_cible  = _dt.datetime.strptime(date_str, "%Y-%m-%d").date()
     date_veille = date_cible - _dt.timedelta(days=1)
 
-    # ── 1. Trouver le dernier tour complété hier ──
+    # ── 1. Trouver le dernier tour complété hier dans irrigation_tours ──
     last_tour = (
         db.query(IrrigationTour)
         .filter(
@@ -463,66 +438,51 @@ def _recuperer_poids_soir(
         .first()
     )
 
-    fin_tour_str = None
-
-    if last_tour and last_tour.fin:
-        fin_tour_str = last_tour.fin.strftime("%H:%M")
-
-        # ── 2. Poids 20 min après fin du dernier tour ──
-        evening_time = last_tour.fin + _dt.timedelta(minutes=20)
-
-        poids = (
-            db.query(WR)
-            .filter(
-                WR.timestamp >= evening_time,
-                WR.timestamp <= _dt.datetime.combine(date_veille, _dt.time(22, 59)),
-                WR.poids_kg != None,
-                WR.poids_kg > 0,
-            )
-            .order_by(WR.timestamp.asc())   # premier poids après +20min
-            .first()
+    # Si pas de tour hier → PRT impossible
+    if not last_tour or not last_tour.fin:
+        logger.info(
+            f"Pas de dernier tour trouvé pour device {device_id} "
+            f"le {date_veille.isoformat()} → PRT impossible, fallback ML"
         )
+        return {"poids_soir_kg": None, "heure_soir": None, "fin_tour_soir": None}
 
-        if poids:
-            logger.info(
-                f"Poids soir trouve : {poids.poids_kg} kg a "
-                f"{poids.timestamp.strftime('%H:%M')} "
-                f"(tour {last_tour.tour_num}, fin {fin_tour_str})"
-            )
-            return {
-                "poids_soir_kg": poids.poids_kg,
-                "heure_soir"   : poids.timestamp.strftime("%H:%M"),
-                "fin_tour_soir": fin_tour_str,
-            }
+    fin_tour_str = last_tour.fin.strftime("%H:%M")
 
-    # ── 3. Fallback : dernier poids entre 17h et 23h hier ──
-    poids_fallback = (
+    # ── 2. Premier poids disponible 20 min après fin du dernier tour ──
+    evening_time = last_tour.fin + _dt.timedelta(minutes=20)
+
+    poids = (
         db.query(WR)
         .filter(
-            WR.timestamp >= _dt.datetime.combine(date_veille, _dt.time(17, 0)),
+            WR.farm_name == farm_name,
+            WR.timestamp >= evening_time,
             WR.timestamp <= _dt.datetime.combine(date_veille, _dt.time(22, 59)),
-            WR.poids_kg != None,
-            WR.poids_kg > 0,
+            WR.poids_kg  != None,
+            WR.poids_kg  > 0,
         )
-        .order_by(WR.timestamp.desc())   # le plus récent
+        .order_by(WR.timestamp.asc())
         .first()
     )
 
-    if poids_fallback:
+    if poids:
         logger.info(
-            f"Poids soir (fallback 17h-23h) : {poids_fallback.poids_kg} kg a "
-            f"{poids_fallback.timestamp.strftime('%H:%M')}"
+            f"Poids soir trouvé : {poids.poids_kg} kg à "
+            f"{poids.timestamp.strftime('%H:%M')} "
+            f"(dernier tour={last_tour.tour_num}, fin={fin_tour_str}, "
+            f"+20min={evening_time.strftime('%H:%M')})"
         )
         return {
-            "poids_soir_kg": poids_fallback.poids_kg,
-            "heure_soir"   : poids_fallback.timestamp.strftime("%H:%M"),
+            "poids_soir_kg": poids.poids_kg,
+            "heure_soir"   : poids.timestamp.strftime("%H:%M"),
             "fin_tour_soir": fin_tour_str,
         }
 
-    # ── 4. Aucun poids hier → pas de PRT possible ──
+    # ── 3. Pas de poids 20min après dernier tour → PRT impossible ──
     logger.info(
-        f"Pas de poids soir pour device {device_id} le {date_veille.isoformat()} "
-        f"→ fallback recommandation"
+        f"Pas de poids soir pour device {device_id} ({farm_name}) "
+        f"le {date_veille.isoformat()} "
+        f"(dernier tour fin={fin_tour_str}, cherché à partir de "
+        f"{evening_time.strftime('%H:%M')}) → PRT impossible, fallback ML"
     )
     return {"poids_soir_kg": None, "heure_soir": None, "fin_tour_soir": fin_tour_str}
 

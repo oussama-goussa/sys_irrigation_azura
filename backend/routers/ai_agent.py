@@ -111,26 +111,22 @@ class ConfigUpdateRequest(BaseModel):
 # ENDPOINTS
 # ════════════════════════════════════════════════════════════════
 
+# APRÈS
 @router.get("/recommandations", summary="Recommandations du jour pour TOUS les devices")
 def get_recommandations_tous(
-    date_str: Optional[str] = Query(None, description="Date (YYYY-MM-DD), défaut = aujourd'hui"),
+    date_str: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     user: dict = Depends(require_any),
 ):
-    """
-    Retourne les recommandations IA du matin pour les devices actifs.
-    Filtré par farm_names de l'utilisateur (sauf admin).
-    Si aucune recommandation n'existe, la génère automatiquement.
-    """
+    from datetime import datetime as dt
     today = date_str or date.today().isoformat()
+    is_today = (date_str is None or date_str == date.today().isoformat())
 
-    # Filtrer les recommandations par farm_names (même logique que devices.py)
     query = db.query(AIRecommandation).filter(AIRecommandation.date == today)
     query = _filter_devices_by_farm_names(query, user)
     existing = query.all()
 
     if existing:
-        # Enrichir avec farm_name et house_number
         results = []
         for rec in existing:
             device = db.query(Device).filter(Device.id == rec.device_id).first()
@@ -145,13 +141,22 @@ def get_recommandations_tous(
             "source"         : "cache",
         }
 
-    # Générer automatiquement
+    # Bloquer la génération avant 06h00 pour aujourd'hui
+    if is_today and dt.now().hour < 6:
+        return {
+            "date"           : today,
+            "total_devices"  : 0,
+            "recommandations": [],
+            "source"         : "not_ready",
+            "message"        : "Recommandations disponibles à partir de 06h00",
+        }
+
+    # Date passée ou après 06h00 → générer
     resultat = generer_recommandation_tous_devices(today)
 
     if "erreur" in resultat and resultat.get("generated", 0) == 0:
         raise HTTPException(status_code=500, detail=resultat["erreur"])
 
-    # Sauvegarder en BDD et formater
     recommandations = []
     for r in resultat.get("recommandations", []):
         try:
@@ -161,7 +166,6 @@ def get_recommandations_tous(
             d["house_number"] = r.get("house_number")
             recommandations.append(d)
         except Exception as e:
-            # Si sauvegarde échoue, retourner quand même le résultat
             r["farm_name"]    = r.get("farm_name")
             r["house_number"] = r.get("house_number")
             recommandations.append(r)
@@ -221,10 +225,11 @@ def backfill_recommandations(
 @router.get("/recommandations/{device_id}", summary="Recommandation du jour pour 1 device")
 def get_recommandation_device(
     device_id: int,
-    date_str: Optional[str] = Query(None, description="Date (YYYY-MM-DD), défaut = aujourd'hui"),
+    date_str: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     user: dict = Depends(require_any),
 ):
+    from datetime import datetime as dt
     today = date_str or date.today().isoformat()
 
     device = db.query(Device).filter(Device.id == device_id).first()
@@ -244,16 +249,24 @@ def get_recommandation_device(
         d["house_number"] = device.house_number
         return {"source": "cache", "recommandation": d}
 
+    # Bloquer la génération avant 06h00 pour aujourd'hui
+    is_today = (date_str is None or date_str == date.today().isoformat())
+    if is_today and dt.now().hour < 6:
+        raise HTTPException(
+            status_code=404,
+            detail="Recommandation disponible à partir de 06h00"
+        )
+
     # Tenter la génération — si les modèles ML ne sont pas dispo → 404
     try:
         cfg = get_or_create_config(db, device_id)
         resultat = generer_recommandation_matin(
             device_id       = device_id,
             date_str        = today,
-            ec_bassin       = cfg.ec_eau_brute or 0.8,
+            ec_bassin       = cfg.ec_eau_brute,
             date_plantation = str(cfg.date_plantation) if cfg.date_plantation else None,
-            lat             = cfg.latitude or 30.4202,
-            lon             = cfg.longitude or -9.5981,
+            lat             = cfg.latitude,
+            lon             = cfg.longitude,
         )
 
         if "erreur" in resultat:

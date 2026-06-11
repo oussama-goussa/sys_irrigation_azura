@@ -100,6 +100,12 @@ app.conf.beat_schedule = {
         "task"    : "core.celery_app.task_check_offline_stations",
         "schedule": crontab(minute="*/10"),
     },
+
+    # AJOUTER dans beat_schedule
+    "update-prt-heure-debut": {
+        "task"    : "core.celery_app.task_update_prt_heure_debut",
+        "schedule": crontab(minute="*/5"),  # toutes les 5 min
+    },
 }
 
 
@@ -349,34 +355,31 @@ def task_tours_jour_en_cours():
 @app.task(name="core.celery_app.task_generer_recommandations_matin")
 def task_generer_recommandations_matin():
     """
-    Génère les recommandations IA du matin pour tous les devices actifs.
-    Planifiée à 06h00 chaque matin.
-    Utilise generer_recommandation_tous_devices() pour la boucle auto-discovery.
+    06h00 : génère uniquement les consignes ML (EC, pH, nb_tours, scénario).
+    Le PRT sera mis à jour toutes les 5 min par task_update_prt_heure_debut.
     """
     try:
         from services.ai_service import generer_recommandation_tous_devices, sauvegarder_recommandation
         from core.database import SessionLocal
-        from models.ai_recommandation_model import AIRecommandation
+        from models.ai_recommendation_model import AIRecommandation
         from datetime import date
 
         today = date.today().isoformat()
 
-        # Vérifier si déjà générées aujourd'hui
+        # Supprimer recommandations existantes du jour pour régénérer proprement
         db = SessionLocal()
         try:
-            existing_count = db.query(AIRecommandation).filter(
-                AIRecommandation.date == today
-            ).count()
-            if existing_count > 0:
-                logger.info(f"Recommandations déjà générées aujourd'hui ({existing_count}) — skip")
-                return {"statut": "ok", "generated": 0, "message": "Déjà générées"}
+            deleted = db.query(AIRecommandation).filter(
+                AIRecommandation.date == today,
+            ).delete()
+            if deleted:
+                db.commit()
+                logger.info(f"{deleted} recommandations supprimées → régénération 06h00")
         finally:
             db.close()
 
-        # Générer pour tous les devices
         resultat = generer_recommandation_tous_devices(today)
 
-        # Sauvegarder en BDD
         db = SessionLocal()
         try:
             generated = 0
@@ -386,9 +389,8 @@ def task_generer_recommandations_matin():
                     generated += 1
                 except Exception as e:
                     logger.error(f"Erreur sauvegarde recommandation : {e}")
-
-            logger.success(f"Recommandations générées : {generated} devices")
-            return {"statut": "ok", "generated": generated, "total": resultat.get("total_devices", 0)}
+            logger.success(f"Recommandations ML générées à 06h00 : {generated} devices")
+            return {"statut": "ok", "generated": generated}
         finally:
             db.close()
 
@@ -448,7 +450,8 @@ def task_ajustement_inter_tours():
     try:
         from core.database import SessionLocal
         from models.sensor_model import Device, IrrigationTour
-        from models.ai_recommendation_model import AIRecommandation, AIDecisionTour
+        from models.ai_recommendation_model import AIDecisionTour
+        from models.ai_recommendation_model import AIRecommandation
         from services.ai_service import ajuster_apres_tour
         from datetime import date, datetime, timedelta
 
@@ -616,4 +619,81 @@ def task_check_offline_stations():
             db.close()
     except Exception as e:
         logger.error(f"Erreur check offline : {e}")
+        return {"statut": "erreur", "message": str(e)}
+    
+    
+@app.task(name="core.celery_app.task_update_prt_heure_debut")
+def task_update_prt_heure_debut():
+    """
+    Toutes les 5 min entre 06h00 et 11h00 :
+    Recalcule le PRT pour les recommandations sans heure_debut_prt.
+    S'arrête quand heure_debut_prt est trouvée.
+    """
+    from datetime import datetime, date
+
+    now = datetime.now()
+
+    # Actif seulement entre 06h00 et 11h00
+    if now.hour < 6 or now.hour >= 11:
+        return {"statut": "skip", "raison": "hors fenêtre 06h-11h"}
+
+    try:
+        from core.database import SessionLocal
+        from models.ai_recommendation_model import AIRecommandation
+        from models.sensor_model import Device
+        from services.ai_service import detecter_heure_matin_et_debut_tour, PRT_SEUILS
+
+        today = date.today().isoformat()
+        db = SessionLocal()
+        updated = 0
+
+        try:
+            # Récupérer toutes les recommandations du jour sans heure_debut_prt
+            recs = db.query(AIRecommandation).filter(
+                AIRecommandation.date          == today,
+                AIRecommandation.heure_debut_prt == None,
+            ).all()
+
+            for rec in recs:
+                try:
+                    scenario = rec.scenario_meteo or "default"
+
+                    prt_result = detecter_heure_matin_et_debut_tour(
+                        db, rec.device_id, today, scenario
+                    )
+
+                    heure_prt = prt_result.get("heure_debut_tour1")
+
+                    if heure_prt is not None:
+                        # PRT détecté → mettre à jour la recommandation
+                        rec.heure_debut_prt  = heure_prt
+                        rec.heure_matin      = prt_result.get("heure_matin")
+                        rec.poids_soir_kg    = prt_result.get("poids_soir_kg")
+                        rec.poids_matin_kg   = prt_result.get("poids_matin_kg")
+                        rec.ptr_pct          = prt_result.get("prt_pct")
+                        rec.ptr_decision     = prt_result.get("decision")
+                        rec.ptr_seuil_bas    = PRT_SEUILS.get(scenario, PRT_SEUILS["default"])[0]
+                        rec.ptr_seuil_haut   = PRT_SEUILS.get(scenario, PRT_SEUILS["default"])[1]
+
+                        device = db.query(Device).filter(Device.id == rec.device_id).first()
+                        logger.success(
+                            f"PRT mis à jour : {device.farm_name if device else rec.device_id} "
+                            f"→ heure_debut_prt={heure_prt} "
+                            f"PRT={prt_result.get('prt_pct')}% "
+                            f"décision={prt_result.get('decision')}"
+                        )
+                        updated += 1
+
+                except Exception as e:
+                    logger.error(f"Erreur update PRT device {rec.device_id} : {e}")
+
+            db.commit()
+            logger.info(f"PRT update : {updated}/{len(recs)} devices mis à jour")
+            return {"statut": "ok", "updated": updated, "total": len(recs)}
+
+        finally:
+            db.close()
+
+    except Exception as e:
+        logger.error(f"Erreur task_update_prt_heure_debut : {e}")
         return {"statut": "erreur", "message": str(e)}

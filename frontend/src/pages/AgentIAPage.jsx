@@ -500,13 +500,13 @@ function TourDecisionTable({ tourData, rec, C, dark }) {
                   )}
                 </td>
                 <td style={{ padding: '6px 8px', textAlign: 'center', color: C.textMuted, fontFamily: C.mono }}>
-                  {dec?.duree_suivant != null ? `${dec.duree_suivant}min` : '—'}
+                  {dec?.decision === 'STOP' ? '' : dec?.duree_suivant != null ? `${dec.duree_suivant}min` : '—'}
                 </td>
                 <td style={{ padding: '6px 8px', textAlign: 'center', color: C.textMuted, fontFamily: C.mono }}>
-                  {dec?.repos_suivant != null ? `${dec.repos_suivant}min` : '—'}
+                  {dec?.decision === 'STOP' ? '' : dec?.repos_suivant != null ? `${dec.repos_suivant}min` : '—'}
                 </td>
                 <td style={{ padding: '6px 8px', textAlign: 'center', color: dec?.heure_debut_tour_suivante ? C.green : C.textDim, fontFamily: C.mono, fontWeight: dec?.heure_debut_tour_suivante ? 700 : 400 }}>
-                  {dec?.heure_debut_tour_suivante || '—'}
+                  {dec?.decision === 'STOP' ? '' : dec?.heure_debut_tour_suivante || '—'}
                 </td>
               </tr>
             )
