@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
-  Brain, RefreshCw, Calendar, Sun, Droplets, Thermometer, WavesArrowDown,
+  Brain, RefreshCw, Calendar, Sun, Droplets, Thermometer, Leaf,
   Gauge, Clock, ChevronDown, ChevronRight, ChevronLeft, WifiOff, Pin,
   AlertTriangle, CheckCircle2, XCircle, ArrowRight, Eye, Settings, X,
   Zap, CloudRain, CloudFog, Flame, Cloud, CloudSnow, HelpCircle, Droplet,
@@ -978,7 +978,7 @@ function HouseCard({ house, rec, C, dark, onConfig, dateStr }) {
                     color: C.green, fontSize: 11, fontWeight: 700, cursor: 'pointer',
                   }}
                 >
-                  <WavesArrowDown size={12} style={{ marginRight: 4 }} /> Saisir drainage
+                  <Leaf size={12} style={{ marginRight: 4 }} /> Saisir drainage
                 </button>
               </div>
             </div>
