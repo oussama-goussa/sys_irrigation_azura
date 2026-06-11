@@ -295,9 +295,6 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
             placeholder="ex: 4"
             style={inputStyle}
           />
-          <div style={{ fontSize: 10, color: C.textDim, marginTop: 3 }}>
-            Utilisé pour calculer % drainage (V.Drain ÷ nbr_goutteurs ÷ V.Apport)
-          </div>
         </div>
 
         {/* Coordonnées */}
@@ -446,8 +443,8 @@ function TourDecisionTable({ tourData, rec, C, dark }) {
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: 'inherit' }}>
         <thead>
           <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-            {['Tour', 'Heure', 'V.Apport', 'V.Drain', '%Drain', 'EC Drain', 'pH Drain', 'Décision', 'Durée suiv.', 'Repos'].map(h => (
-              <th key={h} style={{ padding: '5px 8px', textAlign: 'center', color: C.textDim, fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+            {['Tour', 'Heure', 'V. Apport', 'V. Drain', '%Drain', 'EC Drain', 'pH Drain', 'Décision', 'Durée suiv.', 'Repos'].map(h => (
+              <th key={h} style={{ padding: '5px 8px', textAlign: 'center', color: C.textDim, fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
                 {h}
               </th>
             ))}
