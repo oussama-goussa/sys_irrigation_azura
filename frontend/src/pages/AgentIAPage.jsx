@@ -95,7 +95,7 @@ function TourCalendar({ value, onChange, C, dark }) {
   }
 
   return (
-    <div style={{ width: 248, fontFamily: 'inherit' }}>
+    <div style={{ width: '100%', fontFamily: 'inherit' }}>
       {/* Month nav */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -1006,16 +1006,18 @@ export default function AgentIAPage({ dark, auth }) {
   const filteredFarms = farms
 
   const handleToday = () => { setDateStr(today()); setShowCal(false) }
-
+  
   // Position du calendrier popup
   const openCal = () => {
     if (!calBtnRef.current) { setShowCal(v => !v); return }
     const r = calBtnRef.current.getBoundingClientRect()
+    const popW = 272
+    const safeLeft = Math.min(r.left, window.innerWidth - popW - 8)
     const spaceBelow = window.innerHeight - r.bottom
     if (spaceBelow < 340)
-      setCalPos({ bottom: window.innerHeight - r.top + 6, top: 'auto', left: r.left })
+      setCalPos({ bottom: window.innerHeight - r.top + 6, top: 'auto', left: safeLeft })
     else
-      setCalPos({ top: r.bottom + 6, bottom: 'auto', left: r.left })
+      setCalPos({ top: r.bottom + 6, bottom: 'auto', left: safeLeft })
     setShowCal(v => !v)
   }
 
@@ -1109,7 +1111,7 @@ export default function AgentIAPage({ dark, auth }) {
             padding: '12px 12px 16px',
             background: dark ? C.surface : '#fafcfb',
             boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
-            width: 248,
+            width: 272,
             fontFamily: 'inherit',
           }}
         >
