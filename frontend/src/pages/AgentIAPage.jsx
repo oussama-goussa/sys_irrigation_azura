@@ -1106,7 +1106,7 @@ export default function AgentIAPage({ dark, auth }) {
             zIndex: 99999,
             border: `1.5px solid ${C.border}`,
             borderRadius: 12,
-            padding: '12px 12px 10px',
+            padding: '12px 12px 16px',
             background: dark ? C.surface : '#fafcfb',
             boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
             width: 248,
