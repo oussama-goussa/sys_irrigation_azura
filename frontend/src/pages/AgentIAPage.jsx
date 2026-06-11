@@ -579,7 +579,7 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, onClose, nbr
     color: C.text, fontSize: 12, fontFamily: 'inherit', outline: 'none',
     boxSizing: 'border-box',
   }
-  const labelStyle = { fontSize: 10, fontWeight: 700, color: C.textMuted, marginBottom: 3, display: 'block', textTransform: 'uppercase', letterSpacing: '0.04em' }
+  const labelStyle = { fontSize: 12, fontWeight: 800, color: C.textMuted, marginBottom: 3, display: 'block', textTransform: 'uppercase', letterSpacing: '0.04em' }
 
   return (
     <div style={{
