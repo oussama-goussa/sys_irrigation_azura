@@ -214,10 +214,11 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
   if (!config) return null
 
   const inputStyle = {
-    width: '100%', padding: '8px 10px', borderRadius: 7,
-    border: `1px solid ${C.border}`, background: dark ? '#0d1a12' : '#fff',
-    color: C.text, fontSize: 13, fontFamily: 'inherit', outline: 'none',
-    boxSizing: 'border-box',
+    width: '100%', padding: '6px 10px', borderRadius: 7,
+    border: `1.5px solid ${C.border}`,
+    background: C.inputBg,
+    color: C.text, fontSize: 12, fontFamily: 'inherit', outline: 'none',
+    boxSizing: 'border-box', fontWeight: 630,
   }
 
   const labelStyle = { fontSize: 11, fontWeight: 700, color: C.textMuted, marginBottom: 4, display: 'block' }
@@ -355,6 +356,73 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
       </div>
     </div>,
     document.body,
+  )
+}
+
+// ── TourSelect ────────────────────────────────────────────────
+function TourSelect({ value, onChange, tours, decisionsMap, nbr_tour, C }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [])
+
+  const options = tours.length > 0
+    ? tours.map(t => ({ value: t.num_tour, label: `Tour ${t.num_tour}`, done: !!decisionsMap[t.num_tour] }))
+    : Array.from({ length: nbr_tour || 10 }, (_, i) => ({ value: i + 1, label: `Tour ${i + 1}`, done: false }))
+
+  const selected = options.find(o => o.value === value)
+
+  return (
+    <div ref={ref} style={{ position: 'relative', width: '100%' }}>
+      <div
+        onClick={() => setOpen(v => !v)}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0 10px', height: 34,
+          border: `1.5px solid ${open ? C.green : C.border}`,
+          borderRadius: 8, background: C.inputBg,
+          cursor: 'pointer', transition: 'border-color 0.15s', gap: 6, fontWeight: 630,
+        }}
+      >
+        <span style={{ fontSize: 12, color: C.text }}>{selected?.label || '—'}</span>
+        <ChevronDown size={12} strokeWidth={2} color={C.textDim}
+          style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
+      </div>
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+          background: C.card, border: `1.5px solid ${C.border}`,
+          borderRadius: 8, zIndex: 999, boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
+          maxHeight: 200, overflowY: 'auto', fontWeight: 630,
+        }}>
+          {options.map(o => {
+            const sel = o.value === value
+            return (
+              <div
+                key={o.value}
+                onClick={() => { onChange(o.value); setOpen(false) }}
+                style={{
+                  padding: '9px 14px', fontSize: 12, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  color: sel ? C.green : C.textMuted,
+                  background: sel ? `${C.green}12` : 'transparent',
+                  transition: 'background 0.1s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = sel ? `${C.green}18` : `${C.green}08`}
+                onMouseLeave={e => e.currentTarget.style.background = sel ? `${C.green}12` : 'transparent'}
+              >
+                <span>{o.label}</span>
+                {(sel || o.done) && <Check size={12} strokeWidth={2.5} color={sel ? C.green : C.textDim} />}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -516,31 +584,23 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, nbrGoutteurs
         {/* Numéro de tour */}
         <div>
           <label style={labelStyle}>N° Tour</label>
-          <select
+          <TourSelect
             value={numTour}
-            onChange={e => setNumTour(Number(e.target.value))}
-            style={{ ...inputStyle }}
-          >
-            {tours.length > 0
-              ? tours.map(t => (
-                  <option key={t.num_tour} value={t.num_tour}>
-                    Tour {t.num_tour}{decisionsMap[t.num_tour] ? ' ✓' : ''}
-                  </option>
-                ))
-              : Array.from({ length: rec?.nbr_tour || 10 }, (_, i) => (
-                  <option key={i+1} value={i+1}>Tour {i+1}</option>
-                ))
-            }
-          </select>
+            onChange={setNumTour}
+            tours={tours}
+            decisionsMap={decisionsMap}
+            nbr_tour={rec?.nbr_tour}
+            C={C}
+          />
         </div>
 
         {/* V. Apport (lecture seule depuis Netafim) */}
         <div>
-          <label style={labelStyle}>V. Apport (cc) — auto</label>
+          <label style={labelStyle}>V. Apport (cc)</label>
           <input
             readOnly
             value={vApport != null ? `${vApport.toFixed(0)} cc` : '—'}
-            style={{ ...inputStyle, background: dark ? '#0a1208' : '#f0f4f1', color: C.textDim, cursor: 'default' }}
+            style={{ ...inputStyle, border: '1.5px solid transparent', background: 'transparent', color: C.green, fontWeight: 630, cursor: 'default' }}
           />
         </div>
 
@@ -558,13 +618,14 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, nbrGoutteurs
 
         {/* % Drainage calculé auto */}
         <div>
-          <label style={labelStyle}>% Drain — auto</label>
+          <label style={labelStyle}>% Drain</label>
           <input
             readOnly
             value={pctDrain != null ? `${pctDrain}%` : '—'}
             style={{
               ...inputStyle,
-              background: dark ? '#0a1208' : '#f0f4f1',
+              border: '1.5px solid transparent',
+              background: 'transparent',
               color: pctDrain != null
                 ? (Number(pctDrain) < 15 ? C.red : Number(pctDrain) > 35 ? C.amber : C.green)
                 : C.textDim,
