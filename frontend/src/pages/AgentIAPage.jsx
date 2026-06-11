@@ -733,7 +733,7 @@ function FarmSection({ farm, token, dateStr, C, dark, onConfig }) {
             </div>
           )}
           {!loading && (farm.houses || []).map(house => (
-            <HouseCard key={house.id} house={house} rec={recs[house.id]} C={C} dark={dark} onConfig={onConfig} />
+            <HouseCard key={house.id} house={house} rec={recs[house.id]} C={C} dark={dark} onConfig={onConfig} dateStr={dateStr} />
           ))}
         </div>
       )}
@@ -742,13 +742,18 @@ function FarmSection({ farm, token, dateStr, C, dark, onConfig }) {
 }
 
 // ── HouseCard — recommandation d'une house ─────────────────────
-function HouseCard({ house, rec, C, dark, onConfig }) {
+function HouseCard({ house, rec, C, dark, onConfig, dateStr }) {
   const [expanded, setExpanded] = useState(false)
   const [showTourForm, setShowTourForm] = useState(false)
   const [tourData, setTourData] = useState(null)
   const [loadingTours, setLoadingTours] = useState(false)
   const [config, setConfig] = useState(null)
   const fetchedRef = useRef(false)
+
+  useEffect(() => {
+      fetchedRef.current = false
+      setTourData(null)
+  }, [dateStr])
 
   useEffect(() => {
     getAIConfig(getAccessToken(), house.id)
@@ -761,15 +766,15 @@ function HouseCard({ house, rec, C, dark, onConfig }) {
     if (!expanded || fetchedRef.current) return
     fetchedRef.current = true
     setLoadingTours(true)
-    getDecisionsTour(getAccessToken(), house.id, null)
+    getDecisionsTour(getAccessToken(), house.id, dateStr)
       .then(setTourData)
       .catch(() => {})
       .finally(() => setLoadingTours(false))
-  }, [expanded, house.id])
+  }, [expanded, house.id, dateStr])
 
   const refreshTours = () => {
     setLoadingTours(true)
-    getDecisionsTour(getAccessToken(), house.id, null)
+    getDecisionsTour(getAccessToken(), house.id, dateStr)
       .then(setTourData)
       .catch(() => {})
       .finally(() => setLoadingTours(false))
@@ -976,6 +981,8 @@ export default function AgentIAPage({ dark, auth }) {
   const calBtnRef = useRef(null)
   const [calPos, setCalPos] = useState({ top: 'auto', bottom: 'auto', left: 0 })
 
+  const calPortalRef = useRef(null)
+
   // Charger les devices groupés par ferme (même pattern que DashboardPage)
   const loadFarms = useCallback(async () => {
     if (fetchingRef.current) return
@@ -1002,30 +1009,32 @@ export default function AgentIAPage({ dark, auth }) {
 
   // Position du calendrier popup
   const openCal = () => {
-    if (!calBtnRef.current) { setShowCal(true); return }
+    if (!calBtnRef.current) { setShowCal(v => !v); return }
     const r = calBtnRef.current.getBoundingClientRect()
     const spaceBelow = window.innerHeight - r.bottom
-    if (spaceBelow < 320 && r.top > 320) {
-      setCalPos({ top: 'auto', bottom: window.innerHeight - r.top + 6, left: r.left })
-    } else {
+    if (spaceBelow < 340)
+      setCalPos({ bottom: window.innerHeight - r.top + 6, top: 'auto', left: r.left })
+    else
       setCalPos({ top: r.bottom + 6, bottom: 'auto', left: r.left })
-    }
-    setShowCal(true)
+    setShowCal(v => !v)
   }
 
   // Fermer calendrier au clic extérieur
   useEffect(() => {
     if (!showCal) return
-    const handler = (e) => {
-      if (calBtnRef.current && !calBtnRef.current.contains(e.target)) {
-        // vérifier si le clic est dans le portal (calendar popup)
-        const pop = document.getElementById('ai-cal-portal')
-        if (pop && pop.contains(e.target)) return
-        setShowCal(false)
-      }
+    const close = (e) => {
+      if (
+        calBtnRef.current && !calBtnRef.current.contains(e.target) &&
+        calPortalRef.current && !calPortalRef.current.contains(e.target)
+      ) setShowCal(false)
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    const onScroll = () => setShowCal(false)
+    document.addEventListener('mousedown', close)
+    window.addEventListener('scroll', onScroll, true)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      window.removeEventListener('scroll', onScroll, true)
+    }
   }, [showCal])
 
   return (
@@ -1045,10 +1054,12 @@ export default function AgentIAPage({ dark, auth }) {
           <div style={{ fontSize: 11, color: C.textDim, marginTop: 2 }}>
             Recommandations · {farms.length} ferme{farms.length > 1 ? 's' : ''}
           </div>
-        </div>
+        </div>     
+      </div>
 
-        {/* Filtre date — même design que ZonePage Tours */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {/* Filtre date */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ position: 'relative' }}>
           <div
             ref={calBtnRef}
             onClick={openCal}
@@ -1066,31 +1077,27 @@ export default function AgentIAPage({ dark, auth }) {
               {fmtDisplay(dateStr)}
             </span>
           </div>
+        </div>
 
-          {/* Bouton Aujourd'hui */}
+        {dateStr !== today() && (
           <button
             onClick={handleToday}
             style={{
-              display: 'flex', alignItems: 'center', gap: 5,
-              padding: '7px 12px', borderRadius: 8,
-              border: `1.5px solid ${dateStr === today() ? C.green : C.border}`,
-              background: dateStr === today()
-                ? (dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.06)')
-                : C.inputBg,
-              color: dateStr === today() ? C.green : C.textMuted,
-              fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+              padding: '6px 10px', borderRadius: 7,
+              border: `1.5px solid ${C.border}`,
+              background: C.inputBg, color: C.text,
+              fontSize: 12, fontFamily: 'inherit', cursor: 'pointer', outline: 'none',
             }}
           >
-            <Sun size={12} />
             Aujourd'hui
           </button>
-        </div>
-      </div>
+        )}
+      </div>   
 
       {/* Calendar popup (portal, même pattern que ZonePage) */}
       {showCal && createPortal(
         <div
-          id="ai-cal-portal"
+          ref={calPortalRef}
           style={{
             position: 'fixed',
             top: calPos.top !== 'auto' ? calPos.top : 'auto',
