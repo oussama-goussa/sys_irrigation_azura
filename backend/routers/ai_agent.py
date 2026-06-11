@@ -268,9 +268,16 @@ def get_recommandation_device(
             lat             = cfg.latitude,
             lon             = cfg.longitude,
         )
-
+        
         if "erreur" in resultat:
-            # Modèles ML non disponibles → retourner 404 proprement
+            if resultat["erreur"] == "COORDONNEES_MANQUANTES":
+                raise HTTPException(
+                    status_code=422,
+                    detail={
+                        "code"   : "COORDONNEES_MANQUANTES",
+                        "message": resultat.get("message"),
+                    }
+                )
             raise HTTPException(status_code=404, detail="Aucune recommandation disponible")
 
         rec_db = sauvegarder_recommandation(db, resultat)

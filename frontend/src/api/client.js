@@ -474,6 +474,15 @@ export async function getRecommandation(token, deviceId, dateStr) {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (res.status === 404) return null
+  if (res.status === 422) {
+    const err = await res.json().catch(() => ({}))
+    const detail = err.detail || {}
+    // Retourner un objet erreur lisible par HouseCard
+    return {
+      erreur : detail.code    || "ERREUR_CONFIG",
+      message: detail.message || "Erreur de configuration",
+    }
+  }
   if (!res.ok) throw new Error(`Erreur API: ${res.status}`)
   const data = await res.json()
   return data.recommandation || data

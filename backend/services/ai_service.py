@@ -809,8 +809,8 @@ def generer_recommandation_matin(
     ec_bassin: float = 0.8,
     date_plantation: str = None,
     methode: str = "ml",
-    lat: float = DEFAULT_LAT,
-    lon: float = DEFAULT_LON,
+    lat: float = None,
+    lon: float = None,
 ) -> dict:
     """
     Génère la recommandation du matin pour UN device.
@@ -831,8 +831,17 @@ def generer_recommandation_matin(
         ec_bassin = ec_bassin or cfg.ec_eau_brute or 0.8
         if date_plantation is None and cfg.date_plantation:
             date_plantation = str(cfg.date_plantation)
-        lat = lat or cfg.latitude or DEFAULT_LAT
-        lon = lon or cfg.longitude or DEFAULT_LON
+        lat = cfg.latitude or lat
+        lon = cfg.longitude or lon
+
+        if not lat or not lon:
+            return {
+                "erreur"      : "COORDONNEES_MANQUANTES",
+                "device_id"   : device_id,
+                "farm_name"   : device.farm_name,
+                "house_number": device.house_number,
+                "message"     : f"Veuillez configurer la Latitude et Longitude pour {device.farm_name} Station {device.house_number}",
+            }        
 
         # Préparer les features
         features = preparer_features_matin(
@@ -965,8 +974,8 @@ def generer_recommandation_tous_devices(date_str: str = None) -> dict:
                     date_str        = date_str,
                     ec_bassin       = cfg.ec_eau_brute or 0.8,
                     date_plantation = str(cfg.date_plantation) if cfg.date_plantation else None,
-                    lat             = cfg.latitude or DEFAULT_LAT,
-                    lon             = cfg.longitude or DEFAULT_LON,
+                    lat             = cfg.latitude,
+                    lon             = cfg.longitude,
                 )
 
                 if "erreur" in resultat:

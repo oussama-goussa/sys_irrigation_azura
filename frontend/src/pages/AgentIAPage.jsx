@@ -865,6 +865,50 @@ function HouseCard({ house, rec, C, dark, onConfig, dateStr }) {
 
   if (!rec) return null
 
+  // Afficher erreur coordonnées manquantes
+  if (rec?.erreur === "COORDONNEES_MANQUANTES") {
+    return (
+      <div style={{ borderTop: `1px solid ${C.border}`, padding: '12px 14px' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '10px 12px', borderRadius: 8,
+          background: dark ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.05)',
+          border: `1px solid ${C.red}30`,
+        }}>
+          <div style={{
+            width: 28, height: 28, borderRadius: 7, flexShrink: 0,
+            background: dark ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.10)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <span style={{ fontSize: 11, fontWeight: 900, color: C.red }}>
+              {house.house_number}
+            </span>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: C.red }}>
+              Coordonnées GPS manquantes
+            </div>
+            <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>
+              Veuillez configurer la Latitude et Longitude dans les paramètres
+            </div>
+          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); onConfig && onConfig(house) }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              padding: '5px 10px', borderRadius: 6,
+              border: `1px solid ${C.red}40`,
+              background: dark ? 'rgba(239,68,68,0.10)' : 'rgba(239,68,68,0.06)',
+              color: C.red, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+            }}
+          >
+            <Settings size={12} /> Configurer
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   const heureML   = rec.heure_debut_ml || '—'
   const heurePRT  = rec.heure_debut_prt
   const heureFinale = heurePRT || heureML
