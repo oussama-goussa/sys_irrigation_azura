@@ -458,15 +458,6 @@ def post_decision_tour(
 
     resultat = generer_decision_tour(body.device_id, donnees_tour, date_cible=today)
 
-    # Calculer heure_debut_tour_suivante = heure_fin_tour + repos_predicte
-    heure_debut_tour_suivante = None
-    if tour_netafim and tour_netafim.fin:
-        repos = decision_ml.get("repos_min") or 0
-        from datetime import timedelta
-        heure_fin_dt = tour_netafim.fin
-        heure_suivante_dt = heure_fin_dt + timedelta(minutes=repos)
-        heure_debut_tour_suivante = heure_suivante_dt.strftime("%H:%M")
-
     if "erreur" in resultat and "disponible" not in resultat:
         raise HTTPException(status_code=500, detail=resultat["erreur"])
 
@@ -478,6 +469,15 @@ def post_decision_tour(
     ).first()
 
     decision_ml = resultat.get("decision", {}) if isinstance(resultat.get("decision"), dict) else resultat
+
+    # Calculer heure_debut_tour_suivante = heure_fin_tour + repos_predicte
+    heure_debut_tour_suivante = None
+    if tour_netafim and tour_netafim.fin:
+        repos = decision_ml.get("repos_min") or 0
+        from datetime import timedelta
+        heure_fin_dt = tour_netafim.fin
+        heure_suivante_dt = heure_fin_dt + timedelta(minutes=repos)
+        heure_debut_tour_suivante = heure_suivante_dt.strftime("%H:%M")
 
     if existing:
         existing.v_drainage   = body.v_drainage
