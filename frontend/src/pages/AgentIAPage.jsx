@@ -942,9 +942,56 @@ function HouseCard({ house, rec, C, dark, onConfig, dateStr }) {
             background: dark ? '#0c1610' : '#f9fbfa',
             border: `1px solid ${C.border}`,
           }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
               Consignes matin
             </div>
+
+            {/* Heures ML + PRT */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+              {/* Heure ML */}
+              <div style={{
+                padding: '12px 14px', borderRadius: 9,
+                background: dark ? 'rgba(77,157,224,0.10)' : 'rgba(29,111,164,0.07)',
+                border: `1.5px solid ${dark ? 'rgba(77,157,224,0.20)' : 'rgba(29,111,164,0.15)'}`,
+                textAlign: 'center',
+              }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: C.blue, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+                  Début recommandé (ML)
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: C.blue, fontFamily: C.mono, letterSpacing: '0.04em' }}>
+                  {rec.heure_debut_ml || '—'}
+                </div>
+                <div style={{ fontSize: 9, color: C.textDim, marginTop: 4 }}>
+                  Modèle XGBoost
+                </div>
+              </div>
+
+              {/* Heure PRT */}
+              <div style={{
+                padding: '12px 14px', borderRadius: 9,
+                background: rec.heure_debut_prt
+                  ? (dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.07)')
+                  : (dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'),
+                border: `1.5px solid ${rec.heure_debut_prt
+                  ? (dark ? 'rgba(52,217,111,0.25)' : 'rgba(24,120,63,0.18)')
+                  : C.border}`,
+                textAlign: 'center',
+              }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: rec.heure_debut_prt ? C.green : C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+                  Début ressuyage (PRT)
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: rec.heure_debut_prt ? C.green : C.textDim, fontFamily: C.mono, letterSpacing: '0.04em' }}>
+                  {rec.heure_debut_prt || '—'}
+                </div>
+                <div style={{ fontSize: 9, color: C.textDim, marginTop: 4 }}>
+                  {rec.prt?.ptr_pct != null
+                    ? `Ressuyage ${rec.prt.ptr_pct.toFixed(1)}%`
+                    : 'Pas de données poids'}
+                </div>
+              </div>
+            </div>
+
+            {/* Autres consignes */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(85px, 1fr))', gap: 6 }}>
               <DetailPill label="EC cible" value={rec.ec_cible_dSm != null ? `${rec.ec_cible_dSm} dS/m` : '—'} C={C} />
               <DetailPill label="pH cible" value={rec.ph_cible != null ? `${rec.ph_cible}` : '—'} C={C} />
