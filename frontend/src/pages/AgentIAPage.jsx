@@ -225,7 +225,7 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
   return createPortal(
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9999,
-      background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16
     }} onClick={onClose}>
       <div style={{
         width: 420, maxWidth: '95vw', borderRadius: 14,
@@ -234,7 +234,7 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
       }} onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Settings size={16} color={C.green} />
             <span style={{ fontWeight: 700, fontSize: 15, color: C.text }}>
               Config · {device.farm_name} St.{device.house_number}
