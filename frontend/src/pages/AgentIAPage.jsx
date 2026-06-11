@@ -710,37 +710,9 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, onClose, nbr
 
       <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center' }}>
         {error ? (
-          error === 'NBR_GOUTTEURS_MANQUANT' ? (
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              width: '100%', padding: '6px 10px', borderRadius: 6,
-              background: dark ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.05)',
-              border: `1px solid ${C.red}30`,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                <AlertCircle size={13} color={C.red} />
-                <span style={{ fontSize: 11, color: C.red, fontWeight: 600 }}>
-                  Nombre de goutteurs non configuré
-                </span>
-              </div>
-              <button
-                onClick={(e) => { e.stopPropagation(); onClose(); onConfig && onConfig(house) }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 4,
-                  padding: '4px 8px', borderRadius: 5,
-                  border: `1px solid ${C.red}40`,
-                  background: dark ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.08)',
-                  color: C.red, fontSize: 10, fontWeight: 700, cursor: 'pointer',
-                }}
-              >
-                <Settings size={10} /> Configurer
-              </button>
-            </div>
-          ) : (
-            <div style={{ color: C.red, fontSize: 11, display: 'flex', alignItems: 'center', gap: 5 }}>
-              <AlertCircle size={13} color={C.red} /> {error}
-            </div>
-          )
+          <div style={{ color: C.red, fontSize: 11, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <AlertCircle size={13} color={C.red} /> {error}
+          </div>
         ) : <span />}
         <button
           onClick={handleSubmit}
@@ -1082,67 +1054,101 @@ function HouseCard({ house, rec, C, dark, onConfig, dateStr }) {
           </div>
 
           {/* ── Section Décisions Tour/Tour ── */}
-          <div style={{
-            padding: 12, borderRadius: 8,
-            background: dark ? '#0c1610' : '#f9fbfa',
-            border: `1px solid ${C.border}`,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                Décisions Tour/Tour — Drainage
+          {!config?.nbr_goutteurs ? (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+              padding: '10px 12px', borderRadius: 8,
+              background: dark ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.05)',
+              border: `1px solid ${C.red}30`,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                <AlertCircle size={14} color={C.red} style={{ flexShrink: 0 }} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: C.red }}>
+                    Décisions Tour/Tour — Drainage
+                  </div>
+                  <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>
+                    Nombre de goutteurs non configuré
+                  </div>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <button
-                  onClick={(e) => { e.stopPropagation(); refreshTours() }}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textDim, padding: 4, display: 'flex', alignItems: 'center' }}
-                >
-                  <RefreshCw size={12} style={{ animation: loadingTours ? 'az-spin 1s linear infinite' : 'none' }} />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setShowTourForm(v => !v) }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 4,
-                    padding: '4px 10px', borderRadius: 6,
-                    border: `1px solid ${C.green}40`,
-                    background: dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.06)',
-                    color: C.green, fontSize: 11, fontWeight: 700, cursor: 'pointer',
-                  }}
-                >
-                  <Leaf size={12} style={{ marginRight: 4 }} /> Saisir drainage
-                </button>
-              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); onConfig && onConfig(house) }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  padding: '5px 10px', borderRadius: 6,
+                  border: `1px solid ${C.red}40`,
+                  background: dark ? 'rgba(239,68,68,0.10)' : 'rgba(239,68,68,0.06)',
+                  color: C.red, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                  fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0,
+                }}
+              >
+                <Settings size={12} /> Configurer
+              </button>
             </div>
-
-            {/* Formulaire saisie drainage */}
-            {showTourForm && (
-              <TourDrainageForm
-                house={house}
-                rec={rec}
-                tourData={tourData}
-                C={C}
-                dark={dark}
-                dateStr={dateStr}
-                nbrGoutteurs={config?.nbr_goutteurs || 1}
-                onSaved={() => { setShowTourForm(false); refreshTours() }}
-                onClose={() => setShowTourForm(false)}
-                onConfig={onConfig}
-              />
-            )}
-
-            {/* Liste des tours avec décisions */}
-            {loadingTours ? (
-              <div style={{ textAlign: 'center', padding: 12, color: C.textDim, fontSize: 11 }}>
-                <RefreshCw size={12} style={{ display: 'inline-block', animation: 'az-spin 1s linear infinite', marginRight: 4 }} />
-                Chargement...
+          ) : (
+            <div style={{
+              padding: 12, borderRadius: 8,
+              background: dark ? '#0c1610' : '#f9fbfa',
+              border: `1px solid ${C.border}`,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Décisions Tour/Tour
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); refreshTours() }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textDim, padding: 4, display: 'flex', alignItems: 'center' }}
+                  >
+                    <RefreshCw size={12} style={{ animation: loadingTours ? 'az-spin 1s linear infinite' : 'none' }} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowTourForm(v => !v) }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 4,
+                      padding: '4px 10px', borderRadius: 6,
+                      border: `1px solid ${C.green}40`,
+                      background: dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.06)',
+                      color: C.green, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                    }}
+                  >
+                    <Leaf size={12} style={{ marginRight: 4 }} /> Saisir drainage
+                  </button>
+                </div>
               </div>
-            ) : tourData ? (
-              <TourDecisionTable tourData={tourData} rec={rec} C={C} dark={dark} />
-            ) : (
-              <div style={{ textAlign: 'center', padding: 12, color: C.textDim, fontSize: 11 }}>
-                Aucune donnée tour
-              </div>
-            )}
-          </div>
+
+              {/* Formulaire saisie drainage */}
+              {showTourForm && (
+                <TourDrainageForm
+                  house={house}
+                  rec={rec}
+                  tourData={tourData}
+                  C={C}
+                  dark={dark}
+                  dateStr={dateStr}
+                  nbrGoutteurs={config?.nbr_goutteurs || 1}
+                  onSaved={() => { setShowTourForm(false); refreshTours() }}
+                  onClose={() => setShowTourForm(false)}
+                  onConfig={onConfig}
+                />
+              )}
+
+              {/* Liste des tours avec décisions */}
+              {loadingTours ? (
+                <div style={{ textAlign: 'center', padding: 12, color: C.textDim, fontSize: 11 }}>
+                  <RefreshCw size={12} style={{ display: 'inline-block', animation: 'az-spin 1s linear infinite', marginRight: 4 }} />
+                  Chargement...
+                </div>
+              ) : tourData ? (
+                <TourDecisionTable tourData={tourData} rec={rec} C={C} dark={dark} />
+              ) : (
+                <div style={{ textAlign: 'center', padding: 12, color: C.textDim, fontSize: 11 }}>
+                  Aucune donnée tour
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
