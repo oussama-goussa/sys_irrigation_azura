@@ -134,6 +134,9 @@ class AIDecisionTour(Base):
     raison            = Column(String(100))
     duree_suivant     = Column(Integer)
     repos_suivant     = Column(Integer)      # Temps repos avant tour suivant (min)
+
+    heure_debut_tour_suivante = Column(String(10), nullable=True)
+
     donnees_entree    = Column(JSONB)
     disponible        = Column(Boolean, default=True)
     created_at        = Column(DateTime(timezone=True), server_default=func.now())
@@ -158,4 +161,5 @@ class AIDecisionTour(Base):
             "duree_suivant": self.duree_suivant,
             "repos_suivant": self.repos_suivant,
             "disponible"   : self.disponible,
+            "heure_debut_tour_suivante": self.heure_debut_tour_suivante,
         }

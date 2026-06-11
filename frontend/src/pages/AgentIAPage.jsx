@@ -443,7 +443,7 @@ function TourDecisionTable({ tourData, rec, C, dark }) {
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: 'inherit' }}>
         <thead>
           <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-            {['Tour', 'Heure', 'V. Apport', 'V. Drain', '%Drain', 'EC Drain', 'pH Drain', 'Décision', 'Durée suiv.', 'Repos'].map(h => (
+            {['Tour', 'Début', 'Fin', 'V. Apport', 'V. Drain', '%Drain', 'EC Drain', 'pH Drain', 'Décision', 'Durée suiv.', 'Repos', 'Prochain'].map(h => (
               <th key={h} style={{ padding: '5px 8px', textAlign: 'center', color: C.textDim, fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
                 {h}
               </th>
@@ -461,6 +461,7 @@ function TourDecisionTable({ tourData, rec, C, dark }) {
               <tr key={tour.num_tour} style={{ borderBottom: `1px solid ${C.border}22` }}>
                 <td style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 800, color: C.green }}>{tour.num_tour}</td>
                 <td style={{ padding: '6px 8px', textAlign: 'center', color: C.textMuted, fontFamily: C.mono }}>{tour.debut || '—'}</td>
+                <td style={{ padding: '6px 8px', textAlign: 'center', color: C.textMuted, fontFamily: C.mono }}>{tour.fin || '—'}</td>
                 <td style={{ padding: '6px 8px', textAlign: 'center', color: C.text, fontFamily: C.mono }}>
                   {tour.v_apport != null ? `${tour.v_apport.toFixed(0)}cc` : '—'}
                 </td>
@@ -503,6 +504,9 @@ function TourDecisionTable({ tourData, rec, C, dark }) {
                 </td>
                 <td style={{ padding: '6px 8px', textAlign: 'center', color: C.textMuted, fontFamily: C.mono }}>
                   {dec?.repos_suivant != null ? `${dec.repos_suivant}min` : '—'}
+                </td>
+                <td style={{ padding: '6px 8px', textAlign: 'center', color: dec?.heure_debut_tour_suivante ? C.green : C.textDim, fontFamily: C.mono, fontWeight: dec?.heure_debut_tour_suivante ? 700 : 400 }}>
+                  {dec?.heure_debut_tour_suivante || '—'}
                 </td>
               </tr>
             )

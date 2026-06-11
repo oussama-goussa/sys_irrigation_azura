@@ -458,6 +458,15 @@ def post_decision_tour(
 
     resultat = generer_decision_tour(body.device_id, donnees_tour, date_cible=today)
 
+    # Calculer heure_debut_tour_suivante = heure_fin_tour + repos_predicte
+    heure_debut_tour_suivante = None
+    if tour_netafim and tour_netafim.fin:
+        repos = decision_ml.get("repos_min") or 0
+        from datetime import timedelta
+        heure_fin_dt = tour_netafim.fin
+        heure_suivante_dt = heure_fin_dt + timedelta(minutes=repos)
+        heure_debut_tour_suivante = heure_suivante_dt.strftime("%H:%M")
+
     if "erreur" in resultat and "disponible" not in resultat:
         raise HTTPException(status_code=500, detail=resultat["erreur"])
 
@@ -479,6 +488,7 @@ def post_decision_tour(
         existing.raison       = decision_ml.get("raison", "")
         existing.duree_suivant= decision_ml.get("duree_tour_suivant_min")
         existing.repos_suivant= decision_ml.get("repos_min")
+        existing.heure_debut_tour_suivante = heure_debut_tour_suivante
         existing.donnees_entree = donnees_tour
         existing.disponible   = True
         db.commit()
@@ -497,6 +507,7 @@ def post_decision_tour(
             raison        = decision_ml.get("raison", ""),
             duree_suivant = decision_ml.get("duree_tour_suivant_min"),
             repos_suivant = decision_ml.get("repos_min"),
+            heure_debut_tour_suivante = heure_debut_tour_suivante,
             donnees_entree= donnees_tour,
             disponible    = True,
         )
@@ -521,6 +532,7 @@ def post_decision_tour(
             "duree_suivant" : decision_ml.get("duree_tour_suivant_min"),
             "repos_min"     : decision_ml.get("repos_min"),
             "message"       : decision_ml.get("message_operateur", ""),
+            "heure_debut_tour_suivante": heure_debut_tour_suivante,
         },
     }
 
