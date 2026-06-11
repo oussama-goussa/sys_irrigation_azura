@@ -403,9 +403,11 @@ PRT_SEUILS = {
 GAP_HEURE_MATIN_TO_TOUR1_MIN = 10
 
 # Fenêtre de surveillance matinale (poids arrivant toutes les 5 min)
-# Le ressuyage est détecté entre 7h et 11h (99.8% des cas)
-POIDS_MATIN_HEURE_DEBUT = 6   # 06h00
-POIDS_MATIN_HEURE_FIN   = 11  # 11h00
+# Le ressuyage est détecté entre 6h30 et 11h (99.8% des cas)
+POIDS_MATIN_HEURE_DEBUT  = 6    # 06h30
+POIDS_MATIN_MINUTE_DEBUT = 30
+POIDS_MATIN_HEURE_FIN    = 11   # 11h00
+POIDS_MATIN_MINUTE_FIN   = 0
 
 def _recuperer_poids_soir(
     db: Session,
@@ -515,8 +517,14 @@ def _recuperer_poids_matins(
     from datetime import datetime
 
     date_cible = datetime.strptime(date_str, "%Y-%m-%d").date()
-    matin_debut = datetime.combine(date_cible, datetime.min.time().replace(hour=POIDS_MATIN_HEURE_DEBUT))
-    matin_fin   = datetime.combine(date_cible, datetime.min.time().replace(hour=POIDS_MATIN_HEURE_FIN))
+    matin_debut = datetime.combine(
+        date_cible,
+        datetime.min.time().replace(hour=POIDS_MATIN_HEURE_DEBUT, minute=POIDS_MATIN_MINUTE_DEBUT)
+    )
+    matin_fin = datetime.combine(
+        date_cible,
+        datetime.min.time().replace(hour=POIDS_MATIN_HEURE_FIN, minute=POIDS_MATIN_MINUTE_FIN)
+    )
 
     lectures = (
         db.query(WR)

@@ -621,7 +621,7 @@ def task_check_offline_stations():
         logger.error(f"Erreur check offline : {e}")
         return {"statut": "erreur", "message": str(e)}
     
-    
+
 @app.task(name="core.celery_app.task_update_prt_heure_debut")
 def task_update_prt_heure_debut():
     """
@@ -633,9 +633,11 @@ def task_update_prt_heure_debut():
 
     now = datetime.now()
 
-    # Actif seulement entre 06h00 et 11h00
-    if now.hour < 6 or now.hour >= 11:
-        return {"statut": "skip", "raison": "hors fenêtre 06h-11h"}
+    # Actif seulement entre 06h30 et 11h00
+    avant_debut = now.hour < 6 or (now.hour == 6 and now.minute < 30)
+    apres_fin   = now.hour >= 11
+    if avant_debut or apres_fin:
+        return {"statut": "skip", "raison": "hors fenêtre 06h30-11h"}
 
     try:
         from core.database import SessionLocal
