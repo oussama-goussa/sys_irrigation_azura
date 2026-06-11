@@ -574,12 +574,12 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, onClose, nbr
   }
 
   const inputStyle = {
-    width: '100%', padding: '6px 8px', borderRadius: 6,
+    width: '100%', padding: '8.5px 8px', borderRadius: 6,
     border: `1px solid ${C.border}`, background: dark ? '#0d1a12' : '#fff',
     color: C.text, fontSize: 12, fontFamily: 'inherit', outline: 'none',
     boxSizing: 'border-box',
   }
-  const labelStyle = { fontSize: 12, fontWeight: 800, color: C.textMuted, marginBottom: 3, display: 'block', textTransform: 'uppercase', letterSpacing: '0.04em' }
+  const labelStyle = { fontSize: 12, fontWeight: 700, color: C.textMuted, marginBottom: 3, display: 'block', textTransform: 'uppercase', letterSpacing: '0.04em' }
 
   return (
     <div style={{
