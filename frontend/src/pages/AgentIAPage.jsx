@@ -1038,7 +1038,7 @@ export default function AgentIAPage({ dark, auth }) {
   }, [showCal])
 
   return (
-    <div style={{ animation: 'az-fade-in 0.35s ease both', paddingBottom: 40 }}>
+    <div style={{ animation: 'az-fade-in 0.35s ease both'}}>
       {/* HEADER */}
       <div style={{
         display: 'flex', justifyContent: 'space-between',
