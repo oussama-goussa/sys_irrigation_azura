@@ -1058,7 +1058,7 @@ export default function AgentIAPage({ dark, auth }) {
       </div>
 
       {/* Filtre date */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
         <div style={{ position: 'relative' }}>
           <div
             ref={calBtnRef}
