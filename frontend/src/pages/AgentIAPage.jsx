@@ -542,8 +542,8 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, onClose, nbr
 
   const handleSubmit = async () => {
     if (!numTour) { setError('Numéro de tour requis'); return }
-    if (vDrain === '' && ecDrain === '' && phDrain === '') {
-      setError('Veuillez remplir au moins un champ (V. Drain, EC ou pH)')
+    if (vDrain === '' || ecDrain === '' || phDrain === '') {
+      setError('V. Drain, EC et pH sont obligatoires')
       return
     }
     if (decisionsMap[numTour]) {
@@ -678,11 +678,6 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, onClose, nbr
       </div>
 
       {/* Erreur / Résultat */}
-      {error && (
-        <div style={{ color: C.red, fontSize: 11, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
-          <AlertCircle size={13} color={C.red} /> {error}
-        </div>
-      )}
       {result && (
         <div style={{
           padding: '8px 12px', borderRadius: 6, marginBottom: 8,
@@ -710,7 +705,12 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, onClose, nbr
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center' }}>
+        {error ? (
+          <div style={{ color: C.red, fontSize: 11, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <AlertCircle size={13} color={C.red} /> {error}
+          </div>
+        ) : <span />}
         <button
           onClick={handleSubmit}
           disabled={saving}
