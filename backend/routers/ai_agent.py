@@ -268,13 +268,14 @@ def get_recommandation_device(
             lat             = cfg.latitude,
             lon             = cfg.longitude,
         )
-        
+
         if "erreur" in resultat:
-            if resultat["erreur"] == "COORDONNEES_MANQUANTES":
+            if resultat["erreur"] == "CONFIG_MANQUANTE":
                 raise HTTPException(
                     status_code=422,
                     detail={
-                        "code"   : "COORDONNEES_MANQUANTES",
+                        "code"   : "CONFIG_MANQUANTE",
+                        "codes"  : [c for c in resultat.get("codes", []) if c],
                         "message": resultat.get("message"),
                     }
                 )
@@ -394,6 +395,16 @@ def post_decision_tour(
     v_apport = tour_netafim.v_apport if tour_netafim and tour_netafim.v_apport else None
 
     cfg = get_or_create_config(db, body.device_id)
+
+    # ── Vérifier nbr_goutteurs configuré ──
+    if not cfg.nbr_goutteurs:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code"   : "NBR_GOUTTEURS_MANQUANT",
+                "message": f"Veuillez configurer le nombre de goutteurs pour {device.farm_name} Station {device.house_number}",
+            }
+        )
 
     # ── Calculer % drainage (même logique que SaisiePage) ──
     pct_drainage = None

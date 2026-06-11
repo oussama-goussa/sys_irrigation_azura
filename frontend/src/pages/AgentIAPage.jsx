@@ -519,7 +519,7 @@ function TourDecisionTable({ tourData, rec, C, dark }) {
 
 
 // ── TourDrainageForm ───────────────────────────────────────────
-function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, onClose, nbrGoutteurs = 1, dateStr }) {
+function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, onClose, nbrGoutteurs = 1, dateStr, onConfig }) {
   const tours = tourData?.tours_netafim || []
   const decisions = tourData?.decisions || []
   const decisionsMap = {}
@@ -555,11 +555,6 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, onClose, nbr
       return
     }
     setSaving(true); setError(''); setResult(null)
-    if (decisionsMap[numTour]) {
-      setError('Ce tour a déjà une prédiction enregistrée.')
-      setSaving(false)
-      return
-    }
     try {
       const res = await postDecisionTour(getAccessToken(), {
         device_id  : house.id,
@@ -572,7 +567,11 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, onClose, nbr
       setResult(res)
       setTimeout(() => { onSaved && onSaved() }, 1500)
     } catch (e) {
-      setError(e.message)
+      if (e.code === 'NBR_GOUTTEURS_MANQUANT') {
+        setError('NBR_GOUTTEURS_MANQUANT')
+      } else {
+        setError(e.message)
+      }
     }
     setSaving(false)
   }
@@ -711,9 +710,37 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, onClose, nbr
 
       <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center' }}>
         {error ? (
-          <div style={{ color: C.red, fontSize: 11, display: 'flex', alignItems: 'center', gap: 5 }}>
-            <AlertCircle size={13} color={C.red} /> {error}
-          </div>
+          error === 'NBR_GOUTTEURS_MANQUANT' ? (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              width: '100%', padding: '6px 10px', borderRadius: 6,
+              background: dark ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.05)',
+              border: `1px solid ${C.red}30`,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <AlertCircle size={13} color={C.red} />
+                <span style={{ fontSize: 11, color: C.red, fontWeight: 600 }}>
+                  Nombre de goutteurs non configuré
+                </span>
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); onClose(); onConfig && onConfig(house) }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  padding: '4px 8px', borderRadius: 5,
+                  border: `1px solid ${C.red}40`,
+                  background: dark ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.08)',
+                  color: C.red, fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                }}
+              >
+                <Settings size={10} /> Configurer
+              </button>
+            </div>
+          ) : (
+            <div style={{ color: C.red, fontSize: 11, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <AlertCircle size={13} color={C.red} /> {error}
+            </div>
+          )
         ) : <span />}
         <button
           onClick={handleSubmit}
@@ -866,7 +893,14 @@ function HouseCard({ house, rec, C, dark, onConfig, dateStr }) {
   if (!rec) return null
 
   // Afficher erreur coordonnées manquantes
-  if (rec?.erreur === "COORDONNEES_MANQUANTES") {
+  if (rec?.erreur === "CONFIG_MANQUANTE") {
+    const codes = rec.codes || []
+    const items = [
+      codes.includes("COORDONNEES_MANQUANTES")    && "Latitude / Longitude",
+      codes.includes("DATE_PLANTATION_MANQUANTE") && "Date de plantation",
+      codes.includes("EC_BASSIN_MANQUANT")        && "EC eau brute",
+    ].filter(Boolean)
+
     return (
       <div style={{ borderTop: `1px solid ${C.border}`, padding: '12px 14px' }}>
         <div style={{
@@ -886,10 +920,10 @@ function HouseCard({ house, rec, C, dark, onConfig, dateStr }) {
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: C.red }}>
-              Coordonnées GPS manquantes
+              Configuration incomplète
             </div>
             <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>
-              Veuillez configurer la Latitude et Longitude dans les paramètres
+              Champs manquants : <strong style={{ color: C.red }}>{items.join(' · ')}</strong>
             </div>
           </div>
           <button
@@ -900,6 +934,7 @@ function HouseCard({ house, rec, C, dark, onConfig, dateStr }) {
               border: `1px solid ${C.red}40`,
               background: dark ? 'rgba(239,68,68,0.10)' : 'rgba(239,68,68,0.06)',
               color: C.red, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+              fontFamily: 'inherit', whiteSpace: 'nowrap',
             }}
           >
             <Settings size={12} /> Configurer
@@ -1090,6 +1125,7 @@ function HouseCard({ house, rec, C, dark, onConfig, dateStr }) {
                 nbrGoutteurs={config?.nbr_goutteurs || 1}
                 onSaved={() => { setShowTourForm(false); refreshTours() }}
                 onClose={() => setShowTourForm(false)}
+                onConfig={onConfig}
               />
             )}
 

@@ -828,20 +828,37 @@ def generer_recommandation_matin(
 
         # Charger config
         cfg = get_or_create_config(db, device_id)
-        ec_bassin = ec_bassin or cfg.ec_eau_brute or 0.8
+        ec_bassin = cfg.ec_eau_brute or ec_bassin
         if date_plantation is None and cfg.date_plantation:
             date_plantation = str(cfg.date_plantation)
         lat = cfg.latitude or lat
         lon = cfg.longitude or lon
 
+        if date_plantation is None and cfg.date_plantation:
+            date_plantation = str(cfg.date_plantation)
+
+        # ── Vérifier config obligatoire ──
+        manquants = []
+        codes     = []
         if not lat or not lon:
+            manquants.append("Latitude / Longitude")
+            codes.append("COORDONNEES_MANQUANTES")
+        if not date_plantation:
+            manquants.append("Date de plantation")
+            codes.append("DATE_PLANTATION_MANQUANTE")
+        if not ec_bassin:
+            manquants.append("EC eau brute")
+            codes.append("EC_BASSIN_MANQUANT")
+
+        if manquants:
             return {
-                "erreur"      : "COORDONNEES_MANQUANTES",
+                "erreur"      : "CONFIG_MANQUANTE",
+                "codes"       : codes,
                 "device_id"   : device_id,
                 "farm_name"   : device.farm_name,
                 "house_number": device.house_number,
-                "message"     : f"Veuillez configurer la Latitude et Longitude pour {device.farm_name} Station {device.house_number}",
-            }        
+                "message"     : f"Veuillez configurer : {', '.join(manquants)} pour {device.farm_name} Station {device.house_number}",
+            }    
 
         # Préparer les features
         features = preparer_features_matin(

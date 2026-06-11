@@ -475,13 +475,13 @@ export async function getRecommandation(token, deviceId, dateStr) {
   })
   if (res.status === 404) return null
   if (res.status === 422) {
-    const err = await res.json().catch(() => ({}))
-    const detail = err.detail || {}
-    // Retourner un objet erreur lisible par HouseCard
-    return {
-      erreur : detail.code    || "ERREUR_CONFIG",
-      message: detail.message || "Erreur de configuration",
-    }
+      const err = await res.json().catch(() => ({}))
+      const detail = err.detail || {}
+      return {
+        erreur : detail.code   || "ERREUR_CONFIG",
+        codes  : detail.codes  || [],
+        message: detail.message || "Erreur de configuration",
+      }
   }
   if (!res.ok) throw new Error(`Erreur API: ${res.status}`)
   const data = await res.json()
@@ -530,7 +530,16 @@ export async function postDecisionTour(token, payload) {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(err.detail || `Erreur ${res.status}`)
+    const detail = err.detail || {}
+    // Erreur config → objet structuré pour affichage frontend
+    if (res.status === 422 && detail.code) {
+      const e = new Error(detail.message || 'Erreur configuration')
+      e.code = detail.code
+      throw e
+    }
+    throw new Error(
+      typeof detail === 'string' ? detail : detail.message || `Erreur ${res.status}`
+    )
   }
   return res.json()
 }
