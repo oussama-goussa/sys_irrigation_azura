@@ -88,6 +88,7 @@ class BackfillRequest(BaseModel):
 class DecisionTourRequest(BaseModel):
     device_id: int
     num_tour: int
+    date_str: Optional[str] = None              # Date cible (YYYY-MM-DD), défaut = aujourd'hui
     v_drainage: Optional[float] = None          # Volume drainage saisi (cc)
     pct_drainage: Optional[float] = None        # % drainage (calculé auto si v_drainage fourni)
     ec_drainage: Optional[float] = None
@@ -348,14 +349,20 @@ def post_decision_tour(
     """
     from models.ai_recommendation_model import AIDecisionTour
     from models.sensor_model import IrrigationTour
-    from datetime import date
+    from datetime import date, datetime
 
     device = db.query(Device).filter(Device.id == body.device_id).first()
     if device is None:
         raise HTTPException(status_code=404, detail=f"Device {body.device_id} introuvable")
     _check_device_access(device, user)
 
-    today = date.today()
+    if body.date_str:
+        try:
+            today = datetime.strptime(body.date_str, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="date_str invalide (format attendu YYYY-MM-DD)")
+    else:
+        today = date.today()
 
     # ── Récupérer le tour depuis irrigation_tours pour avoir v_apport ──
     tour_netafim = db.query(IrrigationTour).filter(
@@ -449,7 +456,7 @@ def post_decision_tour(
         **body.donnees_supplementaires,
     }
 
-    resultat = generer_decision_tour(body.device_id, donnees_tour)
+    resultat = generer_decision_tour(body.device_id, donnees_tour, date_cible=today)
 
     if "erreur" in resultat and "disponible" not in resultat:
         raise HTTPException(status_code=500, detail=resultat["erreur"])

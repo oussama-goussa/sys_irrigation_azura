@@ -443,7 +443,7 @@ function TourDecisionTable({ tourData, rec, C, dark }) {
 
   return (
     <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, fontFamily: 'inherit' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: 'inherit' }}>
         <thead>
           <tr style={{ borderBottom: `1px solid ${C.border}` }}>
             {['Tour', 'Heure', 'V.Apport', 'V.Drain', '%Drain', 'EC Drain', 'pH Drain', 'Décision', 'Durée suiv.', 'Repos'].map(h => (
@@ -518,7 +518,7 @@ function TourDecisionTable({ tourData, rec, C, dark }) {
 
 
 // ── TourDrainageForm ───────────────────────────────────────────
-function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, nbrGoutteurs = 1 }) {
+function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, onClose, nbrGoutteurs = 1, dateStr }) {
   const tours = tourData?.tours_netafim || []
   const decisions = tourData?.decisions || []
   const decisionsMap = {}
@@ -545,11 +545,16 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, nbrGoutteurs
 
   const handleSubmit = async () => {
     if (!numTour) { setError('Numéro de tour requis'); return }
+    if (vDrain === '' && ecDrain === '' && phDrain === '') {
+      setError('Veuillez remplir au moins un champ (V. Drain, EC ou pH)')
+      return
+    }
     setSaving(true); setError(''); setResult(null)
     try {
       const res = await postDecisionTour(getAccessToken(), {
         device_id  : house.id,
         num_tour   : numTour,
+        date_str   : dateStr,
         v_drainage : vDrain !== '' ? Number(vDrain) : null,
         ec_drainage: ecDrain !== '' ? Number(ecDrain) : null,
         ph_drainage: phDrain !== '' ? Number(phDrain) : null,
@@ -576,8 +581,17 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, nbrGoutteurs
       background: dark ? 'rgba(52,217,111,0.05)' : 'rgba(24,120,63,0.04)',
       border: `1px solid ${C.green}30`,
     }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: C.green, marginBottom: 10 }}>
-        Saisie drainage après tour
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: C.green }}>
+          Saisie drainage après tour
+        </span>
+        <button
+          onClick={onClose}
+          title="Fermer"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textDim, padding: 2, display: 'flex', alignItems: 'center' }}
+        >
+          <X size={14} />
+        </button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 8, marginBottom: 10 }}>
@@ -690,7 +704,12 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, nbrGoutteurs
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center' }}>
+        {error ? (
+          <div style={{ color: C.red, fontSize: 11, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <AlertCircle size={13} color={C.red} /> {error}
+          </div>
+        ) : <span />}
         <button
           onClick={handleSubmit}
           disabled={saving}
@@ -699,7 +718,7 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, nbrGoutteurs
             background: saving ? C.toggleBg : C.green,
             color: saving ? C.textDim : '#fff',
             fontSize: 12, fontWeight: 700, cursor: saving ? 'wait' : 'pointer',
-            fontFamily: 'inherit',
+            fontFamily: 'inherit', flexShrink: 0,
           }}
         >
           {saving ? 'Calcul...' : <><Zap size={12} style={{ marginRight: 5 }} />Prédire</>}
@@ -971,8 +990,10 @@ function HouseCard({ house, rec, C, dark, onConfig, dateStr }) {
                 tourData={tourData}
                 C={C}
                 dark={dark}
+                dateStr={dateStr}
                 nbrGoutteurs={config?.nbr_goutteurs || 1}
                 onSaved={() => { setShowTourForm(false); refreshTours() }}
+                onClose={() => setShowTourForm(false)}
               />
             )}
 
