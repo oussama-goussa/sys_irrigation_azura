@@ -234,7 +234,7 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
       }} onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
             <Settings size={16} color={C.green} />
             <span style={{ fontWeight: 700, fontSize: 15, color: C.text }}>
               Config · {device.farm_name} St.{device.house_number}
