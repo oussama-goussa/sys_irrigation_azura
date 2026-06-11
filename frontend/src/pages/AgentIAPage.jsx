@@ -225,7 +225,7 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
   return createPortal(
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9999,
-      background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16
+      background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
     }} onClick={onClose}>
       <div style={{
         width: 420, maxWidth: '95vw', borderRadius: 14,
@@ -234,7 +234,7 @@ function ConfigModal({ device, token, C, dark, onClose, onSaved }) {
       }} onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
             <Settings size={16} color={C.green} />
             <span style={{ fontWeight: 700, fontSize: 15, color: C.text }}>
               Config · {device.farm_name} St.{device.house_number}
@@ -697,7 +697,7 @@ function FarmSection({ farm, token, dateStr, C, dark, onConfig }) {
           cursor: 'pointer', fontFamily: 'inherit',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}> 
           <div style={{
             width: 28, height: 28, borderRadius: 7,
             background: dark ? 'rgba(52,217,111,0.15)' : 'rgba(24,120,63,0.10)',
@@ -1038,7 +1038,7 @@ export default function AgentIAPage({ dark, auth }) {
   }, [showCal])
 
   return (
-    <div style={{ animation: 'az-fade-in 0.35s ease both' }}>
+    <div style={{ animation: 'az-fade-in 0.35s ease both', paddingBottom: 40 }}>
       {/* HEADER */}
       <div style={{
         display: 'flex', justifyContent: 'space-between',
