@@ -253,7 +253,7 @@ function GaugeCard({ label, value, unit, min, max, color, C, subLabel, subLabelC
 }
 
 // ── Mini SVG Chart ────────────────────────────────────────────
-function MiniChart({ data, color, label, unit, C, dark, onSelectRange, decimals = 2 }) {
+function MiniChart({ data, color, label, unit, C, dark, onSelectRange, decimals = 2, refLine = null, refColor = '#aaa' }) {
   const [cursor, setCursor] = useState(null)
   const [drag, setDrag]     = useState(null)
   const [dragging, setDragging] = useState(false)
@@ -365,6 +365,22 @@ function MiniChart({ data, color, label, unit, C, dark, onSelectRange, decimals 
       <polygon points={fillPoints} fill={`url(#${gradId})`} />
       <polyline points={polyPoints} fill="none" stroke={baseColor} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
 
+      {/* Reference line (prog) */}
+      {refLine !== null && (() => {
+        const refY = PAD.top + chartH - ((refLine - min) / range) * chartH
+        if (refY < PAD.top || refY > PAD.top + chartH) return null
+        return (
+          <g>
+            <line x1={PAD.left} y1={refY} x2={PAD.left + chartW} y2={refY}
+              stroke={refColor} strokeWidth="1.2" strokeDasharray="6,4" opacity="0.7" />
+            <text x={PAD.left + chartW - 2} y={refY - 4} textAnchor="end"
+              fill={refColor} fontSize="9" opacity="0.85">
+              {Number(refLine).toFixed(decimals)}
+            </text>
+          </g>
+        )
+      })()}
+
       {/* Y labels */}
       {yLabels.map((l,i) => (
         <text key={i} x={PAD.left-5} y={l.y+4} textAnchor="end"
@@ -429,7 +445,7 @@ function ChartCard({ title, series, C, dark, onSelectRange }) {
                   : '—'}
               </span>
             </div>
-            <MiniChart data={s.data} color={s.color} label={s.label} unit={s.unit}decimals={s.decimals} C={C} dark={dark} onSelectRange={onSelectRange} />
+            <MiniChart data={s.data} color={s.color} label={s.label} unit={s.unit} decimals={s.decimals} refLine={s.refLine ?? null} refColor={s.refColor || '#aaa'} C={C} dark={dark} onSelectRange={onSelectRange} />
           </div>
         ))}
       </div>
@@ -1962,6 +1978,8 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                 unit: 'mS/cm',
                 decimals: 2,
                 data: buildSeries('ec_actual'),
+                refLine: sensor.ec_prog ?? null,
+                refColor: '#34d96f88',
               }
             ]}
           />
@@ -1979,6 +1997,8 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                 unit: '',
                 decimals: 2,
                 data: buildSeries('ph_actual'),
+                refLine: sensor.ph_prog ?? null,
+                refColor: '#4d9de088',
               }
             ]}
           />
