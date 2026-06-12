@@ -1575,6 +1575,26 @@ def generer_decision_tour(
         if len(tours_precedents) >= 3:
             donnees_tour["pct_drainage_lag3"] = float(tours_precedents[2].pct_drainage or 0.0)
 
+        # ── Durée du tour précédent ───────────────────────────────────────
+        if num_tour_actuel == 1:
+            rec_matin = db.query(AIRecommandation).filter(
+                AIRecommandation.device_id == device_id,
+                AIRecommandation.date      == date_cible_req,
+            ).first()
+            donnees_tour["duree_tour_precedent_min"] = rec_matin.duree_min if rec_matin else 0
+        else:
+            decision_prec = db.query(AIDecisionTour).filter(
+                AIDecisionTour.device_id == device_id,
+                AIDecisionTour.date      == date_cible_req,
+                AIDecisionTour.num_tour  == num_tour_actuel - 1,
+            ).first()
+            donnees_tour["duree_tour_precedent_min"] = decision_prec.duree_suivant if decision_prec else 0
+
+        logger.debug(
+            f"duree_tour_precedent_min injecté : tour={num_tour_actuel} → "
+            f"{donnees_tour['duree_tour_precedent_min']}min"
+        )
+
         logger.debug(
             f"Lags chargés BDD tour {num_tour_actuel} : "
             + (" | ".join(f"T{t.num_tour}→{t.pct_drainage:.1f}%" for t in tours_precedents)
@@ -2160,7 +2180,7 @@ def predict_tour(donnees, modeles_tour, enc_tour):
 
     if num_tour <= 1 and duree_prec > 0:
         duree_int = duree_prec
-    elif num_tour > 2 and duree_prec > 0 and duree_int > duree_prec:
+    elif num_tour >= 2 and duree_prec > 0 and duree_int > duree_prec:
         duree_int = duree_prec
 
     return {
