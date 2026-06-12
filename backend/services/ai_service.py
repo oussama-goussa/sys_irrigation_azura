@@ -2072,6 +2072,30 @@ def predict_tour(donnees, modeles_tour, enc_tour):
         }
 
     # ── Couche 2 : XGBoost (cas normaux) ──────────────────────────────────────
+
+    # ── Bootstrap lags pour les premiers tours ────────────────────────────────
+    # À l'entraînement, les lags NaN sont remplis par fillna(médiane).
+    # À l'inférence, on reproduit ce comportement au lieu de passer 0.0 :
+    #   Tour 1 → lag1, lag2, lag3 inexistants → médiane entraînement
+    #   Tour 2 → lag2, lag3 inexistants       → médiane entraînement
+    #   Tour 3 → lag3 inexistant              → médiane entraînement
+    #   Tour 4+→ tous les lags sont réels     → pas de substitution
+    lag_medians = enc_tour.get("lag_medians", {})
+    if lag_medians:
+        lag_cols_by_max_tour = {
+            "pct_drainage_lag1": 1,   # disponible seulement dès Tour 2
+            "pct_drainage_lag2": 2,   # disponible seulement dès Tour 3
+            "pct_drainage_lag3": 3,   # disponible seulement dès Tour 4
+            "ec_drainage_lag1":  1,
+            "ec_drainage_lag2":  2,
+        }
+        for col, min_tour_needed in lag_cols_by_max_tour.items():
+            if num_tour <= min_tour_needed:
+                med = lag_medians.get(col)
+                if med is not None:
+                    donnees[col] = med
+                    logger.debug(f"Bootstrap lag {col} tour {num_tour} → médiane={med:.2f}")
+
     FEATURES_TOUR = [
         "pct_drainage", "ec_drainage", "ph_drainage", "num_tour", "v_apport",
         "_pct_drain_prev", "pct_drainage_lag1", "pct_drainage_lag2", "pct_drainage_lag3",
