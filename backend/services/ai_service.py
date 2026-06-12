@@ -2157,7 +2157,10 @@ def predict_tour(donnees, modeles_tour, enc_tour):
 
     duree_float = float(modeles_tour["reg_opt_duree_min"].predict(X)[0])
     duree_int = int(round(max(4.0, min(14.0, duree_float))))
-    if duree_prec > 0 and duree_int > duree_prec:
+
+    if num_tour <= 1 and duree_prec > 0:
+        duree_int = duree_prec
+    elif num_tour > 2 and duree_prec > 0 and duree_int > duree_prec:
         duree_int = duree_prec
 
     return {
