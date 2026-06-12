@@ -960,7 +960,7 @@ function HouseCard({ house, rec, C, dark, onConfig, dateStr }) {
                   : (dark ? 'rgba(77,157,224,0.10)' : 'rgba(29,111,164,0.06)'),
                 color: sourcePRT ? C.green : C.blue,
               }}>
-                {sourcePRT ? 'PRT' : 'ML'}
+                {sourcePRT ? '% Ressuyage' : 'ML'}
               </span>
             </div>
             <div style={{ fontSize: 10, color: C.textDim, marginTop: 2 }}>
