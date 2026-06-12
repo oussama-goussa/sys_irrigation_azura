@@ -253,7 +253,7 @@ function GaugeCard({ label, value, unit, min, max, color, C, subLabel, subLabelC
 }
 
 // ── Mini SVG Chart ────────────────────────────────────────────
-function MiniChart({ data, color, label, unit, C, dark, onSelectRange, decimals = 2, refLine = null, refColor = '#aaa' }) {
+function MiniChart({ data, color, label, unit, C, dark, onSelectRange, decimals = 2, refLine = null, refColor = '#aaa', dashed = false }) {
   const [cursor, setCursor] = useState(null)
   const [drag, setDrag]     = useState(null)
   const [dragging, setDragging] = useState(false)
@@ -363,7 +363,7 @@ function MiniChart({ data, color, label, unit, C, dark, onSelectRange, decimals 
       )}
 
       <polygon points={fillPoints} fill={`url(#${gradId})`} />
-      <polyline points={polyPoints} fill="none" stroke={baseColor} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      <polyline points={polyPoints} fill="none" stroke={baseColor} strokeWidth={dashed ? 1.5 : 2} strokeLinejoin="round" strokeLinecap="round" strokeDasharray={dashed ? "6,4" : undefined} />
 
       {/* Reference line (prog) */}
       {refLine !== null && (() => {
@@ -445,7 +445,7 @@ function ChartCard({ title, series, C, dark, onSelectRange }) {
                   : '—'}
               </span>
             </div>
-            <MiniChart data={s.data} color={s.color} label={s.label} unit={s.unit} decimals={s.decimals} refLine={s.refLine ?? null} refColor={s.refColor || '#aaa'} C={C} dark={dark} onSelectRange={onSelectRange} />
+            <MiniChart data={s.data} color={s.color} label={s.label} unit={s.unit} decimals={s.decimals} refLine={s.refLine ?? null} refColor={s.refColor || '#aaa'} dashed={s.dashed || false} C={C} dark={dark} onSelectRange={onSelectRange} />
           </div>
         ))}
       </div>
@@ -1973,18 +1973,43 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             onSelectRange={(from, to) => { setChartZoomFrom(from); setChartZoomTo(to); isZoomedRef.current = true }}
             series={[
               {
-                label: 'EC Apport actuel (mS/cm)',
+                label: 'EC actuel (mS/cm)',
                 color: '#34d96f',
                 unit: 'mS/cm',
                 decimals: 2,
-                data: buildSeries('ec_actual'),
-                refLine: (() => {
-                  const vals = (chartData?.data || []).map(d => d.ec_prog).filter(v => v && v > 0)
-                  if (!vals.length) return null
-                  return vals.sort((a,b) => vals.filter(x=>x===b).length - vals.filter(x=>x===a).length)[0]
+                data: (() => {
+                  if (!chartData?.data) return []
+                  const fromBound = chartZoomFrom ? chartZoomFrom + ' 00:00:00' : null
+                  const toBound   = chartZoomTo   ? chartZoomTo   + ' 23:59:59' : null
+                  return [...chartData.data].reverse().filter(d => {
+                    if (!fromBound && !toBound) return true
+                    const ts = d.timestamp.replace('T', ' ')
+                    if (fromBound && ts < fromBound) return false
+                    if (toBound   && ts > toBound)   return false
+                    return true
+                  }).map(d => ({ timestamp: d.timestamp, value: d.ec_actual ?? 0 }))
                 })(),
-                refColor: '#34d96f88',
-              }
+              },
+              {
+                label: 'EC programmé (mS/cm)',
+                color: '#007429',
+                unit: 'mS/cm',
+                decimals: 2,
+                dashed: true,
+                data: (() => {
+                  if (!chartData?.data) return []
+                  const fromBound = chartZoomFrom ? chartZoomFrom + ' 00:00:00' : null
+                  const toBound   = chartZoomTo   ? chartZoomTo   + ' 23:59:59' : null
+                  return [...chartData.data].reverse().filter(d => {
+                    if (!fromBound && !toBound) return true
+                    const ts = d.timestamp.replace('T', ' ')
+                    if (fromBound && ts < fromBound) return false
+                    if (toBound   && ts > toBound)   return false
+                    return true
+                  }).filter(d => d.ec_prog && d.ec_prog > 0)
+                    .map(d => ({ timestamp: d.timestamp, value: d.ec_prog }))
+                })(),
+              },
             ]}
           />
 
@@ -1996,18 +2021,43 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             onSelectRange={(from, to) => { setChartZoomFrom(from); setChartZoomTo(to); isZoomedRef.current = true }}
             series={[
               {
-                label: 'pH Apport actuel',
+                label: 'pH actuel',
                 color: '#4d9de0',
                 unit: '',
                 decimals: 2,
-                data: buildSeries('ph_actual'),
-                refLine: (() => {
-                  const vals = (chartData?.data || []).map(d => d.ph_prog).filter(v => v && v > 0)
-                  if (!vals.length) return null
-                  return vals.sort((a,b) => vals.filter(x=>x===b).length - vals.filter(x=>x===a).length)[0]
+                data: (() => {
+                  if (!chartData?.data) return []
+                  const fromBound = chartZoomFrom ? chartZoomFrom + ' 00:00:00' : null
+                  const toBound   = chartZoomTo   ? chartZoomTo   + ' 23:59:59' : null
+                  return [...chartData.data].reverse().filter(d => {
+                    if (!fromBound && !toBound) return true
+                    const ts = d.timestamp.replace('T', ' ')
+                    if (fromBound && ts < fromBound) return false
+                    if (toBound   && ts > toBound)   return false
+                    return true
+                  }).map(d => ({ timestamp: d.timestamp, value: d.ph_actual ?? 0 }))
                 })(),
-                refColor: '#4d9de088',
-              }
+              },
+              {
+                label: 'pH programmé',
+                color: '#004075',
+                unit: '',
+                decimals: 2,
+                dashed: true,
+                data: (() => {
+                  if (!chartData?.data) return []
+                  const fromBound = chartZoomFrom ? chartZoomFrom + ' 00:00:00' : null
+                  const toBound   = chartZoomTo   ? chartZoomTo   + ' 23:59:59' : null
+                  return [...chartData.data].reverse().filter(d => {
+                    if (!fromBound && !toBound) return true
+                    const ts = d.timestamp.replace('T', ' ')
+                    if (fromBound && ts < fromBound) return false
+                    if (toBound   && ts > toBound)   return false
+                    return true
+                  }).filter(d => d.ph_prog && d.ph_prog > 0)
+                    .map(d => ({ timestamp: d.timestamp, value: d.ph_prog }))
+                })(),
+              },
             ]}
           />
 
