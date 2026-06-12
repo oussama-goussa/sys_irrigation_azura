@@ -425,31 +425,237 @@ function MiniChart({ data, color, label, unit, C, dark, onSelectRange, decimals 
 
 // ── Chart Card ────────────────────────────────────────────────
 function ChartCard({ title, series, C, dark, onSelectRange }) {
+  // Fusionner tous les timestamps pour un axe X commun
+  const allData = series.flatMap(s => s.data || [])
+  const allValues = allData.map(d => d.value).filter(v => v !== null && v !== undefined)
+  const globalMin = allValues.length ? Math.min(...allValues) : 0
+  const globalMax = allValues.length ? Math.max(...allValues) : 1
+
   return (
     <div style={{
       background: C.card, border: `1.5px solid ${C.border}`,
       borderRadius: 14, padding: '18px 20px',
     }}>
       <div style={{ fontWeight: 800, fontSize: 13, color: C.text, marginBottom: 12 }}>{title}</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Légende */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
         {series.map(s => (
-          <div key={s.label}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <div style={{ width: 10, height: 3, borderRadius: 2, background: s.color }} />
-                <span style={{ color: C.textMuted, fontSize: 11, fontWeight: 630 }}>{s.label}</span>
-              </div>
-              <span style={{ color: s.color, fontSize: 12, fontWeight: 800 }}>
-                {s.data?.length > 0 && s.data[s.data.length - 1]?.value !== null
-                  ? `${Number(s.data[s.data.length - 1].value).toFixed(s.decimals || 1)} ${s.unit || ''}`
-                  : '—'}
-              </span>
+          <div key={s.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {s.dashed
+                ? <svg width="14" height="4"><line x1="0" y1="2" x2="14" y2="2" stroke={s.color} strokeWidth="2" strokeDasharray="4,3"/></svg>
+                : <div style={{ width: 10, height: 3, borderRadius: 2, background: s.color }} />
+              }
+              <span style={{ color: C.textMuted, fontSize: 11, fontWeight: 630 }}>{s.label}</span>
             </div>
-            <MiniChart data={s.data} color={s.color} label={s.label} unit={s.unit} decimals={s.decimals} refLine={s.refLine ?? null} refColor={s.refColor || '#aaa'} dashed={s.dashed || false} C={C} dark={dark} onSelectRange={onSelectRange} />
+            <span style={{ color: s.color, fontSize: 12, fontWeight: 800 }}>
+              {s.data?.length > 0 && s.data[s.data.length - 1]?.value !== null
+                ? `${Number(s.data[s.data.length - 1].value).toFixed(s.decimals || 1)} ${s.unit || ''}`
+                : '—'}
+            </span>
           </div>
         ))}
       </div>
+      {/* Graphique multi-séries */}
+      <MultiSeriesChart series={series} globalMin={globalMin} globalMax={globalMax} C={C} dark={dark} onSelectRange={onSelectRange} />
     </div>
+  )
+}
+
+function MultiSeriesChart({ series, globalMin, globalMax, C, dark, onSelectRange }) {
+  const [cursor, setCursor] = useState(null)
+  const [drag, setDrag]     = useState(null)
+  const [dragging, setDragging] = useState(false)
+  const svgRef = useRef(null)
+
+  const allTimestamps = [...new Set(
+    series.flatMap(s => (s.data || []).map(d => d.timestamp))
+  )].sort()
+
+  if (allTimestamps.length === 0) return (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:120, color:C.textDim, fontSize:12 }}>
+      Aucune donnée
+    </div>
+  )
+
+  const W = 600, H = 120
+  const PAD = { top:10, bottom:20, left:45, right:10 }
+  const chartW = W - PAD.left - PAD.right
+  const chartH = H - PAD.top  - PAD.bottom
+  const range  = globalMax - globalMin || 1
+
+  const toX = (ts) => {
+    const idx = allTimestamps.indexOf(ts)
+    if (idx === -1) return PAD.left
+    return PAD.left + (idx / (allTimestamps.length - 1 || 1)) * chartW
+  }
+  const toY = (v) => PAD.top + chartH - ((v - globalMin) / range) * chartH
+
+  const yLabels = [globalMin, (globalMin + globalMax) / 2, globalMax].map((v, i) => ({
+    y: PAD.top + chartH - (i / 2) * chartH,
+    label: Number(v).toFixed(1),
+  }))
+  const xLabels = [0, Math.floor(allTimestamps.length / 2), allTimestamps.length - 1].map(idx => ({
+    x: PAD.left + (idx / (allTimestamps.length - 1 || 1)) * chartW,
+    label: new Date(allTimestamps[idx]).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+  }))
+
+  function getSvgX(e) {
+    const rect = svgRef.current?.getBoundingClientRect()
+    if (!rect) return PAD.left
+    const raw = ((e.clientX - rect.left) / rect.width) * W
+    return Math.max(PAD.left, Math.min(PAD.left + chartW, raw))
+  }
+
+  function findNearestTs(svgX) {
+    const idx = Math.round(((svgX - PAD.left) / chartW) * (allTimestamps.length - 1))
+    return allTimestamps[Math.max(0, Math.min(allTimestamps.length - 1, idx))]
+  }
+
+  function handleMouseMove(e) {
+    const svgX = getSvgX(e)
+    const ts = findNearestTs(svgX)
+    setCursor({ x: toX(ts), ts })
+    if (dragging) setDrag(d => ({ ...d, endX: svgX }))
+  }
+
+  function handleMouseDown(e) {
+    const svgX = getSvgX(e)
+    setDrag({ startX: svgX, endX: svgX })
+    setDragging(true)
+  }
+
+  function handleMouseUp() {
+    if (!dragging) return
+    setDragging(false)
+    if (!drag || !onSelectRange) { setDrag(null); return }
+    const x1 = Math.min(drag.startX, drag.endX)
+    const x2 = Math.max(drag.startX, drag.endX)
+    if (x2 - x1 < 8) { setDrag(null); return }
+    const ts1 = findNearestTs(x1)
+    const ts2 = findNearestTs(x2)
+    if (ts1 && ts2) onSelectRange(ts1.split('T')[0], ts2.split('T')[0])
+    setDrag(null)
+  }
+
+  const dragX1 = drag ? Math.min(drag.startX, drag.endX) : null
+  const dragX2 = drag ? Math.max(drag.startX, drag.endX) : null
+
+  return (
+    <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`}
+      style={{ width: '100%', height: 120, cursor: dragging ? 'col-resize' : 'crosshair', userSelect: 'none' }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => { setCursor(null); if (dragging) { setDragging(false); setDrag(null) } }}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+    >
+      <defs>
+        {series.filter(s => !s.dashed).map(s => {
+          const baseColor = s.color.length > 7 ? s.color.slice(0, 7) : s.color
+          const gradId = `grad_ms_${s.label.replace(/[^a-zA-Z0-9]/g, '_')}`
+          return (
+            <linearGradient key={gradId} id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stopColor={baseColor} stopOpacity="0.25" />
+              <stop offset="100%" stopColor={baseColor} stopOpacity="0.02" />
+            </linearGradient>
+          )
+        })}
+      </defs>
+
+      {/* Grid */}
+      {[0, 0.25, 0.5, 0.75, 1].map((f, i) => (
+        <line key={i} x1={PAD.left} y1={PAD.top + f * chartH} x2={PAD.left + chartW} y2={PAD.top + f * chartH}
+          stroke={dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} strokeWidth="1" />
+      ))}
+
+      {/* Drag selection */}
+      {drag && dragX2 - dragX1 > 2 && (
+        <rect x={dragX1} y={PAD.top} width={dragX2 - dragX1} height={chartH}
+          fill={`${series[0]?.color || '#34d96f'}20`} stroke={series[0]?.color || '#34d96f'} strokeWidth="1" strokeDasharray="4,3" />
+      )}
+
+      {/* Séries */}
+      {series.map(s => {
+        const validData = (s.data || []).filter(d => d.value !== null && d.value !== undefined)
+        if (validData.length === 0) return null
+        const pts = validData.map(d => ({ x: toX(d.timestamp), y: toY(d.value), value: d.value, timestamp: d.timestamp }))
+        const polyPoints = pts.map(p => `${p.x},${p.y}`).join(' ')
+        const baseColor = s.color.length > 7 ? s.color.slice(0, 7) : s.color
+        const gradId = `grad_ms_${s.label.replace(/[^a-zA-Z0-9]/g, '_')}`
+        const fillPoints = [`${pts[0].x},${PAD.top + chartH}`, ...pts.map(p => `${p.x},${p.y}`), `${pts[pts.length-1].x},${PAD.top + chartH}`].join(' ')
+
+        return (
+          <g key={s.label}>
+            {!s.dashed && <polygon points={fillPoints} fill={`url(#${gradId})`} />}
+            <polyline points={polyPoints} fill="none" stroke={baseColor}
+              strokeWidth={s.dashed ? 1.5 : 2}
+              strokeLinejoin="round" strokeLinecap="round"
+              strokeDasharray={s.dashed ? "6,4" : undefined} />
+          </g>
+        )
+      })}
+
+      {/* Y labels */}
+      {yLabels.map((l, i) => (
+        <text key={i} x={PAD.left - 5} y={l.y + 4} textAnchor="end"
+          fill={dark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)'} fontSize="9">{l.label}</text>
+      ))}
+
+      {/* X labels */}
+      {xLabels.map((l, i) => (
+        <text key={i} x={l.x} y={H - 4} textAnchor="middle"
+          fill={dark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)'} fontSize="9">{l.label}</text>
+      ))}
+
+      {/* Crosshair */}
+      {cursor && (
+        <g>
+          <line x1={cursor.x} y1={PAD.top} x2={cursor.x} y2={PAD.top + chartH}
+            stroke={series[0]?.color || '#34d96f'} strokeWidth="1" strokeDasharray="3,3" opacity="0.6" />
+          {series.map(s => {
+            const pt = (s.data || []).find(d => toX(d.timestamp) === cursor.x) ||
+              (s.data || []).reduce((best, d) => {
+                const dx = Math.abs(toX(d.timestamp) - cursor.x)
+                return !best || dx < Math.abs(toX(best.timestamp) - cursor.x) ? d : best
+              }, null)
+            if (!pt || pt.value === null) return null
+            const baseColor = s.color.length > 7 ? s.color.slice(0, 7) : s.color
+            return (
+              <circle key={s.label} cx={toX(pt.timestamp)} cy={toY(pt.value)} r="4"
+                fill={baseColor} stroke={dark ? '#1a1a1a' : '#fff'} strokeWidth="2" />
+            )
+          })}
+          {(() => {
+            const tipW = 130, tipH = 10 + series.length * 16
+            const tx = cursor.x + 10 + tipW > W - PAD.right ? cursor.x - tipW - 10 : cursor.x + 10
+            const ty = PAD.top + 4
+            const time = new Date(cursor.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+            return (
+              <g>
+                <rect x={tx} y={ty} width={tipW} height={tipH} rx="5"
+                  fill={dark ? '#1e2a1e' : '#fff'} stroke={series[0]?.color || '#34d96f'} strokeWidth="1.2"
+                  style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.2))' }} />
+                <text x={tx + 8} y={ty + 12}
+                  fill={dark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)'} fontSize="9">{time}</text>
+                {series.map((s, i) => {
+                  const pt = (s.data || []).reduce((best, d) => {
+                    const dx = Math.abs(toX(d.timestamp) - cursor.x)
+                    return !best || dx < Math.abs(toX(best.timestamp) - cursor.x) ? d : best
+                  }, null)
+                  const baseColor = s.color.length > 7 ? s.color.slice(0, 7) : s.color
+                  return (
+                    <text key={s.label} x={tx + 8} y={ty + 12 + (i + 1) * 14}
+                      fill={baseColor} fontSize="10" fontWeight="700">
+                      {pt ? `${Number(pt.value).toFixed(s.decimals || 1)} ${s.unit || ''}` : '—'}
+                    </text>
+                  )
+                })}
+              </g>
+            )
+          })()}
+        </g>
+      )}
+    </svg>
   )
 }
 
@@ -1977,6 +2183,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                 color: '#34d96f',
                 unit: 'mS/cm',
                 decimals: 2,
+                dashed: false,
                 data: (() => {
                   if (!chartData?.data) return []
                   const fromBound = chartZoomFrom ? chartZoomFrom + ' 00:00:00' : null
@@ -1992,7 +2199,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
               },
               {
                 label: 'EC programmé (mS/cm)',
-                color: '#007429',
+                color: '#34d96f',
                 unit: 'mS/cm',
                 decimals: 2,
                 dashed: true,
@@ -2025,6 +2232,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                 color: '#4d9de0',
                 unit: '',
                 decimals: 2,
+                dashed: false,
                 data: (() => {
                   if (!chartData?.data) return []
                   const fromBound = chartZoomFrom ? chartZoomFrom + ' 00:00:00' : null
@@ -2040,7 +2248,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
               },
               {
                 label: 'pH programmé',
-                color: '#004075',
+                color: '#4d9de0',
                 unit: '',
                 decimals: 2,
                 dashed: true,
