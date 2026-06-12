@@ -454,9 +454,9 @@ PRT_SEUILS = {
 GAP_HEURE_MATIN_TO_TOUR1_MIN = 10
 
 # Fenêtre de surveillance matinale (poids arrivant toutes les 5 min)
-# Le ressuyage est détecté entre 6h30 et 11h (99.8% des cas)
-POIDS_MATIN_HEURE_DEBUT  = 6    # 06h30
-POIDS_MATIN_MINUTE_DEBUT = 30
+# Le ressuyage est détecté entre 7h00 et 11h (99.8% des cas)
+POIDS_MATIN_HEURE_DEBUT  = 7    # 07h00
+POIDS_MATIN_MINUTE_DEBUT = 00
 POIDS_MATIN_HEURE_FIN    = 11   # 11h00
 POIDS_MATIN_MINUTE_FIN   = 0
 

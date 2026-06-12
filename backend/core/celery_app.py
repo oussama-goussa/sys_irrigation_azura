@@ -633,11 +633,11 @@ def task_update_prt_heure_debut():
 
     now = datetime.now()
 
-    # Actif seulement entre 06h30 et 11h00
-    avant_debut = now.hour < 6 or (now.hour == 6 and now.minute < 30)
+    # Actif seulement entre 07h00 et 11h00
+    avant_debut = now.hour < 7 or (now.hour == 7 and now.minute < 00)
     apres_fin   = now.hour >= 11
     if avant_debut or apres_fin:
-        return {"statut": "skip", "raison": "hors fenêtre 06h30-11h"}
+        return {"statut": "skip", "raison": "hors fenêtre 07h00-11h"}
 
     try:
         from core.database import SessionLocal
