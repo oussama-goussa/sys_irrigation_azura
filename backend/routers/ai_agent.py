@@ -44,6 +44,7 @@ from services.ai_service import (
     DEFAULT_LON,
 )
 
+
 router = APIRouter(prefix="/api/ai", tags=["AI Agent"])
 
 
@@ -542,7 +543,7 @@ def post_decision_tour(
     except Exception as _e:
         logger.warning(f"[CHERGUI TEMPS RÉEL] Échec → fallback BDD : {_e}")
         alerte_chergui_reel = alerte_chergui_matin
-        
+
     alerte_chergui_finale = alerte_chergui_reel
 
     # ── Brouillard temps réel ─────────────────────────────────────────────────
@@ -567,6 +568,10 @@ def post_decision_tour(
     # Brouillard final : détection HR temps réel
     alerte_brouillard_finale = alerte_brouillard_reel
 
+    from services.ai_service import EC_DRAIN_RATIO_STADE, _calculer_stade_et_kc
+    _stade_actuel, _ = _calculer_stade_et_kc(jours_depuis_plantation)
+    _ratio_drain = EC_DRAIN_RATIO_STADE.get(_stade_actuel, 1.65)
+
     donnees_tour = {
         "pct_drainage"          : pct_drainage or 0.0,
         "ec_drainage"           : body.ec_drainage or 0.0,
@@ -581,7 +586,7 @@ def post_decision_tour(
         "ec_drainage_lag2"      : ec_lag2 or 0.0,
         "opt_vol_cumule_L"      : vol_cumule,
         "opt_vol_jour_cible_L"  : vol_jour_cible,
-        "opt_EC_drain_cible_dSm": (ec_cible or 2.3) * 1.2,  # cible drain = EC apport * 1.2
+        "opt_EC_drain_cible_dSm": (ec_cible or 2.3) * _ratio_drain,
         "opt_nb_cycles"         : nb_tours_cible or 10,
         "opt_max_cycles_stade"  : max_cycles_stade,
         "ec_bassin"             : cfg.ec_eau_brute or 0.8,

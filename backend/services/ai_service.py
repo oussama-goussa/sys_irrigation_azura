@@ -302,6 +302,18 @@ _STADE_MAX_CYCLES = {
     "Maturation":    12,     # J121+   — légère réduction fin cycle
 }
 
+# Ratios ec_drainage / ec_apport par stade — calculés depuis 4 saisons terrain Azura
+# Source : analyse CSV 2021-2025 (21 973 lignes)
+# Sep 2021 (Végétatif)    : ratio observé 0.95–1.09
+# Jan 2022 (Grossissement): ratio observé 2.12–2.15
+EC_DRAIN_RATIO_STADE = {
+    "Vegetatif":     1.10,   # J0-J30  — substrat frais, peu de concentration
+    "Developpement": 1.50,   # J31-J60 — concentration progressive
+    "Floraison":     1.80,   # J61-J90 — mi-saison
+    "Grossissement": 2.10,   # J91-J120 — concentration maximale (2.12 observé)
+    "Maturation":    2.00,   # J121+   — légère réduction fin cycle
+}
+
 def _calculer_max_cycles_stade(jours_depuis_plantation: int) -> int:
     """
     Retourne le plafond de tours autorisés pour le stade phénologique actuel.
