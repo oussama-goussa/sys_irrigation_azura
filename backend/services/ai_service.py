@@ -1547,6 +1547,40 @@ def generer_decision_tour(
 
         cfg = get_or_create_config(db, device_id)
 
+        # ── Charger les lags réels depuis la BDD ─────────────────────────────
+        num_tour_actuel = int(donnees_tour.get("num_tour", 1) or 1)
+        date_cible_req  = date_cible or date.today()
+
+        tours_precedents = (
+            db.query(AIDecisionTour)
+            .filter(
+                AIDecisionTour.device_id == device_id,
+                AIDecisionTour.date      == date_cible_req,
+                AIDecisionTour.num_tour  <  num_tour_actuel,
+                AIDecisionTour.pct_drainage.isnot(None),
+            )
+            .order_by(AIDecisionTour.num_tour.desc())
+            .limit(3)
+            .all()
+        )
+        tours_precedents = sorted(tours_precedents, key=lambda t: t.num_tour, reverse=True)
+
+        if len(tours_precedents) >= 1:
+            donnees_tour["pct_drainage_lag1"] = float(tours_precedents[0].pct_drainage or 0.0)
+            donnees_tour["ec_drainage_lag1"]  = float(tours_precedents[0].ec_drainage  or 0.0)
+            donnees_tour["_pct_drain_prev"]   = float(tours_precedents[0].pct_drainage or 0.0)
+        if len(tours_precedents) >= 2:
+            donnees_tour["pct_drainage_lag2"] = float(tours_precedents[1].pct_drainage or 0.0)
+            donnees_tour["ec_drainage_lag2"]  = float(tours_precedents[1].ec_drainage  or 0.0)
+        if len(tours_precedents) >= 3:
+            donnees_tour["pct_drainage_lag3"] = float(tours_precedents[2].pct_drainage or 0.0)
+
+        logger.debug(
+            f"Lags chargés BDD tour {num_tour_actuel} : "
+            + (" | ".join(f"T{t.num_tour}→{t.pct_drainage:.1f}%" for t in tours_precedents)
+               if tours_precedents else "aucun tour précédent")
+        )
+
         # Si drainage dispo → prédire
         _, _, modeles_tour, enc_tour = _get_modeles()
         decision = predict_tour(donnees_tour, modeles_tour, enc_tour)
@@ -2083,9 +2117,9 @@ def predict_tour(donnees, modeles_tour, enc_tour):
     lag_medians = enc_tour.get("lag_medians", {})
     if lag_medians:
         lag_cols_by_max_tour = {
-            "pct_drainage_lag1": 1,   # disponible seulement dès Tour 2
-            "pct_drainage_lag2": 2,   # disponible seulement dès Tour 3
-            "pct_drainage_lag3": 3,   # disponible seulement dès Tour 4
+            "pct_drainage_lag1": 1,   # Tour 1 : lag1 = Tour 0 → n'existe pas → médiane
+            "pct_drainage_lag2": 2,   # Tours 1-2 : lag2 = Tour 0/-1 → n'existe pas → médiane
+            # pct_drainage_lag3 absent : Tour 3 lag3=Tour 0 jamais existé → 0.0
             "ec_drainage_lag1":  1,
             "ec_drainage_lag2":  2,
         }
