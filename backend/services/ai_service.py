@@ -289,7 +289,46 @@ def _calculer_stade_et_kc(jours_depuis_plantation: int) -> tuple:
         return "Grossissement", 1.05
     else:
         return "Maturation", 0.90
+    
+# Plafond de tours par stade phénologique (tomate cerise Agadir, Groupe Azura)
+# Source : INRA Maroc + pratiques terrain Azura 4 saisons
+# Les jeunes plants (Végétatif) ont un système racinaire limité :
+# trop de cycles = asphyxie racinaire + risque botrytis.
+_STADE_MAX_CYCLES = {
+    "Vegetatif":     None,   # sous-périodes gérées par _calculer_max_cycles_stade
+    "Developpement": 11,     # J31-J60 — enracinement en cours
+    "Floraison":     14,     # J61-J90 — pleine demande
+    "Grossissement": 14,     # J91-J120
+    "Maturation":    12,     # J121+   — légère réduction fin cycle
+}
 
+def _calculer_max_cycles_stade(jours_depuis_plantation: int) -> int:
+    """
+    Retourne le plafond de tours autorisés pour le stade phénologique actuel.
+
+    Végétatif (J0-J30) — sous-périodes selon maturité racinaire :
+      J0-J7   : 4 tours max (reprise racinaire, humidification douce)
+      J8-J14  : 5 tours max (début enracinement)
+      J15-J30 : 6 tours max (végétatif normal)
+    Développement (J31-J60) : 11 tours max
+    Floraison     (J61-J90) : 14 tours max
+    Grossissement (J91-J120): 14 tours max
+    Maturation    (J121+)   : 12 tours max
+
+    Source : STADE_MAX_CYCLES + get_max_cycles_vegetatif dans
+             optimisation_irrigation_agadir.py (§6.4 rapport Azura).
+    """
+    stade, _ = _calculer_stade_et_kc(jours_depuis_plantation)
+
+    if stade == "Vegetatif":
+        if jours_depuis_plantation <= 7:
+            return 4
+        elif jours_depuis_plantation <= 14:
+            return 5
+        else:
+            return 6
+
+    return _STADE_MAX_CYCLES.get(stade, 14)
 
 def _calculer_et0_penman_monteith(meteo: dict) -> float:
     """
@@ -1848,8 +1887,132 @@ def get_repos_pattern(pct_drainage: float, num_tour: int) -> int:
     return REPOS_GLOBAL_MEDIAN
 
 
+def _heure_str_to_decimal(heure_str) -> float | None:
+    """Convertit 'HH:MM' en float décimal (ex: '14:30' → 14.5). None si invalide."""
+    try:
+        parts = str(heure_str).strip().split(":")
+        return float(parts[0]) + float(parts[1]) / 60.0
+    except (ValueError, IndexError, AttributeError):
+        return None
+
+
+def _get_heure_limite(mois: int) -> float:
+    """
+    Heure limite d'irrigation par mois (Agadir, Groupe Azura).
+    Hiver (nov-fév) : 16h00 | Inter-saison (mars, avr, oct) : 17h00 | Été (mai-sep) : 17h30
+    Source : §6.3 rapport Azura.
+    """
+    if mois in (11, 12, 1, 2):
+        return 16.0
+    elif mois in (3, 4, 10):
+        return 17.0
+    else:
+        return 17.5
+
+
+# Scénarios brouillard et leurs heures de levée (en heures décimales)
+_FOG_SCENARIOS_HEURE_LEVEE = {
+    "5_BROUILLARD_MATIN": 11.0,
+    "5b_FOG_CHAUD_VPD":    9.0,
+    "5c_FOG_CHAUD_RS":     9.5,
+    "5d_FOG_RADIATION":    8.75,
+    "5e_FOG_FROID":       11.5,
+}
+
+
+def _appliquer_gardefous_deterministes(donnees: dict) -> dict | None:
+    """
+    Vérifie les 6 règles agronomiques prioritaires AVANT d'appeler XGBoost.
+
+    Retourne un dict {label, raison, continuer} si une règle se déclenche,
+    ou None si aucune règle → XGBoost décide.
+
+    Ordre de priorité (identique à labelliser_tour_sequentiel) :
+      1. STOP_PLUIE         — pluie détectée (scénario 7_PLUIE_STOP ou alerte_pluie=1)
+      2. STOP_EC_URGENCE    — EC drainage / EC cible > 1.30 (1.50 en nuit froide)
+      3. STOP_HEURE         — heure de début >= limite journalière
+      4. STOP_BROUILLARD    — brouillard actif + tour 1 avant levée
+      5. STOP_MAX_STADE     — nombre de tours >= plafond du stade phénologique
+      6. STOP_VOLUME        — volume cumulé >= 95% de la cible + drainage OK
+    """
+    from datetime import datetime as _dt
+
+    scenario  = str(donnees.get("scenario_meteo", "")).strip()
+    num_tour  = int(donnees.get("num_tour", 1) or 1)
+    pct_drain = float(donnees.get("pct_drainage", 0.0) or 0.0)
+
+    # ── Règle 1 : STOP_PLUIE ──────────────────────────────────────────────────
+    if scenario == "7_PLUIE_STOP" or int(donnees.get("alerte_pluie", 0) or 0) == 1:
+        raison = f"pluie_detectee_scenario={scenario}" if scenario == "7_PLUIE_STOP" \
+                 else "alerte_pluie=1"
+        logger.info(f"[GARDE-FOU] STOP_PLUIE — {raison}")
+        return {"label": "STOP_PLUIE", "raison": raison, "continuer": 0}
+
+    # ── Règle 2 : STOP_EC_URGENCE ─────────────────────────────────────────────
+    ec_drain = donnees.get("ec_drainage")
+    ec_cible = donnees.get("opt_EC_drain_cible_dSm")
+    if ec_drain is not None and ec_cible is not None and float(ec_cible or 0) > 0:
+        ec_drain = float(ec_drain)
+        ec_cible = float(ec_cible)
+        seuil_ec = 1.50 if scenario == "9_NUIT_FROIDE_SOL" else 1.30
+        ratio_ec = ec_drain / ec_cible
+        if ratio_ec > seuil_ec:
+            raison = f"EC_drain={ec_drain:.2f}/EC_cible={ec_cible:.2f}={ratio_ec:.2f}>{seuil_ec}"
+            logger.warning(f"[GARDE-FOU] STOP_EC_URGENCE — {raison}")
+            return {"label": "STOP_EC_URGENCE", "raison": raison, "continuer": 0}
+
+    # ── Règle 3 : STOP_HEURE ──────────────────────────────────────────────────
+    heure_str = donnees.get("heure_debut") or donnees.get("heure_tour_actuel")
+    heure_dec = _heure_str_to_decimal(heure_str)
+    mois = int(donnees.get("mois", _dt.now().month) or _dt.now().month)
+    heure_limite = _get_heure_limite(mois)
+    if heure_dec is not None and heure_dec >= heure_limite:
+        raison = f"heure_{heure_dec:.2f}h>=limite_{heure_limite}h_mois={mois}"
+        logger.info(f"[GARDE-FOU] STOP_HEURE — {raison}")
+        return {"label": "STOP_HEURE", "raison": raison, "continuer": 0}
+
+    # ── Règle 4 : STOP_BROUILLARD (tour 1 avant levée du brouillard) ──────────
+    if scenario in _FOG_SCENARIOS_HEURE_LEVEE and num_tour == 1:
+        heure_levee = _FOG_SCENARIOS_HEURE_LEVEE[scenario]
+        if heure_dec is not None and heure_dec < heure_levee:
+            raison = f"{scenario}_tour1_heure={heure_dec:.2f}h<levee={heure_levee}h"
+            logger.info(f"[GARDE-FOU] STOP_BROUILLARD — {raison}")
+            return {"label": "STOP_BROUILLARD", "raison": raison, "continuer": 0}
+
+    # ── Règle 5 : STOP_MAX_STADE (plafond de tours du stade phénologique) ──────
+    max_stade = donnees.get("opt_max_cycles_stade")
+    if max_stade is not None and int(max_stade or 0) > 0:
+        if num_tour > int(max_stade) and scenario != "6_CHERGUI_URGENT":
+            raison = f"num_tour={num_tour}>max_stade={max_stade}"
+            logger.info(f"[GARDE-FOU] STOP_MAX_STADE — {raison}")
+            return {"label": "STOP_VOLUME", "raison": raison, "continuer": 0}
+
+    # ── Règle 6 : STOP_VOLUME (95% du volume cible atteint) ───────────────────
+    vc = donnees.get("opt_vol_cumule_L")
+    vj = donnees.get("opt_vol_jour_cible_L")
+    vol_cycle = donnees.get("opt_volume_cycle_corrige_L", donnees.get("opt_volume_cycle_L", 0.0)) or 0.0
+    if vc is not None and vj is not None and float(vj or 0) > 0:
+        vc = float(vc)
+        vj = float(vj)
+        vol_avant = max(0.0, vc - float(vol_cycle))
+        drain_ok  = pct_drain >= 15.0
+        if vol_avant >= vj * 0.95 and drain_ok:
+            raison = f"vol_cumule_avant={vol_avant:.0f}L>=95pct_cible={vj:.0f}L_drain={pct_drain:.1f}%"
+            logger.info(f"[GARDE-FOU] STOP_VOLUME — {raison}")
+            return {"label": "STOP_VOLUME", "raison": raison, "continuer": 0}
+
+    return None
+
+
 def predict_tour(donnees, modeles_tour, enc_tour):
-    """Après chaque cycle d'irrigation : continuer ou stopper ?"""
+    """
+    Après chaque cycle d'irrigation : continuer ou stopper ?
+
+    Architecture en deux couches :
+      1. Garde-fous déterministes (règles agronomiques prioritaires) — réponse garantie
+      2. XGBoost (appris sur les labels de labelliser_tour_sequentiel) — cas normaux
+    """
+    # ── Pré-calculs communs ────────────────────────────────────────────────────
     if 'opt_vol_cumule_L' in donnees and 'opt_vol_jour_cible_L' in donnees:
         vc = donnees['opt_vol_cumule_L']
         vj = donnees['opt_vol_jour_cible_L']
@@ -1877,6 +2040,26 @@ def predict_tour(donnees, modeles_tour, enc_tour):
             except (ValueError, IndexError):
                 donnees[_min_col] = 0
 
+    pct_drain  = float(donnees.get("pct_drainage", 0.0) or 0.0)
+    num_tour   = int(donnees.get("num_tour", 1) or 1)
+    repos_min  = get_repos_pattern(pct_drain, num_tour)
+    duree_prec = int(donnees.get("duree_tour_precedent_min", 0) or 0)
+
+    # ── Couche 1 : Garde-fous déterministes ───────────────────────────────────
+    gardefou = _appliquer_gardefous_deterministes(donnees)
+    if gardefou is not None:
+        duree_stop = max(4, duree_prec) if duree_prec > 0 else 8
+        return {
+            "decision":               "STOP",
+            "continuer":              0,
+            "raison":                 gardefou["label"],
+            "raison_detail":          gardefou["raison"],
+            "duree_tour_suivant_min": duree_stop,
+            "repos_min":              repos_min,
+            "source_decision":        "garde_fou_deterministe",
+        }
+
+    # ── Couche 2 : XGBoost (cas normaux) ──────────────────────────────────────
     FEATURES_TOUR = [
         "pct_drainage", "ec_drainage", "ph_drainage", "num_tour", "v_apport",
         "_pct_drain_prev", "pct_drainage_lag1", "pct_drainage_lag2", "pct_drainage_lag3",
@@ -1904,19 +2087,15 @@ def predict_tour(donnees, modeles_tour, enc_tour):
 
     duree_float = float(modeles_tour["reg_opt_duree_min"].predict(X)[0])
     duree_int = int(round(max(4.0, min(14.0, duree_float))))
-    duree_prec = int(donnees.get("duree_tour_precedent_min", 0) or 0)
     if duree_prec > 0 and duree_int > duree_prec:
         duree_int = duree_prec
-
-    # Calculer le repos avant le tour suivant (table patterns humains)
-    pct_drain = float(donnees.get("pct_drainage", 0.0) or 0.0)
-    num_tour  = int(donnees.get("num_tour", 1) or 1)
-    repos_min = get_repos_pattern(pct_drain, num_tour)
 
     return {
         "decision":               "CONTINUER" if continuer == 1 else "STOP",
         "continuer":              continuer,
         "raison":                 raison,
+        "raison_detail":          None,
         "duree_tour_suivant_min": duree_int,
         "repos_min":              repos_min,
+        "source_decision":        "xgboost_ml",
     }

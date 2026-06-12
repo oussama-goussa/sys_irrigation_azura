@@ -37,6 +37,8 @@ from services.ai_service import (
     get_or_create_config,
     detecter_heure_matin_et_debut_tour,
     calculer_prt_decision,
+    recuperer_meteo_open_meteo,
+    _calculer_max_cycles_stade,
     PRT_SEUILS,
     DEFAULT_LAT,
     DEFAULT_LON,
@@ -405,6 +407,29 @@ def post_decision_tour(
                 "message": f"Veuillez configurer le nombre de goutteurs pour {device.farm_name} Station {device.house_number}",
             }
         )
+    
+    # ── Vérifier date_plantation configurée ──
+    # Si absente → fallback silencieux à 75 jours (stade Floraison).
+    # C'est acceptable en Floraison (max=14) mais DANGEREUX en Végétatif
+    # (le vrai max est 4-6, pas 14 — risque asphyxie racinaire + botrytis).
+    avertissements = []
+    if not cfg.date_plantation:
+        avertissements.append({
+            "code"   : "DATE_PLANTATION_MANQUANTE",
+            "niveau" : "warning",
+            "message": (
+                f"Date de plantation non configurée pour {device.farm_name} "
+                f"Station {device.house_number}. "
+                f"Fallback : 75 jours (stade Floraison, max_cycles=14). "
+                f"Si le plant est en stade Végétatif, ce plafond est incorrect — "
+                f"veuillez configurer la date de plantation."
+            ),
+        })
+        logger.warning(
+            f"[DATE_PLANTATION_MANQUANTE] device={body.device_id} "
+            f"({device.farm_name} H{device.house_number}) — "
+            f"fallback 75j (Floraison). Configurer cfg.date_plantation !"
+        )
 
     # ── Calculer % drainage (même logique que SaisiePage) ──
     pct_drainage = None
@@ -456,6 +481,91 @@ def post_decision_tour(
     if rec and rec.quantite_eau_mm:
         # mm → cc/goutteur : 1mm = 150cc/goutteur (formule Azura)
         vol_jour_cible = rec.quantite_eau_mm * 150.0
+    
+    features_matin = (rec.features_utilises or {}) if rec else {}
+    t_max_reel   = features_matin.get("meteo_T_max_C",                28.0)
+    vpd_max_reel = features_matin.get("meteo_VPD_max_kPa",             1.8)
+    et0_reel     = features_matin.get("meteo_ET0_mm_jour",             5.5)  
+
+    # ── Détection pluie en temps réel (Open-Meteo) ───────────────────────────
+    # La recommandation matin est calculée à 06h00 avec la météo prévue.
+    # Si la pluie arrive plus tard dans la journée, alerte_pluie resterait
+    # à 0 en ne lisant que la BDD. On re-consulte Open-Meteo maintenant
+    # pour capturer toute pluie surprise apparue après 06h00.
+    lat = cfg.latitude or DEFAULT_LAT
+    lon = cfg.longitude or DEFAULT_LON
+    date_str_aujourd_hui = today.isoformat()
+
+    # ── Calcul jours depuis plantation → max cycles du stade réel ────────────
+    if cfg.date_plantation:
+        try:
+            from datetime import datetime as _dtt
+            dp = cfg.date_plantation if hasattr(cfg.date_plantation, "year") \
+                 else _dtt.strptime(str(cfg.date_plantation), "%Y-%m-%d").date()
+            jours_depuis_plantation = (today - dp).days
+        except (ValueError, TypeError):
+            jours_depuis_plantation = 75  # fallback : Floraison (J61-J90)
+    else:
+        jours_depuis_plantation = 75
+
+    max_cycles_stade = _calculer_max_cycles_stade(jours_depuis_plantation)
+
+    alerte_pluie_matin = 1 if rec and rec.alerte == "PLUIE_STOP" else 0
+    try:
+        meteo_temps_reel = recuperer_meteo_open_meteo(lat, lon, date_str_aujourd_hui)
+        pluie_temps_reel = meteo_temps_reel.get("meteo_pluie_mm_jour", 0.0) or 0.0
+        alerte_pluie_reel = 1 if pluie_temps_reel > 0.5 else 0
+        if alerte_pluie_reel and not alerte_pluie_matin:
+            logger.warning(
+                f"[PLUIE SURPRISE] device={body.device_id} tour={body.num_tour} "
+                f"pluie={pluie_temps_reel:.1f}mm détectée en temps réel (non prévue ce matin)"
+            )
+    except Exception as _e:
+        logger.warning(f"[METEO TEMPS RÉEL] Échec Open-Meteo → fallback BDD : {_e}")
+        alerte_pluie_reel = alerte_pluie_matin  # fallback : valeur du matin
+
+    # L'alerte finale pluie surprise
+    alerte_pluie_finale = alerte_pluie_reel 
+
+    # ── Chergui temps réel ────────────────────────────────────────────────────
+    alerte_chergui_matin = 1 if rec and rec.alerte == "CHERGUI" else 0
+    try:
+        t_max_reel_chergui  = meteo_temps_reel.get("meteo_T_max_C", 0.0)   or 0.0
+        vpd_max_reel_chergui = meteo_temps_reel.get("meteo_VPD_max_kPa", 0.0) or 0.0
+        alerte_chergui_reel  = 1 if (t_max_reel_chergui > 35 and vpd_max_reel_chergui > 2.5) else 0
+        if alerte_chergui_reel and not alerte_chergui_matin:
+            logger.warning(
+                f"[CHERGUI SURPRISE] device={body.device_id} tour={body.num_tour} "
+                f"T={t_max_reel_chergui:.1f}°C VPD={vpd_max_reel_chergui:.2f}kPa "
+                f"détecté en temps réel (non prévu ce matin)"
+            )
+    except Exception as _e:
+        logger.warning(f"[CHERGUI TEMPS RÉEL] Échec → fallback BDD : {_e}")
+        alerte_chergui_reel = alerte_chergui_matin
+        
+    alerte_chergui_finale = alerte_chergui_reel
+
+    # ── Brouillard temps réel ─────────────────────────────────────────────────
+    alerte_brouillard_matin = 1 if rec and rec.alerte == "BROUILLARD" else 0
+    try:
+        hr_max_reel = meteo_temps_reel.get("meteo_HR_max_pct", 0.0) or 0.0
+        # Brouillard réel : uniquement si HR encore élevée (pas de condition d'heure)
+        alerte_brouillard_reel = 1 if hr_max_reel > 88 else 0
+        if alerte_brouillard_matin and not alerte_brouillard_reel:
+            logger.info(
+                f"[BROUILLARD LEVÉ] device={body.device_id} tour={body.num_tour} "
+                f"HR={hr_max_reel:.1f}% → alerte annulée (HR redescendue sous 88%)"
+            )
+        if alerte_brouillard_reel and not alerte_brouillard_matin:
+            logger.warning(
+                f"[BROUILLARD SURPRISE] device={body.device_id} tour={body.num_tour} "
+                f"HR={hr_max_reel:.1f}% détectée en temps réel (non prévue ce matin)"
+            )
+    except Exception as _e:
+        logger.warning(f"[BROUILLARD TEMPS RÉEL] Échec → fallback BDD : {_e}")
+        alerte_brouillard_reel = alerte_brouillard_matin
+    # Brouillard final : détection HR temps réel
+    alerte_brouillard_finale = alerte_brouillard_reel
 
     donnees_tour = {
         "pct_drainage"          : pct_drainage or 0.0,
@@ -473,17 +583,19 @@ def post_decision_tour(
         "opt_vol_jour_cible_L"  : vol_jour_cible,
         "opt_EC_drain_cible_dSm": (ec_cible or 2.3) * 1.2,  # cible drain = EC apport * 1.2
         "opt_nb_cycles"         : nb_tours_cible or 10,
-        "opt_max_cycles_stade"  : 14,
+        "opt_max_cycles_stade"  : max_cycles_stade,
         "ec_bassin"             : cfg.ec_eau_brute or 0.8,
         "ec_apport"             : tour_netafim.ec_apport if tour_netafim else (ec_cible or 2.3),
         "ph_apport"             : tour_netafim.ph_apport if tour_netafim else 6.0,
-        "meteo_T_max_C"         : 28.0,
-        "meteo_VPD_max_kPa"     : 1.8,
-        "meteo_ET0_mm_jour"     : 5.5,
-        "alerte_chergui"        : 1 if rec and rec.alerte == "CHERGUI" else 0,
-        "alerte_pluie"          : 1 if rec and rec.alerte == "PLUIE_STOP" else 0,
-        "alerte_brouillard"     : 1 if rec and rec.alerte == "BROUILLARD" else 0,
+        "meteo_T_max_C"         : t_max_reel,
+        "meteo_VPD_max_kPa"     : vpd_max_reel,
+        "meteo_ET0_mm_jour"     : et0_reel,
+        "alerte_chergui"        : alerte_chergui_finale,
+        "alerte_pluie"          : alerte_pluie_finale,
+        "alerte_brouillard"     : alerte_brouillard_finale,
         "scenario_meteo"        : rec.scenario_meteo if rec else "2_ENSOLEILLE",
+        "mois"                  : today.month,
+        "heure_debut"           : body.donnees_supplementaires.get("heure_debut"),
         **body.donnees_supplementaires,
     }
 
@@ -557,14 +669,19 @@ def post_decision_tour(
         "ec_drainage"  : body.ec_drainage,
         "ph_drainage"  : body.ph_drainage,
         "decision"     : saved.to_dict(),
-        "prediction"   : {
-            "action"        : decision_ml.get("decision", "CONTINUER"),
-            "raison"        : decision_ml.get("raison", ""),
-            "duree_suivant" : decision_ml.get("duree_tour_suivant_min"),
-            "repos_min"     : decision_ml.get("repos_min"),
-            "message"       : decision_ml.get("message_operateur", ""),
+            "action"             : decision_ml.get("decision", "CONTINUER"),
+            "raison"             : decision_ml.get("raison", ""),
+            "raison_detail"      : decision_ml.get("raison_detail"),
+            "source_decision"    : decision_ml.get("source_decision"),
+            "duree_suivant"      : decision_ml.get("duree_tour_suivant_min"),
+            "repos_min"          : decision_ml.get("repos_min"),
+            "message"            : decision_ml.get("message_operateur", ""),
             "heure_debut_tour_suivante": heure_debut_tour_suivante,
-        },
+            "stade_info"         : {
+                "jours_depuis_plantation": jours_depuis_plantation,
+                "max_cycles_stade"       : max_cycles_stade,
+            },
+            "avertissements": avertissements,
     }
 
 

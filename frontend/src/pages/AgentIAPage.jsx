@@ -1007,7 +1007,7 @@ function HouseCard({ house, rec, C, dark, onConfig, dateStr }) {
                 textAlign: 'center',
               }}>
                 <div style={{ fontSize: 9, fontWeight: 700, color: C.blue, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
-                  Début recommandé (ML)
+                  Début recommandé d'après (ML)
                 </div>
                 <div style={{ fontSize: 22, fontWeight: 900, color: C.blue, fontFamily: C.mono, letterSpacing: '0.04em' }}>
                   {rec.heure_debut_ml || '—'}
