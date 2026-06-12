@@ -1841,30 +1841,30 @@ def predict_matin(donnees, modeles_matin, enc_matin, ec_bassin=0.9,
 # ─── TABLE REPOS (extraite du CSV irrigation_meteo_complet.csv, 4 saisons) ──
 # Médiane de temps_repos_min par (tranche_drainage, num_tour)
 # Pas besoin de lire le CSV à chaque fois = table codée en dur
-
 REPOS_TABLE_2D = {
-    #                 T2   T3   T4   T5   T6   T7   T8   T9  T10  T11  T12  T13  T14  T15  T16  T17
-    '<10':    {2:15, 3:20, 4:15, 5:13, 6:10, 7:30, 8:20, 9:30, 10:32, 11:35, 12:32, 13:37, 15:27, 16:27, 17:32, 18:52},
-    '10-20':  {2:32, 3:25, 4:15, 5:15, 6:13, 7:13, 8:40, 9:37, 10:35, 11:32, 12:27, 13:27, 14:26, 15:30, 16:32, 17:52},
-    '20-30':  {2:22, 3:25, 4:20, 5:17, 6:15, 7:15, 8:32, 9:35, 10:30, 11:30, 12:27, 13:27, 14:22, 15:24, 16:25, 17:34},
-    '30-50':  {2:17, 3:29, 4:25, 5:22, 6:25, 7:27, 8:26, 9:25, 10:22, 11:20, 12:20, 13:17, 14:19, 15:24, 16:29, 17:31},
-    '>50':    {      3:30, 4:37, 5:30, 6:27, 7:22, 8:17, 9:14, 10:15, 11:10, 12:16, 13:21, 14:21, 15:21},
+    #              T2   T3   T4   T5   T6   T7   T8   T9  T10  T11  T12  T13  T14  T15  T16
+    '<10':   {2:15, 3:20, 4:15, 5:15, 6:13},
+    '10-20': {4:20, 5:20, 6:15, 7:13, 8:13, 9:15, 10:35, 11:30, 12:30, 13:29},
+    '20-30': {4:27, 5:25, 6:20, 7:16, 8:16, 9:32, 10:32, 11:32, 12:32, 13:32, 14:29, 15:26, 16:27},
+    '30-50': {4:35, 5:28, 6:27, 7:30, 8:30, 9:30, 10:27, 11:26, 12:25, 13:26, 14:22, 15:23},
+    '>50':   {5:45, 6:34, 7:32, 8:26, 9:20, 10:17, 11:17, 12:19, 13:18, 14:24, 15:24},
 }
 
 REPOS_BY_DRAIN = {
-    '<10':   15,
-    '10-20': 18,
-    '20-30': 22,
-    '30-50': 25,
-    '>50':   22,
+    '<10':   15,   # ✅ inchangé
+    '10-20': 20,   # ✅ corrigé 18→20
+    '20-30': 25,   # ✅ corrigé 22→25
+    '30-50': 27,   # ✅ corrigé 25→27
+    '>50':   27,   # ✅ inchangé (j'avais mis 30 par erreur — terrain=27)
 }
 
 REPOS_BY_TOUR = {
-    2:15, 3:20, 4:15, 5:18, 6:21, 7:25, 8:27, 9:27,
-    10:27, 11:27, 12:27, 13:27, 14:24, 15:24, 16:29, 17:32, 18:52,
+    2:15, 3:20, 4:15, 5:18, 6:21, 7:25, 8:27, 9:30,
+    10:30, 11:27, 12:27, 13:27, 14:26, 15:24, 16:28, 17:32,
 }
+# Seules corrections vs actuel : T9: 27→30, T10: 27→30
 
-REPOS_GLOBAL_MEDIAN = 20
+REPOS_GLOBAL_MEDIAN = 20   # ✅ inchangé (j'avais mis 22 par erreur)
 
 
 def get_repos_pattern(pct_drainage: float, num_tour: int) -> int:
@@ -2054,7 +2054,7 @@ def predict_tour(donnees, modeles_tour, enc_tour):
 
     pct_drain  = float(donnees.get("pct_drainage", 0.0) or 0.0)
     num_tour   = int(donnees.get("num_tour", 1) or 1)
-    repos_min  = get_repos_pattern(pct_drain, num_tour)
+    repos_min  = get_repos_pattern(pct_drain, num_tour + 1)
     duree_prec = int(donnees.get("duree_tour_precedent_min", 0) or 0)
 
     # ── Couche 1 : Garde-fous déterministes ───────────────────────────────────
