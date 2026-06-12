@@ -2188,13 +2188,16 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                   if (!chartData?.data) return []
                   const fromBound = chartZoomFrom ? chartZoomFrom + ' 00:00:00' : null
                   const toBound   = chartZoomTo   ? chartZoomTo   + ' 23:59:59' : null
-                  return [...chartData.data].reverse().filter(d => {
+                  const filtered = [...chartData.data].reverse().filter(d => {
                     if (!fromBound && !toBound) return true
                     const ts = d.timestamp.replace('T', ' ')
                     if (fromBound && ts < fromBound) return false
                     if (toBound   && ts > toBound)   return false
                     return true
-                  }).map(d => ({ timestamp: d.timestamp, value: d.ec_actual ?? 0 }))
+                  })
+                  const progVal = filtered.find(d => d.ec_prog && d.ec_prog > 0)?.ec_prog ?? null
+                  if (!progVal) return []
+                  return filtered.map(d => ({ timestamp: d.timestamp, value: progVal }))
                 })(),
               },
               {
@@ -2207,14 +2210,16 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                   if (!chartData?.data) return []
                   const fromBound = chartZoomFrom ? chartZoomFrom + ' 00:00:00' : null
                   const toBound   = chartZoomTo   ? chartZoomTo   + ' 23:59:59' : null
-                  return [...chartData.data].reverse().filter(d => {
+                  const filtered = [...chartData.data].reverse().filter(d => {
                     if (!fromBound && !toBound) return true
                     const ts = d.timestamp.replace('T', ' ')
                     if (fromBound && ts < fromBound) return false
                     if (toBound   && ts > toBound)   return false
                     return true
-                  }).filter(d => d.ec_prog && d.ec_prog > 0)
-                    .map(d => ({ timestamp: d.timestamp, value: d.ec_prog }))
+                  })
+                  const progVal = filtered.find(d => d.ph_prog && d.ph_prog > 0)?.ph_prog ?? null
+                  if (!progVal) return []
+                  return filtered.map(d => ({ timestamp: d.timestamp, value: progVal }))
                 })(),
               },
             ]}
