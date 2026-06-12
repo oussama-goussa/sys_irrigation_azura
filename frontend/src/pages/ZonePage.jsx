@@ -2217,7 +2217,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                     if (toBound   && ts > toBound)   return false
                     return true
                   })
-                  const progVal = filtered.find(d => d.ph_prog && d.ph_prog > 0)?.ph_prog ?? null
+                  const progVal = filtered.find(d => d.ec_prog && d.ec_prog > 0)?.ec_prog ?? null
                   if (!progVal) return []
                   return filtered.map(d => ({ timestamp: d.timestamp, value: progVal }))
                 })(),
