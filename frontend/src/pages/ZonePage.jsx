@@ -1978,7 +1978,11 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                 unit: 'mS/cm',
                 decimals: 2,
                 data: buildSeries('ec_actual'),
-                refLine: sensor.ec_prog ?? null,
+                refLine: (() => {
+                  const vals = (chartData?.data || []).map(d => d.ec_prog).filter(v => v && v > 0)
+                  if (!vals.length) return null
+                  return vals.sort((a,b) => vals.filter(x=>x===b).length - vals.filter(x=>x===a).length)[0]
+                })(),
                 refColor: '#34d96f88',
               }
             ]}
@@ -1997,7 +2001,11 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
                 unit: '',
                 decimals: 2,
                 data: buildSeries('ph_actual'),
-                refLine: sensor.ph_prog ?? null,
+                refLine: (() => {
+                  const vals = (chartData?.data || []).map(d => d.ph_prog).filter(v => v && v > 0)
+                  if (!vals.length) return null
+                  return vals.sort((a,b) => vals.filter(x=>x===b).length - vals.filter(x=>x===a).length)[0]
+                })(),
                 refColor: '#4d9de088',
               }
             ]}
