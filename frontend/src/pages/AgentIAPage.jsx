@@ -684,26 +684,26 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, onClose, nbr
       {result && (
         <div style={{
           padding: '8px 12px', borderRadius: 6, marginBottom: 8,
-          background: result.prediction?.action === 'CONTINUER'
+          background: result.action === 'CONTINUER'
             ? (dark ? 'rgba(52,217,111,0.10)' : 'rgba(24,120,63,0.07)')
             : (dark ? 'rgba(239,68,68,0.10)' : 'rgba(239,68,68,0.07)'),
-          border: `1px solid ${result.prediction?.action === 'CONTINUER' ? C.green : C.red}30`,
+          border: `1px solid ${result.action === 'CONTINUER' ? C.green : C.red}30`,
         }}>
-          <div style={{ fontWeight: 800, fontSize: 13, color: result.prediction?.action === 'CONTINUER' ? C.green : C.red }}>
+          <div style={{ fontWeight: 800, fontSize: 13, color: result.action === 'CONTINUER' ? C.green : C.red }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-              {result.prediction?.action === 'CONTINUER'
+              {result.action === 'CONTINUER'
                 ? <><Play size={12} fill="currentColor" /> CONTINUER</>
                 : <><Square size={12} fill="currentColor" /> STOP</>}
             </span>
           </div>
-          {result.prediction?.duree_suivant && (
+          {result.duree_suivant && (
             <div style={{ fontSize: 11, color: C.textMuted, marginTop: 3 }}>
-              Durée tour suivant : <strong style={{ color: C.text }}>{result.prediction.duree_suivant} min</strong>
-              {result.prediction?.repos_min && ` · Repos : ${result.prediction.repos_min} min`}
+              Durée tour suivant : <strong style={{ color: C.text }}>{result.duree_suivant} min</strong>
+              {result.repos_min && ` · Repos : ${result.repos_min} min`}
             </div>
           )}
-          {result.prediction?.message && (
-            <div style={{ fontSize: 10, color: C.textDim, marginTop: 2 }}>{result.prediction.message}</div>
+          {result.message && (
+            <div style={{ fontSize: 10, color: C.textDim, marginTop: 2 }}>{result.message}</div>
           )}
         </div>
       )}
