@@ -646,7 +646,7 @@ function MultiSeriesChart({ series, globalMin, globalMax, C, dark, onSelectRange
                   }, null)
                   const baseColor = s.color.length > 7 ? s.color.slice(0, 7) : s.color
                   return (
-                    <text key={s.label} x={tx + 8} y={ty + 12 + (i + 1) * 14}
+                    <text key={s.label} x={tx + 8} y={ty + 18 + (i + 1) * 14}
                       fill={baseColor} fontSize="10" fontWeight="700">
                       {pt ? `${Number(pt.value).toFixed(s.decimals || 1)} ${s.unit || ''}` : '—'}
                     </text>
