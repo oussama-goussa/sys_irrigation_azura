@@ -396,7 +396,7 @@ function MiniChart({ data, color, label, unit, C, dark, onSelectRange, decimals 
       {/* Crosshair + tooltip */}
       {cursor?.point && (() => {
         const p   = cursor.point
-        const tipW = 120, tipH = 50
+        const tipW = 140, tipH = 50
         const tx = p.x + 10 + tipW > W - PAD.right ? p.x - tipW - 10 : p.x + 10
         const ty = Math.max(PAD.top, Math.min(p.y - tipH/2, PAD.top + chartH - tipH))
         const time = new Date(p.timestamp).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})
@@ -409,11 +409,11 @@ function MiniChart({ data, color, label, unit, C, dark, onSelectRange, decimals 
             <rect x={tx} y={ty} width={tipW} height={tipH} rx="6"
               fill={dark?'#1e2a1e':'#fff'} stroke={baseColor} strokeWidth="1.2"
               style={{filter:'drop-shadow(0 2px 8px rgba(0,0,0,0.2))'}} />
-            <text x={tx+10} y={ty+16}
+            <text x={tx+10} y={ty+18}
               fill={dark?'rgba(255,255,255,0.5)':'rgba(0,0,0,0.4)'} fontSize="10">
               {time}
             </text>
-            <text x={tx+10} y={ty+34} fill={color} fontSize="13" fontWeight="700">
+            <text x={tx+10} y={ty+38} fill={color} fontSize="13" fontWeight="700">
               {`${Number(p.value).toFixed(decimals)} ${unit}`}
             </text>
           </g>
