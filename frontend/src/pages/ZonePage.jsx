@@ -628,7 +628,7 @@ function MultiSeriesChart({ series, globalMin, globalMax, C, dark, onSelectRange
             )
           })}
           {(() => {
-            const tipW = 130, tipH = 10 + series.length * 16
+            const tipW = 150, tipH = 10 + series.length * 16
             const tx = cursor.x + 10 + tipW > W - PAD.right ? cursor.x - tipW - 10 : cursor.x + 10
             const ty = Math.max(PAD.top, Math.min((cursor.y ?? PAD.top) - tipH/2, PAD.top + chartH - tipH))
             const time = new Date(cursor.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
