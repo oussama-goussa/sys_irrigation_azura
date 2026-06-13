@@ -628,7 +628,7 @@ function MultiSeriesChart({ series, globalMin, globalMax, C, dark, onSelectRange
             )
           })}
           {(() => {
-            const tipW = 140, tipH = 20 + series.length * 16
+            const tipW = 120, tipH = 15 + series.length * 16
             const tx = cursor.x + 10 + tipW > W - PAD.right ? cursor.x - tipW - 10 : cursor.x + 10
             const ty = Math.max(PAD.top, Math.min((cursor.y ?? PAD.top) - tipH/2, PAD.top + chartH - tipH))
             const time = new Date(cursor.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
@@ -637,7 +637,7 @@ function MultiSeriesChart({ series, globalMin, globalMax, C, dark, onSelectRange
                 <rect x={tx} y={ty} width={tipW} height={tipH} rx="5"
                   fill={dark ? '#1e2a1e' : '#fff'} stroke={series[0]?.color || '#34d96f'} strokeWidth="1.2"
                   style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.2))' }} />
-                <text x={tx + 8} y={ty + 12}
+                <text x={tx + 8} y={ty + 15}
                   fill={dark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)'} fontSize="9">{time}</text>
                 {series.map((s, i) => {
                   const pt = (s.data || []).reduce((best, d) => {
