@@ -401,7 +401,10 @@ function MiniChart({ data, color, label, unit, C, dark, onSelectRange, decimals 
         if (tx + tipW > W - PAD.right) tx = p.x - tipW - 10
         if (tx < PAD.left) tx = PAD.left
         const tyAbove = p.y - tipH - 10
-        const ty = tyAbove >= PAD.top ? tyAbove : PAD.top + 2
+        const tyBelow = p.y + 10
+        const ty = tyAbove >= PAD.top
+          ? tyAbove
+          : (tyBelow + tipH <= PAD.top + chartH ? tyBelow : PAD.top + 2)
         const time = new Date(p.timestamp).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})
         return (
           <g>
