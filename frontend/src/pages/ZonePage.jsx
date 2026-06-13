@@ -337,7 +337,7 @@ function MiniChart({ data, color, label, unit, C, dark, onSelectRange, decimals 
 
   return (
     <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`}
-      style={{ width:'100%', height:120, cursor: dragging ? 'col-resize' : 'crosshair', userSelect:'none' }}
+      style={{ width:'100%', height:120, cursor: dragging ? 'col-resize' : 'crosshair', userSelect:'none', overflow:'visible' }}
       onMouseMove={handleMouseMove}
       onMouseLeave={() => { setCursor(null); if(dragging){ setDragging(false); setDrag(null) } }}
       onMouseDown={handleMouseDown}
