@@ -396,7 +396,7 @@ function MiniChart({ data, color, label, unit, C, dark, onSelectRange, decimals 
       {/* Crosshair + tooltip */}
       {cursor?.point && (() => {
         const p   = cursor.point
-        const tipW = 140, tipH = 50
+        const tipW = 140, tipH = 60
         const tx = p.x + 10 + tipW > W - PAD.right ? p.x - tipW - 10 : p.x + 10
         const ty = Math.max(PAD.top, Math.min(p.y - tipH/2, PAD.top + chartH - tipH))
         const time = new Date(p.timestamp).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})
@@ -628,7 +628,7 @@ function MultiSeriesChart({ series, globalMin, globalMax, C, dark, onSelectRange
             )
           })}
           {(() => {
-            const tipW = 150, tipH = 10 + series.length * 16
+            const tipW = 140, tipH = 10 + series.length * 16
             const tx = cursor.x + 10 + tipW > W - PAD.right ? cursor.x - tipW - 10 : cursor.x + 10
             const ty = Math.max(PAD.top, Math.min((cursor.y ?? PAD.top) - tipH/2, PAD.top + chartH - tipH))
             const time = new Date(cursor.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
