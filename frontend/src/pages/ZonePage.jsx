@@ -396,11 +396,10 @@ function MiniChart({ data, color, label, unit, C, dark, onSelectRange, decimals 
       {/* Crosshair + tooltip */}
       {cursor?.point && (() => {
         const p   = cursor.point
-        const tipW = 115, tipH = 42
+        const tipW = 120, tipH = 50
         let tx = p.x + 10
         if (tx + tipW > W - PAD.right) tx = p.x - tipW - 10
         if (tx < PAD.left) tx = PAD.left
-        // Toujours au-dessus du point, sinon colle au haut du chart
         const tyAbove = p.y - tipH - 10
         const ty = tyAbove >= PAD.top ? tyAbove : PAD.top + 2
         const time = new Date(p.timestamp).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})
@@ -410,14 +409,14 @@ function MiniChart({ data, color, label, unit, C, dark, onSelectRange, decimals 
               stroke={baseColor} strokeWidth="1" strokeDasharray="3,3" opacity="0.6" />
             <circle cx={p.x} cy={p.y} r="4"
               fill={baseColor} stroke={dark?'#1a1a1a':'#fff'} strokeWidth="2" />
-            <rect x={tx} y={ty} width={tipW} height={tipH} rx="5"
+            <rect x={tx} y={ty} width={tipW} height={tipH} rx="6"
               fill={dark?'#1e2a1e':'#fff'} stroke={baseColor} strokeWidth="1.2"
               style={{filter:'drop-shadow(0 2px 8px rgba(0,0,0,0.2))'}} />
-            <text x={tx+8} y={ty+13}
-              fill={dark?'rgba(255,255,255,0.45)':'rgba(0,0,0,0.45)'} fontSize="9">
+            <text x={tx+10} y={ty+16}
+              fill={dark?'rgba(255,255,255,0.5)':'rgba(0,0,0,0.4)'} fontSize="10">
               {time}
             </text>
-            <text x={tx+8} y={ty+28} fill={color} fontSize="12" fontWeight="700">
+            <text x={tx+10} y={ty+34} fill={color} fontSize="13" fontWeight="700">
               {Number(p.value).toFixed(decimals)} {unit}
             </text>
           </g>
