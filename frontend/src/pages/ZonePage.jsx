@@ -400,7 +400,7 @@ function MiniChart({ data, color, label, unit, C, dark, onSelectRange, decimals 
         let tx = p.x + 10
         if (tx + tipW > W - PAD.right) tx = p.x - tipW - 10
         if (tx < PAD.left) tx = PAD.left
-        const ty  = Math.max(PAD.top, Math.min(p.y - tipH/2, PAD.top+chartH-tipH))
+        const ty = Math.max(PAD.top, Math.min(p.y - tipH / 2, H - tipH - 4))
         const time = new Date(p.timestamp).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})
         return (
           <g>
@@ -517,7 +517,9 @@ function MultiSeriesChart({ series, globalMin, globalMax, C, dark, onSelectRange
   function handleMouseMove(e) {
     const svgX = getSvgX(e)
     const ts = findNearestTs(svgX)
-    setCursor({ x: toX(ts), ts })
+    const rect2 = svgRef.current?.getBoundingClientRect()
+    const svgY = rect2 ? ((e.clientY - rect2.top) / rect2.height) * H : PAD.top
+    setCursor({ x: toX(ts), ts, y: svgY })
     if (dragging) setDrag(d => ({ ...d, endX: svgX }))
   }
 
@@ -632,7 +634,7 @@ function MultiSeriesChart({ series, globalMin, globalMax, C, dark, onSelectRange
             let tx = cursor.x + 10
             if (tx + tipW > W - PAD.right) tx = cursor.x - tipW - 10
             if (tx < PAD.left) tx = PAD.left
-            const ty = PAD.top + 4
+            const ty = Math.max(PAD.top, Math.min(cursor.y ?? PAD.top, H - tipH - 4))
             const time = new Date(cursor.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
             return (
               <g>
