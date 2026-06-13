@@ -400,7 +400,7 @@ function MiniChart({ data, color, label, unit, C, dark, onSelectRange, decimals 
         let tx = p.x + 10
         if (tx + tipW > W - PAD.right) tx = p.x - tipW - 10
         if (tx < PAD.left) tx = PAD.left
-        const ty = Math.max(PAD.top, Math.min(p.y - tipH / 2, H - tipH - 4))
+        const ty = Math.max(PAD.top, Math.min(p.y - tipH - 8, PAD.top + chartH - tipH))
         const time = new Date(p.timestamp).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})
         return (
           <g>
@@ -411,12 +411,12 @@ function MiniChart({ data, color, label, unit, C, dark, onSelectRange, decimals 
             <rect x={tx} y={ty} width={tipW} height={tipH} rx="5"
               fill={dark?'#1e2a1e':'#fff'} stroke={baseColor} strokeWidth="1.2"
               style={{filter:'drop-shadow(0 2px 8px rgba(0,0,0,0.2))'}} />
-            <text x={tx+8} y={ty+14} fill={color} fontSize="11" fontWeight="630">
-              {Number(p.value).toFixed(decimals)} {unit}
-            </text>
-            <text x={tx+8} y={ty+28}
+            <text x={tx+8} y={ty+13}
               fill={dark?'rgba(255,255,255,0.45)':'rgba(0,0,0,0.45)'} fontSize="9">
               {time}
+            </text>
+            <text x={tx+8} y={ty+28} fill={color} fontSize="12" fontWeight="700">
+              {Number(p.value).toFixed(decimals)} {unit}
             </text>
           </g>
         )
