@@ -30,7 +30,7 @@ class AIRecommandation(Base):
     alerte            = Column(String(50))
     quantite_eau_mm    = Column(Float)
     volume_cc_goutteur = Column(Float)   # Volume en cc/goutteur
-    duree_min          = Column(Integer)
+    opt_duree_tour1_min = Column(Integer)
 
     # ── Système PRT (Poids-Readings Tour) ──
     # Heures de début
@@ -73,7 +73,7 @@ class AIRecommandation(Base):
             "alerte"                 : self.alerte,
             "quantite_eau_mm"       : self.quantite_eau_mm,
             "volume_cc_goutteur"    : self.volume_cc_goutteur,
-            "duree_min"              : self.duree_min,
+            "opt_duree_tour1_min"   : self.opt_duree_tour1_min,
 
             # ── Système PRT (Poids-Readings Tour) ──
             "prt"                    : {

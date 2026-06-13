@@ -28,6 +28,13 @@ from models.sensor_model import Device, SensorReading
 from models.ai_recommendation_model import (
     AIRecommandation, AIConfigDevice, AIDecisionTour
 )
+
+import math
+def calculer_vpd_interne(ta, hr):
+    es = 0.61078 * math.exp((17.27 * ta) / (ta + 237.3))
+    ea = es * (hr / 100.0)
+    return max(0.0, es - ea)
+
 # predict_matin et predict_tour sont définis localement ci-dessous (copiés de decision_agent.py)
 
 # ════════════════════════════════════════════════════════════════
@@ -216,6 +223,92 @@ def recuperer_meteo_open_meteo(lat: float, lon: float, date_str: str) -> dict:
         logger.error(f"Erreur Open-Meteo : {e}")
         return {}
 
+def recuperer_meteo_open_meteo_horaire(lat: float, lon: float, date_str: str, heure_str: str) -> dict:
+    """
+    Météo HORAIRE Open-Meteo au moment de la fin du tour actuel ("heure_str" = HH:MM,
+    ex: irrigation_tours.fin). L'heure est arrondie (floor) à l'heure pleine
+    (09:48 → 09:00) pour correspondre aux données horaires Open-Meteo.
+
+    Retourne les features 'meteo_actuel_*' + alertes '_actuel' du modèle Tour/Tour v7.x.
+    """
+    try:
+        from datetime import date as _date
+        date_cible = datetime.strptime(date_str, "%Y-%m-%d").date()
+        today      = _date.today()
+
+        hourly_vars = [
+            "temperature_2m", "relative_humidity_2m", "precipitation",
+            "windspeed_10m", "shortwave_radiation",
+            "vapour_pressure_deficit", "surface_pressure",
+        ]
+
+        url = "https://archive-api.open-meteo.com/v1/archive" if date_cible < today \
+              else "https://api.open-meteo.com/v1/forecast"
+
+        params = {
+            "latitude"  : lat,
+            "longitude" : lon,
+            "start_date": date_str,
+            "end_date"  : date_str,
+            "hourly"    : hourly_vars,
+            "timezone"  : "Africa/Casablanca",
+        }
+
+        resp = requests.get(url, params=params, timeout=15)
+        resp.raise_for_status()
+        data = resp.json()
+
+        hourly = data.get("hourly", {})
+        times  = hourly.get("time", [])
+
+        try:
+            h = int(str(heure_str).split(":")[0])
+        except (ValueError, IndexError, AttributeError):
+            h = datetime.now().hour
+
+        target = f"{date_str}T{h:02d}:00"
+        idx = times.index(target) if target in times else (len(times) - 1 if times else 0)
+
+        def _safe(key, default=0.0):
+            vals = hourly.get(key, [])
+            if idx < len(vals) and vals[idx] is not None:
+                return float(vals[idx])
+            return default
+
+        t_act     = _safe("temperature_2m")
+        hr_act    = _safe("relative_humidity_2m")
+        vpd_act   = _safe("vapour_pressure_deficit")
+        vent_act  = _safe("windspeed_10m")
+        rs_act    = _safe("shortwave_radiation")
+        pluie_act = _safe("precipitation")
+        press_act = _safe("surface_pressure")
+
+        result = {
+            "meteo_actuel_temperature_2m"          : t_act,
+            "meteo_actuel_vapour_pressure_deficit" : vpd_act,
+            "meteo_actuel_relative_humidity_2m"    : hr_act,
+            "meteo_actuel_windspeed_10m"           : vent_act,
+            "meteo_rs_wm2_actuel"                  : rs_act,
+            "meteo_pression_actuelle_kPa"          : round(press_act / 10.0, 2) if press_act else 0.0,
+
+            "alerte_chergui_actuel"      : 1 if (t_act > 35 and vpd_act > 2.5) else 0,
+            "alerte_pluie_actuel"        : 1 if pluie_act > 1.5 else 0,
+            "alerte_pluie_legere_actuel" : 1 if (0.1 < pluie_act <= 1.5) else 0,
+            "alerte_brouillard_actuel"   : 1 if (hr_act > 90 and rs_act < 300) else 0,
+            "alerte_vpd_stress_actuel"   : 1 if vpd_act > 1.5 else 0,
+            "alerte_vent_actuel"         : 1 if vent_act > 10.8 else 0,
+        }
+
+        logger.success(
+            f"Météo 'actuelle' {date_str} {h:02d}:00 (fin tour={heure_str}) : "
+            f"T={t_act}°C HR={hr_act}% VPD={vpd_act}kPa vent={vent_act}km/h "
+            f"rs={rs_act}W/m² pluie={pluie_act}mm"
+        )
+        return result
+
+    except Exception as e:
+        logger.error(f"Erreur Open-Meteo horaire 'actuel' : {e}")
+        return {}
 
 def _recuperer_meteo_capteurs(db: Session, device_id: int) -> dict:
     """
@@ -1503,7 +1596,7 @@ def sauvegarder_recommandation(db: Session, resultat: dict) -> AIRecommandation:
         alerte                = consignes.get("alerte"),
         quantite_eau_mm       = consignes.get("quantite_eau_mm"),
         volume_cc_goutteur    = consignes.get("volume_cc_goutteur"),
-        duree_min             = consignes.get("duree_min"),
+        opt_duree_tour1_min   = consignes.get("opt_duree_tour1_min"),
 
         # Données PRT
         poids_soir_kg         = features.get("poids_soir_kg"),
@@ -1581,7 +1674,7 @@ def generer_decision_tour(
                 AIRecommandation.device_id == device_id,
                 AIRecommandation.date      == date_cible_req,
             ).first()
-            donnees_tour["duree_tour_precedent_min"] = rec_matin.duree_min if rec_matin else 0
+            donnees_tour["duree_tour_precedent_min"] = rec_matin.opt_duree_tour1_min if rec_matin else 0
         else:
             decision_prec = db.query(AIDecisionTour).filter(
                 AIDecisionTour.device_id == device_id,
@@ -1600,6 +1693,34 @@ def generer_decision_tour(
             + (" | ".join(f"T{t.num_tour}→{t.pct_drainage:.1f}%" for t in tours_precedents)
                if tours_precedents else "aucun tour précédent")
         )
+        
+        # Récupération capteur temps réel
+        derniere_lecture = db.query(SensorReading)\
+            .filter(SensorReading.device_id == device_id)\
+            .order_by(SensorReading.timestamp.desc())\
+            .first()
+
+        if derniere_lecture:
+            t_capteur = derniere_lecture.avg_temp
+            h_capteur = derniere_lecture.humidity
+            
+            if t_capteur and h_capteur:
+                # Calcul rapide du VPD local
+                vpd_interne = calculer_vpd_interne(float(t_capteur), float(h_capteur))
+                
+                # Vérification seuils critiques
+                if float(t_capteur) > 38.0 or vpd_interne > 3.0:
+                    logger.warning(f"🚨 ALERTE CHERGUI : {t_capteur}°C, {vpd_interne}kPa. Sortie forcée.")
+                    # On court-circuite la prédiction IA
+                    return {
+                        "disponible": True,
+                        "device_id": device_id,
+                        "decision": {
+                            "decision": "CONTINUER",
+                            "raison": "SECURITE_SOUCHAUFFE_INTERNE",
+                            "duree_tour_suivant_min": 12 # Valeur de sécurité
+                        }
+                    }
 
         # Si drainage dispo → prédire
         _, _, modeles_tour, enc_tour = _get_modeles()
@@ -1815,7 +1936,7 @@ def predict_matin(donnees, modeles_matin, enc_matin, ec_bassin=0.9,
         "alerte_chergui", "alerte_pluie", "alerte_brouillard", "alerte_vpd_stress",
     ]
     TARGETS_REG = ["opt_nb_cycles", "opt_apport_total_mm", "opt_EC_cible_dSm",
-                   "opt_pH_cible", "opt_duree_min"]
+                   "opt_pH_cible", "opt_duree_tour1_min"]
     TARGETS_CLF = ["opt_heure_demarrage", "scenario_meteo",
                    "opt_alerte_chergui", "opt_alerte_pluie", "opt_alerte_brouillard"]
 
@@ -1864,7 +1985,7 @@ def predict_matin(donnees, modeles_matin, enc_matin, ec_bassin=0.9,
     nb_cycles = resultats.get("opt_nb_cycles")
     heure_debut = resultats.get("opt_heure_demarrage")
     scenario  = resultats.get("scenario_meteo", "2_ENSOLEILLE")
-    duree_min = resultats.get("opt_duree_min", 10.0)
+    opt_duree_tour1_min = resultats.get("opt_duree_tour1_min")
     apport_mm = resultats.get("opt_apport_total_mm")
 
     # Alertes : comparer string "1" ET int 1 (LabelEncoder retourne string)
@@ -1886,7 +2007,7 @@ def predict_matin(donnees, modeles_matin, enc_matin, ec_bassin=0.9,
         "quantite_eau_mm":    round(apport_mm, 1) if apport_mm is not None else None,
         "volume_total_Lha":   round(apport_mm * 10_000, 0) if apport_mm is not None else None,
         "volume_cc_goutteur": round(apport_mm * 150.0) if apport_mm is not None else None,
-        "duree_min":          int(round(max(4.0, min(14.0, duree_min)))),
+        "opt_duree_tour1_min": int(round(max(4.0, min(14.0, opt_duree_tour1_min)))),
         "_ml_incomplete":     len(manquantes) > 0,
         "_ml_manquantes":     manquantes,
     }
@@ -2148,7 +2269,7 @@ def predict_tour(donnees, modeles_tour, enc_tour):
                 med = lag_medians.get(col)
                 if med is not None:
                     donnees[col] = med
-                    logger.debug(f"Bootstrap lag {col} tour {num_tour} → médiane={med:.2f}")
+                    logger.debug(f"Bootstrap lag {col} tour {num_tour} → médiane={med:.2f}")    
 
     FEATURES_TOUR = [
         "pct_drainage", "ec_drainage", "ph_drainage", "num_tour", "v_apport",
@@ -2156,8 +2277,11 @@ def predict_tour(donnees, modeles_tour, enc_tour):
         "ec_drainage_lag1", "ec_drainage_lag2",
         "opt_vol_cumule_L", "opt_vol_jour_cible_L", "opt_vol_ratio", "opt_vol_restant_L",
         "opt_EC_drain_cible_dSm", "opt_nb_cycles", "opt_max_cycles_stade",
-        "meteo_T_max_C", "meteo_VPD_max_kPa", "meteo_ET0_mm_jour",
-        "alerte_chergui", "alerte_pluie", "alerte_brouillard",
+        "meteo_actuel_temperature_2m", "meteo_actuel_vapour_pressure_deficit",
+        "meteo_actuel_relative_humidity_2m", "meteo_actuel_windspeed_10m",
+        "meteo_rs_wm2_actuel", "meteo_pression_actuelle_kPa",
+        "alerte_chergui_actuel", "alerte_pluie_actuel", "alerte_pluie_legere_actuel",
+        "alerte_brouillard_actuel", "alerte_vpd_stress_actuel", "alerte_vent_actuel",
         "ec_bassin", "ec_apport", "ph_apport", "drain_zone", "scenario_meteo",
     ]
 

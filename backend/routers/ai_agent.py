@@ -38,10 +38,9 @@ from services.ai_service import (
     detecter_heure_matin_et_debut_tour,
     calculer_prt_decision,
     recuperer_meteo_open_meteo,
+    recuperer_meteo_open_meteo_horaire,   # ← NOUVEAU
     _calculer_max_cycles_stade,
     PRT_SEUILS,
-    DEFAULT_LAT,
-    DEFAULT_LON,
 )
 
 
@@ -446,8 +445,8 @@ def post_decision_tour(
         AIRecommandation.date      == today,
     ).first()
 
-    nb_tours_cible = rec.nb_tours if rec else 10
-    ec_cible       = rec.ec_cible if rec else 2.3
+    nb_tours_cible = rec.nb_tours
+    ec_cible       = rec.ec_cible
 
     # ── Construire les données pour predict_tour ──
     # Récupérer décisions précédentes pour les lags
@@ -484,17 +483,17 @@ def post_decision_tour(
         vol_jour_cible = rec.quantite_eau_mm * 150.0
     
     features_matin = (rec.features_utilises or {}) if rec else {}
-    t_max_reel   = features_matin.get("meteo_T_max_C",                28.0)
-    vpd_max_reel = features_matin.get("meteo_VPD_max_kPa",             1.8)
-    et0_reel     = features_matin.get("meteo_ET0_mm_jour",             5.5)  
+    t_max_reel   = features_matin.get("meteo_T_max_C")
+    vpd_max_reel = features_matin.get("meteo_VPD_max_kPa")
+    et0_reel     = features_matin.get("meteo_ET0_mm_jour")  
 
     # ── Détection pluie en temps réel (Open-Meteo) ───────────────────────────
     # La recommandation matin est calculée à 06h00 avec la météo prévue.
     # Si la pluie arrive plus tard dans la journée, alerte_pluie resterait
     # à 0 en ne lisant que la BDD. On re-consulte Open-Meteo maintenant
     # pour capturer toute pluie surprise apparue après 06h00.
-    lat = cfg.latitude or DEFAULT_LAT
-    lon = cfg.longitude or DEFAULT_LON
+    lat = cfg.latitude
+    lon = cfg.longitude
     date_str_aujourd_hui = today.isoformat()
 
     # ── Calcul jours depuis plantation → max cycles du stade réel ────────────
@@ -568,16 +567,44 @@ def post_decision_tour(
     # Brouillard final : détection HR temps réel
     alerte_brouillard_finale = alerte_brouillard_reel
 
+    # ── Météo "ACTUELLE" au moment de la fin du tour (modèle ML v7.x) ────────
+    # Le modèle Tour/Tour n'utilise plus les agrégats journaliers
+    # (meteo_T_max_C, meteo_VPD_max_kPa, ...) mais la météo horaire RÉELLE
+    # au moment "heure_fin" du tour actuel (ex: fin tour = 09:48 → 09:00).
+    if tour_netafim and tour_netafim.fin:
+        heure_fin_tour_str = tour_netafim.fin.strftime("%H:%M")
+    else:
+        heure_fin_tour_str = datetime.now().strftime("%H:%M")
+
+    try:
+        meteo_actuel = recuperer_meteo_open_meteo_horaire(
+            lat, lon, date_str_aujourd_hui, heure_fin_tour_str
+        )
+    except Exception as _e:
+        logger.warning(f"[METEO ACTUELLE] Échec → valeurs par défaut : {_e}")
+        meteo_actuel = {}
+
+    # Valeurs par défaut si l'appel API échoue
+    meteo_actuel.setdefault("meteo_actuel_temperature_2m", t_max_reel)
+    meteo_actuel.setdefault("meteo_actuel_vapour_pressure_deficit", vpd_max_reel)
+    meteo_actuel.setdefault("meteo_actuel_relative_humidity_2m", 60.0)
+    meteo_actuel.setdefault("meteo_actuel_windspeed_10m", 10.0)
+    meteo_actuel.setdefault("meteo_rs_wm2_actuel", 0.0)
+    meteo_actuel.setdefault("meteo_pression_actuelle_kPa", 10.1)
+    for _k in ["alerte_chergui_actuel", "alerte_pluie_actuel", "alerte_pluie_legere_actuel",
+               "alerte_brouillard_actuel", "alerte_vpd_stress_actuel", "alerte_vent_actuel"]:
+        meteo_actuel.setdefault(_k, 0)
+
     from services.ai_service import EC_DRAIN_RATIO_STADE, _calculer_stade_et_kc
     _stade_actuel, _ = _calculer_stade_et_kc(jours_depuis_plantation)
     _ratio_drain = EC_DRAIN_RATIO_STADE.get(_stade_actuel, 1.65)
 
     donnees_tour = {
-        "pct_drainage"          : pct_drainage or 0.0,
-        "ec_drainage"           : body.ec_drainage or 0.0,
-        "ph_drainage"           : body.ph_drainage or 0.0,
+        "pct_drainage"          : pct_drainage,
+        "ec_drainage"           : body.ec_drainage,
+        "ph_drainage"           : body.ph_drainage,
         "num_tour"              : body.num_tour,
-        "v_apport"              : v_apport or 0.0,
+        "v_apport"              : v_apport,
         "_pct_drain_prev"       : pct_lag1 or 0.0,
         "pct_drainage_lag1"     : pct_lag1 or 0.0,
         "pct_drainage_lag2"     : pct_lag2 or 0.0,
@@ -586,21 +613,25 @@ def post_decision_tour(
         "ec_drainage_lag2"      : ec_lag2 or 0.0,
         "opt_vol_cumule_L"      : vol_cumule,
         "opt_vol_jour_cible_L"  : vol_jour_cible,
-        "opt_EC_drain_cible_dSm": (ec_cible or 2.3) * _ratio_drain,
-        "opt_nb_cycles"         : nb_tours_cible or 10,
+        "opt_EC_drain_cible_dSm": ec_cible * _ratio_drain,
+        "opt_nb_cycles"         : nb_tours_cible,
         "opt_max_cycles_stade"  : max_cycles_stade,
-        "ec_bassin"             : cfg.ec_eau_brute or 0.8,
-        "ec_apport"             : tour_netafim.ec_apport if tour_netafim else (ec_cible or 2.3),
-        "ph_apport"             : tour_netafim.ph_apport if tour_netafim else 6.0,
-        "meteo_T_max_C"         : t_max_reel,
-        "meteo_VPD_max_kPa"     : vpd_max_reel,
-        "meteo_ET0_mm_jour"     : et0_reel,
+        "ec_bassin"             : cfg.ec_eau_brute,
+        "ec_apport"             : tour_netafim.ec_apport,
+        "ph_apport"             : tour_netafim.ph_apport,
+
+        # Alertes "matin" — utilisées uniquement par les garde-fous déterministes
         "alerte_chergui"        : alerte_chergui_finale,
         "alerte_pluie"          : alerte_pluie_finale,
         "alerte_brouillard"     : alerte_brouillard_finale,
+
         "scenario_meteo"        : rec.scenario_meteo if rec else "2_ENSOLEILLE",
         "mois"                  : today.month,
         "heure_debut"           : body.donnees_supplementaires.get("heure_debut"),
+
+        # ── Météo "ACTUELLE" (heure de fin du tour) + alertes _actuel — modèle ML v7.x ──
+        **meteo_actuel,
+
         **body.donnees_supplementaires,
     }
 
@@ -901,10 +932,10 @@ def get_prt_device(
             resultat_ml = generer_recommandation_matin(
                 device_id       = device_id,
                 date_str        = date_str,
-                ec_bassin       = cfg.ec_eau_brute or 0.8,
+                ec_bassin       = cfg.ec_eau_brute,
                 date_plantation = str(cfg.date_plantation) if cfg.date_plantation else None,
-                lat             = cfg.latitude or DEFAULT_LAT,
-                lon             = cfg.longitude or DEFAULT_LON,
+                lat             = cfg.latitude,
+                lon             = cfg.longitude,
             )
             scenario = resultat_ml.get("consignes", {}).get("scenario_meteo", "default")
         except Exception as e:

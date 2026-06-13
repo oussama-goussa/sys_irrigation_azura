@@ -141,6 +141,22 @@ def run_migrations():
                 ALTER TABLE ai_decision_tour
                 ADD COLUMN IF NOT EXISTS heure_debut_tour_suivante VARCHAR(10)
             """))
+            # Migration: renommer duree_min → opt_duree_tour1_min (nouveau modèle ML v7.x)
+            conn.execute(text("""
+                DO $$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name='ai_recommandations' AND column_name='duree_min'
+                    ) AND NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name='ai_recommandations' AND column_name='opt_duree_tour1_min'
+                    ) THEN
+                        ALTER TABLE ai_recommandations RENAME COLUMN duree_min TO opt_duree_tour1_min;
+                    END IF;
+                END
+                $$;
+            """))
             conn.commit()
         logger.success("Migrations appliquées ✅")
     except Exception as e:
