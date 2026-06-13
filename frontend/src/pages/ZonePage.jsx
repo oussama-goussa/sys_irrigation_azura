@@ -2430,7 +2430,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
             return (
               <ChartCard
-                title={`Poids substrat — ${deviceInfo.farm_name}`}
+                title={`Poids substrat`}
                 C={C}
                 dark={dark}
                 onSelectRange={(from, to) => { setChartZoomFrom(from); setChartZoomTo(to); isZoomedRef.current = true }}
