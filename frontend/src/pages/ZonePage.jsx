@@ -443,7 +443,7 @@ function ChartCard({ title, series, C, dark, onSelectRange }) {
           <div key={s.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               {s.dashed
-                ? <svg width="14" height="4"><line x1="0" y1="2" x2="14" y2="2" stroke={s.color} strokeWidth="2" strokeDasharray="4,3"/></svg>
+                ? <svg width="10" height="4"><line x1="0" y1="2" x2="14" y2="2" stroke={s.color} strokeWidth="2.5" strokeDasharray="3,5"/></svg>
                 : <div style={{ width: 10, height: 3, borderRadius: 2, background: s.color }} />
               }
               <span style={{ color: C.textMuted, fontSize: 11, fontWeight: 630 }}>{s.label}</span>
