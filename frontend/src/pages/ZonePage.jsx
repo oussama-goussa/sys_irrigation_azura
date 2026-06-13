@@ -414,7 +414,7 @@ function MiniChart({ data, color, label, unit, C, dark, onSelectRange, decimals 
               {time}
             </text>
             <text x={tx+10} y={ty+34} fill={color} fontSize="13" fontWeight="700">
-              {Number(p.value).toFixed(decimals)} {unit}
+              {`${Number(p.value).toFixed(decimals)} ${unit}`}
             </text>
           </g>
         )
