@@ -396,11 +396,13 @@ function MiniChart({ data, color, label, unit, C, dark, onSelectRange, decimals 
       {/* Crosshair + tooltip */}
       {cursor?.point && (() => {
         const p   = cursor.point
-        const tipW = 115, tipH = 38
+        const tipW = 115, tipH = 42
         let tx = p.x + 10
         if (tx + tipW > W - PAD.right) tx = p.x - tipW - 10
         if (tx < PAD.left) tx = PAD.left
-        const ty = Math.max(PAD.top, Math.min(p.y - tipH - 8, PAD.top + chartH - tipH))
+        // Toujours au-dessus du point, sinon colle au haut du chart
+        const tyAbove = p.y - tipH - 10
+        const ty = tyAbove >= PAD.top ? tyAbove : PAD.top + 2
         const time = new Date(p.timestamp).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})
         return (
           <g>
