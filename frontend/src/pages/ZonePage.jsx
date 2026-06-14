@@ -1974,11 +1974,12 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
               </>
             )
           } else {
-            // Web : une seule ligne, CumulRad en dernier
+            // Web : une seule ligne (6 cartes), CumulRad seule en dessous (pleine largeur)
             content = (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-                {cardEc}{cardPh}{cardTempSerre}{cardHumSerre}{cardRad}{cardDebit}{cardCumulRad}
-              </div>
+              <>
+                <Row>{[cardEc, cardPh, cardTempSerre, cardHumSerre, cardRad, cardDebit]}</Row>
+                <Row>{[cardCumulRad]}</Row>
+              </>
             )
           }
         } else {
