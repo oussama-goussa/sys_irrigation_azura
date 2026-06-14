@@ -1064,6 +1064,9 @@ function HouseCard({ house, rec, C, dark, onConfig, dateStr }) {
             </div>
           </div>
 
+          {/* Bilan volume du jour : réalisé vs cible */}
+          <BilanVolumeJour bilan={tourData?.bilan_volume_jour} C={C} dark={dark} />
+
           {/* ── Section Décisions Tour/Tour ── */}
           {!config?.nbr_goutteurs ? (
             <div style={{
@@ -1128,9 +1131,6 @@ function HouseCard({ house, rec, C, dark, onConfig, dateStr }) {
                   </button>
                 </div>
               </div>
-
-              {/* Bilan volume du jour : réalisé vs cible */}
-              <BilanVolumeJour bilan={tourData?.bilan_volume_jour} C={C} dark={dark} />
 
               {/* Formulaire saisie drainage */}
               {showTourForm && (
