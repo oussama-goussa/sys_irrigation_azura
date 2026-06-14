@@ -1221,8 +1221,8 @@ function BilanVolumeJour({ bilan, C, dark }) {
 function DetailPill({ label, value, color, C }) {
   return (
     <div style={{ padding: '6px 8px', borderRadius: 6, background: C.inputBg, textAlign: 'center' }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>{label}</div>
-      <div style={{ fontSize: 12, fontWeight: 700, color: color || C.text, fontFamily: C.mono }}>{value}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: color || C.text, fontFamily: C.mono }}>{value}</div>
     </div>
   )
 }
