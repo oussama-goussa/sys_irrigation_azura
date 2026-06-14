@@ -10,7 +10,7 @@ import {
   Gauge, Clock, ChevronDown, ChevronRight, ChevronLeft, WifiOff, Pin,
   AlertTriangle, CheckCircle2, XCircle, ArrowRight, Eye, Settings, X,
   Zap, CloudRain, CloudFog, Flame, Cloud, CloudSnow, HelpCircle, Droplet,
-  CalendarDays, MapPin, Save, Play, Square, Check, AlertCircle,
+  CalendarDays, MapPin, Save, Play, Square, Check, AlertCircle, Clock7,
   Cloudy, CloudSun
 } from 'lucide-react'
 import { createPortal } from 'react-dom'
@@ -962,7 +962,7 @@ function HouseCard({ house, rec, C, dark, onConfig, dateStr }) {
           </div>
           <div style={{ minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Clock size={12} color={C.textDim} />
+              <Clock7 size={12} color={C.textDim} />
               <span style={{ fontWeight: 700, fontSize: 15, color: C.text, fontFamily: C.mono }}>{heureFinale}</span>
               <span style={{
                 fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 4,
@@ -1040,7 +1040,7 @@ function HouseCard({ house, rec, C, dark, onConfig, dateStr }) {
                 textAlign: 'center',
               }}>
                 <div style={{ fontSize: 9, fontWeight: 700, color: rec.heure_debut_prt ? C.green : C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
-                  Début ressuyage (PRT)
+                  Début d'après ressuyage (PCT)
                 </div>
                 <div style={{ fontSize: 22, fontWeight: 900, color: rec.heure_debut_prt ? C.green : C.textDim, fontFamily: C.mono, letterSpacing: '0.04em' }}>
                   {rec.heure_debut_prt || '—'}
