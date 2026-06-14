@@ -1129,6 +1129,9 @@ function HouseCard({ house, rec, C, dark, onConfig, dateStr }) {
                 </div>
               </div>
 
+              {/* Bilan volume du jour : réalisé vs cible */}
+              <BilanVolumeJour bilan={tourData?.bilan_volume_jour} C={C} dark={dark} />
+
               {/* Formulaire saisie drainage */}
               {showTourForm && (
                 <TourDrainageForm
@@ -1177,6 +1180,39 @@ function MiniBadge({ icon, value, label, C }) {
       {icon}
       <span style={{ fontFamily: C.mono }}>{value}</span>
       <span style={{ color: C.textDim, fontWeight: 400 }}>{label}</span>
+    </div>
+  )
+}
+
+function BilanVolumeJour({ bilan, C, dark }) {
+  if (!bilan) return null
+  const { v_apport_total_cc, volume_cible_cc, taux_realisation_pct, nb_tours_realises } = bilan
+
+  const pct = taux_realisation_pct
+  const color = pct == null ? C.textDim
+    : (pct >= 90 && pct <= 110) ? C.green
+    : (pct >= 70 && pct <= 130) ? C.amber
+    : C.red
+
+  return (
+    <div style={{
+      padding: 12, borderRadius: 8, marginBottom: 10,
+      background: dark ? '#0c1610' : '#f9fbfa',
+      border: `1px solid ${C.border}`,
+    }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+        Bilan volume du jour ({nb_tours_realises} tour{nb_tours_realises > 1 ? 's' : ''})
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(85px, 1fr))', gap: 6, marginBottom: pct != null ? 8 : 0 }}>
+        <DetailPill label="V. Apport réalisé" value={`${v_apport_total_cc.toFixed(0)} cc`} C={C} />
+        <DetailPill label="Volume cible (matin)" value={volume_cible_cc != null ? `${volume_cible_cc} cc` : '—'} C={C} />
+        <DetailPill label="Réalisation" value={pct != null ? `${pct}%` : '—'} color={color} C={C} />
+      </div>
+      {pct != null && (
+        <div style={{ height: 6, borderRadius: 4, background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${Math.min(100, pct)}%`, background: color, transition: 'width 0.4s ease' }} />
+        </div>
+      )}
     </div>
   )
 }

@@ -904,6 +904,21 @@ def get_decisions_tour_jour(
         for t in tours_netafim
     ]
 
+    # ── Bilan volume du jour : réalisé (Netafim) vs cible (reco matin) ──
+    v_apport_total_jour = sum(t.v_apport or 0.0 for t in tours_netafim)
+
+    rec_matin = db.query(AIRecommandation).filter(
+        AIRecommandation.device_id == device_id,
+        AIRecommandation.date      == target_date,
+    ).first()
+
+    volume_cc_cible       = rec_matin.volume_cc_goutteur if rec_matin else None
+    quantite_eau_mm_cible = rec_matin.quantite_eau_mm    if rec_matin else None
+
+    taux_realisation_pct = None
+    if volume_cc_cible and volume_cc_cible > 0:
+        taux_realisation_pct = round((v_apport_total_jour / volume_cc_cible) * 100, 1)
+
     return {
         "device_id"   : device_id,
         "farm_name"   : device.farm_name,
@@ -911,8 +926,14 @@ def get_decisions_tour_jour(
         "date"        : target_date,
         "decisions"   : result,
         "tours_netafim": tours_sans_decision,
+        "bilan_volume_jour": {
+            "v_apport_total_cc"    : round(v_apport_total_jour),
+            "volume_cible_cc"      : volume_cc_cible,
+            "quantite_eau_mm_cible": quantite_eau_mm_cible,
+            "taux_realisation_pct" : taux_realisation_pct,
+            "nb_tours_realises"    : len(tours_netafim),
+        },
     }
-
 
 @router.get("/comparaison/{device_id}", summary="Comparaison humain vs IA")
 def get_comparaison(

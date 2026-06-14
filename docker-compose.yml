@@ -13,8 +13,6 @@ services:
   db:
     image: timescale/timescaledb:latest-pg15
     container_name: azura_db
-    ports:
-      - "5433:5432"
     env_file: .env
     environment:
       POSTGRES_DB:       ${POSTGRES_DB}
