@@ -1986,7 +1986,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
               <>
                 <Row>{[cardEc, cardPh, cardTempSerre]}</Row>
                 <Row>{[cardHumSerre, cardRad, cardTempExt]}</Row>
-                <Row weights={[1, 1, 2]}>{[cardHumExt, cardDebit, cardCumulRad]}</Row>
+                <Row>{[cardHumExt, cardDebit, cardCumulRad]}</Row>
               </>
             )
           } else {
@@ -1994,7 +1994,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
             content = (
               <>
                 <Row>{[cardEc, cardPh, cardTempSerre, cardHumSerre]}</Row>
-                <Row>{[cardRad, cardDebit, cardTempExt, cardHumExt]}</Row>
+                <Row>{[cardRad, cardTempExt, cardHumExt, cardDebit]}</Row>
                 <Row>{[cardCumulRad]}</Row>
               </>
             )
