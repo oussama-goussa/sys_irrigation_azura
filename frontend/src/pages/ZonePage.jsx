@@ -1250,8 +1250,10 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
   }, [showTourCal])  
 
   // ── load daily stats ──
+  const hasLoadedStatsRef = useRef(false)
+
   const loadDailyStats = useCallback(async () => {
-    setLoadingStats(true)
+    if (!hasLoadedStatsRef.current) setLoadingStats(true) 
     try {
       const d = await getDeviceDailyStats(getAccessToken(), deviceId, statsDate)
       setDailyStats(d)
@@ -1259,10 +1261,13 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
       setDailyStats(null)
     } finally {
       setLoadingStats(false)
+      hasLoadedStatsRef.current = true                  
     }
   }, [deviceId, statsDate])
 
   useEffect(() => {
+    hasLoadedStatsRef.current = false
+    
     loadDailyStats()
     if (statsDate !== today()) return
     const iv = setInterval(loadDailyStats, 30_000)
