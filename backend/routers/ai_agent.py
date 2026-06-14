@@ -21,6 +21,7 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import date
 from loguru import logger
+import pytz as _pytz
 
 from core.database import get_db
 from core.security import require_any, require_operateur
@@ -571,10 +572,30 @@ def post_decision_tour(
     # Le modèle Tour/Tour n'utilise plus les agrégats journaliers
     # (meteo_T_max_C, meteo_VPD_max_kPa, ...) mais la météo horaire RÉELLE
     # au moment "heure_fin" du tour actuel (ex: fin tour = 09:48 → 09:00).
-    if tour_netafim and tour_netafim.fin:
-        heure_fin_tour_str = tour_netafim.fin.strftime("%H:%M")
-    else:
-        heure_fin_tour_str = datetime.now().strftime("%H:%M")
+    #
+    # TIMEZONE : tour_netafim.fin est stocké en UTC dans la BDD.
+    # Open-Meteo avec timezone="Africa/Casablanca" retourne les données
+    # en heure locale marocaine. Il faut donc convertir UTC → heure locale
+    # avant d'appeler Open-Meteo horaire.
+    # Maroc = Africa/Casablanca = UTC+1 permanent (depuis 2018).
+    # Si le Maroc revient à UTC+0 (pas de DST), aucun décalage nécessaire.
+    try:
+        _tz_casablanca = _pytz.timezone("Africa/Casablanca")
+        if tour_netafim and tour_netafim.fin:
+            # tour_netafim.fin est en UTC (naive) → localiser puis convertir
+            _fin_utc = tour_netafim.fin if tour_netafim.fin.tzinfo else \
+                    _pytz.utc.localize(tour_netafim.fin)
+            _fin_local = _fin_utc.astimezone(_tz_casablanca)
+            heure_fin_tour_str = _fin_local.strftime("%H:%M")
+        else:
+            # Fallback : heure locale actuelle via pytz
+            heure_fin_tour_str = datetime.now(_tz_casablanca).strftime("%H:%M")
+    except Exception:
+        # Si pytz non dispo → fallback UTC (comportement précédent)
+        if tour_netafim and tour_netafim.fin:
+            heure_fin_tour_str = tour_netafim.fin.strftime("%H:%M")
+        else:
+            heure_fin_tour_str = datetime.now().strftime("%H:%M")
 
     try:
         meteo_actuel = recuperer_meteo_open_meteo_horaire(

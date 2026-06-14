@@ -22,6 +22,7 @@ from datetime import date, datetime, timedelta
 from loguru import logger
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+import pytz as _pytz
 
 from core.database import SessionLocal
 from models.sensor_model import Device, SensorReading
@@ -261,10 +262,16 @@ def recuperer_meteo_open_meteo_horaire(lat: float, lon: float, date_str: str, he
         hourly = data.get("hourly", {})
         times  = hourly.get("time", [])
 
+        # heure_str est déjà en heure locale marocaine (converti par l'appelant).
+        # Open-Meteo avec timezone="Africa/Casablanca" retourne des timestamps
+        # en heure locale → la recherche directe est correcte.
         try:
             h = int(str(heure_str).split(":")[0])
         except (ValueError, IndexError, AttributeError):
-            h = datetime.now().hour
+            try:
+                h = datetime.now(_pytz.timezone("Africa/Casablanca")).hour
+            except Exception:
+                h = datetime.now().hour
 
         target = f"{date_str}T{h:02d}:00"
         idx = times.index(target) if target in times else (len(times) - 1 if times else 0)
@@ -300,10 +307,11 @@ def recuperer_meteo_open_meteo_horaire(lat: float, lon: float, date_str: str, he
         }
 
         logger.success(
-            f"Météo 'actuelle' {date_str} {h:02d}:00 (fin tour={heure_str}) : "
+            f"Météo 'actuelle' {date_str} {h:02d}:00 heure locale Casablanca (fin tour={heure_str}) : "
             f"T={t_act}°C HR={hr_act}% VPD={vpd_act}kPa vent={vent_act}km/h "
             f"rs={rs_act}W/m² pluie={pluie_act}mm"
         )
+
         return result
 
     except Exception as e:
