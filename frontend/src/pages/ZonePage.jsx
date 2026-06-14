@@ -812,6 +812,7 @@ function DailyStatsCard({ label, stats, unit, decimals = 1, C }) {
     <div style={{
       background: C.card, border: `1.5px solid ${C.border}`,
       borderRadius: 12, padding: '14px 18px', flex: '1 1 0', minWidth: 140,
+      height: '100%', display: 'flex', flexDirection: 'column',
     }}>
       <div style={{ fontSize: 10, fontWeight: 700, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.10em', marginBottom: 12 }}>
         {label}
@@ -829,11 +830,12 @@ function DailyStatsCard({ label, stats, unit, decimals = 1, C }) {
     <div style={{
       background: C.card, border: `1.5px solid ${C.border}`,
       borderRadius: 12, padding: '14px 18px', flex: '1 1 0', minWidth: 140,
+      height: '100%', display: 'flex', flexDirection: 'column',
     }}>
       <div style={{ fontSize: 10, fontWeight: 700, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.10em', marginBottom: 12 }}>
         {label}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
         {rows.map(({ key, value }) => (
           <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
             <span style={{ fontSize: 11, fontWeight: 630, color: C.textMuted, minWidth: 30 }}>{key}</span>
