@@ -526,7 +526,7 @@ def _calculer_alertes(meteo: dict) -> dict:
 PRT_SEUILS = {
     # ── Zone STANDARD (ensoleillé) ──
     "1_TRES_ENSOLEILLE":  (7.5, 9.0),
-    "2_ENSOLEILLE":       (9.0, 11.0),
+    "2_ENSOLEILLE":       (8.0, 9.5),
     "7b_PLUIE_LEGERE":    (9.0, 10.0),
 
     # ── Zone BROUILLARD_NUAGEUX ──
