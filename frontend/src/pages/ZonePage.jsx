@@ -1936,59 +1936,25 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
         )}
       </div>
 
-      {!loadingStats && dailyStats?.count > 0 ? (() => {
-        const hasOutside = Boolean(dailyStats.stats?.outside_temp || dailyStats.stats?.outside_humidity)
-
-        // Nombre de colonnes selon le mode
-        const cols = hasOutside
-          ? (isMobile ? 3 : 4)
-          : (isMobile || isTablet ? 3 : 4)
-
-        const gap = 10
-        const cardBasis = `calc((100% - ${gap * (cols - 1)}px) / ${cols})`
-        const normalStyle = { flex: `0 0 ${cardBasis}`, height: 92 } // ⬅ hauteur fixe commune
-
-        // Nombre de cartes "normales" avant la carte longue
-        const numNormal = hasOutside ? 8 : 6
-        const remainder = cols - (numNormal % cols) // si 0 -> = cols (ligne pleine)
-        const longBasis = `calc(${cardBasis} * ${remainder} + ${gap * (remainder - 1)}px)`
-        const longStyle = { flex: `0 0 ${longBasis}` }
-
-        const cards = [
-          <DailyStatsCard key="ec"        label="EC Apport (mS/cm)" stats={dailyStats.stats?.ec_actual} unit="mS/cm" decimals={2} C={C} />,
-          <DailyStatsCard key="ph"        label="pH Apport"         stats={dailyStats.stats?.ph_actual} unit=""      decimals={2} C={C} />,
-          <DailyStatsCard key="tempSerre" label="Température Serre" stats={dailyStats.stats?.avg_temp}  unit="°C"    decimals={1} C={C} />,
-          <DailyStatsCard key="humSerre"  label="Humidité Serre"    stats={dailyStats.stats?.humidity}  unit="%"     decimals={1} C={C} />,
-          <DailyStatsCard key="radiation" label="Radiation (W/m²)"  stats={dailyStats.stats?.radiation} unit="W/m²"  decimals={0} C={C} />,
-        ]
-
-        if (dailyStats.stats?.outside_temp) {
-          cards.push(<DailyStatsCard key="tempExt" label="Température Ext." stats={dailyStats.stats?.outside_temp} unit="°C" decimals={1} C={C} />)
-        }
-        if (dailyStats.stats?.outside_humidity) {
-          cards.push(<DailyStatsCard key="humExt" label="Humidité Ext." stats={dailyStats.stats?.outside_humidity} unit="%" decimals={1} C={C} />)
-        }
-
-        // Débit toujours avant la carte longue
-        cards.push(
-          <div key="debit" style={{ ...normalStyle, overflow: 'hidden' }}>
-            <DailyStatsCard label="Débit (L/h)" stats={{ min: dailyStats.stats?.flow?.min, max: dailyStats.stats?.flow?.max }} unit="L/h" decimals={0} C={C} />
-          </div>,
-        )
-
-        const cumulRad = (
-          <DailyStatsCard key="cumulRad" label="Cumul Rad. (J/cm²)" stats={{ max: dailyStats.stats?.radiation_sum?.max }} unit="J/cm²" decimals={0} C={C} />
-        )
-
-        return (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap, marginBottom: 28 }}>
-            {cards.map(card => (
-              <div key={card.key} style={normalStyle}>{card}</div>
-            ))}
-            <div style={longStyle}>{cumulRad}</div>
-          </div>
-        )
-      })() : !loadingStats ? (
+      {!loadingStats && dailyStats?.count > 0 ? (
+        <div style={{
+          display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 28,
+        }}>
+          <DailyStatsCard label="EC Apport (mS/cm)"   stats={dailyStats.stats?.ec_actual}       unit="mS/cm" decimals={2} C={C} />
+          <DailyStatsCard label="pH Apport"            stats={dailyStats.stats?.ph_actual}       unit=""      decimals={2} C={C} />
+          <DailyStatsCard label="Température Serre"    stats={dailyStats.stats?.avg_temp}        unit="°C"    decimals={1} C={C} />
+          <DailyStatsCard label="Humidité Serre"       stats={dailyStats.stats?.humidity}        unit="%"     decimals={1} C={C} />
+          <DailyStatsCard label="Radiation (W/m²)"     stats={dailyStats.stats?.radiation}       unit="W/m²"  decimals={0} C={C} />
+          <DailyStatsCard label="Cumul Rad. (J/cm²)"   stats={{ max: dailyStats.stats?.radiation_sum?.max }} unit="J/cm²" decimals={0} C={C} />
+          <DailyStatsCard label="Débit (L/h)"          stats={{ min: dailyStats.stats?.flow?.min, max: dailyStats.stats?.flow?.max }} unit="L/h" decimals={0} C={C} />
+          {dailyStats.stats?.outside_temp && (
+            <DailyStatsCard label="Température Ext."   stats={dailyStats.stats?.outside_temp}   unit="°C"    decimals={1} C={C} />
+          )}
+          {dailyStats.stats?.outside_humidity && (
+            <DailyStatsCard label="Humidité Ext."      stats={dailyStats.stats?.outside_humidity} unit="%"   decimals={1} C={C} />
+          )}
+        </div>
+      ) : !loadingStats ? (
         <div style={{
           background: C.card, border: `1.5px solid ${C.border}`,
           borderRadius: 12, padding: '28px', textAlign: 'center',
