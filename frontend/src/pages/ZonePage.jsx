@@ -1946,7 +1946,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
         const gap = 10
         const cardBasis = `calc((100% - ${gap * (cols - 1)}px) / ${cols})`
-        const normalStyle = { flex: `0 0 ${cardBasis}` }
+        const normalStyle = { flex: `0 0 ${cardBasis}`, height: 92 } // ⬅ hauteur fixe commune
 
         // Nombre de cartes "normales" avant la carte longue
         const numNormal = hasOutside ? 8 : 6
@@ -1971,7 +1971,9 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
         // Débit toujours avant la carte longue
         cards.push(
-          <DailyStatsCard key="debit" label="Débit (L/h)" stats={{ min: dailyStats.stats?.flow?.min, max: dailyStats.stats?.flow?.max }} unit="L/h" decimals={0} C={C} />
+          <div key="debit" style={{ ...normalStyle, overflow: 'hidden' }}>
+            <DailyStatsCard label="Débit (L/h)" stats={{ min: dailyStats.stats?.flow?.min, max: dailyStats.stats?.flow?.max }} unit="L/h" decimals={0} C={C} />
+          </div>,
         )
 
         const cumulRad = (
