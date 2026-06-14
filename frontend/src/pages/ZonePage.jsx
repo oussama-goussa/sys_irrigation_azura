@@ -1936,25 +1936,73 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
         )}
       </div>
 
-      {!loadingStats && dailyStats?.count > 0 ? (
-        <div style={{
-          display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 28,
-        }}>
-          <DailyStatsCard label="EC Apport (mS/cm)"   stats={dailyStats.stats?.ec_actual}       unit="mS/cm" decimals={2} C={C} />
-          <DailyStatsCard label="pH Apport"            stats={dailyStats.stats?.ph_actual}       unit=""      decimals={2} C={C} />
-          <DailyStatsCard label="Température Serre"    stats={dailyStats.stats?.avg_temp}        unit="°C"    decimals={1} C={C} />
-          <DailyStatsCard label="Humidité Serre"       stats={dailyStats.stats?.humidity}        unit="%"     decimals={1} C={C} />
-          <DailyStatsCard label="Radiation (W/m²)"     stats={dailyStats.stats?.radiation}       unit="W/m²"  decimals={0} C={C} />
-          <DailyStatsCard label="Cumul Rad. (J/cm²)"   stats={{ max: dailyStats.stats?.radiation_sum?.max }} unit="J/cm²" decimals={0} C={C} />
-          <DailyStatsCard label="Débit (L/h)"          stats={{ min: dailyStats.stats?.flow?.min, max: dailyStats.stats?.flow?.max }} unit="L/h" decimals={0} C={C} />
-          {dailyStats.stats?.outside_temp && (
-            <DailyStatsCard label="Température Ext."   stats={dailyStats.stats?.outside_temp}   unit="°C"    decimals={1} C={C} />
-          )}
-          {dailyStats.stats?.outside_humidity && (
-            <DailyStatsCard label="Humidité Ext."      stats={dailyStats.stats?.outside_humidity} unit="%"   decimals={1} C={C} />
-          )}
-        </div>
-      ) : !loadingStats ? (
+      {!loadingStats && dailyStats?.count > 0 ? (() => {
+        const hasOutside = !!(dailyStats.stats?.outside_temp && dailyStats.stats?.outside_humidity)
+
+        const cardEc        = <DailyStatsCard label="EC Apport (mS/cm)"   stats={dailyStats.stats?.ec_actual}       unit="mS/cm" decimals={2} C={C} />
+        const cardPh        = <DailyStatsCard label="pH Apport"            stats={dailyStats.stats?.ph_actual}       unit=""      decimals={2} C={C} />
+        const cardTempSerre = <DailyStatsCard label="Température Serre"    stats={dailyStats.stats?.avg_temp}        unit="°C"    decimals={1} C={C} />
+        const cardHumSerre  = <DailyStatsCard label="Humidité Serre"       stats={dailyStats.stats?.humidity}        unit="%"     decimals={1} C={C} />
+        const cardRad       = <DailyStatsCard label="Radiation (W/m²)"     stats={dailyStats.stats?.radiation}       unit="W/m²"  decimals={0} C={C} />
+        const cardDebit     = <DailyStatsCard label="Débit (L/h)"          stats={{ min: dailyStats.stats?.flow?.min, max: dailyStats.stats?.flow?.max }} unit="L/h" decimals={0} C={C} />
+        const cardCumulRad  = <DailyStatsCard label="Cumul Rad. (J/cm²)"   stats={{ max: dailyStats.stats?.radiation_sum?.max }} unit="J/cm²" decimals={0} C={C} />
+        const cardTempExt   = hasOutside ? <DailyStatsCard label="Température Ext." stats={dailyStats.stats?.outside_temp}   unit="°C" decimals={1} C={C} /> : null
+        const cardHumExt    = hasOutside ? <DailyStatsCard label="Humidité Ext."    stats={dailyStats.stats?.outside_humidity} unit="%"  decimals={1} C={C} /> : null
+
+        const Row = ({ children, weights }) => (
+          <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+            {children.map((child, i) => (
+              <div key={i} style={{ flex: weights ? weights[i] : 1, minWidth: 0 }}>
+                {child}
+              </div>
+            ))}
+          </div>
+        )
+
+        let content
+
+        if (!hasOutside) {
+          if (isMobile || isTablet) {
+            // 3 + 3 + CumulRad seule (pleine largeur)
+            content = (
+              <>
+                <Row>{[cardEc, cardPh, cardTempSerre]}</Row>
+                <Row>{[cardHumSerre, cardRad, cardDebit]}</Row>
+                <Row>{[cardCumulRad]}</Row>
+              </>
+            )
+          } else {
+            // Web : une seule ligne, CumulRad en dernier
+            content = (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                {cardEc}{cardPh}{cardTempSerre}{cardHumSerre}{cardRad}{cardDebit}{cardCumulRad}
+              </div>
+            )
+          }
+        } else {
+          if (isMobile) {
+            // 3 + 3 + (HumExt, Débit, CumulRad large)
+            content = (
+              <>
+                <Row>{[cardEc, cardPh, cardTempSerre]}</Row>
+                <Row>{[cardHumSerre, cardRad, cardTempExt]}</Row>
+                <Row weights={[1, 1, 2]}>{[cardHumExt, cardDebit, cardCumulRad]}</Row>
+              </>
+            )
+          } else {
+            // Web & Tablet : 4 + 4 + CumulRad seule (pleine largeur)
+            content = (
+              <>
+                <Row>{[cardEc, cardPh, cardTempSerre, cardHumSerre]}</Row>
+                <Row>{[cardRad, cardDebit, cardTempExt, cardHumExt]}</Row>
+                <Row>{[cardCumulRad]}</Row>
+              </>
+            )
+          }
+        }
+
+        return <div style={{ marginBottom: 28 }}>{content}</div>
+      })() : !loadingStats ? (
         <div style={{
           background: C.card, border: `1.5px solid ${C.border}`,
           borderRadius: 12, padding: '28px', textAlign: 'center',
