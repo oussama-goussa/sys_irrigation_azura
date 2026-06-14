@@ -1972,16 +1972,14 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
               </>
             )
           } else {
-            // Web : une seule ligne, CumulRad en dernier
+            // Web : une seule ligne, largeurs égales
             content = (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-                {cardEc}{cardPh}{cardTempSerre}{cardHumSerre}{cardRad}{cardDebit}{cardCumulRad}
-              </div>
+              <Row>{[cardEc, cardPh, cardTempSerre, cardHumSerre, cardRad, cardDebit, cardCumulRad]}</Row>
             )
           }
         } else {
           if (isMobile) {
-            // 3 + 3 + (HumExt, Débit, CumulRad large)
+            // 3 + 3 + (HumExt, Débit, CumulRad)
             content = (
               <>
                 <Row>{[cardEc, cardPh, cardTempSerre]}</Row>
