@@ -475,12 +475,11 @@ def post_decision_tour(
         IrrigationTour.date      == today,
         IrrigationTour.tour_num  <= body.num_tour,
     ).all()
-    vol_cumule = sum(t.v_apport for t in tours_passes if t.v_apport) if tours_passes else 0.0
+    vol_cumule = sum(t.v_apport or 0.0 for t in tours_passes) if tours_passes else 0.0
 
-    # Volume journalier cible depuis recommandation matin
     vol_jour_cible = 0.0
     if rec and rec.quantite_eau_mm:
-        # mm → cc/goutteur : 1mm = 150cc/goutteur (formule Azura)
+        # mm → cc/goutteur : 1 mm = 150 cc/goutteur (formule Azura)
         vol_jour_cible = rec.quantite_eau_mm * 150.0
     
     features_matin = (rec.features_utilises or {}) if rec else {}
@@ -513,7 +512,7 @@ def post_decision_tour(
 
     alerte_pluie_matin = 1 if rec and rec.alerte == "PLUIE_STOP" else 0
     try:
-        meteo_temps_reel = recuperer_meteo_open_meteo(lat, lon, date_str_aujourd_hui)
+        meteo_temps_reel = recuperer_meteo_open_meteo(lat, lon, today.isoformat())
         pluie_temps_reel = meteo_temps_reel.get("meteo_pluie_mm_jour", 0.0) or 0.0
         alerte_pluie_reel = 1 if pluie_temps_reel > 0.5 else 0
         if alerte_pluie_reel and not alerte_pluie_matin:

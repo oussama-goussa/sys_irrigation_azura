@@ -806,6 +806,47 @@ function SectionTitle({ title, C }) {
   )
 }
 
+// ── DailyStatsCard ────────────────────────────────────────────
+function DailyStatsCard({ label, stats, unit, decimals = 1, C }) {
+  if (!stats) return (
+    <div style={{
+      background: C.card, border: `1.5px solid ${C.border}`,
+      borderRadius: 12, padding: '14px 18px', flex: '1 1 0', minWidth: 140,
+    }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.10em', marginBottom: 12 }}>
+        {label}
+      </div>
+      <div style={{ color: C.textDim, fontSize: 12 }}>—</div>
+    </div>
+  )
+
+  const rows = []
+  if (stats.min !== undefined) rows.push({ key: 'Min', value: stats.min })
+  if (stats.avg !== undefined) rows.push({ key: 'Moy', value: stats.avg })
+  if (stats.max !== undefined) rows.push({ key: 'Max', value: stats.max })
+
+  return (
+    <div style={{
+      background: C.card, border: `1.5px solid ${C.border}`,
+      borderRadius: 12, padding: '14px 18px', flex: '1 1 0', minWidth: 140,
+    }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.10em', marginBottom: 12 }}>
+        {label}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {rows.map(({ key, value }) => (
+          <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <span style={{ fontSize: 11, fontWeight: 630, color: C.textMuted, minWidth: 30 }}>{key}</span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: C.text, fontVariantNumeric: 'tabular-nums' }}>
+              {value !== null && value !== undefined ? `${Number(value).toFixed(decimals)} ${unit}` : '—'}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ── StatusDot ─────────────────────────────────────────────────
 function StatusDot({ on, C, size = 8 }) {
   return (
@@ -2446,6 +2487,117 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
           })()}
         </div>
       )}
+
+
+      {/* ── Statistiques journalières ─────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 32, marginBottom: 14 }}>
+        <div style={{ width: 3, height: 18, background: C.green, borderRadius: 2 }} />
+        <span style={{ color: C.text, fontSize: 14, fontWeight: 800 }}>Statistiques journalières</span>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+        <div style={{ position: 'relative' }}>
+          <div
+            ref={statsCalTriggerRef}
+            onClick={() => {
+              const r = statsCalTriggerRef.current.getBoundingClientRect()
+              const spaceBelow = window.innerHeight - r.bottom
+              if (spaceBelow < 340)
+                setStatsCalPos({ bottom: window.innerHeight - r.top + 6, top: 'auto', left: r.left })
+              else
+                setStatsCalPos({ top: r.bottom + 6, bottom: 'auto', left: r.left })
+              setShowStatsCal(v => !v)
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '7px 14px', borderRadius: 8, minHeight: 34,
+              cursor: 'pointer',
+              border: `1.5px solid ${showStatsCal ? C.green : C.border}`,
+              background: C.inputBg, transition: 'border-color 0.15s',
+              fontFamily: 'inherit',
+            }}
+          >
+            <Calendar size={14} color={showStatsCal || statsDate !== today() ? C.green : C.textDim} strokeWidth={2} />
+            <span style={{ fontSize: 12, fontWeight: 630, color: C.text }}>
+              {fmtDisplay(statsDate)}
+            </span>
+          </div>
+
+          {showStatsCal && createPortal(
+            <div
+              ref={statsCalPortalRef}
+              style={{
+                position: 'fixed',
+                top: statsCalPos.top !== 'auto' ? statsCalPos.top : 'auto',
+                bottom: statsCalPos.bottom !== 'auto' ? statsCalPos.bottom : 'auto',
+                left: statsCalPos.left,
+                zIndex: 99999,
+                border: `1.5px solid ${C.border}`,
+                borderRadius: 12,
+                padding: '12px 12px 10px',
+                background: dark ? C.surface : '#fafcfb',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+                width: 248,
+                fontFamily: 'inherit',
+              }}
+            >
+              <TourCalendar
+                value={statsDate}
+                onChange={v => { if (v) { setStatsDate(v); setShowStatsCal(false) } }}
+                C={C}
+              />
+            </div>,
+            document.body
+          )}
+        </div>
+
+        {statsDate !== today() && (
+          <button onClick={() => setStatsDate(today())} style={{
+            padding: '6px 10px', borderRadius: 7,
+            border: `1.5px solid ${C.border}`,
+            background: C.inputBg, color: C.text,
+            fontSize: 12, fontFamily: 'inherit', cursor: 'pointer', outline: 'none',
+          }}>Aujourd'hui</button>
+        )}
+
+        {loadingStats && (
+          <span style={{ fontSize: 11, color: C.textDim }}>Chargement…</span>
+        )}
+        {!loadingStats && dailyStats?.count > 0 && (
+          <span style={{ fontSize: 11, color: C.textDim }}>{dailyStats.count} lectures</span>
+        )}
+      </div>
+
+      {!loadingStats && dailyStats?.count > 0 ? (
+        <div style={{
+          display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 28,
+        }}>
+          <DailyStatsCard label="EC Apport (mS/cm)"   stats={dailyStats.stats?.ec_actual}       unit="mS/cm" decimals={2} C={C} />
+          <DailyStatsCard label="pH Apport"            stats={dailyStats.stats?.ph_actual}       unit=""      decimals={2} C={C} />
+          <DailyStatsCard label="Température Serre"    stats={dailyStats.stats?.avg_temp}        unit="°C"    decimals={1} C={C} />
+          <DailyStatsCard label="Humidité Serre"       stats={dailyStats.stats?.humidity}        unit="%"     decimals={1} C={C} />
+          <DailyStatsCard label="Radiation (W/m²)"     stats={dailyStats.stats?.radiation}       unit="W/m²"  decimals={0} C={C} />
+          <DailyStatsCard label="Cumul Rad. (J/cm²)"   stats={{ max: dailyStats.stats?.radiation_sum?.max }} unit="J/cm²" decimals={0} C={C} />
+          <DailyStatsCard label="Débit (L/h)"          stats={{ min: dailyStats.stats?.flow?.min, max: dailyStats.stats?.flow?.max }} unit="L/h" decimals={0} C={C} />
+          {dailyStats.stats?.outside_temp && (
+            <DailyStatsCard label="Température Ext."   stats={dailyStats.stats?.outside_temp}   unit="°C"    decimals={1} C={C} />
+          )}
+          {dailyStats.stats?.outside_humidity && (
+            <DailyStatsCard label="Humidité Ext."      stats={dailyStats.stats?.outside_humidity} unit="%"   decimals={1} C={C} />
+          )}
+        </div>
+      ) : !loadingStats ? (
+        <div style={{
+          background: C.card, border: `1.5px solid ${C.border}`,
+          borderRadius: 12, padding: '28px', textAlign: 'center',
+          color: C.textDim, fontSize: 12, marginBottom: 28,
+        }}>
+          Aucune donnée pour le {fmtDisplay(statsDate)}
+        </div>
+      ) : (
+        <div style={{ height: 80, marginBottom: 28 }} />
+      )}
+
 
       {/* ── Historique table ─────────────────────────────────── */}
       <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:32, marginBottom:12 }}>

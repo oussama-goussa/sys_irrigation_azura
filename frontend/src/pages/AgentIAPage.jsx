@@ -696,14 +696,25 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, onClose, nbr
                 : <><Square size={12} fill="currentColor" /> STOP</>}
             </span>
           </div>
-          {result.duree_suivant && (
+          {result.action === 'CONTINUER' && result.duree_suivant && (
             <div style={{ fontSize: 11, color: C.textMuted, marginTop: 3 }}>
               Durée tour suivant : <strong style={{ color: C.text }}>{result.duree_suivant} min</strong>
               {result.repos_min && ` · Repos : ${result.repos_min} min`}
             </div>
           )}
-          {result.message && (
-            <div style={{ fontSize: 10, color: C.textDim, marginTop: 2 }}>{result.message}</div>
+          {result.action === 'STOP' && result.raison && (
+            <div style={{ fontSize: 11, color: C.red, marginTop: 3, fontWeight: 600 }}>
+              {{
+                'STOP_PLUIE'                 : "Pluie détectée : arrêt de l'irrigation pour la journée.",
+                'STOP_EC_URGENCE'            : 'EC du drainage trop élevé par rapport à la cible — risque de salinisation.',
+                'STOP_HEURE'                 : "Heure limite d'irrigation atteinte pour aujourd'hui.",
+                'STOP_BROUILLARD'            : 'Brouillard encore actif : attendre la levée avant de démarrer.',
+                'STOP_MAX_STADE'             : 'Nombre maximum de tours atteint pour ce stade phénologique.',
+                'STOP_VOLUME'                : 'Volume journalier atteint (≥ 95% de la cible) — les plantes ont eu leur eau.',
+                'SECURITE_SOUCHAUFFE_INTERNE': 'Surchauffe détectée en serre : irrigation en cours.',
+                'MAX_TOURS'                  : 'Nombre maximum de tours atteint.',
+              }[result.raison] || result.raison.replace(/_/g, ' ')}
+            </div>
           )}
         </div>
       )}

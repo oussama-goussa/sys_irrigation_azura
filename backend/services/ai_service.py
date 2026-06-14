@@ -1808,7 +1808,7 @@ def generer_decision_tour(
         # Sauvegarder
         rec = AIDecisionTour(
             device_id     = device_id,
-            date          = date_cible or date.today(),
+            date          = date_cible_req,
             num_tour      = donnees_tour.get("num_tour", 0),
             decision      = decision.get("decision"),
             raison        = decision.get("raison"),
