@@ -655,15 +655,38 @@ def post_decision_tour(
         meteo_actuel.setdefault("meteo_actuel_relative_humidity_2m", hr_max_reel)
         meteo_actuel.setdefault("meteo_actuel_vapour_pressure_deficit", vpd_max_reel)
 
-    # Rayonnement : capteur si dispo, sinon Open-Meteo, sinon 0.0
+    # Rayonnement : capteur si dispo, sinon Open-Meteo
     if _rs_capteur is not None:
         meteo_actuel["meteo_rs_wm2_actuel"] = _rs_capteur
     else:
         meteo_actuel.setdefault("meteo_rs_wm2_actuel")
 
-    for _k in ["alerte_chergui_actuel", "alerte_pluie_actuel", "alerte_pluie_legere_actuel",
-               "alerte_brouillard_actuel", "alerte_vpd_stress_actuel", "alerte_vent_actuel"]:
-        meteo_actuel.setdefault(_k, 0)
+    # ── Recalcul alertes _actuel depuis valeurs finales (capteurs > Open-Meteo) ──
+    _t_final    = meteo_actuel.get("meteo_actuel_temperature_2m")
+    _hr_final   = meteo_actuel.get("meteo_actuel_relative_humidity_2m")
+    _vpd_final  = meteo_actuel.get("meteo_actuel_vapour_pressure_deficit")
+    _rs_final   = meteo_actuel.get("meteo_rs_wm2_actuel")
+    _vent_final = meteo_actuel.get("meteo_actuel_windspeed_10m")
+
+    # Alertes recalculées depuis valeurs finales (capteur si dispo, sinon Open-Meteo)
+    meteo_actuel["alerte_chergui_actuel"]      = 1 if (_t_final > 35 and _vpd_final > 2.5) else 0
+    meteo_actuel["alerte_brouillard_actuel"]   = 1 if (_hr_final > 90 and _rs_final < 300) else 0
+    meteo_actuel["alerte_vpd_stress_actuel"]   = 1 if _vpd_final > 1.5 else 0
+    meteo_actuel["alerte_vent_actuel"]         = 1 if _vent_final > 10.8 else 0
+
+    # Pluie : Open-Meteo uniquement (pas de capteur pluie) — garder valeur existante
+    meteo_actuel.setdefault("alerte_pluie_actuel")
+    meteo_actuel.setdefault("alerte_pluie_legere_actuel")
+
+    logger.info(
+        f"[ALERTES ACTUEL] T={_t_final}°C HR={_hr_final}% "
+        f"VPD={_vpd_final:.3f}kPa RS={_rs_final:.0f}W/m² vent={_vent_final:.1f}km/h → "
+        f"chergui={meteo_actuel['alerte_chergui_actuel']} "
+        f"brouillard={meteo_actuel['alerte_brouillard_actuel']} "
+        f"vpd_stress={meteo_actuel['alerte_vpd_stress_actuel']} "
+        f"vent={meteo_actuel['alerte_vent_actuel']} "
+        f"pluie={meteo_actuel['alerte_pluie_actuel']}"
+    )
 
     from services.ai_service import EC_DRAIN_RATIO_STADE, _calculer_stade_et_kc
     _stade_actuel, _ = _calculer_stade_et_kc(jours_depuis_plantation)
