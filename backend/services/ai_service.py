@@ -556,8 +556,8 @@ GAP_HEURE_MATIN_TO_TOUR1_MIN = 10
 
 # Fenêtre de surveillance matinale (poids arrivant toutes les 5 min)
 # Le ressuyage est détecté entre 7h00 et 11h (99.8% des cas)
-POIDS_MATIN_HEURE_DEBUT  = 7    # 07h00
-POIDS_MATIN_MINUTE_DEBUT = 00
+POIDS_MATIN_HEURE_DEBUT  = 6    # 06h30
+POIDS_MATIN_MINUTE_DEBUT = 30
 POIDS_MATIN_HEURE_FIN    = 11   # 11h00
 POIDS_MATIN_MINUTE_FIN   = 0
 
@@ -877,14 +877,21 @@ def detecter_heure_matin_et_debut_tour(
             "source"           : source,
         }
 
-    # 5. Aucun seuil atteint → pas de PRT, l'heure ML sera utilisée
+    # 5. Aucun seuil atteint → retourner quand même le dernier poids connu
+    # pour que celery puisse sauvegarder l'état intermédiaire en BDD
+    derniere_lecture = poids_matins[-1] if poids_matins else None
+    derniere_prt = None
+    if derniere_lecture:
+        r = calculer_prt_decision(ps, derniere_lecture["poids_kg"], scenario_meteo)
+        derniere_prt = r["prt_pct"]
+
     return {
         "heure_debut_tour1": None,
-        "heure_matin"      : None,
-        "prt_pct"          : None,
+        "heure_matin"      : derniere_lecture["heure"] if derniere_lecture else None,
+        "prt_pct"          : derniere_prt,
         "decision"         : "AUCUN_DECLENCHEMENT",
         "poids_soir_kg"    : ps,
-        "poids_matin_kg"   : None,
+        "poids_matin_kg"   : derniere_lecture["poids_kg"] if derniere_lecture else None,
         "fin_tour_soir"    : fin_tour,
         "source"           : "ml",
     }

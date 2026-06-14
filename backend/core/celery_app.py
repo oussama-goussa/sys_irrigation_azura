@@ -634,10 +634,10 @@ def task_update_prt_heure_debut():
     now = datetime.now()
 
     # Actif seulement entre 07h00 et 11h00
-    avant_debut = now.hour < 7 or (now.hour == 7 and now.minute < 00)
+    avant_debut = now.hour < 6 or (now.hour == 6 and now.minute < 30)
     apres_fin   = now.hour >= 11
     if avant_debut or apres_fin:
-        return {"statut": "skip", "raison": "hors fenêtre 07h00-11h"}
+        return {"statut": "skip", "raison": "hors fenêtre 06h30-11h"}
 
     try:
         from core.database import SessionLocal
@@ -664,25 +664,43 @@ def task_update_prt_heure_debut():
                         db, rec.device_id, today, scenario
                     )
 
-                    heure_prt = prt_result.get("heure_debut_tour1")
+                    heure_prt   = prt_result.get("heure_debut_tour1")
+                    poids_soir  = prt_result.get("poids_soir_kg")
+                    poids_matin = prt_result.get("poids_matin_kg")
+                    decision    = prt_result.get("decision")
+                    prt_pct     = prt_result.get("prt_pct")
+                    heure_matin = prt_result.get("heure_matin")
+
+                    device = db.query(Device).filter(Device.id == rec.device_id).first()
+                    farm_label = device.farm_name if device else rec.device_id
+
+                    # Toujours sauvegarder l'état courant du PRT
+                    # même si le seuil DECLENCHER n'est pas encore atteint
+                    if poids_soir  is not None: rec.poids_soir_kg  = poids_soir
+                    if poids_matin is not None: rec.poids_matin_kg = poids_matin
+                    if prt_pct     is not None: rec.ptr_pct        = prt_pct
+                    if decision    is not None: rec.ptr_decision    = decision
+                    if heure_matin is not None: rec.heure_matin     = heure_matin
+
+                    rec.ptr_seuil_bas  = PRT_SEUILS.get(scenario, PRT_SEUILS["default"])[0]
+                    rec.ptr_seuil_haut = PRT_SEUILS.get(scenario, PRT_SEUILS["default"])[1]
+
+                    logger.info(
+                        f"PRT {farm_label} → "
+                        f"poids_soir={poids_soir}kg "
+                        f"poids_matin={poids_matin}kg "
+                        f"PRT={prt_pct}% "
+                        f"décision={decision} "
+                        f"seuils=[{rec.ptr_seuil_bas}%-{rec.ptr_seuil_haut}%]"
+                    )
 
                     if heure_prt is not None:
-                        # PRT détecté → mettre à jour la recommandation
-                        rec.heure_debut_prt  = heure_prt
-                        rec.heure_matin      = prt_result.get("heure_matin")
-                        rec.poids_soir_kg    = prt_result.get("poids_soir_kg")
-                        rec.poids_matin_kg   = prt_result.get("poids_matin_kg")
-                        rec.ptr_pct          = prt_result.get("prt_pct")
-                        rec.ptr_decision     = prt_result.get("decision")
-                        rec.ptr_seuil_bas    = PRT_SEUILS.get(scenario, PRT_SEUILS["default"])[0]
-                        rec.ptr_seuil_haut   = PRT_SEUILS.get(scenario, PRT_SEUILS["default"])[1]
-
-                        device = db.query(Device).filter(Device.id == rec.device_id).first()
+                        # Seuil DECLENCHER atteint → figer heure_debut_prt
+                        rec.heure_debut_prt = heure_prt
                         logger.success(
-                            f"PRT mis à jour : {device.farm_name if device else rec.device_id} "
+                            f"✅ PRT DECLENCHÉ : {farm_label} "
                             f"→ heure_debut_prt={heure_prt} "
-                            f"PRT={prt_result.get('prt_pct')}% "
-                            f"décision={prt_result.get('decision')}"
+                            f"PRT={prt_pct}% décision={decision}"
                         )
                         updated += 1
 
