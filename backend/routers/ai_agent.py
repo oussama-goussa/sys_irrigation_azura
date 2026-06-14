@@ -530,8 +530,8 @@ def post_decision_tour(
     # ── Chergui temps réel ────────────────────────────────────────────────────
     alerte_chergui_matin = 1 if rec and rec.alerte == "CHERGUI" else 0
     try:
-        t_max_reel_chergui  = meteo_temps_reel.get("meteo_T_max_C", 0.0)   or 0.0
-        vpd_max_reel_chergui = meteo_temps_reel.get("meteo_VPD_max_kPa", 0.0) or 0.0
+        t_max_reel_chergui  = meteo_temps_reel.get("meteo_T_max_C")   or 0.0
+        vpd_max_reel_chergui = meteo_temps_reel.get("meteo_VPD_max_kPa") or 0.0
         alerte_chergui_reel  = 1 if (t_max_reel_chergui > 35 and vpd_max_reel_chergui > 2.5) else 0
         if alerte_chergui_reel and not alerte_chergui_matin:
             logger.warning(
@@ -548,7 +548,7 @@ def post_decision_tour(
     # ── Brouillard temps réel ─────────────────────────────────────────────────
     alerte_brouillard_matin = 1 if rec and rec.alerte == "BROUILLARD" else 0
     try:
-        hr_max_reel = meteo_temps_reel.get("meteo_HR_max_pct", 0.0) or 0.0
+        hr_max_reel = meteo_temps_reel.get("meteo_HR_max_pct") or 0.0
         # Brouillard réel : uniquement si HR encore élevée (pas de condition d'heure)
         alerte_brouillard_reel = 1 if hr_max_reel > 88 else 0
         if alerte_brouillard_matin and not alerte_brouillard_reel:
@@ -567,7 +567,7 @@ def post_decision_tour(
     # Brouillard final : détection HR temps réel
     alerte_brouillard_finale = alerte_brouillard_reel
 
-    # ── Météo "ACTUELLE" au moment de la fin du tour (modèle ML v7.x) ────────
+    # ── Météo "ACTUELLE" au moment de la fin du tour ────────
     # Le modèle Tour/Tour n'utilise plus les agrégats journaliers
     # (meteo_T_max_C, meteo_VPD_max_kPa, ...) mais la météo horaire RÉELLE
     # au moment "heure_fin" du tour actuel (ex: fin tour = 09:48 → 09:00).
@@ -584,13 +584,83 @@ def post_decision_tour(
         logger.warning(f"[METEO ACTUELLE] Échec → valeurs par défaut : {_e}")
         meteo_actuel = {}
 
+    # ── Capteurs externes : rs, outside_temp, outside_humidity ───────────────
+    # Même logique pour les 3 : lecture la plus récente <= heure_fin du tour
+    _rs_capteur       = None
+    _t_outside        = None
+    _hr_outside       = None
+    try:
+        from models.sensor_model import SensorReading as _SR
+        from datetime import datetime as _dtt2
+
+        _heure_fin_dt_ext = None
+        if tour_netafim and tour_netafim.fin:
+            _heure_fin_dt_ext = tour_netafim.fin if isinstance(tour_netafim.fin, _dtt2) \
+                else _dtt2.combine(today, tour_netafim.fin.time())
+
+        # Une seule requête — prend la lecture la plus récente <= heure_fin
+        # qui a au moins un des 3 champs renseigné
+        _q_ext = db.query(_SR).filter(
+            _SR.device_id == body.device_id,
+        )
+        if _heure_fin_dt_ext:
+            _q_ext = _q_ext.filter(_SR.timestamp <= _heure_fin_dt_ext)
+
+        _lecture_ext = _q_ext.order_by(_SR.timestamp.desc()).first()
+
+        if _lecture_ext:
+            _heure_lue = _lecture_ext.timestamp.strftime('%H:%M')
+
+            if _lecture_ext.radiation is not None and float(_lecture_ext.radiation) > 0:
+                _rs_capteur = float(_lecture_ext.radiation)
+
+            if _lecture_ext.outside_temp is not None and float(_lecture_ext.outside_temp) > 0:
+                _t_outside = float(_lecture_ext.outside_temp)
+
+            if _lecture_ext.outside_humidity is not None and float(_lecture_ext.outside_humidity) > 0:
+                _hr_outside = float(_lecture_ext.outside_humidity)
+
+            logger.info(
+                f"[CAPTEUR EXT] device={body.device_id} "
+                f"heure_fin={heure_fin_tour_str} → lecture={_heure_lue} | "
+                f"rs={_rs_capteur} W/m² | "
+                f"T_ext={_t_outside}°C | "
+                f"HR_ext={_hr_outside}%"
+            )
+    except Exception as _e:
+        logger.warning(f"[CAPTEUR EXT] Échec lecture capteurs externes : {_e}")
+
     # Valeurs par défaut si l'appel API échoue
-    meteo_actuel.setdefault("meteo_actuel_temperature_2m", t_max_reel)
-    meteo_actuel.setdefault("meteo_actuel_vapour_pressure_deficit", vpd_max_reel)
-    meteo_actuel.setdefault("meteo_actuel_relative_humidity_2m", 60.0)
-    meteo_actuel.setdefault("meteo_actuel_windspeed_10m", 10.0)
-    meteo_actuel.setdefault("meteo_rs_wm2_actuel", 0.0)
-    meteo_actuel.setdefault("meteo_pression_actuelle_kPa", 10.1)
+    meteo_actuel.setdefault("meteo_pression_actuelle_kPa")
+    meteo_actuel.setdefault("meteo_actuel_windspeed_10m")
+
+    # Température extérieure : capteur si dispo, sinon Open-Meteo
+    if _t_outside is not None:
+        meteo_actuel["meteo_actuel_temperature_2m"] = _t_outside
+    else:
+        meteo_actuel.setdefault("meteo_actuel_temperature_2m", t_max_reel)
+
+    # Humidité extérieure : capteur si dispo, sinon Open-Meteo
+    # Recalcul VPD externe depuis capteurs si les deux sont dispo
+    if _hr_outside is not None:
+        meteo_actuel["meteo_actuel_relative_humidity_2m"] = _hr_outside
+        if _t_outside is not None:
+            from services.ai_service import calculer_vpd_interne as _calc_vpd
+            _vpd_ext = _calc_vpd(_t_outside, _hr_outside)
+            meteo_actuel["meteo_actuel_vapour_pressure_deficit"] = _vpd_ext
+            logger.info(f"[CAPTEUR EXT] VPD recalculé depuis capteurs : {_vpd_ext:.3f} kPa")
+        else:
+            meteo_actuel.setdefault("meteo_actuel_vapour_pressure_deficit", vpd_max_reel)
+    else:
+        meteo_actuel.setdefault("meteo_actuel_relative_humidity_2m", hr_max_reel)
+        meteo_actuel.setdefault("meteo_actuel_vapour_pressure_deficit", vpd_max_reel)
+
+    # Rayonnement : capteur si dispo, sinon Open-Meteo, sinon 0.0
+    if _rs_capteur is not None:
+        meteo_actuel["meteo_rs_wm2_actuel"] = _rs_capteur
+    else:
+        meteo_actuel.setdefault("meteo_rs_wm2_actuel")
+
     for _k in ["alerte_chergui_actuel", "alerte_pluie_actuel", "alerte_pluie_legere_actuel",
                "alerte_brouillard_actuel", "alerte_vpd_stress_actuel", "alerte_vent_actuel"]:
         meteo_actuel.setdefault(_k, 0)
@@ -711,7 +781,7 @@ def post_decision_tour(
             "source_decision"    : decision_ml.get("source_decision"),
             "duree_suivant"      : decision_ml.get("duree_tour_suivant_min"),
             "repos_min"          : decision_ml.get("repos_min"),
-            "message"            : decision_ml.get("message_operateur", ""),
+            "message"            : decision_ml.get("message_operateur") or decision_ml.get("raison_detail") or "",
             "heure_debut_tour_suivante": heure_debut_tour_suivante,
             "stade_info"         : {
                 "jours_depuis_plantation": jours_depuis_plantation,

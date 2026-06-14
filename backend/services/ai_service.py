@@ -1348,8 +1348,8 @@ def generer_recommandation_historique_device(
                     "opt_jours_depuis_plantation" : jours,
                     "opt_FL"                      : fl,
                     "ec_bassin"                   : ec_bassin,
-                    "moy_pct_drainage"            : 20.0,
-                    "ec_cumul_drainage"           : 2.5,
+                    "moy_pct_drainage"            : 22.0,
+                    "ec_cumul_drainage"           : 2.8,
                     **alertes,
                 }
 
@@ -1693,35 +1693,99 @@ def generer_decision_tour(
             + (" | ".join(f"T{t.num_tour}→{t.pct_drainage:.1f}%" for t in tours_precedents)
                if tours_precedents else "aucun tour précédent")
         )
-        
-        # Récupération capteur temps réel
-        derniere_lecture = db.query(SensorReading)\
-            .filter(SensorReading.device_id == device_id)\
-            .order_by(SensorReading.timestamp.desc())\
-            .first()
 
-        if derniere_lecture:
-            t_capteur = derniere_lecture.avg_temp
-            h_capteur = derniere_lecture.humidity
-            
-            if t_capteur and h_capteur:
+        # Récupération capteur interne à l'heure de fin du tour
+        # Cherche la lecture la plus récente <= heure_fin_tour (ex: 12:38 → prend 12:36)
+        lecture_interne = None
+        if date_cible_req and donnees_tour.get("num_tour"):
+            from models.sensor_model import IrrigationTour as _IT
+            from datetime import datetime as _dtt
+            _tour_netafim = db.query(_IT).filter(
+                _IT.device_id == device_id,
+                _IT.date      == date_cible_req,
+                _IT.tour_num  == num_tour_actuel,
+            ).first()
+
+            if _tour_netafim and _tour_netafim.fin:
+                # Heure fin du tour = timestamp cible
+                _heure_fin_dt = datetime.combine(date_cible_req, _tour_netafim.fin.time()) \
+                    if not isinstance(_tour_netafim.fin, datetime) \
+                    else _tour_netafim.fin
+
+                # Lecture capteur la plus proche AVANT ou ÉGALE à heure_fin
+                lecture_interne = (
+                    db.query(SensorReading)
+                    .filter(
+                        SensorReading.device_id == device_id,
+                        SensorReading.timestamp <= _heure_fin_dt,
+                        SensorReading.avg_temp.isnot(None),
+                        SensorReading.humidity.isnot(None),
+                    )
+                    .order_by(SensorReading.timestamp.desc())
+                    .first()
+                )
+                if lecture_interne:
+                    logger.info(
+                        f"Capteur interne serre : "
+                        f"heure_fin={_heure_fin_dt.strftime('%H:%M')} → "
+                        f"lecture={lecture_interne.timestamp.strftime('%H:%M')} "
+                        f"T={lecture_interne.avg_temp}°C HR={lecture_interne.humidity}%"
+                    )
+
+        # Fallback : dernière lecture disponible si pas de tour_netafim.fin
+        if lecture_interne is None:
+            lecture_interne = (
+                db.query(SensorReading)
+                .filter(
+                    SensorReading.device_id == device_id,
+                    SensorReading.avg_temp.isnot(None),
+                    SensorReading.humidity.isnot(None),
+                )
+                .order_by(SensorReading.timestamp.desc())
+                .first()
+            )
+            if lecture_interne:
+                logger.info(
+                    f"Capteur interne serre (fallback dernière lecture) : "
+                    f"T={lecture_interne.avg_temp}°C HR={lecture_interne.humidity}%"
+                )
+
+        if lecture_interne:
+            t_capteur = lecture_interne.avg_temp
+            h_capteur = lecture_interne.humidity
+
+            if t_capteur and h_capteur and float(t_capteur) > 0 and float(h_capteur) > 0:
                 # Calcul rapide du VPD local
                 vpd_interne = calculer_vpd_interne(float(t_capteur), float(h_capteur))
-                
+
                 # Vérification seuils critiques
                 if float(t_capteur) > 38.0 or vpd_interne > 3.0:
-                    logger.warning(f"🚨 ALERTE CHERGUI : {t_capteur}°C, {vpd_interne}kPa. Sortie forcée.")
-                    # On court-circuite la prédiction IA
+                    logger.warning(
+                        f"ALERTE CHERGUI INTERNE : "
+                        f"T={t_capteur}°C VPD={vpd_interne:.2f}kPa "
+                        f"(lecture={lecture_interne.timestamp.strftime('%H:%M')}). "
+                        f"Sortie forcée."
+                    )
+                    _repos_securite = get_repos_pattern(
+                        float(donnees_tour.get("pct_drainage")),
+                        num_tour_actuel,
+                    )
                     return {
                         "disponible": True,
                         "device_id": device_id,
+                        "farm_name": device.farm_name,
+                        "house_number": device.house_number,
                         "decision": {
-                            "decision": "CONTINUER",
-                            "raison": "SECURITE_SOUCHAUFFE_INTERNE",
-                            "duree_tour_suivant_min": 12 # Valeur de sécurité
+                            "decision":               "CONTINUER",
+                            "raison":                 "SECURITE_SOUCHAUFFE_INTERNE",
+                            "raison_detail":          f"T={t_capteur}°C VPD={vpd_interne:.2f}kPa > seuils critiques",
+                            "duree_tour_suivant_min": 12,
+                            "repos_min":              _repos_securite,
+                            "source_decision":        "garde_fou_interne",
+                            "message_operateur":      f"Surchauffe serre détectée ({t_capteur}°C / VPD {vpd_interne:.2f} kPa) — durée met à 12 min",
                         }
                     }
-
+                
         # Si drainage dispo → prédire
         _, _, modeles_tour, enc_tour = _get_modeles()
         decision = predict_tour(donnees_tour, modeles_tour, enc_tour)
@@ -1935,8 +1999,8 @@ def predict_matin(donnees, modeles_matin, enc_matin, ec_bassin=0.9,
         "ec_bassin", "moy_pct_drainage", "ec_cumul_drainage",
         "alerte_chergui", "alerte_pluie", "alerte_brouillard", "alerte_vpd_stress",
     ]
-    TARGETS_REG = ["opt_nb_cycles", "opt_apport_total_mm", "opt_EC_cible_dSm",
-                   "opt_pH_cible", "opt_duree_tour1_min"]
+    TARGETS_REG = ["opt_nb_cycles", "opt_apport_total_mm", "opt_ET0_mm_jour", "opt_ETc_mm_jour", "opt_EC_cible_dSm", "opt_pH_cible", "opt_duree_tour1_min"]
+    
     TARGETS_CLF = ["opt_heure_demarrage", "scenario_meteo",
                    "opt_alerte_chergui", "opt_alerte_pluie", "opt_alerte_brouillard"]
 
