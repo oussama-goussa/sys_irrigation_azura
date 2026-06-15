@@ -1114,7 +1114,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
     setLoadingChart(true)
     try {
       const d = await getDeviceHistory(getAccessToken(), deviceId, {
-        dateFrom: chartDateFrom, dateTo: chartDateTo, page: 1, perPage: 500,
+        dateFrom: chartDateFrom, dateTo: chartDateTo, page: 1, perPage: 2000,
       })
       setChartData(d)
       setChartZoomFrom(null)
@@ -1267,7 +1267,7 @@ export default function ZonePage({ token, device: deviceInfo, onBack, C, dark })
 
   useEffect(() => {
     hasLoadedStatsRef.current = false
-    
+
     loadDailyStats()
     if (statsDate !== today()) return
     const iv = setInterval(loadDailyStats, 30_000)

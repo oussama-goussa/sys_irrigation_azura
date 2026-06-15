@@ -565,7 +565,7 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, onClose, nbr
         ph_drainage: phDrain !== '' ? Number(phDrain) : null,
       })
       setResult(res)
-      setTimeout(() => { onSaved && onSaved() }, 1500)
+      onSaved && onSaved()
     } catch (e) {
       if (e.code === 'NBR_GOUTTEURS_MANQUANT') {
         setError('NBR_GOUTTEURS_MANQUANT')
@@ -702,16 +702,20 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, onClose, nbr
               {result.repos_min && ` · Repos : ${result.repos_min} min`}
             </div>
           )}
+          {result.action === 'CONTINUER' && result.message && (
+            <div style={{ fontSize: 11, color: C.amber, marginTop: 3, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Flame size={11} /> {result.message}
+            </div>
+          )}
           {result.action === 'STOP' && result.raison && (
             <div style={{ fontSize: 11, color: C.red, marginTop: 3, fontWeight: 600 }}>
               {{
                 'STOP_PLUIE'                 : "Pluie détectée : arrêt de l'irrigation pour la journée.",
-                'STOP_EC_URGENCE'            : 'EC du drainage trop élevé par rapport à la cible — risque de salinisation.',
+                'STOP_EC_URGENCE'            : 'EC du drainage trop élevé par rapport à la cible : risque de salinisation.',
                 'STOP_HEURE'                 : "Heure limite d'irrigation atteinte pour aujourd'hui.",
                 'STOP_BROUILLARD'            : 'Brouillard encore actif : attendre la levée avant de démarrer.',
                 'STOP_MAX_STADE'             : 'Nombre maximum de tours atteint pour ce stade phénologique.',
-                'STOP_VOLUME'                : 'Volume journalier atteint (≥ 95% de la cible) — les plantes ont eu leur eau.',
-                'SECURITE_SOUCHAUFFE_INTERNE': 'Surchauffe détectée en serre : irrigation en cours.',
+                'STOP_VOLUME'                : 'Volume journalier atteint (≥ 95% de la cible) : les plantes ont eu leur eau.',
                 'MAX_TOURS'                  : 'Nombre maximum de tours atteint.',
               }[result.raison] || result.raison.replace(/_/g, ' ')}
             </div>
