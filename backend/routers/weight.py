@@ -150,7 +150,7 @@ def get_weight_history(
     date_from: Optional[str] = Query(None, pattern=r'^\d{4}-\d{2}-\d{2}$'),
     date_to  : Optional[str] = Query(None, pattern=r'^\d{4}-\d{2}-\d{2}$'),
     page     : int  = Query(1,  ge=1,  le=1000),
-    per_page : int  = Query(50, ge=10, le=500),
+    per_page : int  = Query(50, ge=10, le=2000),
     db       : Session = Depends(get_db),
     user               = Depends(require_any),
 ):
