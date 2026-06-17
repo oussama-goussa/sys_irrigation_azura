@@ -253,7 +253,7 @@ export default function LoginPage({ onLogin, dark, toggleDark }) {
             )}
           </button>
 
-          {/* Quick accounts */}
+          {/* Quick accounts 
           {import.meta.env.DEV && (
             <div style={{ marginTop: 28 }}>
               <div style={{ color: C.textDim, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10, textAlign: 'center' }}>
@@ -273,6 +273,7 @@ export default function LoginPage({ onLogin, dark, toggleDark }) {
               </div>
             </div>
           )}
+          */}
         </div>
 
         {/* Footer */}
