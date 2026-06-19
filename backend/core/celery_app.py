@@ -620,24 +620,24 @@ def task_check_offline_stations():
     except Exception as e:
         logger.error(f"Erreur check offline : {e}")
         return {"statut": "erreur", "message": str(e)}
-    
-
+   
 @app.task(name="core.celery_app.task_update_prt_heure_debut")
 def task_update_prt_heure_debut():
     """
-    Toutes les 5 min entre 06h00 et 11h00 :
-    Recalcule le PRT pour les recommandations sans heure_debut_prt.
+    Toutes les 5 min :
+    - Aujourd'hui entre 06h30 et 11h00 : recalcule PRT pour recs sans heure_debut_prt
+    - Dates historiques (< aujourd'hui) : recalcule sans restriction d'heure
     S'arrête quand heure_debut_prt est trouvée.
     """
     from datetime import datetime, date
 
-    now = datetime.now()
+    now   = datetime.now()
+    today = date.today()
 
-    # Actif seulement entre 07h00 et 11h00
+    # Fenêtre active pour aujourd'hui uniquement
     avant_debut = now.hour < 6 or (now.hour == 6 and now.minute < 30)
     apres_fin   = now.hour >= 11
-    if avant_debut or apres_fin:
-        return {"statut": "skip", "raison": "hors fenêtre 06h30-11h"}
+    skip_today  = avant_debut or apres_fin
 
     try:
         from core.database import SessionLocal
@@ -645,23 +645,34 @@ def task_update_prt_heure_debut():
         from models.sensor_model import Device
         from services.ai_service import detecter_heure_matin_et_debut_tour, PRT_SEUILS
 
-        today = date.today().isoformat()
-        db = SessionLocal()
-        updated = 0
+        today_iso = today.isoformat()
+        db        = SessionLocal()
+        updated   = 0
 
         try:
-            # Récupérer toutes les recommandations du jour sans heure_debut_prt
+            # Toutes les recommandations sans heure_debut_prt
+            # (aujourd'hui + historique)
             recs = db.query(AIRecommandation).filter(
-                AIRecommandation.date          == today,
                 AIRecommandation.heure_debut_prt == None,
             ).all()
 
             for rec in recs:
+                rec_date_str  = str(rec.date)
+                is_today      = (rec_date_str == today_iso)
+                is_historique = (rec.date < today)
+
+                # Aujourd'hui hors fenêtre → skip
+                if is_today and skip_today:
+                    continue
+                # Date future → skip
+                if rec.date > today:
+                    continue
+
                 try:
                     scenario = rec.scenario_meteo or "default"
 
                     prt_result = detecter_heure_matin_et_debut_tour(
-                        db, rec.device_id, today, scenario
+                        db, rec.device_id, rec_date_str, scenario
                     )
 
                     heure_prt   = prt_result.get("heure_debut_tour1")
@@ -670,12 +681,12 @@ def task_update_prt_heure_debut():
                     decision    = prt_result.get("decision")
                     prt_pct     = prt_result.get("prt_pct")
                     heure_matin = prt_result.get("heure_matin")
+                    source      = prt_result.get("source", "ml")
 
-                    device = db.query(Device).filter(Device.id == rec.device_id).first()
+                    device     = db.query(Device).filter(Device.id == rec.device_id).first()
                     farm_label = device.farm_name if device else rec.device_id
+                    tag        = "HISTORIQUE" if is_historique else "AUJOURD'HUI"
 
-                    # Toujours sauvegarder l'état courant du PRT
-                    # même si le seuil DECLENCHER n'est pas encore atteint
                     if poids_soir  is not None: rec.poids_soir_kg  = poids_soir
                     if poids_matin is not None: rec.poids_matin_kg = poids_matin
                     if prt_pct     is not None: rec.ptr_pct        = prt_pct
@@ -686,29 +697,32 @@ def task_update_prt_heure_debut():
                     rec.ptr_seuil_haut = PRT_SEUILS.get(scenario, PRT_SEUILS["default"])[1]
 
                     logger.info(
-                        f"PRT {farm_label} → "
+                        f"[{tag}] PRT {farm_label} {rec_date_str} → "
                         f"poids_soir={poids_soir}kg "
                         f"poids_matin={poids_matin}kg "
                         f"PRT={prt_pct}% "
                         f"décision={decision} "
+                        f"source={source} "
                         f"seuils=[{rec.ptr_seuil_bas}%-{rec.ptr_seuil_haut}%]"
                     )
 
                     if heure_prt is not None:
-                        # Seuil DECLENCHER atteint → figer heure_debut_prt
                         rec.heure_debut_prt = heure_prt
                         logger.success(
-                            f"✅ PRT DECLENCHÉ : {farm_label} "
+                            f"✅ PRT DÉCLENCHÉ [{tag}] : {farm_label} {rec_date_str} "
                             f"→ heure_debut_prt={heure_prt} "
-                            f"PRT={prt_pct}% décision={decision}"
+                            f"PRT={prt_pct}% décision={decision} source={source}"
                         )
                         updated += 1
 
                 except Exception as e:
-                    logger.error(f"Erreur update PRT device {rec.device_id} : {e}")
+                    logger.error(
+                        f"Erreur update PRT device {rec.device_id} "
+                        f"date {rec_date_str} : {e}"
+                    )
 
             db.commit()
-            logger.info(f"PRT update : {updated}/{len(recs)} devices mis à jour")
+            logger.info(f"PRT update : {updated}/{len(recs)} recs mis à jour")
             return {"statut": "ok", "updated": updated, "total": len(recs)}
 
         finally:

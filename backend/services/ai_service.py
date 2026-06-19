@@ -700,6 +700,56 @@ def _recuperer_poids_matins(
         for l in lectures
     ]
 
+def _recuperer_radiation_matins(
+    db: Session,
+    device_id: int,
+    date_str: str,
+) -> list:
+    """
+    Récupère toutes les lectures radiation_sum du matin (06h30-11h00)
+    depuis sensor_readings, triées par heure croissante.
+    Utilisé comme condition préalable au déclenchement PRT.
+    """
+    from datetime import datetime
+
+    date_cible  = datetime.strptime(date_str, "%Y-%m-%d").date()
+    matin_debut = datetime.combine(
+        date_cible,
+        datetime.min.time().replace(
+            hour=POIDS_MATIN_HEURE_DEBUT,
+            minute=POIDS_MATIN_MINUTE_DEBUT
+        )
+    )
+    matin_fin = datetime.combine(
+        date_cible,
+        datetime.min.time().replace(
+            hour=POIDS_MATIN_HEURE_FIN,
+            minute=POIDS_MATIN_MINUTE_FIN
+        )
+    )
+
+    lectures = (
+        db.query(SensorReading)
+        .filter(
+            SensorReading.device_id == device_id,
+            SensorReading.timestamp >= matin_debut,
+            SensorReading.timestamp <= matin_fin,
+            SensorReading.radiation_sum.isnot(None),
+            SensorReading.radiation_sum > 0,
+        )
+        .order_by(SensorReading.timestamp.asc())
+        .all()
+    )
+
+    return [
+        {
+            "radiation_sum": l.radiation_sum,
+            "heure"        : l.timestamp.strftime("%H:%M"),
+            "timestamp"    : l.timestamp,
+        }
+        for l in lectures
+    ]
+
 
 def calculer_prt_decision(
     poids_soir_kg: float,
@@ -805,11 +855,10 @@ def detecter_heure_matin_et_debut_tour(
             "source"           : "ml",
         }
 
-    # 2. Poids matins (tous, par ordre croissante)
+# 2. Poids matins (tous, par ordre croissant)
     poids_matins = _recuperer_poids_matins(db, device_id, date_str)
 
     if not poids_matins:
-        # Pas de poids matin → pas de PRT, l'heure ML sera utilisée
         return {
             "heure_debut_tour1": None,
             "heure_matin"      : None,
@@ -822,34 +871,116 @@ def detecter_heure_matin_et_debut_tour(
         }
 
     # 3. Simuler le calcul en continu : parcourir les poids un par un
-    heure_matin = None
-    prt_at_declenchement = None
+    #    Si PRT seuil atteint → vérifier radiation_sum
+    #      radiation simultanée >= 40 → heure_poids + 10 min
+    #      radiation après >= 40      → heure_radiation + 3 min
+    #      aucune radiation >= 40     → ATTENDRE_RADIATION
+    heure_matin            = None
+    prt_at_declenchement   = None
     poids_at_declenchement = None
-    decision_finale = "ATTENDRE"
+    decision_finale        = "ATTENDRE"
+
+    # Charger toutes les lectures radiation une seule fois
+    radiation_matins = _recuperer_radiation_matins(db, device_id, date_str)
 
     for lecture in poids_matins:
         result = calculer_prt_decision(ps, lecture["poids_kg"], scenario_meteo)
 
-        if result["decision"] == "DECLENCHER":
-            heure_matin = lecture["heure"]
-            prt_at_declenchement = result["prt_pct"]
-            poids_at_declenchement = lecture["poids_kg"]
-            decision_finale = "DECLENCHER"
-            break
-        elif result["decision"] == "STRESS_HYDRIQUE":
-            # On retient le premier STRESS_HYDRIQUE au cas où
-            # on ne trouve jamais de DECLENCHER
-            if heure_matin is None:
-                heure_matin = lecture["heure"]
-                prt_at_declenchement = result["prt_pct"]
-                poids_at_declenchement = lecture["poids_kg"]
-                decision_finale = "STRESS_HYDRIQUE"
+        if result["decision"] in ("DECLENCHER", "STRESS_HYDRIQUE"):
 
-    # 4. Calculer heure_debut_tour1
-    if heure_matin is not None:
+            # ── Cas 1 : radiation simultanée (même timestamp) ────────────────
+            radiation_simultanee = [
+                r for r in radiation_matins
+                if r["timestamp"] == lecture["timestamp"]
+            ]
+            radiation_apres = [
+                r for r in radiation_matins
+                if r["timestamp"] > lecture["timestamp"]
+            ]
+
+            if radiation_simultanee:
+                rs = radiation_simultanee[0]["radiation_sum"]
+                if rs >= 40:
+                    # Radiation OK simultanée → heure_poids + 10 min
+                    heure_matin            = lecture["heure"]
+                    prt_at_declenchement   = result["prt_pct"]
+                    poids_at_declenchement = lecture["poids_kg"]
+                    decision_finale        = result["decision"]
+                    logger.info(
+                        f"PRT + Radiation simultanée OK : "
+                        f"poids={lecture['heure']} PRT={result['prt_pct']}% "
+                        f"rs={rs:.1f} >= 40 → heure_matin + 10 min"
+                    )
+                    break
+                else:
+                    logger.debug(
+                        f"PRT OK à {lecture['heure']} radiation simultanée "
+                        f"rs={rs:.1f} < 40 → chercher lecture suivante"
+                    )
+
+            # ── Cas 2 : radiation après le poids ─────────────────────────────
+            radiation_trouvee = False
+            for rad in radiation_apres:
+                rs = rad["radiation_sum"]
+                if rs >= 40:
+                    # Radiation OK après → heure_radiation + 3 min
+                    try:
+                        parts = rad["heure"].split(":")
+                        h, m  = int(parts[0]), int(parts[1])
+                        total_min = h * 60 + m + 3
+                        h2 = total_min // 60
+                        m2 = total_min % 60
+                        heure_debut_radiation = f"{h2:02d}:{m2:02d}"
+                    except (ValueError, IndexError):
+                        heure_debut_radiation = None
+
+                    logger.info(
+                        f"PRT OK à {lecture['heure']} (PRT={result['prt_pct']}%) "
+                        f"+ Radiation après OK : "
+                        f"rad={rad['heure']} rs={rs:.1f} >= 40 "
+                        f"→ heure_radiation + 3 min = {heure_debut_radiation}"
+                    )
+                    return {
+                        "heure_debut_tour1": heure_debut_radiation,
+                        "heure_matin"      : lecture["heure"],
+                        "prt_pct"          : result["prt_pct"],
+                        "decision"         : result["decision"],
+                        "poids_soir_kg"    : ps,
+                        "poids_matin_kg"   : lecture["poids_kg"],
+                        "fin_tour_soir"    : fin_tour,
+                        "source"           : "PRT_RADIATION_APRES",
+                    }
+                else:
+                    logger.debug(
+                        f"Radiation après PRT : rs={rs:.1f} < 40 "
+                        f"à {rad['heure']} → ATTENDRE"
+                    )
+
+            # ── Cas 3 : aucune radiation >= 40 disponible encore ─────────────
+            if not radiation_trouvee:
+                heure_matin            = lecture["heure"]
+                prt_at_declenchement   = result["prt_pct"]
+                poids_at_declenchement = lecture["poids_kg"]
+                decision_finale        = f"ATTENDRE_RADIATION_{result['decision']}"
+                logger.info(
+                    f"PRT {result['decision']} à {lecture['heure']} "
+                    f"(PRT={result['prt_pct']}%) — aucune radiation >= 40 "
+                    f"sur {len(radiation_apres)} lectures → en attente"
+                )
+            break
+
+        else:
+            logger.debug(
+                f"PRT ATTENDRE : poids={lecture['poids_kg']}kg "
+                f"à {lecture['heure']} → {result['decision']}"
+            )
+
+    # 4. Calculer heure_debut_tour1 si DECLENCHER ou STRESS_HYDRIQUE
+    #    (radiation simultanée était OK)
+    if heure_matin is not None and decision_finale in ("DECLENCHER", "STRESS_HYDRIQUE"):
         try:
-            parts = heure_matin.split(":")
-            h, m = int(parts[0]), int(parts[1])
+            parts     = heure_matin.split(":")
+            h, m      = int(parts[0]), int(parts[1])
             total_min = h * 60 + m + GAP_HEURE_MATIN_TO_TOUR1_MIN
             h2 = total_min // 60
             m2 = total_min % 60
@@ -860,12 +991,11 @@ def detecter_heure_matin_et_debut_tour(
         source = "PRT_DECLENCHER" if decision_finale == "DECLENCHER" else "PRT_STRESS"
 
         logger.info(
-            f"PRT détecté : scenario={scenario_meteo} | "
+            f"PRT déclenché : scenario={scenario_meteo} | "
             f"PS={ps}kg → PM={poids_at_declenchement}kg | "
             f"PRT={prt_at_declenchement}% | décision={decision_finale} | "
             f"heure_matin={heure_matin} → début_tour1={heure_debut}"
         )
-
         return {
             "heure_debut_tour1": heure_debut,
             "heure_matin"      : heure_matin,
@@ -877,10 +1007,22 @@ def detecter_heure_matin_et_debut_tour(
             "source"           : source,
         }
 
-    # 5. Aucun seuil atteint → retourner quand même le dernier poids connu
-    # pour que celery puisse sauvegarder l'état intermédiaire en BDD
+    # 5. PRT en attente radiation → retourner état intermédiaire
+    if heure_matin is not None and "ATTENDRE_RADIATION" in str(decision_finale):
+        return {
+            "heure_debut_tour1": None,
+            "heure_matin"      : heure_matin,
+            "prt_pct"          : prt_at_declenchement,
+            "decision"         : decision_finale,
+            "poids_soir_kg"    : ps,
+            "poids_matin_kg"   : poids_at_declenchement,
+            "fin_tour_soir"    : fin_tour,
+            "source"           : "ml",
+        }
+
+    # 6. Aucun seuil poids atteint → retourner dernier état connu
     derniere_lecture = poids_matins[-1] if poids_matins else None
-    derniere_prt = None
+    derniere_prt     = None
     if derniere_lecture:
         r = calculer_prt_decision(ps, derniere_lecture["poids_kg"], scenario_meteo)
         derniere_prt = r["prt_pct"]

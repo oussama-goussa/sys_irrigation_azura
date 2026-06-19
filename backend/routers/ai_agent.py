@@ -245,8 +245,50 @@ def get_recommandation_device(
         AIRecommandation.device_id == device_id,
         AIRecommandation.date == today,
     ).first()
-
+    
     if existing:
+        # ── Recalcul PRT à la volée pour dates historiques sans heure_debut_prt ──
+        from datetime import date as _date
+        is_historique = (existing.date < _date.today())
+        if is_historique and existing.heure_debut_prt is None:
+            try:
+                from services.ai_service import (
+                    detecter_heure_matin_et_debut_tour, PRT_SEUILS
+                )
+                scenario   = existing.scenario_meteo or "default"
+                prt_result = detecter_heure_matin_et_debut_tour(
+                    db, device_id, today, scenario
+                )
+                heure_prt   = prt_result.get("heure_debut_tour1")
+                prt_pct     = prt_result.get("prt_pct")
+                decision    = prt_result.get("decision")
+                heure_matin = prt_result.get("heure_matin")
+                poids_soir  = prt_result.get("poids_soir_kg")
+                poids_matin = prt_result.get("poids_matin_kg")
+                source      = prt_result.get("source", "ml")
+
+                if poids_soir  is not None: existing.poids_soir_kg  = poids_soir
+                if poids_matin is not None: existing.poids_matin_kg = poids_matin
+                if prt_pct     is not None: existing.ptr_pct        = prt_pct
+                if decision    is not None: existing.ptr_decision    = decision
+                if heure_matin is not None: existing.heure_matin     = heure_matin
+                existing.ptr_seuil_bas  = PRT_SEUILS.get(scenario, PRT_SEUILS["default"])[0]
+                existing.ptr_seuil_haut = PRT_SEUILS.get(scenario, PRT_SEUILS["default"])[1]
+
+                if heure_prt is not None:
+                    existing.heure_debut_prt = heure_prt
+                    logger.info(
+                        f"PRT recalculé (historique) device {device_id} "
+                        f"{today} → {heure_prt} [src={source}]"
+                    )
+                db.commit()
+                db.refresh(existing)
+
+            except Exception as e:
+                logger.warning(
+                    f"PRT recalcul historique device {device_id} {today} : {e}"
+                )
+
         d = existing.to_dict()
         d["farm_name"]    = device.farm_name
         d["house_number"] = device.house_number
