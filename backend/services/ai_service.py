@@ -917,9 +917,8 @@ def detecter_heure_matin_et_debut_tour(
                         f"PRT OK à {lecture['heure']} radiation simultanée "
                         f"rs={rs:.1f} < 40 → chercher lecture suivante"
                     )
-
+            
             # ── Cas 2 : radiation après le poids ─────────────────────────────
-            radiation_trouvee = False
             for rad in radiation_apres:
                 rs = rad["radiation_sum"]
                 if rs >= 40:
@@ -957,16 +956,16 @@ def detecter_heure_matin_et_debut_tour(
                     )
 
             # ── Cas 3 : aucune radiation >= 40 disponible encore ─────────────
-            if not radiation_trouvee:
-                heure_matin            = lecture["heure"]
-                prt_at_declenchement   = result["prt_pct"]
-                poids_at_declenchement = lecture["poids_kg"]
-                decision_finale        = f"ATTENDRE_RADIATION_{result['decision']}"
-                logger.info(
-                    f"PRT {result['decision']} à {lecture['heure']} "
-                    f"(PRT={result['prt_pct']}%) — aucune radiation >= 40 "
-                    f"sur {len(radiation_apres)} lectures → en attente"
-                )
+            # (on arrive ici seulement si aucun return n'a été fait ci-dessus)
+            heure_matin            = lecture["heure"]
+            prt_at_declenchement   = result["prt_pct"]
+            poids_at_declenchement = lecture["poids_kg"]
+            decision_finale        = f"ATTENDRE_RADIATION_{result['decision']}"
+            logger.info(
+                f"PRT {result['decision']} à {lecture['heure']} "
+                f"(PRT={result['prt_pct']}%) — aucune radiation >= 40 "
+                f"sur {len(radiation_apres)} lectures → en attente"
+            )
             break
 
         else:
