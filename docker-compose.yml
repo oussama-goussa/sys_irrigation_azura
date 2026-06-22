@@ -135,38 +135,6 @@ services:
       - azura_internal
     restart: unless-stopped
 
-  # ── 7. Grafana ───────────────────────────────────────────
-  grafana:
-    image: grafana/grafana:latest
-    container_name: azura_grafana
-    env_file: .env
-    environment:
-      # Identifiants admin Grafana
-      GF_SECURITY_ADMIN_USER:     ${GRAFANA_USER}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
-      # Désactiver la page de login (accès direct depuis React iFrame)
-      GF_AUTH_ANONYMOUS_ENABLED:  "false"
-      GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
-      # Autoriser l'embed dans des iFrames
-      GF_SECURITY_ALLOW_EMBEDDING: "false"
-      # Désactiver le X-Frame-Options restrictif
-      GF_SECURITY_COOKIE_SAMESITE: "none"
-      # URL publique utilisée par React pour construire les iFrames
-      GF_SERVER_ROOT_URL:         http://localhost:3000
-      GF_SERVER_HTTP_PORT:        "3000"
-    volumes:
-      - grafana_data:/var/lib/grafana
-      # Provisioning automatique datasource TimescaleDB
-      - ./grafana/provisioning:/etc/grafana/provisioning
-    networks:
-      - azura_internal
-    ports:
-      - "3000:3000"
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: unless-stopped
-
 volumes:
   postgres_data:
   grafana_data:

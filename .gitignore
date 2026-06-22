@@ -14,4 +14,5 @@ node_modules/
 dist/
 build/
 
+#envirenement
 .env
