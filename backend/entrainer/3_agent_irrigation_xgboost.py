@@ -36,7 +36,7 @@ warnings.filterwarnings("ignore")
 
 import xgboost as xgb
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import accuracy_score, r2_score, mean_absolute_error, f1_score
+from sklearn.metrics import accuracy_score, r2_score, mean_absolute_error, f1_score, mean_squared_error
 
 # v5.9: Plus besoin d'importer FACTEUR_PAR_TOUR/get_facteur_tour ici.
 #   Ces règles sont déjà intégrées dans le label d'entraînement (calc_opt_duree_v2).
@@ -48,6 +48,51 @@ from sklearn.metrics import accuracy_score, r2_score, mean_absolute_error, f1_sc
 
 INPUT_FILE   = "irrigation_meteo_optimise.csv"
 MODELS_DIR   = Path("models_xgboost")
+
+# ── v2 : Dossiers de sortie pour prédictions individuelles + importances ──
+# (nécessaires pour scatter plots, résidus, et feature importance — voir
+#  generer_graphes_agent_xgboost.py)
+PREDICTIONS_DIR_AGENT = Path("predictions_agent_xgboost")
+IMPORTANCES_DIR_AGENT = Path("importances_agent_xgboost")
+PREDICTIONS_DIR_AGENT.mkdir(exist_ok=True)
+IMPORTANCES_DIR_AGENT.mkdir(exist_ok=True)
+MAX_SAMPLES_SAUVES_AGENT = 5000
+
+
+def sauvegarder_predictions_agent(target, y_true, y_pred, type_):
+    """Sauvegarde y_true/y_pred pour une target donnée (modèle XGBoost unique)."""
+    n = len(y_true)
+    if n > MAX_SAMPLES_SAUVES_AGENT:
+        rng = np.random.RandomState(RANDOM_STATE)
+        idx = rng.choice(n, MAX_SAMPLES_SAUVES_AGENT, replace=False)
+        y_true_s = np.asarray(y_true)[idx]
+        y_pred_s = np.asarray(y_pred)[idx]
+    else:
+        y_true_s = np.asarray(y_true)
+        y_pred_s = np.asarray(y_pred)
+
+    df_out = pd.DataFrame({"y_true": y_true_s, "y_pred": y_pred_s})
+    if type_ == "regression":
+        df_out["residu"] = df_out["y_true"] - df_out["y_pred"]
+
+    safe_target = str(target).replace("/", "_")
+    df_out.to_csv(PREDICTIONS_DIR_AGENT / f"{safe_target}__XGBoost.csv",
+                   index=False, encoding="utf-8-sig")
+
+
+def sauvegarder_importance_agent(target, model, feature_names):
+    """Sauvegarde l'importance des variables pour une target donnée."""
+    try:
+        importances = model.feature_importances_
+    except AttributeError:
+        return
+    df_imp = pd.DataFrame({
+        "feature": feature_names,
+        "importance": importances,
+    }).sort_values("importance", ascending=False).reset_index(drop=True)
+    safe_target = str(target).replace("/", "_")
+    df_imp.to_csv(IMPORTANCES_DIR_AGENT / f"{safe_target}__XGBoost.csv",
+                   index=False, encoding="utf-8-sig")
 RANDOM_STATE = 42
 
 # Paramètres physiques fixes (rapport Azura)
@@ -97,7 +142,7 @@ TARGETS_MATIN_REG = {
     "opt_ETc_mm_jour":     "ETc (intermédiaire)",
     "opt_EC_cible_dSm":    "3. EC à programmer",
     "opt_pH_cible":        "4. pH cible",
-    "opt_duree_min":       "Durée tour (intermédiaire)",
+    "opt_duree_tour1_min": "Durée TOUR 1 (avant drainage)",
 }
 
 # ── Modèle 2 : Tour/tour ──────────────────────────────────────
@@ -111,11 +156,15 @@ FEATURES_TOUR = [
     "opt_vol_ratio",          # NOUVEAU: ratio volume cumule / cible (0-1+)
     "opt_vol_restant_L",      # NOUVEAU: volume restant a apporter (L/goutt)
     "opt_EC_drain_cible_dSm", "opt_nb_cycles", "opt_max_cycles_stade",
-    "meteo_T_max_C", "meteo_VPD_max_kPa", "meteo_ET0_mm_jour",
-    "alerte_chergui", "alerte_pluie", "alerte_brouillard",
+    # v7.x: météo TEMPS RÉEL au moment "datetime_fin" du tour (au lieu des agrégats journaliers)
+    "meteo_actuel_temperature_2m", "meteo_actuel_vapour_pressure_deficit",
+    "meteo_actuel_relative_humidity_2m", "meteo_actuel_windspeed_10m",
+    "meteo_rs_wm2_actuel", "meteo_pression_actuelle_kPa",
+    "alerte_chergui_actuel", "alerte_pluie_actuel", "alerte_pluie_legere_actuel",
+    "alerte_brouillard_actuel", "alerte_vpd_stress_actuel", "alerte_vent_actuel",
     "ec_bassin", "ec_apport", "ph_apport",
     "drain_zone",  # v5.7: zone drainage explicite (0=high→8min, 1=med→10min, 2=low→12min)
-    "scenario_meteo",  # v5.7: scénario pour cas spéciaux Chergui/Pluie
+    "scenario_meteo",  # v5.7: scénario (contexte global du jour) pour cas spéciaux Chergui/Pluie
 ]
 
 TARGETS_TOUR_CLF = {
@@ -163,10 +212,12 @@ FEATURES_REPOS = [
     "opt_EC_drain_cible_dSm", "opt_drainage_cible_ajuste",
     "opt_score_ecart", "opt_alerte_drainage_ko", "opt_pH_cible",
     "opt_k_scenario_volume", "opt_ET0_mm_jour", "opt_ETc_mm_jour",
-    # Météo
-    "meteo_T_max_C", "meteo_VPD_max_kPa", "meteo_ET0_mm_jour",
-    # Alertes
-    "alerte_chergui", "alerte_pluie", "alerte_brouillard",
+    # Météo TEMPS RÉEL (au moment "datetime_fin" du tour)
+    "meteo_actuel_temperature_2m", "meteo_actuel_vapour_pressure_deficit",
+    "meteo_rs_wm2_actuel", "meteo_pression_actuelle_kPa",
+    # Alertes TEMPS RÉEL
+    "alerte_chergui_actuel", "alerte_pluie_actuel", "alerte_brouillard_actuel",
+    "alerte_vpd_stress_actuel", "alerte_vent_actuel",
     # Zone drainage
     "drain_zone",
     # v6.3: Features temporelles (converties en minutes depuis minuit)
@@ -299,7 +350,24 @@ def preparer_features(df, features_list, encoders=None, fit=True):
     """
     Sélectionne, encode et remplit les features.
     Si fit=True, crée les encodeurs. Si fit=False, utilise les encodeurs existants.
+    ERREUR EXPLICITE si une feature obligatoire est absente du CSV.
     """
+    # ── Vérification colonnes obligatoires ──────────────────────
+    cols_manquantes = [c for c in features_list if c not in df.columns]
+    if cols_manquantes:
+        raise ValueError(
+            f"\n{'═'*65}\n"
+            f"  ❌ ERREUR — FEATURES MANQUANTES DANS LE CSV\n"
+            f"{'═'*65}\n"
+            f"  Les colonnes suivantes sont requises mais absentes :\n"
+            + "".join(f"    ✗ {c}\n" for c in cols_manquantes) +
+            f"\n  Vérifiez :\n"
+            f"    1. Que 1_fusion_irrigation_meteo_complet.py a bien tourné\n"
+            f"    2. Que 2_optimisation_irrigation_agadir.py a bien tourné\n"
+            f"    3. Que le fichier CSV utilisé est bien 'irrigation_meteo_optimise.csv'\n"
+            f"{'═'*65}"
+        )
+
     cols_dispo = [c for c in features_list if c in df.columns]
     X = df[cols_dispo].copy()
 
@@ -321,12 +389,7 @@ def preparer_features(df, features_list, encoders=None, fit=True):
             else:
                 X[col] = 0
 
-    # Colonnes manquantes → 0
-    for col in features_list:
-        if col not in X.columns:
-            X[col] = 0.0
-
-    X = X[features_list] if all(c in X.columns for c in features_list) else X
+    X = X[features_list]
     X = X.fillna(X.median(numeric_only=True))
     return X, encoders, cols_dispo
 
@@ -419,6 +482,18 @@ def charger_donnees(path=INPUT_FILE):
             df.groupby(GROUP)["ec_drainage"].shift(lag)
         )
 
+    # ── Durée tour 1 : opt_duree_min du tour 1 propagée à toute la journée ──
+    # Le modèle matin prédit cette valeur (pas de drainage disponible au tour 1)
+    # Le modèle tour/tour prend le relais à partir du tour 2 (drainage mesuré)
+    df_tour1 = (
+        df[df["num_tour"] == 1][["date", "bloc", "serre", "vanne", "opt_duree_min"]]
+        .copy()
+        .rename(columns={"opt_duree_min": "opt_duree_tour1_min"})
+    )
+    df = df.merge(df_tour1, on=["date", "bloc", "serre", "vanne"], how="left")
+    n_tour1 = df["opt_duree_tour1_min"].notna().sum()
+    print(f"  → opt_duree_tour1_min ajouté : {n_tour1:,} lignes renseignées")
+
     return df
 
 
@@ -458,7 +533,7 @@ def entrainer_modele_matin(df):
         y_test  = test[target].fillna(test[target].median())
 
         model = xgb.XGBRegressor(
-            n_estimators=400, max_depth=6, learning_rate=0.04,
+            n_estimators=500, max_depth=6, learning_rate=0.04,
             subsample=0.85, colsample_bytree=0.85,
             min_child_weight=3, gamma=0.1,
             random_state=RANDOM_STATE, verbosity=0, n_jobs=-1
@@ -470,13 +545,16 @@ def entrainer_modele_matin(df):
         )
 
         y_pred = model.predict(X_test)
-        r2  = r2_score(y_test, y_pred)
-        mae = mean_absolute_error(y_test, y_pred)
+        r2   = r2_score(y_test, y_pred)
+        mae  = mean_absolute_error(y_test, y_pred)
+        rmse = float(np.sqrt(mean_squared_error(y_test, y_pred)))
 
         modeles[f"reg_{target}"] = model
         scores.append({"target": target, "label": label, "type": "R²",
-                        "score": r2, "detail": f"MAE={mae:.3f}"})
+                        "score": r2, "detail": f"MAE={mae:.3f}", "mae": mae, "rmse": rmse})
         afficher_score("XGBoost", label, "reg", r2, "R²")
+        sauvegarder_predictions_agent(target, y_test, y_pred, "regression")
+        sauvegarder_importance_agent(target, model, feats)
 
     # ── Classification ────────────────────────────────────────
     print("\n  ── Classification ──")
@@ -498,7 +576,7 @@ def entrainer_modele_matin(df):
             continue
 
         xgb_params = dict(
-            n_estimators=400, max_depth=6, learning_rate=0.04,
+            n_estimators=500, max_depth=6, learning_rate=0.04,
             subsample=0.85, colsample_bytree=0.85,
             min_child_weight=3,
             use_label_encoder=False,
@@ -524,6 +602,10 @@ def entrainer_modele_matin(df):
         scores.append({"target": target, "label": label, "type": "Accuracy",
                         "score": acc, "detail": f"F1={f1:.4f}"})
         afficher_score("XGBoost", label, "clf", acc, "Accuracy")
+        y_test_labels = le.inverse_transform(y_test)
+        y_pred_labels = le.inverse_transform(y_pred)
+        sauvegarder_predictions_agent(target, y_test_labels, y_pred_labels, "classification")
+        sauvegarder_importance_agent(target, model, feats)
 
     encoders_matin["cibles"] = encoders_cibles
 
@@ -543,6 +625,17 @@ def entrainer_modele_tour(df):
     print(f"\n{'═'*65}")
     print("  ENTRAÎNEMENT — MODÈLE 2 : DÉCISION TOUR PAR TOUR")
     print(f"{'═'*65}")
+
+    # v6.4 : exclure explicitement les lignes sans météo "actuel" fiable
+    # (générées par 2_optimisation_irrigation_agadir.py avec _exclu_dataset_ml=1,
+    # opt_label_sequentiel="EXCLU_METEO_ACTUEL_MANQUANTE", opt_continuer=NaN).
+    # Filtre explicite (plutôt que de compter uniquement sur le dropna ci-dessous)
+    # pour rester robuste si la logique amont change.
+    if "_exclu_dataset_ml" in df.columns:
+        n_excl = int((df["_exclu_dataset_ml"] == 1).sum())
+        if n_excl > 0:
+            print(f"  ⚠️  {n_excl:,} lignes exclues (météo 'actuel' manquante, _exclu_dataset_ml=1)")
+        df = df[df["_exclu_dataset_ml"] != 1].copy()
 
     df_m2 = df.dropna(subset=["pct_drainage", "opt_continuer"]).copy()
     df_m2 = df_m2[df_m2["v_drainage"] > 0].reset_index(drop=True)
@@ -576,6 +669,25 @@ def entrainer_modele_tour(df):
     df_m2.loc[df_m2["_pct_drain_prev"] <= 0, "drain_zone"] = 2.0   # low drain → 12 min
     df_m2.loc[df_m2["_pct_drain_prev"] > 25, "drain_zone"] = 0.0   # high drain → 8 min
 
+    # v6.9: Décaler opt_duree_min vers la ligne précédente (même logique que temps_repos_min)
+    #   Dans le CSV, opt_duree_min à la ligne N (tour N) a été calculé à partir du
+    #   drainage du tour N-1 (_pct_drain_prev de la ligne N) → déjà dans les features
+    #   de la ligne N, donc cible redondante/non prédictive.
+    #   On veut prédire la DURÉE DU TOUR SUIVANT à partir du drainage du tour ACTUEL
+    #   (pct_drainage de la ligne N) → cible = opt_duree_min de la ligne N+1
+    #   (même vanne/serre/bloc/date, num_tour suivant).
+    GROUP_VANNE = ["date", "bloc", "serre", "vanne"]
+    if all(c in df_m2.columns for c in GROUP_VANNE) and "opt_duree_min" in df_m2.columns:
+        if "heure_debut" in df_m2.columns:
+            df_m2 = df_m2.sort_values(GROUP_VANNE + ["num_tour"] if "num_tour" in df_m2.columns
+                                       else GROUP_VANNE + ["heure_debut"]).reset_index(drop=True)
+        df_m2["opt_duree_min_shifted"] = (
+            df_m2.groupby(GROUP_VANNE)["opt_duree_min"].shift(-1)
+        )
+        n_shift_d = df_m2["opt_duree_min_shifted"].notna().sum()
+        print(f"  Label durée optimisé décalé (date, bloc, serre, vanne) : {n_shift_d:,} valides "
+              f"(dernier tour de chaque journée exclu)")
+
     # v6.1: Décaler le label temps_repos_min d'une ligne vers le haut
     #   Dans le CSV, temps_repos_min à la ligne N = repos APRÈS le tour N-1
     #   On veut prédire le repos APRÈS le tour N → label = valeur de la ligne N+1
@@ -606,6 +718,22 @@ def entrainer_modele_tour(df):
     encoders_tour["features"] = enc
     encoders_tour["feats_list"] = feats
 
+    # ── Sauvegarder les médianes des lags pour le bootstrap à l'inférence ──
+    # Tours 1/2/3 ont des lags NaN → fillna(médiane) à l'entraînement.
+    # On sauvegarde ces médianes pour reproduire le même comportement en inférence
+    # au lieu de passer 0.0 (qui n'a jamais été vu pendant l'entraînement).
+    LAG_COLS = [
+        "pct_drainage_lag1", "pct_drainage_lag2", "pct_drainage_lag3",
+        "ec_drainage_lag1",  "ec_drainage_lag2",
+    ]
+    lag_medians = {}
+    for col in LAG_COLS:
+        if col in df_m2.columns:
+            med = df_m2[col].median()
+            lag_medians[col] = float(med) if not np.isnan(med) else 0.0
+    encoders_tour["lag_medians"] = lag_medians
+    print(f"  Médianes lags sauvegardées : { {k: round(v, 2) for k, v in lag_medians.items()} }")
+
     # ── opt_continuer — binaire ───────────────────────────────
     print("\n  ── Classification : opt_continuer (CONTINUER / STOP) ──")
     y_tr_c = train["opt_continuer"].fillna(0).astype(int)
@@ -613,7 +741,7 @@ def entrainer_modele_tour(df):
     scale  = (1 - y_tr_c.mean()) / max(y_tr_c.mean(), 0.01)
 
     model_cont = xgb.XGBClassifier(
-        n_estimators=400, max_depth=7, learning_rate=0.04,
+        n_estimators=500, max_depth=7, learning_rate=0.04,
         subsample=0.85, colsample_bytree=0.85, min_child_weight=3,
         scale_pos_weight=scale, objective="binary:logistic",
         use_label_encoder=False,
@@ -628,6 +756,8 @@ def entrainer_modele_tour(df):
     scores.append({"target": "opt_continuer", "label": "9. Continuer/STOP",
                     "type": "Accuracy", "score": acc_c, "detail": f"F1={f1_c:.4f}"})
     afficher_score("XGBoost", "9. Continuer/STOP", "clf", acc_c, "Accuracy")
+    sauvegarder_predictions_agent("opt_continuer", y_te_c, y_pred_c, "classification")
+    sauvegarder_importance_agent("opt_continuer", model_cont, feats)
 
     # ── opt_label_sequentiel — multiclasse ────────────────────
     print("\n  ── Classification : opt_label_sequentiel (raison STOP) ──")
@@ -640,7 +770,7 @@ def entrainer_modele_tour(df):
     print(f"  Classes : {list(le_seq.classes_)}")
 
     model_seq = xgb.XGBClassifier(
-        n_estimators=400, max_depth=7, learning_rate=0.04,
+        n_estimators=500, max_depth=7, learning_rate=0.04,
         subsample=0.85, colsample_bytree=0.85, min_child_weight=3,
         num_class=n_cls_s, objective="multi:softprob",
         use_label_encoder=False,
@@ -656,20 +786,26 @@ def entrainer_modele_tour(df):
     scores.append({"target": "opt_label_sequentiel", "label": "9b. Raison STOP",
                     "type": "Accuracy", "score": acc_s, "detail": f"F1={f1_s:.4f}"})
     afficher_score("XGBoost", "9b. Raison STOP", "clf", acc_s, "Accuracy")
+    y_te_s_labels = le_seq.inverse_transform(y_te_s)
+    y_pred_s_labels = le_seq.inverse_transform(y_pred_s)
+    sauvegarder_predictions_agent("opt_label_sequentiel", y_te_s_labels, y_pred_s_labels, "classification")
+    sauvegarder_importance_agent("opt_label_sequentiel", model_seq, feats)
 
-    # ── opt_duree_min — régression ────────────────────────────
-    print("\n  ── Régression : opt_duree_min (durée tour suivant) ──")
+    # ── opt_duree_min — régression (cible décalée = durée du tour SUIVANT) ──
+    print("\n  ── Régression : opt_duree_min_shifted (durée tour suivant) ──")
+    target_duree = "opt_duree_min_shifted" if "opt_duree_min_shifted" in train.columns else "opt_duree_min"
     # v5.7: Drop NaN au lieu de fillna(median) — supprime le bruit d'entraînement
-    mask_tr = train["opt_duree_min"].notna()
-    mask_te = test["opt_duree_min"].notna()
-    y_tr_d = train.loc[mask_tr, "opt_duree_min"]
-    y_te_d = test.loc[mask_te, "opt_duree_min"]
+    # (le dernier tour de chaque journée n'a pas de "tour suivant" → NaN, exclu ici)
+    mask_tr = train[target_duree].notna()
+    mask_te = test[target_duree].notna()
+    y_tr_d = train.loc[mask_tr, target_duree]
+    y_te_d = test.loc[mask_te, target_duree]
     X_train_d = X_train[mask_tr]
     X_test_d = X_test[mask_te]
 
     # v5.7: Modèle plus simple (max_depth=3) — moins de surapprentissage sur fonction en escalier
     model_dur = xgb.XGBRegressor(
-        n_estimators=200, max_depth=3, learning_rate=0.05,
+        n_estimators=400, max_depth=3, learning_rate=0.05,
         subsample=0.85, colsample_bytree=0.85, min_child_weight=5,
         reg_alpha=0.1, reg_lambda=1.0,
         random_state=RANDOM_STATE, verbosity=0, n_jobs=-1
@@ -677,12 +813,16 @@ def entrainer_modele_tour(df):
     model_dur.fit(X_train_d, y_tr_d, eval_set=[(X_test_d, y_te_d)], verbose=False)
 
     y_pred_d = model_dur.predict(X_test_d)
-    r2_d  = r2_score(y_te_d, y_pred_d)
-    mae_d = mean_absolute_error(y_te_d, y_pred_d)
+    r2_d   = r2_score(y_te_d, y_pred_d)
+    mae_d  = mean_absolute_error(y_te_d, y_pred_d)
+    rmse_d = float(np.sqrt(mean_squared_error(y_te_d, y_pred_d)))
     modeles["reg_opt_duree_min"] = model_dur
-    scores.append({"target": "opt_duree_min", "label": "3b. Durée tour suivant",
-                    "type": "R²", "score": r2_d, "detail": f"MAE={mae_d:.3f}"})
+    scores.append({"target": target_duree, "label": "3b. Durée tour suivant",
+                    "type": "R²", "score": r2_d, "detail": f"MAE={mae_d:.3f}",
+                    "mae": mae_d, "rmse": rmse_d})
     afficher_score("XGBoost", "3b. Durée tour suivant", "reg", r2_d, "R²")
+    sauvegarder_predictions_agent(target_duree, y_te_d, y_pred_d, "regression")
+    sauvegarder_importance_agent(target_duree, model_dur, feats)
 
     # ── v6.8: Classification + Regression fine pour REPOS HUMAIN ──
     print("\n  ── Repos humain : Classification + Regression fine [v6.8] ──")
@@ -742,6 +882,10 @@ def sauvegarder_modeles(modeles_matin, enc_matin, modeles_tour, enc_tour, scores
     print(f"     xgb_tour_modeles.pkl")
     print(f"     xgb_tour_encoders.pkl")
     print(f"     scores_comparaison.csv")
+    print(f"  💾 Prédictions individuelles (y_true/y_pred) : {PREDICTIONS_DIR_AGENT}/")
+    print(f"  💾 Importances des variables                 : {IMPORTANCES_DIR_AGENT}/")
+    print(f"\n  ➡  Lancez maintenant generer_graphes_agent_xgboost.py pour produire")
+    print(f"     les figures (PNG) et tableaux du Chapitre 3 (agent XGBoost).")
 
 
 # ════════════════════════════════════════════════════════════════
@@ -776,7 +920,7 @@ def predict_matin(donnees: dict,
       nbr_tour              — nombre de cycles entiers (int)
       ec_cible_dSm          — EC à programmer sur NetaJet (float, 2 décimales)
       ph_cible              — pH à programmer sur NetaJet (float, 1 décimale)
-      heure_debut_ml        — heure de démarrage ML (str "HH:MM")
+      heure_debut_optimale  — heure de démarrage (str "HH:MM")
       scenario_meteo        — scénario météo du jour (str)
       alerte                — alerte : NORMAL / CHERGUI / PLUIE_STOP / BROUILLARD
     """
@@ -806,8 +950,8 @@ def predict_matin(donnees: dict,
             idx = int(modeles_matin[key].predict(X)[0])
             resultats[target] = enc_cibles[target].classes_[idx]
 
-    # ── Durée entière pour NetaJet ────────────────────────────
-    duree_float  = resultats.get("opt_duree_min", 10.0)
+    # ── Durée tour 1 pour NetaJet (avant tout drainage mesuré) ──
+    duree_float  = resultats.get("opt_duree_tour1_min", 10.0)
     duree_int    = int(round(max(4.0, min(14.0, duree_float))))
 
     # ── Scénario météo ────────────────────────────────────────
@@ -829,24 +973,17 @@ def predict_matin(donnees: dict,
 
     # ── Assemblage des 9 consignes journalières (NetaJet 4G) ──
     apport_mm = round(resultats.get("opt_apport_total_mm", 3.5), 1)
-    duree_ml  = int(round(max(4.0, min(14.0, resultats.get("opt_duree_min", 10.0)))))
-
-    # Volume cc/goutteur (formule Azura — sac coco 0.15 m², 4 goutteurs/sac)
-    # mm = cc/goutteur / 150  →  cc/goutteur = mm × 150
-    FACTEUR_MM_TO_CC_GOUTTEUR = 150.0
-    volume_cc_goutteur = round(apport_mm * FACTEUR_MM_TO_CC_GOUTTEUR)
-
+    duree_ml  = int(round(max(4.0, min(14.0, resultats.get("opt_duree_tour1_min", 10.0)))))
     consignes = {
         "ec_cible_dSm":         round(resultats.get("opt_EC_cible_dSm", 2.3), 1),
         "ph_cible":             round(float(resultats.get("opt_pH_cible", 6.0)), 1),
         "nbr_tour":             max(1, int(round(resultats.get("opt_nb_cycles", 5)))),
-        "heure_debut_ml":       resultats.get("opt_heure_demarrage", "08:00"),
+        "heure_debut_optimale": resultats.get("opt_heure_demarrage", "08:00"),
         "scenario_meteo":       scenario,
         "alerte":               alerte,
         "quantite_eau_mm":      apport_mm,
         "volume_total_Lha":     round(apport_mm * 10_000, 0),  # mm × 10000 = L/ha
-        "volume_cc_goutteur":   volume_cc_goutteur,  # cc/goutteur (sac 0.15m², 4 goutteurs)
-        "duree_min":            duree_ml,   # durée par tour (min) pour NetaJet
+        "duree_tour1_min":      duree_ml,   # durée tour 1 (avant drainage) pour NetaJet
     }
 
     return consignes
@@ -962,7 +1099,8 @@ def predict_tour(donnees: dict,
             "STOP_PLUIE":      "🌧 STOP PLUIE — irrigation suspendue",
             "STOP_BROUILLARD": "🌫 STOP BROUILLARD — HR > 90%, asphyxie racinaire",
             "STOP_EC_URGENCE": "🔴 STOP URGENCE — accumulation sels, réduire NPK -20%",
-            "STOP_EXCES":      "⚠  STOP EXCÈS — drainage > 45%, réduire volume -20%",
+            "STOP_EXCES":      "⚠  STOP EXCÈS — drainage > seuil, réduire volume -20%",
+            "STOP_CHERGUI_MAX": "🔴 STOP CHERGUI MAX — plafond tours dépassé sous Chergui, volume cible atteint",
         }
         decision_msg = messages.get(raison, f"STOP — {raison}")
 
@@ -1006,7 +1144,7 @@ def afficher_consignes_matin(consignes: dict, date_str: str = None):
 ║  1. EC cible          : {str(consignes['ec_cible_dSm']) + ' dS/m':<41}║
 ║  2. pH cible          : {str(consignes['ph_cible']):<41}║
 ║  3. Nombre de tours   : {str(consignes['nbr_tour']) + ' cycles':<41}║
-║  4. Heure début       : {consignes['heure_debut_ml']:<41}║
+║  4. Heure début       : {consignes['heure_debut_optimale']:<41}║
 ╠══════════════════════════════════════════════════════════════════╣
 ║           ── VOLUME JOURNALIER ──                                 ║
 ║  5. Quantité eau      : {str(consignes['quantite_eau_mm']) + ' mm/jour':<41}║
@@ -1081,7 +1219,7 @@ def demo_journee_complete(modeles_matin, enc_matin, modeles_tour, enc_tour):
     print(f"     ec_cible_dSm         = {consignes['ec_cible_dSm']} dS/m")
     print(f"     ph_cible             = {consignes['ph_cible']}")
     print(f"     nbr_tour             = {consignes['nbr_tour']} cycles")
-    print(f"     heure_debut_ml       = {consignes['heure_debut_ml']}")
+    print(f"     heure_debut_optimale = {consignes['heure_debut_optimale']}")
     print(f"     scenario_meteo       = {consignes['scenario_meteo']}")
     print(f"     alerte               = {consignes['alerte']}")
     print(f"     quantite_eau_mm      = {consignes['quantite_eau_mm']} mm/jour")
@@ -1097,8 +1235,12 @@ def demo_journee_complete(modeles_matin, enc_matin, modeles_tour, enc_tour):
          "ec_drainage_lag1": 0.0, "ec_drainage_lag2": 0.0,
          "opt_vol_cumule_L": 1.33, "opt_vol_jour_cible_L": 14.63,
          "opt_EC_drain_cible_dSm": 3.8, "opt_nb_cycles": 11, "opt_max_cycles_stade": 14,
-         "meteo_T_max_C": 28.5, "meteo_VPD_max_kPa": 1.8, "meteo_ET0_mm_jour": 5.5,
-         "alerte_chergui": 0, "alerte_pluie": 0, "alerte_brouillard": 0,
+         "meteo_actuel_temperature_2m": 19.0, "meteo_actuel_vapour_pressure_deficit": 0.6,
+         "meteo_actuel_relative_humidity_2m": 78, "meteo_actuel_windspeed_10m": 8.0,
+         "meteo_rs_wm2_actuel": 250.0, "meteo_pression_actuelle_kPa": 10.08,
+         "alerte_chergui_actuel": 0, "alerte_pluie_actuel": 0, "alerte_pluie_legere_actuel": 0,
+         "alerte_brouillard_actuel": 0, "alerte_vpd_stress_actuel": 0, "alerte_vent_actuel": 0,
+         "scenario_meteo": "2_ENSOLEILLE",
          "ec_bassin": 0.9, "ec_apport": 2.3, "ph_apport": 6.0},
         # Tour 4 — drainage en montée
         {"pct_drainage": 18.0, "ec_drainage": 2.5, "ph_drainage": 6.1,
@@ -1107,8 +1249,12 @@ def demo_journee_complete(modeles_matin, enc_matin, modeles_tour, enc_tour):
          "ec_drainage_lag1": 2.3, "ec_drainage_lag2": 2.2,
          "opt_vol_cumule_L": 5.32, "opt_vol_jour_cible_L": 14.63,
          "opt_EC_drain_cible_dSm": 3.8, "opt_nb_cycles": 11, "opt_max_cycles_stade": 14,
-         "meteo_T_max_C": 28.5, "meteo_VPD_max_kPa": 1.8, "meteo_ET0_mm_jour": 5.5,
-         "alerte_chergui": 0, "alerte_pluie": 0, "alerte_brouillard": 0,
+         "meteo_actuel_temperature_2m": 23.5, "meteo_actuel_vapour_pressure_deficit": 1.2,
+         "meteo_actuel_relative_humidity_2m": 65, "meteo_actuel_windspeed_10m": 12.0,
+         "meteo_rs_wm2_actuel": 550.0, "meteo_pression_actuelle_kPa": 10.06,
+         "alerte_chergui_actuel": 0, "alerte_pluie_actuel": 0, "alerte_pluie_legere_actuel": 0,
+         "alerte_brouillard_actuel": 0, "alerte_vpd_stress_actuel": 0, "alerte_vent_actuel": 0,
+         "scenario_meteo": "2_ENSOLEILLE",
          "ec_bassin": 0.9, "ec_apport": 2.3, "ph_apport": 6.0},
         # Tour 8 — drainage optimal, légère baisse
         {"pct_drainage": 32.0, "ec_drainage": 2.9, "ph_drainage": 6.2,
@@ -1117,8 +1263,12 @@ def demo_journee_complete(modeles_matin, enc_matin, modeles_tour, enc_tour):
          "ec_drainage_lag1": 3.0, "ec_drainage_lag2": 2.8,
          "opt_vol_cumule_L": 10.64, "opt_vol_jour_cible_L": 14.63,
          "opt_EC_drain_cible_dSm": 3.8, "opt_nb_cycles": 11, "opt_max_cycles_stade": 14,
-         "meteo_T_max_C": 28.5, "meteo_VPD_max_kPa": 1.8, "meteo_ET0_mm_jour": 5.5,
-         "alerte_chergui": 0, "alerte_pluie": 0, "alerte_brouillard": 0,
+         "meteo_actuel_temperature_2m": 28.5, "meteo_actuel_vapour_pressure_deficit": 1.8,
+         "meteo_actuel_relative_humidity_2m": 50, "meteo_actuel_windspeed_10m": 18.0,
+         "meteo_rs_wm2_actuel": 800.0, "meteo_pression_actuelle_kPa": 10.03,
+         "alerte_chergui_actuel": 0, "alerte_pluie_actuel": 0, "alerte_pluie_legere_actuel": 0,
+         "alerte_brouillard_actuel": 0, "alerte_vpd_stress_actuel": 1, "alerte_vent_actuel": 1,
+         "scenario_meteo": "2_ENSOLEILLE",
          "ec_bassin": 0.9, "ec_apport": 2.3, "ph_apport": 6.0},
         # Tour 11 — volume atteint
         {"pct_drainage": 28.0, "ec_drainage": 3.1, "ph_drainage": 6.2,
@@ -1127,8 +1277,12 @@ def demo_journee_complete(modeles_matin, enc_matin, modeles_tour, enc_tour):
          "ec_drainage_lag1": 3.0, "ec_drainage_lag2": 2.9,
          "opt_vol_cumule_L": 14.63, "opt_vol_jour_cible_L": 14.63,
          "opt_EC_drain_cible_dSm": 3.8, "opt_nb_cycles": 11, "opt_max_cycles_stade": 14,
-         "meteo_T_max_C": 28.5, "meteo_VPD_max_kPa": 1.8, "meteo_ET0_mm_jour": 5.5,
-         "alerte_chergui": 0, "alerte_pluie": 0, "alerte_brouillard": 0,
+         "meteo_actuel_temperature_2m": 26.0, "meteo_actuel_vapour_pressure_deficit": 1.5,
+         "meteo_actuel_relative_humidity_2m": 55, "meteo_actuel_windspeed_10m": 15.0,
+         "meteo_rs_wm2_actuel": 600.0, "meteo_pression_actuelle_kPa": 10.04,
+         "alerte_chergui_actuel": 0, "alerte_pluie_actuel": 0, "alerte_pluie_legere_actuel": 0,
+         "alerte_brouillard_actuel": 0, "alerte_vpd_stress_actuel": 0, "alerte_vent_actuel": 1,
+         "scenario_meteo": "2_ENSOLEILLE",
          "ec_bassin": 0.9, "ec_apport": 2.3, "ph_apport": 6.0},
     ]
 
@@ -1167,7 +1321,7 @@ def demo_journee_complete(modeles_matin, enc_matin, modeles_tour, enc_tour):
     print(f"     ec_cible_dSm         = {consignes_chergui['ec_cible_dSm']} dS/m")
     print(f"     ph_cible             = {consignes_chergui['ph_cible']}")
     print(f"     nbr_tour             = {consignes_chergui['nbr_tour']} cycles")
-    print(f"     heure_debut_ml       = {consignes_chergui['heure_debut_ml']}")
+    print(f"     heure_debut_optimale = {consignes_chergui['heure_debut_optimale']}")
     print(f"     scenario_meteo       = {consignes_chergui['scenario_meteo']}")
     print(f"     alerte               = {consignes_chergui['alerte']}")
     print(f"     quantite_eau_mm      = {consignes_chergui['quantite_eau_mm']} mm/jour")

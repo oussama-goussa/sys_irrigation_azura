@@ -31,7 +31,8 @@
 ║   • Netafim NetaJet 4G — Programmation EC et pH (NPK auto par NetaJet)      ║
 ║   • Gieling (2001) — Contrôle feedforward+feedback substrat hors-sol       ║
 ║   • Van Vosselen et al. (2005) — Water content tomate hors-sol             ║
-║   • Rapport Azura §4.2 — 7 scénarios météo | §6.1-6.2 boucle adaptative    ║
+║   • Rapport Azura §4.2 — scénarios météo | §6.1-6.2 boucle adaptative       ║
+║   • v7.0: 3_NUAGEUX et 4_TRES_NUAGEUX supprimés (inexistants à Agadir)      ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
 ║  COLONNES GÉNÉRÉES (préfixe opt_) :                                         ║
 ║   Stade phénologique, Kc, ET0, ETc, FL, Volume/cycle,                       ║
@@ -74,6 +75,24 @@ import math as _math
 INPUT_FILE  = "irrigation_meteo_complet.csv"
 OUTPUT_FILE = "irrigation_meteo_optimise.csv"
 
+# ════════════════════════════════════════════════════════════════
+# CHANGELOG v6.3 — CORRECTION STOP_VOLUME / STOP_CHERGUI_MAX
+# ════════════════════════════════════════════════════════════════
+# [BUG 6] vol_jour_cible_L instable : utilisait vol_cycle_L (v_apport du tour
+#     courant) × nb_cycles. Or v_apport varie tour par tour (tour 1 ≈ 250 cc,
+#     tours suivants ≈ 160-180 cc) → la cible journalière changeait à chaque
+#     tour évalué → STOP_VOLUME déclenchait trop tôt en fin de journée
+#     (v_apport bas → cible artificiellement petite → seuil 95% atteint trop vite).
+#
+# CORRECTION :
+#   main()          : précalcul _vol_cycle_median_L = médiane(v_apport hors tour 1)
+#                     par groupe (date, bloc, serre, vanne) — stable pour toute la journée
+#   optimiser_ligne(): vol_jour_cible_L = _vol_cycle_median_L × nb_cycles
+#                     fallback sur vol_cycle_L si _vol_cycle_median_L absent
+#
+# NOTA : vol_cumule_avant_tour_L = _vol_cumule_L - vol_cycle_L_CE_TOUR reste correct
+#   (cumsum réel des v_apport mesurés, on retire exactement le volume de ce tour).
+#
 # ════════════════════════════════════════════════════════════════
 # CHANGELOG v5.1 — CORRECTIONS SANTÉ PLANTE COCO + ALIGNEMENT HUMAIN
 # ════════════════════════════════════════════════════════════════
@@ -119,6 +138,7 @@ OUTPUT_FILE = "irrigation_meteo_optimise.csv"
 #     Facteurs recalibrés pour médianes humaines absolues
 #
 # [v5.1b] DUREE_MIN_ABS : 6→4 min (humain descend à 4 min en fin de journée)
+# [v5.9]  DUREE_MIN_ABS : 4→6 min (plancher relevé, 4min jugé trop court terrain)
 # [v5.1c] Redistribution uniforme (sans cumul humain) — évite la boucle perverse
 # [v5.1d] Budget ref = médiane du groupe (pas tour 1 atypique v_apport=250cc)
 # [v5.1e] BUDGET_CALIBRATION = 1.2 — aligne budget médian sur ~96 min (vs 90 min humain)
@@ -421,7 +441,7 @@ def calc_FL(ec_bassin_dSm: float, scenario: str = "") -> float:
 # Source : Tableau 9 rapport Azura §4.2
 # ════════════════════════════════════════════════════════════════
 
-# v7.0: 3_NUAGEUX et 4_TRES_NUAGEUX supprimés — fusionnés dans 8_NUAGEUX_CHAUD
+# v7.0: Suppression 3_NUAGEUX et 4_TRES_NUAGEUX — n'existent pas à Agadir/Belfaa
 SCENARIO_CYCLES = {
     "1_TRES_ENSOLEILLE":  13,
     "2_ENSOLEILLE":       11,
@@ -437,8 +457,7 @@ SCENARIO_CYCLES = {
     "5e_FOG_FROID":        4,   # persiste longtemps, HR haute → 4 cycles max (terrain: 8)
     "6_CHERGUI_URGENT":   12,   # Limiter saturation coco
     "7_PLUIE_STOP":        3,   # Serre coco : même sous pluie il faut maintien hydrique minimum
-    "7b_PLUIE_LEGERE":    8,   # v7.0: added (précédemment absent de ce dict)
-    "8_NUAGEUX_CHAUD":     9,   # Rs modéré + chaleur + VPD — terrain médiane 9 (intègre ex 3+4)
+    "8_NUAGEUX_CHAUD":     9,   # Rs modéré + chaleur + VPD — terrain médiane 9
     "9_NUIT_FROIDE_SOL":   7,   # nuit froide + racines froides — terrain médiane 7
 }
 
@@ -497,6 +516,7 @@ def get_max_cycles_vegetatif(jours: int) -> int:
     else:
         return 6
 
+# v7.0: Suppression 3_NUAGEUX et 4_TRES_NUAGEUX
 SCENARIO_HEURE = {
     "1_TRES_ENSOLEILLE":  "07:00",
     "2_ENSOLEILLE":       "08:00",
@@ -507,8 +527,7 @@ SCENARIO_HEURE = {
     "5e_FOG_FROID":       "11:00",   # persiste → attendre 11h minimum
     "6_CHERGUI_URGENT":   "07:00_ALERTE",
     "7_PLUIE_STOP":       "STOP",
-    "7b_PLUIE_LEGERE":    "08:30",   # v7.0: added (précédemment absent de ce dict)
-    "8_NUAGEUX_CHAUD":   "08:30",   # VPD monte tôt → démarrer avant la chaleur (intègre ex 3+4)
+    "8_NUAGEUX_CHAUD":   "08:30",   # VPD monte tôt → démarrer avant la chaleur
     "9_NUIT_FROIDE_SOL": "09:30",   # attendre réchauffement sol/racines
 }
 
@@ -525,7 +544,6 @@ SCENARIO_EC_AJUST = {
     "5e_FOG_FROID":       1.20,    # +20% EC — transpiration très réduite toute la journée
     "6_CHERGUI_URGENT":   0.85,
     "7_PLUIE_STOP":       1.00,
-    "7b_PLUIE_LEGERE":    1.00,    # v7.0: added (précédemment absent)
     "8_NUAGEUX_CHAUD":   1.08,   # CORRECTION v5.0 : 1.15 → 1.08 (transpiration modérée = accumulation sels si EC trop haute)
     "9_NUIT_FROIDE_SOL": 0.85,   # CORRECTION v5.0 : 1.20 → 0.85 (racines froides = absorber MOINS → EC PLUS BASSE)
 }
@@ -842,7 +860,7 @@ K_SCENARIO_VOLUME = {
     "6_CHERGUI_URGENT":    3.80,
     "7_PLUIE_STOP":        4.00,  # humain K≈4.0-5.5 (nom trompeur, ne s'arrête jamais)
     "7b_PLUIE_LEGERE":     3.90,
-    "8_NUAGEUX_CHAUD":     3.70,  # v7.0: intègre ex 3_NUAGEUX + 4_TRES_NUAGEUX
+    "8_NUAGEUX_CHAUD":     3.70,
     "9_NUIT_FROIDE_SOL":   3.80,
 }
 
@@ -1207,6 +1225,10 @@ def labelliser_tour_sequentiel(
     nb_cycles_max_stade: int,
     T_max_C: float = None,
     volume_cumule_avant_tour_L: float = None,
+    alerte_pluie_actuel = 0,
+    alerte_brouillard_actuel = 0,
+    alerte_chergui_actuel = 0,
+    alerte_vpd_stress_actuel = 0,
 ) -> dict:
     """
     Génère le label séquentiel agronomique pour un tour d'irrigation.
@@ -1224,6 +1246,12 @@ def labelliser_tour_sequentiel(
     scenario                : scénario météo classifié (ex: "6_CHERGUI_URGENT")
     mois                    : mois de la date (1-12)
     nb_cycles_max_stade     : plafond de tours pour ce stade (ex: 5 végétatif)
+    alerte_pluie_actuel/alerte_brouillard_actuel/alerte_chergui_actuel
+                            : alertes météo temps réel (0/1) à l'heure de fin du tour.
+                              Si pd.NA/NaN (donnée API météo "actuel" indisponible pour
+                              cette ligne), AUCUN fallback à 0 n'est appliqué : la ligne
+                              est explicitement marquée comme non labellisable pour
+                              éviter d'enseigner au modèle une fausse absence d'alerte.
 
     Retourne
     --------
@@ -1231,11 +1259,24 @@ def labelliser_tour_sequentiel(
     """
     raison = "OK"
 
-    # ── Priorité 1 : arrêt immédiat pluie (§6.3)
-    if scenario == "7_PLUIE_STOP":
+    # ── Garde-fou données manquantes : pas de fallback silencieux sur les alertes
+    # temps réel. Si l'une des 3 alertes "_actuel" est NA (API météo "actuel"
+    # indisponible pour cette ligne — cf. fichier 1, fallback pd.NA), on ne peut pas
+    # juger STOP_PLUIE / STOP_BROUILLARD / STOP_CHERGUI_MAX de façon fiable.
+    # → label dédié, exclu du dataset d'entraînement (cf. main()), traçable dans les stats.
+    if (pd.isna(alerte_pluie_actuel) or pd.isna(alerte_brouillard_actuel)
+            or pd.isna(alerte_chergui_actuel) or pd.isna(alerte_vpd_stress_actuel)):
+        return {
+            "opt_label_sequentiel": "EXCLU_METEO_ACTUEL_MANQUANTE",
+            "opt_raison_stop":      "alerte_actuel_NA_donnee_meteo_temps_reel_indisponible",
+            "opt_continuer":        np.nan,
+        }
+
+    # ── Priorité 1 : arrêt immédiat pluie (§6.3) — condition temps réel à l'heure du tour
+    if alerte_pluie_actuel == 1:
         return {
             "opt_label_sequentiel": "STOP_PLUIE",
-            "opt_raison_stop":      "pluie_detectee_>0.5mm",
+            "opt_raison_stop":      "pluie_detectee_>1.5mm_h_actuel",
             "opt_continuer":        0,
         }
 
@@ -1267,29 +1308,25 @@ def labelliser_tour_sequentiel(
             "opt_continuer":        0,
         }
 
-    # Priorité 4 : brouillard — tous les sous-types bloquent tour 1 avant levée
-    FOG_SCENARIOS = {
-        "5_BROUILLARD_MATIN": 11.0,   # bloquer jusqu'à 11h classique
-        "5b_FOG_CHAUD_VPD":    9.0,   # levée rapide
-        "5c_FOG_CHAUD_RS":     9.5,
-        "5d_FOG_RADIATION":    8.75,  # 08h45
-        "5e_FOG_FROID":       11.5,   # 11h30 minimum
-    }
-    if scenario in FOG_SCENARIOS and not np.isnan(heure_dec) and heure_dec < FOG_SCENARIOS[scenario] and num_tour == 1:
+    # Priorité 4 : brouillard — condition temps réel (HR>90% & Rs<300 W/m²), tour 1 uniquement
+    if alerte_brouillard_actuel == 1 and num_tour == 1:
         return {
             "opt_label_sequentiel": "STOP_BROUILLARD",
-            "opt_raison_stop":      f"{scenario}_HR>90pct_retard_jusqu_{FOG_SCENARIOS[scenario]}h",
+            "opt_raison_stop":      "HR>90pct_et_Rs<300Wm2_actuel",
             "opt_continuer":        0,
         }
 
     # ── Priorité 5 : plafond max cycles du stade
+    chergui_tolerance_active = False
     if num_tour > nb_cycles_max_stade:
-        if scenario == "6_CHERGUI_URGENT":
-            # Chergui : on tolère le dépassement si drainage insuffisant
-            pass  # → vérification drainage ci-dessous prévaudra
+        if alerte_chergui_actuel == 1:
+            # Chergui réel (T>35°C & VPD>2.5kPa) : on tolère le dépassement du plafond
+            # → la vérification volume/drainage ci-dessous décidera de l'arrêt,
+            #   mais si elle déclenche, on la relabellise STOP_CHERGUI_MAX (priorité 6)
+            chergui_tolerance_active = True
         else:
             return {
-                "opt_label_sequentiel": "STOP_CHERGUI_MAX" if scenario == "6_CHERGUI_URGENT" else "STOP_VOLUME",
+                "opt_label_sequentiel": "STOP_VOLUME",
                 "opt_raison_stop":      f"nb_tours_{num_tour}>=max_stade_{nb_cycles_max_stade}",
                 "opt_continuer":        0,
             }
@@ -1304,8 +1341,34 @@ def labelliser_tour_sequentiel(
             and volume_journalier_cible_L > 0
             and vol_check >= volume_journalier_cible_L * 0.95):
         # Sauf si drainage insuffisant (substrat trop sec malgré le volume)
-        drain_ok = (not pd.isna(pct_drainage_ce_tour) and pct_drainage_ce_tour >= 15.0)
+        #
+        # CORRECTION v6.3 — seuil drainage différencié Chergui vs normal :
+        #
+        # En Chergui (T>35°C, VPD>2.5kPa) le coco absorbe extrêmement vite.
+        # Un drainage de 15% au tour N ne garantit PAS que le substrat sera
+        # encore humide au tour N+1 : la plante continue à transpirer entre
+        # les deux tours et peut retomber en déficit hydrique.
+        # → On exige drainage ≥ 25% pour confirmer un vrai excès d'eau
+        #   avant d'autoriser le STOP en Chergui.
+        #
+        # NOTA : l'asphyxie racinaire N'EST PAS le risque en Chergui.
+        # Le substrat coco ne se sature pas quand la demande évapotranspiratoire
+        # est extrême — c'est l'inverse : risque de STRESS HYDRIQUE si on stoppe
+        # trop tôt. Le STOP_CHERGUI_MAX signifie uniquement que le volume
+        # journalier cible a été atteint malgré la tolérance Chergui.
+        #
+        # En conditions normales (non Chergui) : seuil 15% suffit.
+        if chergui_tolerance_active:
+            drain_ok = (not pd.isna(pct_drainage_ce_tour) and pct_drainage_ce_tour >= 25.0)
+        else:
+            drain_ok = (not pd.isna(pct_drainage_ce_tour) and pct_drainage_ce_tour >= 15.0)
         if drain_ok:
+            if chergui_tolerance_active:
+                return {
+                    "opt_label_sequentiel": "STOP_CHERGUI_MAX",
+                    "opt_raison_stop":      f"volume_journalier_atteint_malgre_chergui_tour_{num_tour}>max_{nb_cycles_max_stade}_vol_{vol_check:.0f}L>=cible_{volume_journalier_cible_L:.0f}L_drain_{pct_drainage_ce_tour:.1f}pct>=25pct",
+                    "opt_continuer":        0,
+                }
             return {
                 "opt_label_sequentiel": "STOP_VOLUME",
                 "opt_raison_stop":      f"volume_cumule_{vol_check:.0f}L>=cible_{volume_journalier_cible_L:.0f}L",
@@ -1348,19 +1411,20 @@ def labelliser_tour_sequentiel(
     # Phase 3 : stop si drainage < cible (en descente vers 20%)
     #
     # v6.1 — Plages STOP_OPTIMAL adaptées à la température :
-    #   Jour chaud  (drainage_cible ≥ 40%, Tmax ≥ ~32°C) : 45-50%
-    #   Jour froid  (drainage_cible < 40%, Tmax < ~32°C) : 35-45%
+    #   Jour chaud  (drainage_cible ≥ 40%, Tmax ≥ ~32°C) : 40-46%, max gaspillage 50%
+    #   Jour froid  (drainage_cible < 40%, Tmax < ~32°C) : 30-36%, max gaspillage 40%
     #   → Un drainage à 40% est "normal" en journée chaude mais "élevé" en journée froide.
     #     On adapte les seuils pour ne pas arrêter trop tôt quand il fait chaud.
     if drainage_cible_tour >= 0.40:
         # Jour chaud : drainage naturellement plus élevé
-        DRAIN_STOP_BAS  = 45.0
-        DRAIN_STOP_HAUT = 50.0
+        DRAIN_STOP_BAS  = 40.0
+        DRAIN_STOP_HAUT = 46.0
+        DRAIN_HAUT_ABS  = 50.0   # seuil gaspillage absolu (jour chaud)
     else:
         # Jour froid/standard : drainage plus faible
-        DRAIN_STOP_BAS  = 35.0
-        DRAIN_STOP_HAUT = 45.0
-    DRAIN_HAUT_ABS    = 50.0   # seuil gaspillage absolu (fixe) — aligné sur plage chaude
+        DRAIN_STOP_BAS  = 30.0
+        DRAIN_STOP_HAUT = 36.0
+        DRAIN_HAUT_ABS  = 40.0   # seuil gaspillage absolu (jour froid)
     DELTA_CONTINUER   = 3.0    # montée minimale pour "encore en montée"
 
     has_prev = (
@@ -1395,6 +1459,20 @@ def labelliser_tour_sequentiel(
             return {
                 "opt_label_sequentiel": "CONTINUER",
                 "opt_raison_stop":      "|".join(diag),
+                "opt_continuer":        1,
+            }
+
+        # ── Règle 7a-bis : chaleur/stress hydrique RÉEL maintenant → CONTINUER
+        # Même si le drainage est "dans la plage" (substrat semble suffisamment
+        # irrigué selon la cible journalière), si la météo INSTANTANÉE indique
+        # Chergui ou VPD élevé à l'heure de fin de ce tour, la plante consomme
+        # activement → on ne stoppe pas, on continue.
+        if alerte_chergui_actuel == 1 or alerte_vpd_stress_actuel == 1:
+            tendance_str = "stabilise" if abs(tendance) <= DELTA_CONTINUER else f"baisse_{tendance:.0f}pct"
+            raison_chaleur = "chergui_actuel" if alerte_chergui_actuel == 1 else "vpd_stress_actuel"
+            return {
+                "opt_label_sequentiel": "CONTINUER",
+                "opt_raison_stop":      f"drain_{d_curr:.0f}pct_dans_plage_{tendance_str}_mais_{raison_chaleur}_continuer",
                 "opt_continuer":        1,
             }
 
@@ -1654,12 +1732,12 @@ FEEDBACK_FACTEUR_MIN = 0.85   # v5.5 : resserré (table drainage fait l'essentie
 FEEDBACK_FACTEUR_MAX = 1.15   # v5.5 : resserré (ajustement fin uniquement)
 
 # Bornes absolues terrain Azura (minutes) — v5.1
-#   MIN : 6→4 min (humain descend à 4 min en fin de journée / coco saturé)
+#   MIN : 4→6 min (plancher relevé v5.9 — 4min jugé trop court terrain)
 #   MAX : 20→14 min (coco coir = saturation si >14 min à 8 L/h)
 #     Justification MAX : bloc coco 10L, capacité champ 85%, drainage 20-30%
 #       14 min × 8 goutteurs × 1 L/h / 60 = 1.87 L (OK, drainage ~20%)
 #       20 min × 8 goutteurs × 1 L/h / 60 = 2.67 L (trop, risque asphyxie)
-DUREE_MIN_ABS = 4.0
+DUREE_MIN_ABS = 6.0
 DUREE_MAX_ABS = 14.0
 
 # Facteur de correction ETc pour substrat coco (v5.2c — ADAPTATIF)
@@ -1685,7 +1763,7 @@ DUREE_MAX_ABS = 14.0
 #   Scénarios "chauds" : 1_TRES_ENSOLEILLE, 5b_FOG_CHAUD_VPD, 5c_FOG_CHAUD_RS,
 #                        6_CHERGUI_URGENT, 8_NUAGEUX_CHAUD
 #   Ou simplement Tmax > 30°C (détection automatique)
-FACTEUR_COCO_ETc_NORMAL = 1.10   # Jour normal/frais
+FACTEUR_COCO_ETc_NORMAL = 1.15   # jour normal/frais — plus conforme Raviv 2002
 FACTEUR_COCO_ETc_CHAUD  = 1.20   # Jour chaud (Tmax>30°C ou scénario chaud)
 TMAX_SEUIL_CHAUD_C      = 30.0   # Seuil température pour facteur chaud (°C)
 
@@ -1994,7 +2072,7 @@ def duree_by_drainage(pct_drain_prev: float) -> int:
     """Retourne la durée entière (min) selon le drainage précédent.
     Même logique humaine (3 paliers) mais optimisée et entière."""
     if pd.isna(pct_drain_prev) or float(pct_drain_prev) <= 0:
-        return 12   # drain 0%  → réhydratation (humain: 15, opt: 12)
+        return 13   # drain 0%  → réhydratation (humain: 15, opt: 13)
     d = float(pct_drain_prev)
     if d <= 25.0:
         return 10   # drain 1-25% → régime normal (humain: 10, opt: 10)
@@ -2035,7 +2113,11 @@ def duree_by_drainage(pct_drain_prev: float) -> int:
 FACTEUR_PAR_TOUR = {
     1:  1.00,   # Tour 1 : pleine durée (réhydratation)
     2:  1.00,   # Tour 2 : pleine durée
-    3:  0.90,   # Tour 3 : transition (-10%)
+    3:  0.75,   # Tour 3 : transition (-25%, corrigé v5.9 — drainage encore
+                #          ~0% à ce stade donc table=13min ; un facteur 0.90
+                #          donnait round(13*0.90)=12min > humain (10min),
+                #          violant l'objectif d'économie d'eau. 0.75 →
+                #          round(13*0.75)=10min, aligné sur régime normal humain)
     4:  0.85,   # Tour 4 : régime établi (-15%)
     5:  0.85,   # Tour 5 : (-15%)
     6:  1.00,   # Tour 6 : table=8 déjà court → pas de réduction
@@ -2226,7 +2308,7 @@ def calc_opt_duree(*args, **kwargs):
 # ════════════════════════════════════════════════════════════════
 
 # Seuils PRT par scénario (% dry-back)
-# v7.0: 3_NUAGEUX et 4_TRES_NUAGEUX fusionnés dans 8_NUAGEUX_CHAUD
+# v7.0: Suppression 3_NUAGEUX et 4_TRES_NUAGEUX
 PRT_SEUILS = {
     "1_TRES_ENSOLEILLE":  (9.0,  11.0),
     "2_ENSOLEILLE":       (9.0,  11.0),
@@ -2238,7 +2320,7 @@ PRT_SEUILS = {
     "6_CHERGUI_URGENT":   (8.0,   9.0),
     "7_PLUIE_STOP":       (None, None),
     "7b_PLUIE_LEGERE":    (9.0,  10.0),
-    "8_NUAGEUX_CHAUD":    (8.5,  10.0),  # VPD > 2 → substrat se sèche vite (intègre ex 3+4)
+    "8_NUAGEUX_CHAUD":    (8.5,  10.0),  # VPD > 2 → substrat se sèche vite
     "9_NUIT_FROIDE_SOL":  (10.0, 12.0),  # racines froides → absorption lente
 }
 
@@ -2621,6 +2703,7 @@ def optimiser_ligne(row: pd.Series, date_plantation: pd.Timestamp) -> dict:
     #       → facteur 0.45-0.55 (coco reste humide longtemps)
     #
     #   Source : Raviv 2008, Urrestarazu 2008, pratique terrain Azura 2021-2025
+    # v7.0: Suppression 3_NUAGEUX et 4_TRES_NUAGEUX
     FACTEUR_CYCLES_ADAPTATIF = {
         "1_TRES_ENSOLEILLE":  0.85,
         "2_ENSOLEILLE":       0.70,
@@ -2791,6 +2874,20 @@ def optimiser_ligne(row: pd.Series, date_plantation: pd.Timestamp) -> dict:
         num_tour               = num_tour_calc,           # ← profil durée v5.0
         duree_tour_precedent   = duree_tour_prec_val,     # ← v5.8 décroissance obligatoire
     )
+
+    # v5.9 : Plafond REPRISE RACINAIRE (J0-7) — humidification douce
+    #   Empirique (CSV 2021-2025, n=167 tours J0-7) : médiane duree_min humain
+    #   = 8min pour TOUS les tours (vs 15min en régime établi), quel que soit
+    #   pct_drain_prev (toujours NaN ces jours-là → table donnait 13 sans ça).
+    #   Cohérent avec get_max_cycles_vegetatif (J0-7 → max 4 cycles, racines
+    #   fragiles, risque asphyxie si tours trop longs).
+    DUREE_MAX_REPRISE_RACINAIRE = 8
+    if jours_depuis <= 7 and duree_result.get("opt_duree_min", 0) > DUREE_MAX_REPRISE_RACINAIRE \
+            and duree_result.get("opt_duree_mode") not in ("PLUIE_STOP",):
+        duree_result["opt_duree_min"]     = DUREE_MAX_REPRISE_RACINAIRE
+        duree_result["opt_duree_min_int"] = DUREE_MAX_REPRISE_RACINAIRE
+        duree_result["opt_duree_mode"]    = "REPRISE_RACINAIRE"
+
     result.update(duree_result)
 
     # ── Consigne entière NetaJet 4G (contrainte matérielle : minutes entières)
@@ -2912,8 +3009,18 @@ def optimiser_ligne(row: pd.Series, date_plantation: pd.Timestamp) -> dict:
     pct_drain_prec = float(row.get("_pct_drain_prev", np.nan) or np.nan)
     vol_cumule_L   = float(row.get("_vol_cumule_L",   0)      or 0)
 
-    # Volume journalier cible pour cette vanne (L) = vol/tour × nb_cycles recommandé
-    vol_jour_cible_L = vol_cycle_L * nb_cycles if nb_cycles > 0 else 0.0
+    # Volume journalier cible pour cette vanne (L) = vol_median/tour × nb_cycles recommandé
+    #
+    # CORRECTION v6.3 : on utilise _vol_cycle_median_L (médiane de v_apport sur la journée,
+    # hors tour 1 atypique) au lieu de vol_cycle_L (v_apport du tour courant).
+    # Raison : v_apport varie tour par tour (250 cc tour 1, ~160 cc tours suivants),
+    # donc vol_cycle_L × nb_cycles donnait une cible différente selon le tour évalué,
+    # ce qui déclenchait STOP_VOLUME trop tôt en fin de journée.
+    # La médiane est stable pour toute la journée → cible cohérente à tous les tours.
+    vol_cycle_median_L = float(row.get("_vol_cycle_median_L", 0) or 0)
+    if vol_cycle_median_L <= 0:
+        vol_cycle_median_L = vol_cycle_L   # fallback si précalcul absent
+    vol_jour_cible_L = vol_cycle_median_L * nb_cycles if nb_cycles > 0 else 0.0
 
     # mois déjà calculé en haut de la fonction (pour facteur saisonnier v5.0)
     # fallback si non défini
@@ -2921,6 +3028,8 @@ def optimiser_ligne(row: pd.Series, date_plantation: pd.Timestamp) -> dict:
         mois = 6
 
     # v5.9 : volume cumulé AVANT ce tour (pour condition STOP_VOLUME à 95%)
+    # On soustrait vol_cycle_L (v_apport réel de CE tour), pas la médiane.
+    # _vol_cumule_L inclut déjà ce tour (cumsum), donc on retire exactement ce tour.
     vol_cumule_avant_tour_L = vol_cumule_L - vol_cycle_L
 
     label_seq = labelliser_tour_sequentiel(
@@ -2937,12 +3046,17 @@ def optimiser_ligne(row: pd.Series, date_plantation: pd.Timestamp) -> dict:
         nb_cycles_max_stade       = max_cycles_stade,
         T_max_C                   = T_max_val,
         volume_cumule_avant_tour_L= vol_cumule_avant_tour_L,
+        alerte_pluie_actuel       = row.get("alerte_pluie_actuel", np.nan),
+        alerte_brouillard_actuel  = row.get("alerte_brouillard_actuel", np.nan),
+        alerte_chergui_actuel     = row.get("alerte_chergui_actuel", np.nan),
+        alerte_vpd_stress_actuel  = row.get("alerte_vpd_stress_actuel", np.nan),
     )
     result.update(label_seq)
 
     # ── Colonnes de diagnostic (utiles pour debug et features ML)
     result["opt_vol_cumule_L"]        = round(vol_cumule_L, 1)
     result["opt_vol_jour_cible_L"]    = round(vol_jour_cible_L, 1)
+    result["opt_vol_cycle_median_L"]  = round(vol_cycle_median_L, 3)  # médiane v_apport journée
     result["opt_pct_drain_recalcule"] = round(pct_drain, 2)
     result["opt_pct_drain_prev"]      = round(pct_drain_prec, 2) if not np.isnan(pct_drain_prec) else np.nan
 
@@ -3054,6 +3168,35 @@ def main():
         df.groupby(GROUP_KEYS)["_vol_tour_L"]
           .cumsum()
     )
+
+    # _vol_cycle_median_L : médiane de v_apport sur la journée+vanne (L/goutteur)
+    #
+    # POURQUOI : vol_jour_cible_L = vol_cycle_L × nb_cycles utilise le v_apport
+    # du tour courant, qui varie (tour 1 ≈ 250 cc, tours suivants ≈ 160-180 cc).
+    # La cible journalière devenait donc différente selon le tour évalué, ce qui
+    # faisait déclencher STOP_VOLUME trop tôt en fin de journée (v_apport bas
+    # → vol_jour_cible_L artificiellement petit → seuil 95% atteint trop vite).
+    #
+    # CORRECTION : utiliser la médiane de v_apport sur toute la journée (hors tour 1
+    # atypique à 250 cc), précalculée une seule fois par groupe, stable pour
+    # tous les tours de la même journée/vanne.
+    #
+    # Exclusion tour 1 (num_tour == 1) : réhydratation coco → v_apport atypique
+    # Si tous les tours ont num_tour == 1 (journée à 1 seul tour), on prend quand même
+    # la médiane de tous les tours disponibles.
+    vap_hors_t1 = df["v_apport"].where(df["num_tour"] != 1)
+    median_hors_t1 = (
+        vap_hors_t1
+        .groupby([df[k] for k in GROUP_KEYS])
+        .transform("median")
+    )
+    median_tous = (
+        df["v_apport"].fillna(0)
+        .groupby([df[k] for k in GROUP_KEYS])
+        .transform("median")
+    )
+    # Fallback sur médiane tous tours si hors-T1 est NaN (journée à 1 seul tour)
+    df["_vol_cycle_median_L"] = median_hors_t1.fillna(median_tous).fillna(166.0) / 1000.0
 
     print(f"  → Colonnes séquentielles précalculées sur {len(df):,} lignes")
 
@@ -3289,6 +3432,7 @@ def main():
             "STOP_PLUIE":       "🌧",
             "STOP_BROUILLARD":  "🌫",
             "STOP_CHERGUI_MAX": "🔴",
+            "EXCLU_METEO_ACTUEL_MANQUANTE": "⚠️",
         }.get(lbl, "")
         print(f"    {emoji} {lbl:<25} {n:>6} lignes ({pct:.1f}%)")
 
@@ -3433,6 +3577,22 @@ def main():
         print(f"     pH     = _ph_cible_jour")
         print(f"     Cycles = _cycles_netajet_jour (entier)")
         print(f"     Début  = _heure_debut_jour")
+
+    # ── Exclusion explicite des lignes sans météo "actuelle" fiable
+    # (label EXCLU_METEO_ACTUEL_MANQUANTE — voir labelliser_tour_sequentiel).
+    # Pas de fallback silencieux : ces lignes ne participent PAS à l'entraînement
+    # du modèle séquentiel, mais restent dans le CSV (colonne _exclu_dataset_ml=1)
+    # pour audit/traçabilité.
+    n_total_rows = len(df_final)
+    masque_exclu = df_final["opt_label_sequentiel"] == "EXCLU_METEO_ACTUEL_MANQUANTE"
+    n_exclu = int(masque_exclu.sum())
+    df_final["_exclu_dataset_ml"] = masque_exclu.astype(int)
+    if n_exclu > 0:
+        pct_exclu = n_exclu / n_total_rows * 100
+        print(f"\n  ⚠️  {n_exclu} lignes ({pct_exclu:.1f}%) exclues du dataset ML "
+              f"(donnees meteo 'actuel' manquantes — alerte_*_actuel = NA)")
+        print(f"      → conservées dans le CSV avec _exclu_dataset_ml=1 pour audit, "
+              f"mais à filtrer avant entraînement (df[df['_exclu_dataset_ml']==0])")
 
     df_final.to_csv(OUTPUT_FILE, index=False, encoding="utf-8-sig")
 

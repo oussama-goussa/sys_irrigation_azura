@@ -1,0 +1,241 @@
+[
+    {
+        "id": "06b2c00c251c78c5",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "7a2bd2a221af9d66",
+        "type": "mqtt in",
+        "z": "06b2c00c251c78c5",
+        "name": "",
+        "topic": "/sammoroc@gmail.com/FTP",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "f23a3b6e1e8c013e",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 220,
+        "y": 180,
+        "wires": [
+            [
+                "880893b58a3b8dcc",
+                "3b510cefc294f919"
+            ]
+        ]
+    },
+    {
+        "id": "880893b58a3b8dcc",
+        "type": "debug",
+        "z": "06b2c00c251c78c5",
+        "name": "debug Netafim",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 540,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "69fde8a41eafbef5",
+        "type": "file",
+        "z": "06b2c00c251c78c5",
+        "name": "Save JSON File",
+        "filename": "filename",
+        "filenameType": "msg",
+        "appendNewline": false,
+        "createDir": true,
+        "overwriteFile": "true",
+        "encoding": "utf8",
+        "x": 780,
+        "y": 180,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "3b510cefc294f919",
+        "type": "function",
+        "z": "06b2c00c251c78c5",
+        "name": "function 1",
+        "func": "var data = msg.payload;\n\n// Gérer string et objet automatiquement\nif (typeof data === \"string\") {\n    data = JSON.parse(data);\n}\n\n// Si c'est un array prendre le premier élément\nif (Array.isArray(data)) {\n    data = data[0];\n}\n\nvar header = data.XMLExport.Headers;\nvar farmName = header.FarmName;\nvar houseNumber = header.HouseNumber;\nvar roomNumber = header.RoomNumber;\n\n// 🔥 utiliser TimeStamp du fichier\nvar timestamp = header.TimeStamp;\n\nvar parts = timestamp.split(\" \");\nvar datePart = parts[0].split(\"/\");\nvar timePart = parts[1].split(\":\");\n\nvar ts =\n    datePart[0] +\n    datePart[1].padStart(2, '0') +\n    datePart[2].padStart(2, '0') +\n    timePart[0].padStart(2, '0') +\n    timePart[1].padStart(2, '0') +\n    timePart[2].padStart(2, '0');\n\nvar filename = ts + \"_FARM_\" + farmName + \"_HOUSE_\" + houseNumber + \"_RoomNumber_\" + roomNumber + \".json\";\n\nvar folder = \"/home/pi/irrigation_data/FARM_\" + farmName + \"/HOUSE_\" + houseNumber + \"/\";\n\nmsg.filename = folder + filename;\nmsg.payload = JSON.stringify(data, null, 2);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 520,
+        "y": 120,
+        "wires": [
+            [
+                "69fde8a41eafbef5"
+            ]
+        ]
+    },
+    {
+        "id": "18cf5a17b04dedbc",
+        "type": "mqtt in",
+        "z": "06b2c00c251c78c5",
+        "name": "",
+        "topic": "/sammoroc@gmail.com/Pds",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "f23a3b6e1e8c013e",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 220,
+        "y": 320,
+        "wires": [
+            [
+                "ac6f15195d1ab6ed"
+            ]
+        ]
+    },
+    {
+        "id": "ac6f15195d1ab6ed",
+        "type": "debug",
+        "z": "06b2c00c251c78c5",
+        "name": "debug Poids",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 530,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "9618ea1397612be0",
+        "type": "modbus-read",
+        "z": "06b2c00c251c78c5",
+        "name": "",
+        "topic": "",
+        "showStatusActivities": false,
+        "logIOActivities": false,
+        "showErrors": false,
+        "showWarnings": true,
+        "unitid": "",
+        "dataType": "HoldingRegister",
+        "adr": "1123",
+        "quantity": "4",
+        "rate": "5",
+        "rateUnit": "s",
+        "delayOnStart": false,
+        "enableDeformedMessages": false,
+        "startDelayTime": "",
+        "server": "09309cc6a747d150",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": false,
+        "x": 190,
+        "y": 420,
+        "wires": [
+            [
+                "2913ec7d816a3e13"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "2913ec7d816a3e13",
+        "type": "debug",
+        "z": "06b2c00c251c78c5",
+        "name": "debug 1",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 520,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "f23a3b6e1e8c013e",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "mqtt.dioty.co",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "09309cc6a747d150",
+        "type": "modbus-client",
+        "name": "",
+        "clienttype": "simpleser",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": true,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": 502,
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyUSB0",
+        "serialType": "RTU",
+        "serialBaudrate": 9600,
+        "serialDatabits": 8,
+        "serialStopbits": 1,
+        "serialParity": "none",
+        "serialConnectionDelay": 100,
+        "serialAsciiResponseStartDelimiter": "0x3A",
+        "unit_id": 1,
+        "commandDelay": 1,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": false,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "44fe0b0d2122618f",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-modbus": "5.45.2"
+        }
+    }
+]

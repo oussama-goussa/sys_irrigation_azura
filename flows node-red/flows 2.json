@@ -1,0 +1,339 @@
+[
+    {
+        "id": "73a8358df4fb5726",
+        "type": "tab",
+        "label": "Flow 2",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "825ee4c6a5e53b40",
+        "type": "inject",
+        "z": "73a8358df4fb5726",
+        "name": "Sync toutes les 1min",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "60",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "10",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 140,
+        "y": 140,
+        "wires": [
+            [
+                "cddb9b7aa4c3147c"
+            ]
+        ]
+    },
+    {
+        "id": "cddb9b7aa4c3147c",
+        "type": "http request",
+        "z": "73a8358df4fb5726",
+        "name": "Check Backend /health",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://51.91.78.65:8000/health",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 310,
+        "y": 220,
+        "wires": [
+            [
+                "15b7716fb08c856c"
+            ]
+        ]
+    },
+    {
+        "id": "15b7716fb08c856c",
+        "type": "switch",
+        "z": "73a8358df4fb5726",
+        "name": "Backend OK?",
+        "property": "statusCode",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "200",
+                "vt": "num"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "false",
+        "repair": false,
+        "outputs": 2,
+        "x": 300,
+        "y": 320,
+        "wires": [
+            [
+                "840bb6d6edcf93a7"
+            ],
+            [
+                "515fc6dba5e4c9e5"
+            ]
+        ]
+    },
+    {
+        "id": "515fc6dba5e4c9e5",
+        "type": "debug",
+        "z": "73a8358df4fb5726",
+        "name": "Backend indisponible",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 500,
+        "y": 400,
+        "wires": []
+    },
+    {
+        "id": "840bb6d6edcf93a7",
+        "type": "function",
+        "z": "73a8358df4fb5726",
+        "name": "Lister fichiers JSON",
+        "func": "function getAllFiles(dirPath, arrayOfFiles) {\n    arrayOfFiles = arrayOfFiles || [];\n\n    // Vérifier si le dossier existe\n    if (!fs.existsSync(dirPath)) {\n        node.warn('Dossier introuvable : ' + dirPath);\n        return arrayOfFiles;\n    }\n\n    const files = fs.readdirSync(dirPath);\n\n    files.forEach(function (file) {\n        const fullPath = path.join(dirPath, file);\n\n        if (fs.statSync(fullPath).isDirectory()) {\n            // Si c'est un dossier → rentrer dedans\n            arrayOfFiles = getAllFiles(fullPath, arrayOfFiles);\n        } else if (file.endsWith('.json')) {\n            // Si c'est un .json → ajouter à la liste\n            arrayOfFiles.push(fullPath);\n        }\n    });\n\n    return arrayOfFiles;\n}\n\n// Dossier racine\nconst rootDir = '/home/pi/irrigation_data/';\n\n// Récupérer tous les fichiers .json\nlet files = getAllFiles(rootDir);\n\n// Trier par nom de fichier A→Z (ancien → nouveau)\nfiles.sort((a, b) => {\n    const nameA = path.basename(a);\n    const nameB = path.basename(b);\n    return nameA.localeCompare(nameB);\n});\n\n// Stocker dans le contexte du flow\nflow.set('fileList', files);\nflow.set('currentIndex', 0);\n\n// Vérifier si des fichiers existent\nif (files.length === 0) {\n    node.warn('Aucun fichier JSON trouvé');\n    return null; // Arrêter le flow\n}\n\n// Continuer\nnode.warn(files.length + ' fichiers trouvés à synchroniser');\nmsg.payload = files.length;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [
+            {
+                "var": "fs",
+                "module": "fs"
+            },
+            {
+                "var": "path",
+                "module": "path"
+            }
+        ],
+        "x": 640,
+        "y": 280,
+        "wires": [
+            [
+                "cfe4ecdd79af679a"
+            ]
+        ]
+    },
+    {
+        "id": "cfe4ecdd79af679a",
+        "type": "function",
+        "z": "73a8358df4fb5726",
+        "name": "Fichier suivant",
+        "func": "// Lire la liste et l'index depuis le contexte\nconst fileList = flow.get('fileList') || [];\nconst currentIndex = flow.get('currentIndex') || 0;\n\n// Vérifier si on a traité tous les fichiers\nif (currentIndex >= fileList.length) {\n    node.warn('✅ Sync terminée - ' + fileList.length + ' fichiers traités');\n    return [null, msg]; // → sortie 2 (cycle terminé)\n}\n\n// Prendre le fichier à l'index actuel\nmsg.filename = fileList[currentIndex];\nmsg.filepath = fileList[currentIndex];\n\nnode.warn('📂 Traitement fichier ' + (currentIndex + 1) + '/' + fileList.length + ' : ' + msg.filename);\n\nreturn [msg, null]; // → sortie 1 (continuer)",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 880,
+        "y": 460,
+        "wires": [
+            [
+                "944ff36ce22d794d"
+            ],
+            [
+                "737843394b0c7eda"
+            ]
+        ]
+    },
+    {
+        "id": "944ff36ce22d794d",
+        "type": "file in",
+        "z": "73a8358df4fb5726",
+        "name": "Lire JSON",
+        "filename": "filename",
+        "filenameType": "msg",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "utf8",
+        "allProps": false,
+        "x": 1130,
+        "y": 400,
+        "wires": [
+            [
+                "c91beea5b7453043"
+            ]
+        ]
+    },
+    {
+        "id": "c91beea5b7453043",
+        "type": "function",
+        "z": "73a8358df4fb5726",
+        "name": "Préparer payload",
+        "func": "const filepath = msg.filename;\n\ntry {\n    let data = msg.payload;\n\n    // ✅ Fichier vide → supprimer et passer au suivant\n    if (!data || (typeof data === 'string' && data.trim() === '')) {\n        node.warn('⚠️ Fichier vide, suppression : ' + filepath);\n        fs.unlinkSync(filepath);\n        let idx = flow.get('currentIndex') || 0;\n        flow.set('currentIndex', idx + 1);\n        return [null, msg]; // → sortie 2\n    }\n\n    if (typeof data === 'string') {\n        data = JSON.parse(data);\n    }\n\n    if (Array.isArray(data)) {\n        data = data[0];\n    }\n\n    msg.payload = data;\n    msg.headers = {\n        'Content-Type': 'application/json',\n        'X-API-Key': 'b43a927062563945e4f4767c6cb2905d0ff2e97a4b77c2ad8d32cc831f1fde61'\n    };\n    msg.filename = filepath;\n    node.warn('📤 Envoi fichier : ' + filepath);\n    return [msg, null]; // → sortie 1\n\n} catch (e) {\n    node.error('❌ Erreur JSON : ' + e.message);\n    try { fs.unlinkSync(filepath); } catch (e2) { }\n    let idx = flow.get('currentIndex') || 0;\n    flow.set('currentIndex', idx + 1);\n    return [null, msg]; // → sortie 2\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [
+            {
+                "var": "fs",
+                "module": "fs"
+            }
+        ],
+        "x": 1090,
+        "y": 240,
+        "wires": [
+            [
+                "5ecd5ee2f92ba211"
+            ],
+            [
+                "cfe4ecdd79af679a"
+            ]
+        ]
+    },
+    {
+        "id": "5ecd5ee2f92ba211",
+        "type": "http request",
+        "z": "73a8358df4fb5726",
+        "name": "POST /api/sensors/ingest",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://51.91.78.65:8000/api/sensors/ingest",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1410,
+        "y": 200,
+        "wires": [
+            [
+                "66c8bcd4b8917020"
+            ]
+        ]
+    },
+    {
+        "id": "66c8bcd4b8917020",
+        "type": "switch",
+        "z": "73a8358df4fb5726",
+        "name": "Envoi OK?",
+        "property": "statusCode",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "200",
+                "vt": "num"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "false",
+        "repair": false,
+        "outputs": 2,
+        "x": 1390,
+        "y": 320,
+        "wires": [
+            [
+                "709c6246295f2c38"
+            ],
+            [
+                "ec359a0c541763c2"
+            ]
+        ]
+    },
+    {
+        "id": "28979b59205d9763",
+        "type": "function",
+        "z": "73a8358df4fb5726",
+        "name": "Incrémenter index",
+        "func": "// Lire l'index actuel\nlet currentIndex = flow.get('currentIndex') || 0;\n\n// Incrémenter\ncurrentIndex = currentIndex + 1;\n\n// Sauvegarder le nouvel index\nflow.set('currentIndex', currentIndex);\n\n// Info debug\nnode.warn('✅ Fichier traité - Index suivant : ' + currentIndex);\n\n// Retourner msg vers Nœud 6\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1870,
+        "y": 460,
+        "wires": [
+            [
+                "cfe4ecdd79af679a"
+            ]
+        ]
+    },
+    {
+        "id": "737843394b0c7eda",
+        "type": "debug",
+        "z": "73a8358df4fb5726",
+        "name": "Sync terminée",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1100,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "ec359a0c541763c2",
+        "type": "debug",
+        "z": "73a8358df4fb5726",
+        "name": "Erreur envoi",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1610,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "709c6246295f2c38",
+        "type": "file",
+        "z": "73a8358df4fb5726",
+        "name": "Supprimer fichier SD",
+        "filename": "filename",
+        "filenameType": "msg",
+        "appendNewline": true,
+        "createDir": false,
+        "overwriteFile": "delete",
+        "encoding": "none",
+        "x": 1640,
+        "y": 300,
+        "wires": [
+            [
+                "28979b59205d9763"
+            ]
+        ]
+    }
+]
