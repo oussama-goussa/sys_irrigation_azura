@@ -565,7 +565,6 @@ function TourDrainageForm({ house, rec, tourData, C, dark, onSaved, onClose, nbr
         ph_drainage: phDrain !== '' ? Number(phDrain) : null,
       })
       setResult(res)
-      onSaved && onSaved()
     } catch (e) {
       if (e.code === 'NBR_GOUTTEURS_MANQUANT') {
         setError('NBR_GOUTTEURS_MANQUANT')
@@ -1146,7 +1145,7 @@ function HouseCard({ house, rec, C, dark, onConfig, dateStr }) {
                   dark={dark}
                   dateStr={dateStr}
                   nbrGoutteurs={config?.nbr_goutteurs || 1}
-                  onSaved={() => { setShowTourForm(false); refreshTours() }}
+                  onSaved={() => { refreshTours() }}
                   onClose={() => setShowTourForm(false)}
                   onConfig={onConfig}
                 />
