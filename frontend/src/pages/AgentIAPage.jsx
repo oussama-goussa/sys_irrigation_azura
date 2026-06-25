@@ -1149,7 +1149,7 @@ function HouseCard({ house, rec, C, dark, onConfig, dateStr }) {
                   dark={dark}
                   dateStr={dateStr}
                   nbrGoutteurs={config?.nbr_goutteurs || 1}
-                  onSaved={() => { refreshTours }}
+                  onSaved={ refreshTours }
                   onClose={() => setShowTourForm(false)}
                   onConfig={onConfig}
                 />
